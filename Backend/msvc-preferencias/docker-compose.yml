@@ -1,19 +1,19 @@
 services:
 
-  msvc-preferencias:
+  ms-preferencias:
     build: .
-    container_name: ticketya-preferencias
+    container_name: ms-preferencias
     ports:
       - "8085:8085"
     environment:
-      SPRING_DATA_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@mongo-preferencias:27017/preferencias?authSource=admin
+      SPRING_DATA_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@db-mongo-preferencias:27017/preferencias?authSource=admin
     depends_on:
-      mongo-preferencias:
+      db-mongo-preferencias:
         condition: service_healthy
 
-  mongo-preferencias:
+  db-mongo-preferencias:
     image: mongo:8
-    container_name: ticketya-mongo-preferencias
+    container_name: db-mongo-preferencias
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: ticketya

@@ -1,21 +1,21 @@
 services:
 
-  msvc-usuarios:
+  ms-usuarios:
     build: .
-    container_name: ticketya-usuarios
+    container_name: ms-usuarios
     ports:
       - "8081:8081"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-usuarios:3306/usuarios
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql-usuarios:3306/usuarios
       SPRING_DATASOURCE_USERNAME: ticketya
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
     depends_on:
-      mysql-usuarios:
+      db-mysql-usuarios:
         condition: service_healthy
 
-  mysql-usuarios:
+  db-mysql-usuarios:
     image: mysql:8.4
-    container_name: ticketya-mysql-usuarios
+    container_name: db-mysql-usuarios
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: usuarios

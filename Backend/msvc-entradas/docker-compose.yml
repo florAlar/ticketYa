@@ -1,21 +1,21 @@
 services:
 
-  msvc-entradas:
+  ms-entradas:
     build: .
-    container_name: ticketya-entradas
+    container_name: ms-entradas
     ports:
       - "8084:8084"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-entradas:3306/entradas
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql-entradas:3306/entradas
       SPRING_DATASOURCE_USERNAME: ticketya
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
     depends_on:
-      mysql-entradas:
+      db-mysql-entradas:
         condition: service_healthy
 
-  mysql-entradas:
+  db-mysql-entradas:
     image: mysql:8.4
-    container_name: ticketya-mysql-entradas
+    container_name: db-mysql-entradas
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: entradas

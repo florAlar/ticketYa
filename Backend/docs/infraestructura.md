@@ -74,20 +74,20 @@ de esta amnera se garantiza autonomía de desarrollo para cada integrante y faci
 
 Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecuten varios microservicios simultáneamente.
 
-| Servicio | Puerto local (host) | Puerto interno (contenedor) |
+| Contenedor / servicio | Puerto local (host) | Puerto interno (contenedor) |
 |---|---:|---:|
-| API Gateway | 8080 | 8080 |
-| msvc-usuarios | 8081 | 8081 |
-| msvc-eventos | 8082 | 8082 |
-| msvc-ventas | 8083 | 8083 |
-| msvc-entradas | 8084 | 8084 |
-| msvc-preferencias | 8085 | 8085 |
-| MySQL usuarios | 3307 | 3306 |
-| MySQL eventos | 3308 | 3306 |
-| MySQL ventas | 3309 | 3306 |
-| MySQL entradas | 3310 | 3306 |
-| MongoDB preferencias | 27018 | 27017 |
-| Redis ventas | 6380 | 6379 |
+| ms-gateway | 8080 | 8080 |
+| ms-usuarios | 8081 | 8081 |
+| ms-eventos | 8082 | 8082 |
+| ms-ventas | 8083 | 8083 |
+| ms-entradas | 8084 | 8084 |
+| ms-preferencias | 8085 | 8085 |
+| db-mysql-usuarios | 3307 | 3306 |
+| db-mysql-eventos | 3308 | 3306 |
+| db-mysql-ventas | 3309 | 3306 |
+| db-mysql-entradas | 3310 | 3306 |
+| db-mongo-preferencias | 27018 | 27017 |
+| db-redis-ventas | 6380 | 6379 |
 
 ### Consideraciones
 
@@ -124,23 +124,23 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 flowchart TB
 U["Usuario / Navegador"]
 
-    subgraph DOCKER["Docker - Proyecto TicketYa"]
-        subgraph RED["Red interna de Docker"]
-            FE["Frontend<br/>React + Nginx<br/>Puerto 80"]
-            GW["API Gateway<br/>Spring Boot<br/>8080"]
+    subgraph DOCKER["Docker"]
+        subgraph RED["Red interna"]
+            FE["Frontend<br/>React + Nginx<br/>:80"]
+            GW["ms-gateway<br/>8080"]
 
-            UMS["msvc-usuarios<br/>Spring Boot<br/>8081"]
-            EMS["msvc-eventos<br/>Spring Boot<br/>8082"]
-            VMS["msvc-ventas<br/>Spring Boot<br/>8083"]
-            TMS["msvc-entradas<br/>Spring Boot<br/>8084"]
-            PMS["msvc-preferencias<br/>Spring Boot<br/>8085"]
+            UMS["ms-usuarios<br/>8081"]
+            EMS["ms-eventos<br/>8082"]
+            VMS["ms-ventas<br/>8083"]
+            TMS["ms-entradas<br/>8084"]
+            PMS["ms-preferencias<br/>8085"]
 
-            DBU[("MySQL usuarios<br/>3306")]
-            DBE[("MySQL eventos<br/>3306")]
-            DBV[("MySQL ventas<br/>3306")]
-            DBT[("MySQL entradas<br/>3306")]
-            MDB[("MongoDB preferencias<br/>27017")]
-            R[("Redis ventas<br/>6379")]
+            DBU[("db-mysql-usuarios<br/>3306")]
+            DBE[("db-mysql-eventos<br/>3306")]
+            DBV[("db-mysql-ventas<br/>3306")]
+            DBT[("db-mysql-entradas<br/>3306")]
+            MDB[("db-mongo-preferencias<br/>27017")]
+            R[("db-redis-ventas<br/>6379")]
 
             FE -.-> GW
             GW --> UMS

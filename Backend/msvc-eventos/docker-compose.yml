@@ -1,21 +1,21 @@
 services:
 
-  msvc-eventos:
+  ms-eventos:
     build: .
-    container_name: ticketya-eventos
+    container_name: ms-eventos
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-eventos:3306/eventos
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql-eventos:3306/eventos
       SPRING_DATASOURCE_USERNAME: ticketya
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
     depends_on:
-      mysql-eventos:
+      db-mysql-eventos:
         condition: service_healthy
 
-  mysql-eventos:
+  db-mysql-eventos:
     image: mysql:8.4
-    container_name: ticketya-mysql-eventos
+    container_name: db-mysql-eventos
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: eventos
