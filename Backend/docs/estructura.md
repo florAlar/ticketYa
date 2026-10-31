@@ -1,3 +1,8 @@
+# Estructura del repositorio
+
+Árbol de carpetas de TicketYa (Frontend, Backend y docs transversales).
+
+```text
 TicketYa/
 │
 ├── Frontend/                          # UI React. Build estático; en prod lo sirve Nginx. Habla solo con el API Gateway (/api).
@@ -88,10 +93,12 @@ TicketYa/
 ├── .env.example                       # Variables de entorno de ejemplo (sin secretos reales).
 ├── .gitignore
 └── README.md
+```
 
-# Cómo proceder (resumen)
-# 1. infrastructure/ → scripts de init y conf de Nginx cuando haga falta el entorno.
-# 2. Cada msvc → modelar en docs/ (DDD), luego código por capas; levantar solo con su docker-compose.
-# 3. APIGateway → rutas hacia msvcs ya expuestos.
-# 4. Frontend/ → UI; en Docker, multi-stage con Nginx usando infrastructure/nginx/nginx.conf.
-# 5. Backend/docker-compose.yml → integración completa cuando los contratos entre capas cierren.
+## Cómo proceder (resumen)
+
+1. `infrastructure/` → scripts de init y conf de Nginx cuando haga falta el entorno.
+2. Cada msvc → modelar en `docs/` (DDD), luego código por capas; levantar solo con su docker-compose.
+3. `APIGateway` → rutas hacia msvcs ya expuestos.
+4. `Frontend/` → UI; en Docker, multi-stage con Nginx usando `infrastructure/nginx/nginx.conf`.
+5. `Backend/docker-compose.yml` → integración completa cuando los contratos entre capas cierren.
