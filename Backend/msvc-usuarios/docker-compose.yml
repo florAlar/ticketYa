@@ -1,0 +1,36 @@
+services:
+
+  msvc-usuarios:
+    build: .
+    container_name: ticketya-usuarios
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-usuarios:3306/usuarios
+      SPRING_DATASOURCE_USERNAME: ticketya
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+    depends_on:
+      mysql-usuarios:
+        condition: service_healthy
+
+  mysql-usuarios:
+    image: mysql:8.4
+    container_name: ticketya-mysql-usuarios
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: usuarios
+      MYSQL_USER: ticketya
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+    ports:
+      - "3307:3306"
+    volumes:
+      - usuarios_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  usuarios_data:

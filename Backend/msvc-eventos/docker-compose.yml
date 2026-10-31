@@ -1,0 +1,36 @@
+services:
+
+  msvc-eventos:
+    build: .
+    container_name: ticketya-eventos
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-eventos:3306/eventos
+      SPRING_DATASOURCE_USERNAME: ticketya
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+    depends_on:
+      mysql-eventos:
+        condition: service_healthy
+
+  mysql-eventos:
+    image: mysql:8.4
+    container_name: ticketya-mysql-eventos
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: eventos
+      MYSQL_USER: ticketya
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+    ports:
+      - "3308:3306"
+    volumes:
+      - eventos_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  eventos_data:

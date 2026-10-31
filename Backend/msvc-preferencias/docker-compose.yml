@@ -1,0 +1,33 @@
+services:
+
+  msvc-preferencias:
+    build: .
+    container_name: ticketya-preferencias
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@mongo-preferencias:27017/preferencias?authSource=admin
+    depends_on:
+      mongo-preferencias:
+        condition: service_healthy
+
+  mongo-preferencias:
+    image: mongo:8
+    container_name: ticketya-mongo-preferencias
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ticketya
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo_dev}
+      MONGO_INITDB_DATABASE: preferencias
+    ports:
+      - "27018:27017"
+    volumes:
+      - preferencias_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  preferencias_data:

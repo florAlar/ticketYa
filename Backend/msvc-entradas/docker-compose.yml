@@ -1,0 +1,36 @@
+services:
+
+  msvc-entradas:
+    build: .
+    container_name: ticketya-entradas
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-entradas:3306/entradas
+      SPRING_DATASOURCE_USERNAME: ticketya
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+    depends_on:
+      mysql-entradas:
+        condition: service_healthy
+
+  mysql-entradas:
+    image: mysql:8.4
+    container_name: ticketya-mysql-entradas
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: entradas
+      MYSQL_USER: ticketya
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+    ports:
+      - "3310:3306"
+    volumes:
+      - entradas_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  entradas_data:

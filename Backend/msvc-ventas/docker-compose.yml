@@ -1,0 +1,54 @@
+services:
+
+  msvc-ventas:
+    build: .
+    container_name: ticketya-ventas
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-ventas:3306/ventas
+      SPRING_DATASOURCE_USERNAME: ticketya
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      SPRING_DATA_REDIS_HOST: redis-ventas
+      SPRING_DATA_REDIS_PORT: 6379
+    depends_on:
+      mysql-ventas:
+        condition: service_healthy
+      redis-ventas:
+        condition: service_healthy
+
+  mysql-ventas:
+    image: mysql:8.4
+    container_name: ticketya-mysql-ventas
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ventas
+      MYSQL_USER: ticketya
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+    ports:
+      - "3309:3306"
+    volumes:
+      - ventas_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis-ventas:
+    image: redis:7
+    container_name: ticketya-redis-ventas
+    ports:
+      - "6380:6379"
+    volumes:
+      - ventas_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  ventas_data:
+  ventas_redis_data:
