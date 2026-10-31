@@ -120,8 +120,9 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 
 
 
+```mermaid
 flowchart TB
-U["👤 Usuario / Navegador"]
+U["Usuario / Navegador"]
 
     subgraph DOCKER["Docker - Proyecto TicketYa"]
         subgraph RED["Red interna de Docker"]
@@ -159,6 +160,7 @@ U["👤 Usuario / Navegador"]
 
     U -->|"localhost:3000"| FE
     U -->|"localhost:8080 (API)"| GW
+```
 
 
 
