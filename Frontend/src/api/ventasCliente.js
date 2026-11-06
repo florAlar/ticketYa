@@ -1,6 +1,7 @@
 import { http } from './http'
-import { USE_MOCK } from './config'
+import { USE_MOCK_COMPRAS } from './config'
 import { getEvento } from './eventos'
+import { listMisEntradas } from './entradas'
 import { insertCompra } from './mock/comprasStore'
 import { insertEntrada } from './mock/entradasStore'
 import { COMPRA_ESTADOS } from '../domain/compra'
@@ -9,15 +10,21 @@ import { EVENTO_ESTADOS } from '../domain/evento'
 
 const delay = (ms = 400) => new Promise((r) => setTimeout(r, ms))
 
+function newIdempotencyKey() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return `idem-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 /**
- * Compra (simulacro: 1 sector, sin carrito).
+ * Compra (1 sector, sin carrito).
  *
- * Contrato back completo: reserva → POST /api/compras (+ Idempotency-Key) → pagos.
- * Gateway real: POST /api/compras
- * Mock: un solo paso (pago OK + emite entrada).
+ * Mock: un paso (pago OK + emite entrada local).
+ * Real (gateway): POST /reservas → POST /compras (+ Idempotency-Key) → POST /compras/{id}/pagos.
  *
- * body mínimo mock/transitorio: { idEvento, idSector }
- * body back ideal: { idReserva } u homólogo que defina el BE.
+ * body: { idEvento, idSector } o { idReserva }
+ * opts: { token, idempotencyKey, resultadoPago: 'APROBAR'|'RECHAZAR' }
  */
 export async function comprarEntrada({ idEvento, idSector, idReserva }, user, opts = {}) {
   if (!user?.id) {
@@ -26,7 +33,7 @@ export async function comprarEntrada({ idEvento, idSector, idReserva }, user, op
     throw err
   }
 
-  if (USE_MOCK) {
+  if (USE_MOCK_COMPRAS) {
     await delay()
     const evento = await getEvento(idEvento)
     if (!evento) {
@@ -105,29 +112,106 @@ export async function comprarEntrada({ idEvento, idSector, idReserva }, user, op
         mock: true,
         mensaje: 'Pago simulado OK — no hay cobro real.',
       },
+      mode: 'mock',
     }
   }
 
-  const body = idReserva
-    ? { idReserva }
-    : { idEvento, idSector }
-
-  const headers = {}
-  if (opts.idempotencyKey) {
-    headers['Idempotency-Key'] = opts.idempotencyKey
+  // --- gateway real ---
+  if (!opts.token) {
+    const err = new Error('Falta token JWT (re-logueate contra el gateway)')
+    err.status = 401
+    throw err
   }
 
-  return http('/api/compras', {
+  let reservaId = idReserva
+  let reserva = null
+
+  if (!reservaId) {
+    if (!idEvento || !idSector) {
+      const err = new Error('idEvento e idSector son requeridos')
+      err.status = 400
+      throw err
+    }
+    reserva = await crearReserva(
+      {
+        idEvento,
+        items: [{ idSector: String(idSector), cantidad: 1 }],
+      },
+      {
+        token: opts.token,
+        idempotencyKey: opts.reservaIdempotencyKey || newIdempotencyKey(),
+      }
+    )
+    reservaId = reserva.id
+    // confirmación de intención (opcional pero alineada al contrato)
+    try {
+      reserva = await http(`/api/reservas/${reservaId}/confirmacion`, {
+        method: 'POST',
+        token: opts.token,
+      })
+    } catch {
+      /* si ya CONFIRMADA u otro, seguimos con la creada */
+    }
+  }
+
+  const compraKey = opts.idempotencyKey || newIdempotencyKey()
+  const compra = await http('/api/compras', {
     method: 'POST',
     token: opts.token,
-    headers,
-    body: JSON.stringify(body),
+    headers: { 'Idempotency-Key': compraKey },
+    body: JSON.stringify({ idReserva: reservaId }),
   })
+
+  const resultadoPago = (opts.resultadoPago || 'APROBAR').toUpperCase()
+  const pago = await http(`/api/compras/${compra.id}/pagos`, {
+    method: 'POST',
+    token: opts.token,
+    body: JSON.stringify({
+      resultado: resultadoPago,
+      proveedor: 'MOCK_PASARELA',
+    }),
+  })
+
+  const compraFinal =
+    (await getCompra(compra.id, { token: opts.token }).catch(() => compra)) || compra
+
+  // Emisión la hace msvc-ventas → entradas; esperamos un instante y listamos
+  let entradas = []
+  try {
+    for (let i = 0; i < 5; i++) {
+      const all = await listMisEntradas(user, { token: opts.token })
+      entradas = (all || []).filter((e) => String(e.idCompra) === String(compra.id))
+      if (entradas.length) break
+      await new Promise((r) => setTimeout(r, 300))
+    }
+  } catch {
+    entradas = []
+  }
+
+  return {
+    reserva: reserva || { id: reservaId },
+    compra: compraFinal,
+    pago,
+    entrada: entradas[0] || null,
+    entradas,
+    mercadoPago: {
+      preferenciaId: pago?.idTransaccionExterna || null,
+      initPoint: null,
+      mock: false,
+      mensaje:
+        pago?.estado === 'APROBADO'
+          ? entradas.length
+            ? 'Pago aprobado y entrada(s) emitidas.'
+            : 'Pago aprobado. Si no ves QR, refrescá Mis entradas (emisión async).'
+          : `Pago ${pago?.estado || 'desconocido'}.`,
+    },
+    mode: 'gateway',
+  }
 }
 
 /** POST /api/reservas — TTL ~10 min */
 export async function crearReserva(body, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_COMPRAS) {
     const err = new Error('Reservas: usar compra mock directa en simulacro')
     err.status = 501
     throw err
@@ -144,7 +228,7 @@ export async function crearReserva(body, opts = {}) {
 
 /** GET /api/compras — listar compras propias */
 export async function listMisCompras(opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_COMPRAS) {
     return []
   }
   return http('/api/compras', { token: opts.token })
@@ -152,7 +236,7 @@ export async function listMisCompras(opts = {}) {
 
 /** GET /api/compras/{id} */
 export async function getCompra(id, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_COMPRAS) {
     const err = new Error('getCompra mock no implementado')
     err.status = 501
     throw err

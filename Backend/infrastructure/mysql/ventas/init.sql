@@ -76,9 +76,10 @@ INSERT INTO cupo_sector (id_cupo, id_evento, id_sector, capacidad_total, cantida
 ON DUPLICATE KEY UPDATE cantidad_disponible = VALUES(cantidad_disponible);
 
 -- Compra aprobada cliente demo → evento indie (general)
+-- estado reserva post-compra = COMPRADA (no CONFIRMADA: esa es pre-pago)
 INSERT INTO reserva (id_reserva, id_cliente, id_evento, fecha_creacion, fecha_expiracion, estado, total) VALUES
   ('f0000000-0000-4000-8000-000000000011', 'b0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001',
-   '2026-10-01 14:00:00.000', '2026-10-01 14:10:00.000', 'CONFIRMADA', 18000.00)
+   '2026-10-01 14:00:00.000', '2026-10-01 14:10:00.000', 'COMPRADA', 18000.00)
 ON DUPLICATE KEY UPDATE estado = VALUES(estado);
 
 INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio_unitario) VALUES
@@ -99,7 +100,7 @@ ON DUPLICATE KEY UPDATE estado = VALUES(estado);
 -- Compra sobre evento cancelado (para escenario reintegro / entradas)
 INSERT INTO reserva (id_reserva, id_cliente, id_evento, fecha_creacion, fecha_expiracion, estado, total) VALUES
   ('f0000000-0000-4000-8000-000000000041', 'b0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000003',
-   '2026-09-15 10:00:00.000', '2026-09-15 10:10:00.000', 'CONFIRMADA', 15000.00)
+   '2026-09-15 10:00:00.000', '2026-09-15 10:10:00.000', 'COMPRADA', 15000.00)
 ON DUPLICATE KEY UPDATE estado = VALUES(estado);
 
 INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio_unitario) VALUES

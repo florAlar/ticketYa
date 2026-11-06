@@ -16,3 +16,7 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+
+ticketya:
+  entradas:
+    plazo-devolucion-horas: ${TICKETYA_DEVOLUCION_HORAS:72}

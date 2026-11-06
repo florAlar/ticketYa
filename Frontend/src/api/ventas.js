@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK } from './config'
+import { USE_MOCK, USE_MOCK_ENTRADAS } from './config'
 import {
   listDevolucionesPendientes,
   patchDevolucionEstado,
@@ -29,15 +29,13 @@ function requireAdmin(user) {
 
 /**
  * Cola operativa admin (UI).
- * Mock: compone stores locales.
- * Gateway (contrato back):
- *   - pendientes → GET /api/devoluciones
- *   - cancelados: no hay cola única; mock rellena; real deja arrays vacíos
- *     o el BE los agrega después.
+ * Devoluciones: siguen flag de entradas (mismo msvc).
+ * Cancelados/reintegro: mock hasta E1-EVE cancel + lista.
  */
 export async function listColaAdminVentas(user, opts = {}) {
   requireAdmin(user)
-  if (USE_MOCK) {
+
+  if (USE_MOCK_ENTRADAS) {
     await delay()
     const devoluciones = listDevolucionesPendientes()
     const cancelados = listEventosCancelados()
@@ -58,11 +56,21 @@ export async function listColaAdminVentas(user, opts = {}) {
     }
   }
 
+  // Gateway real: pendientes de msvc-entradas
   const devoluciones = await http('/api/devoluciones', { token: opts.token })
+  const list = Array.isArray(devoluciones)
+    ? devoluciones
+    : devoluciones?.content || devoluciones?.items || []
+
+  // Normalizar shape UI (tipo opcional en BE)
+  const normalized = list.map((d) => ({
+    ...d,
+    tipo: d.tipo || 'DEVOLUCION',
+    eventoNombre: d.eventoNombre || d.idEvento || '—',
+  }))
+
   return {
-    devoluciones: Array.isArray(devoluciones)
-      ? devoluciones
-      : devoluciones?.content || devoluciones?.items || [],
+    devoluciones: normalized,
     eventosCancelados: [],
     entradasEventosCancelados: [],
   }
@@ -72,33 +80,45 @@ export async function listColaAdminVentas(user, opts = {}) {
  * Resolver devolución admin.
  * APROBADA → POST /api/devoluciones/{id}/aprobacion
  * RECHAZADA → POST /api/devoluciones/{id}/rechazo
+ *
+ * Importante: el id es el de la **devolución**, no el de la entrada.
  */
 export async function resolverDevolucion(id, estado, user, opts = {}) {
   requireAdmin(user)
   const next = String(estado || '').toUpperCase()
+  const devId = String(id || '').trim()
+  if (!devId) {
+    const err = new Error('Id de devolución requerido')
+    err.status = 400
+    throw err
+  }
 
-  if (USE_MOCK) {
+  if (USE_MOCK_ENTRADAS) {
     await delay()
-    const d = patchDevolucionEstado(id, next, user.id)
+    const d = patchDevolucionEstado(devId, next, user.id)
     if (!d) {
       const err = new Error('Solicitud no encontrada')
       err.status = 404
       throw err
     }
     if (next === DEVOLUCION_ESTADOS.APROBADA && d.idEntrada) {
-      patchEntradaEstado(d.idEntrada, ENTRADA_ESTADOS.DEVUELTA)
+      const e = patchEntradaEstado(d.idEntrada, ENTRADA_ESTADOS.DEVUELTA)
+      if (!e) {
+        // devolución mock ok pero entrada era de otro store (p.ej. BE) — no fallar duro
+        console.warn('Mock: entrada no estaba en store local', d.idEntrada)
+      }
     }
     return d
   }
 
   if (next === DEVOLUCION_ESTADOS.APROBADA || next === 'APROBADA') {
-    return http(`/api/devoluciones/${id}/aprobacion`, {
+    return http(`/api/devoluciones/${devId}/aprobacion`, {
       method: 'POST',
       token: opts.token,
     })
   }
   if (next === DEVOLUCION_ESTADOS.RECHAZADA || next === 'RECHAZADA') {
-    return http(`/api/devoluciones/${id}/rechazo`, {
+    return http(`/api/devoluciones/${devId}/rechazo`, {
       method: 'POST',
       token: opts.token,
     })
@@ -109,12 +129,13 @@ export async function resolverDevolucion(id, estado, user, opts = {}) {
 }
 
 /**
- * Reintegro por cancelación de evento — solo mock UI.
- * No hay path homólogo en endpoints-back; cancelación dispara side-effects en BE.
+ * Reintegro por cancelación de evento.
+ * Real: POST /api/eventos/{idEvento}/reintegro-cancelacion (marca todas).
+ * UI legacy pasaba idEntrada — si parece UUID de evento, usamos ese path.
  */
 export async function marcarReintegroEntradaCancelada(entradaId, user, opts = {}) {
   requireAdmin(user)
-  if (USE_MOCK) {
+  if (USE_MOCK_ENTRADAS) {
     await delay()
     const e = patchEntradaEstado(entradaId, ENTRADA_ESTADOS.A_REINTEGRAR)
     if (!e) {
@@ -124,8 +145,17 @@ export async function marcarReintegroEntradaCancelada(entradaId, user, opts = {}
     }
     return e
   }
+
+  // Si nos pasan idEvento (desde fila de evento cancelado), endpoint de contrato E1-ENT-05
+  if (opts.idEvento) {
+    return http(`/api/eventos/${opts.idEvento}/reintegro-cancelacion`, {
+      method: 'POST',
+      token: opts.token,
+    })
+  }
+
   const err = new Error(
-    'Reintegro por cancelación lo resuelve el BE al cancelar el evento (sin endpoint front dedicado)'
+    'Reintegro por entrada suelta no está en BE. Usá cancelación de evento (reintegro masivo) o devolución.'
   )
   err.status = 501
   throw err

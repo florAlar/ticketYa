@@ -11,6 +11,8 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
       SPRING_DATA_REDIS_HOST: db-redis-ventas
       SPRING_DATA_REDIS_PORT: 6379
+      TICKETYA_URI_EVENTOS: http://ms-eventos:8082
+      TICKETYA_URI_ENTRADAS: http://ms-entradas:8084
     depends_on:
       db-mysql-ventas:
         condition: service_healthy

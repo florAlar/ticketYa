@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK } from './config'
+import { USE_MOCK_AUTH } from './config'
 import { DEMO_ACCOUNTS, ROLES, normalizeRol } from '../auth/roles'
 import { readUsers, writeUsers } from './mock/usuariosStore'
 
@@ -20,7 +20,7 @@ function toSession(user) {
 
 /** POST /api/auth/login — msvc-usuarios vía gateway */
 export async function login({ email, password }) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     await delay()
     const users = readUsers()
     const found = users.find(
@@ -47,7 +47,7 @@ export async function login({ email, password }) {
 
 /** POST /api/auth/register — solo rol CLIENTE público */
 export async function register({ nombre, email, password }) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     await delay()
     const users = readUsers()
     const emailNorm = String(email).trim().toLowerCase()
@@ -78,7 +78,7 @@ export async function register({ nombre, email, password }) {
 
 /** POST /api/auth/refresh */
 export async function refreshSession(opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     return null
   }
   return http('/api/auth/refresh', {
@@ -89,7 +89,7 @@ export async function refreshSession(opts = {}) {
 
 /** POST /api/auth/logout */
 export async function logout(opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     return { ok: true }
   }
   return http('/api/auth/logout', {
@@ -100,7 +100,7 @@ export async function logout(opts = {}) {
 
 /** GET /api/usuarios/me — perfil autenticado */
 export async function getMe(opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     return null
   }
   return http('/api/usuarios/me', {
@@ -111,7 +111,7 @@ export async function getMe(opts = {}) {
 
 /** PATCH /api/usuarios/me */
 export async function patchMe(body, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_AUTH) {
     const err = new Error('patchMe no disponible en mock')
     err.status = 501
     throw err

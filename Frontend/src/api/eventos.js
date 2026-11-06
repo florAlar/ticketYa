@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK } from './config'
+import { USE_MOCK_EVENTOS, USE_MOCK_COMPRAS } from './config'
 import {
   insertGestionEvento,
   listCatalogoPublico,
@@ -36,7 +36,6 @@ function applyFilter(items, filter = {}) {
     )
   }
 
-  // back: orden=fecha|precio|relevancia — mock usa sort/orden
   const orden = filter.orden || filter.sort
   if (orden === 'precio') {
     list.sort((a, b) => (a.precioDesde ?? 0) - (b.precioDesde ?? 0))
@@ -53,7 +52,6 @@ function applyFilter(items, filter = {}) {
 function toQuery(filter = {}) {
   const params = new URLSearchParams()
   const map = { ...filter }
-  // alias front → query back
   if (map.sort && !map.orden) {
     map.orden = map.sort === 'precio' ? 'precio' : 'fecha'
     delete map.sort
@@ -61,9 +59,6 @@ function toQuery(filter = {}) {
   if (map.limit && !map.size) {
     map.size = map.limit
     delete map.limit
-  }
-  if (map.destacados !== undefined && map.destacado === undefined) {
-    // back no documenta destacados; se envía igual si el gateway lo acepta
   }
   Object.entries(map).forEach(([k, v]) => {
     if (v === undefined || v === null || v === '') return
@@ -77,21 +72,29 @@ function toQuery(filter = {}) {
   return s ? `?${s}` : ''
 }
 
+/** Normaliza página BE `{ content }` o array mock. */
+function unwrapEventosList(data) {
+  if (Array.isArray(data)) return data
+  if (data && Array.isArray(data.content)) return data.content
+  return []
+}
+
 /**
  * Catálogo público.
  * GET /api/eventos?tipo&ciudad&fechaDesde&fechaHasta&orden&page&size&...
  */
 export async function listEventos(filter = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     await delay()
     return applyFilter(listCatalogoPublico(), filter)
   }
-  return http(`/api/eventos${toQuery(filter)}`)
+  const data = await http(`/api/eventos${toQuery(filter)}`)
+  return unwrapEventosList(data)
 }
 
 /** GET /api/eventos/{id} */
 export async function getEvento(id) {
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     await delay()
     const found = readGestionEventos().find((e) => e.id === String(id))
     if (!found) {
@@ -107,10 +110,10 @@ export async function getEvento(id) {
 /**
  * Listado panel gestión.
  * ORGANIZADOR: GET /api/organizadores/me/eventos
- * ADMIN: GET /api/eventos (catálogo amplio; alcance admin lo define el BE)
+ * ADMIN: GET /api/eventos
  */
 export async function listEventosGestion(user, { isAdmin, token } = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     await delay()
     if (!user) {
       const err = new Error('No autenticado')
@@ -120,14 +123,15 @@ export async function listEventosGestion(user, { isAdmin, token } = {}) {
     return listGestionForUser(user, { isAdmin })
   }
   if (isAdmin) {
-    return http(`/api/eventos${toQuery({ size: 200 })}`, { token })
+    const data = await http(`/api/eventos${toQuery({ size: 200 })}`, { token })
+    return unwrapEventosList(data)
   }
   return http('/api/organizadores/me/eventos', { token })
 }
 
 /** POST /api/eventos — crear borrador (ORGANIZADOR) */
 export async function createEvento(form, user, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     await delay(400)
     if (!user?.id) {
       const err = new Error('No autenticado')
@@ -157,12 +161,12 @@ export async function createEvento(form, user, opts = {}) {
 /**
  * Cambiar estado / publicar.
  * PUBLICADO → POST /api/eventos/{id}/publicacion
- * SUSPENDIDO|CANCELADO|… → PATCH /api/eventos/{id}/estado
+ * resto → PATCH /api/eventos/{id}/estado
  */
 export async function patchEventoEstado(id, estado, user, { isAdmin, token } = {}) {
   const nextEstado = String(estado || '').toUpperCase()
 
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     await delay()
     const list = readGestionEventos()
     const cur = list.find((e) => e.id === String(id))
@@ -198,9 +202,9 @@ export async function patchEventoEstado(id, estado, user, { isAdmin, token } = {
   })
 }
 
-/** PUT /api/eventos/{id} — actualizar config (ORGANIZADOR) */
+/** PUT /api/eventos/{id} */
 export async function updateEvento(id, body, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     await delay()
     return updateGestionEvento(id, body)
   }
@@ -211,9 +215,9 @@ export async function updateEvento(id, body, opts = {}) {
   })
 }
 
-/** DELETE /api/eventos/{id} — eliminar borrador */
+/** DELETE /api/eventos/{id} */
 export async function deleteEvento(id, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_EVENTOS) {
     const err = new Error('deleteEvento mock no implementado')
     err.status = 501
     throw err
@@ -224,9 +228,9 @@ export async function deleteEvento(id, opts = {}) {
   })
 }
 
-/** GET /api/eventos/{id}/disponibilidad — msvc-ventas (gateway) */
+/** GET /api/eventos/{id}/disponibilidad — msvc-ventas */
 export async function getDisponibilidadEvento(id, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_COMPRAS) {
     await delay(120)
     return { idEvento: id, mock: true, mensaje: 'Disponibilidad mock local' }
   }

@@ -143,13 +143,13 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-VEN-00 | Datasource + JPA validate contra `ventas/init.sql` (INF-27) | hecho | EMF OK; Redis host compose ok. |
 | E1-VEN-01 | Modelo: CupoSector, Reserva, DetalleReserva, Compra, Pago (+ asientos reservados si numerado) | hecho | 5 entidades + repos. Sin tabla asiento_reservado en init → no inventada. |
-| E1-VEN-02 | Disponibilidad comercial por evento | pendiente | Ruta bajo `/eventos/{id}/disponibilidad` vía gateway → ventas. |
-| E1-VEN-03 | Reserva temporal (TTL p.ej. 10 min), confirmación, cancelación, renovación | pendiente | |
-| E1-VEN-04 | Compra desde reserva + **Idempotency-Key**; límite de entradas por cliente/evento | pendiente | |
-| E1-VEN-05 | Pasarela de pagos **mock** (aprueba/rechaza) | pendiente | |
-| E1-VEN-06 | Mecanismo **anti doble venta** (restricciones unicidad, locking/versionado y/o Redis) usable con varias instancias | pendiente | Explicar en docs del msvc. |
-| E1-VEN-07 | Liberación de cupo/asiento si pago rechazado o reserva vencida | pendiente | |
-| E1-VEN-08 | Cableado Redis según decisión de diseño (stock/TTL); hoy clases vacías | pendiente | |
+| E1-VEN-02 | Disponibilidad comercial por evento | hecho | `GET /eventos/{id}/disponibilidad` → cupo_sector. Doc msvc. |
+| E1-VEN-03 | Reserva temporal (TTL p.ej. 10 min), confirmación, cancelación, renovación | hecho | PENDIENTE/CONFIRMADA; job expire 30s + lazy; Redis hold. |
+| E1-VEN-04 | Compra desde reserva + **Idempotency-Key**; límite de entradas por cliente/evento | hecho | Key obligatoria (Redis 24h); max 6/cliente/evento. |
+| E1-VEN-05 | Pasarela de pagos **mock** (aprueba/rechaza) | hecho | `POST /compras/{id}/pagos` body resultado APROBAR\|RECHAZAR. |
+| E1-VEN-06 | Mecanismo **anti doble venta** (restricciones unicidad, locking/versionado y/o Redis) usable con varias instancias | hecho | PESSIMISTIC_WRITE cupo + UK evento/sector; Redis hold auxiliar. |
+| E1-VEN-07 | Liberación de cupo/asiento si pago rechazado o reserva vencida | hecho | Reject/cancel/expire liberan reservada→disponible. |
+| E1-VEN-08 | Cableado Redis según decisión de diseño (stock/TTL); hoy clases vacías | hecho | `StringRedisTemplate` + `StockCache` (hold + idempotency). starter data-redis. |
 
 ### 6.3 msvc-entradas
 
@@ -157,10 +157,10 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-ENT-00 | Datasource + JPA validate contra `entradas/init.sql` (INF-27) | hecho | EMF OK. |
 | E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. Seed intacto en init. |
-| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | pendiente | |
-| E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | pendiente | Tras auth/identidad mínima. |
-| E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | pendiente | |
-| E1-ENT-05 | Efecto de cancelación de evento sobre entradas vendidas (reintegro) — al menos contrato E1 | pendiente | Notificación masiva puede quedar E2. |
+| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign desde ventas al aprobar pago. Idempotente por idCompra. |
+| E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. Doc msvc. |
+| E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde emisión; ADMIN aprueba→DEVUELTA. Cupo ventas no se revierte en E1. |
+| E1-ENT-05 | Efecto de cancelación de evento sobre entradas vendidas (reintegro) — al menos contrato E1 | hecho | `POST /eventos/{id}/reintegro-cancelacion` → A_REINTEGRAR. |
 
 ### 6.4 API Gateway y usuarios (mínimo E1)
 
@@ -211,7 +211,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E2-TST-02 | Pruebas de autorización por rol | pendiente | |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
 | E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | SPA con esos flujos en **mock**. Falta BE real. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | pendiente | Prereq rutas: E1-EVE-04 + API-05/E1-GW-01/03 **hechos**. Falta levantar stack y probar catálogo. |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | 2026-11: demock **selectivo compras** — `VITE_USE_MOCK_AUTH/EVENTOS/COMPRAS=false`; global mock sigue true. Checkout: reserva→compra→pago BE. QR/mis-entradas aún mock (E1-ENT). Fix `http.js` Bearer. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
 ---
@@ -221,14 +221,17 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 1. **INF-27** — hecho (datasource + entidades = schema validate).  
 2. **INF-28** — hecho (init Mongo preferencias).  
 3. **E1-EVE-04** — hecho (GET catálogo/detalle + DTO).  
-4. **E1-GW-01/03 + API-05** — hecho (rutas + CORS). Smoke FE catálogo: `USE_MOCK=false` + gateway+eventos arriba.  
-5. E1-VEN-* / E1-ENT-* (reserva, compra, QR, devoluciones).  
-6. **E1-USU-01 + E1-GW-02** — hecho (login JWT + headers).  
-7. E1-VEN-* / E1-ENT-* (reserva, compra, QR, devoluciones).  
-8. E1-TST + E1-REL.  
-9. E2: PRE dominio → NOT → FILA/ACC/REP → NFR → DEP/TST carga.
+4. **E1-GW-01/03 + API-05** — hecho (rutas + CORS).  
+5. **E1-USU-01 + E1-GW-02 + E2-SEC-01** — hecho (login JWT + headers `X-User-*` + validación en gateway).  
+6. **Smoke integración** — **hecho 2026-11-06**.  
+7. **E1-VEN-02…08** — **hecho**.  
+8. **E1-ENT-02…05** — **hecho** (emisión Feign, GETs/QR, devoluciones 72h, reintegro-cancelación). FE demock auth/eventos/compras/entradas.  
+9. E1-EVE write (lugares/sectores/publicación/patch estado) si hace falta gestión org.  
+10. E1-TST + E1-REL + INF-17 (Postman).  
+11. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
+12. FE residual: mock-off gestión admin usuarios / E2-ACC scan; enriquecer DTO entradas (nombre evento).
 
-Specs (DOC-MS / US) en paralelo sin bloquear lectura de datos.
+Specs (DOC-MS / US / ARQ) en paralelo.
 
 ---
 
@@ -237,18 +240,19 @@ Specs (DOC-MS / US) en paralelo sin bloquear lectura de datos.
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03 | E2-UI-01 (mock) | E2-UI-02 |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-03 | E2-UI-01/02 demock selectivo auth+eve+ven+ent | mock residual gestión/usuarios admin, E2-ACC |
 | Docs por msvc (specs) | — | — | Todo DOC-MS-* |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
-| Redis conf ventas | INF-10 (redis.conf) | — | E1-VEN-08 cable código |
-| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US |
-| Código de negocio E1/E2 | stack + E1-EVE-04 GETs + **gateway rutas/CORS** | — | **siguiente: smoke catálogo** o E1-VEN / E1-USU-01 |
-| Testing / Postman / README | README raíz + Backend + FE | — | INF-17, tests BE |
+| Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
+| Auth / gateway | E1-GW-01/02/03, API-05, E1-USU-01, E2-SEC-01 | — | E2-SEC-02 RBAC fino por endpoint |
+| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
+| Código de negocio E1 | E1-EVE-04; **E1-VEN-02…08**; **E1-ENT-02…05** | — | E1-EVE write; E2-ACC validaciones |
+| Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
 
-**Lectura (actualizada):**  
-- **Hecho:** monorepo, compose full (apps+DBs+gateway+FE), init MySQL/Mongo, JPA validate, Redis conf, FE Docker :3000.  
-- **Front** mock por defecto; paths alineados al back.  
-- **No cablear FE real aún sin stack:** hace falta gateway :8080 + msvc-eventos :8082 (+ DB). Rutas/CORS listos.  
-- **Próximo paso:** smoke `GET :8080/api/eventos` y opcional mock-off catálogo; o E1-VEN / E1-USU-01.
+**Lectura (2026-11-06, post E1-ENT):**  
+- **Hecho E1 core:** eventos GET, JWT, ventas (reserva→pago), **entradas QR + devoluciones 72h + reintegro-cancelación**.  
+- **FE demock:** auth/eventos/compras/entradas (`VITE_USE_MOCK_*=false`). Checkout → emisión → mis-entradas.  
+- **Gap E1:** eventos write (org), tests/Postman; E2-ACC validación puerta.  
+- **Próximo:** E1-EVE write **o** E1-TST/Postman **o** E2-ACC.  

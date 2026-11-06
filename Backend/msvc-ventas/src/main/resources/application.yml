@@ -20,3 +20,14 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6380}
+
+# msvc-eventos / msvc-entradas (Feign). Docker: http://ms-*:port
+ticketya:
+  uri:
+    eventos: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+    entradas: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
+  ventas:
+    reserva-ttl-minutes: ${TICKETYA_RESERVA_TTL_MINUTES:10}
+    max-entradas-cliente-evento: ${TICKETYA_MAX_ENTRADAS:6}
+    idempotency-ttl-hours: 24
+    expire-job-ms: 30000

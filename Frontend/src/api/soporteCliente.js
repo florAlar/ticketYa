@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK } from './config'
+import { USE_MOCK, USE_MOCK_ENTRADAS } from './config'
 import { getByIdForCliente } from './mock/entradasStore'
 import {
   insertDevolucion,
@@ -22,7 +22,7 @@ export async function listMisSolicitudes(user, opts = {}) {
     err.status = 401
     throw err
   }
-  if (USE_MOCK) {
+  if (USE_MOCK_ENTRADAS) {
     await delay()
     return listDevolucionesByCliente(user.id)
   }
@@ -44,7 +44,7 @@ export async function crearSolicitudEntrada(
     throw err
   }
 
-  if (USE_MOCK) {
+  if (USE_MOCK_ENTRADAS) {
     await delay(350)
     const entrada = getByIdForCliente(idEntrada, user.id)
     if (!entrada) {
@@ -90,7 +90,6 @@ export async function crearSolicitudEntrada(
     method: 'POST',
     token: opts.token,
     body: JSON.stringify({
-      tipo: tipo || DEVOLUCION_TIPOS.DEVOLUCION,
       motivo,
     }),
   })
@@ -107,7 +106,7 @@ export async function listSolicitudesEntrada(entradaId, user, opts = {}) {
     err.status = 401
     throw err
   }
-  if (USE_MOCK) {
+  if (USE_MOCK_ENTRADAS) {
     await delay(120)
     const entrada = getByIdForCliente(entradaId, user.id)
     if (!entrada) {
@@ -125,7 +124,7 @@ export async function listSolicitudesEntrada(entradaId, user, opts = {}) {
 
 /** GET /api/devoluciones/{id} */
 export async function getDevolucion(id, opts = {}) {
-  if (USE_MOCK) {
+  if (USE_MOCK_ENTRADAS) {
     const err = new Error('getDevolucion: usar listados mock')
     err.status = 501
     throw err

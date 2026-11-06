@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import { getEvento } from '../../api/eventos'
+import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
 import { comprarEntrada } from '../../api/ventasCliente'
+import { USE_MOCK_COMPRAS } from '../../api/config'
 import {
   formatEventoFecha,
   formatPrecioDesde,
@@ -11,7 +12,8 @@ import './CheckoutPage.css'
 
 /**
  * Compra 1 tipo de entrada (sector) — sin carrito.
- * Paso mock Mercado Pago → emite entrada → /mis-entradas.
+ * Mock: Mercado Pago ficticio + entrada local.
+ * Real: reserva → compra → pago mock BE (sin QR aún).
  */
 const CheckoutPage = () => {
   const { eventoId } = useParams()
@@ -21,23 +23,34 @@ const CheckoutPage = () => {
   const navigate = useNavigate()
 
   const [evento, setEvento] = useState(null)
+  const [disponibilidad, setDisponibilidad] = useState(null)
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
   const [paying, setPaying] = useState(false)
   const [mpPreview, setMpPreview] = useState(null)
+  const [success, setSuccess] = useState(null)
 
   const load = useCallback(async () => {
     setStatus('loading')
     setError('')
+    setSuccess(null)
     try {
       const data = await getEvento(eventoId)
       setEvento(data)
+      if (!USE_MOCK_COMPRAS) {
+        try {
+          const disp = await getDisponibilidadEvento(eventoId, { token })
+          setDisponibilidad(disp)
+        } catch {
+          setDisponibilidad(null)
+        }
+      }
       setStatus('ok')
     } catch (err) {
       setError(err.message || 'No se pudo cargar')
       setStatus('error')
     }
-  }, [eventoId])
+  }, [eventoId, token])
 
   useEffect(() => {
     load()
@@ -53,31 +66,56 @@ const CheckoutPage = () => {
     )
   }, [evento, sectorParam])
 
-  const onPagarMock = async () => {
+  const cupoSector = useMemo(() => {
+    if (!disponibilidad?.sectores || !sector) return null
+    return disponibilidad.sectores.find((c) => c.idSector === sector.id) || null
+  }, [disponibilidad, sector])
+
+  const onPagar = async () => {
     if (!isAuthenticated || !sector) return
     setPaying(true)
     setError('')
     setMpPreview(null)
+    setSuccess(null)
     try {
-      // 1) Mostrar link ficticio MP
-      const preferenciaId = `mp_pref_mock_${Date.now()}`
-      const initPoint = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${preferenciaId}`
-      setMpPreview({ preferenciaId, initPoint })
+      if (USE_MOCK_COMPRAS) {
+        const preferenciaId = `mp_pref_mock_${Date.now()}`
+        const initPoint = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${preferenciaId}`
+        setMpPreview({ preferenciaId, initPoint })
+      }
 
-      // 2) Simular pago aprobado (sin carrito, 1 entrada)
       const result = await comprarEntrada(
         { idEvento: eventoId, idSector: sector.id },
         user,
-        { token }
+        { token, resultadoPago: 'APROBAR' }
       )
-      setMpPreview(result.mercadoPago || { preferenciaId, initPoint })
-      // 3) Ir a mis entradas
-      navigate(`/mis-entradas/${result.entrada.id}`, {
-        replace: true,
-        state: { bought: true },
+
+      if (result.entrada?.id) {
+        setMpPreview(result.mercadoPago || mpPreview)
+        navigate(`/mis-entradas/${result.entrada.id}`, {
+          replace: true,
+          state: { bought: true },
+        })
+        return
+      }
+
+      // gateway sin entrada aún (race emisión)
+      setSuccess({
+        compra: result.compra,
+        pago: result.pago,
+        mensaje: result.mercadoPago?.mensaje,
       })
+      setMpPreview(result.mercadoPago)
+      // refrescar cupo
+      try {
+        const disp = await getDisponibilidadEvento(eventoId, { token })
+        setDisponibilidad(disp)
+      } catch {
+        /* ignore */
+      }
     } catch (err) {
       setError(err.message || 'No se pudo completar la compra')
+    } finally {
       setPaying(false)
     }
   }
@@ -89,11 +127,44 @@ const CheckoutPage = () => {
       </p>
 
       <h1>Comprar entrada</h1>
+      {!USE_MOCK_COMPRAS && (
+        <p className="checkout-page__muted">
+          Modo gateway: reserva + compra + pago mock del backend (sin emisión QR
+          todavía).
+        </p>
+      )}
 
       {status === 'loading' && <p>Cargando…</p>}
       {error && <p className="checkout-page__error">{error}</p>}
 
-      {status === 'ok' && evento && sector && (
+      {success && (
+        <div className="checkout-card">
+          <h2>Compra {success.compra?.estado || 'OK'}</h2>
+          <p>
+            <strong>Id compra:</strong> {success.compra?.id}
+          </p>
+          <p>
+            <strong>Total:</strong> {formatPrecioDesde(success.compra?.total)}
+          </p>
+          <p>
+            <strong>Pago:</strong> {success.pago?.estado}{' '}
+            {success.pago?.idTransaccionExterna
+              ? `(${success.pago.idTransaccionExterna})`
+              : ''}
+          </p>
+          {success.mensaje && (
+            <p className="checkout-page__muted">{success.mensaje}</p>
+          )}
+          <p className="checkout-page__muted">
+            Mis entradas / QR siguen en mock o E1-ENT pendiente.
+          </p>
+          <p>
+            <Link to="/eventos">Seguir mirando eventos</Link>
+          </p>
+        </div>
+      )}
+
+      {status === 'ok' && evento && sector && !success && (
         <div className="checkout-card">
           <h2>{evento.nombre}</h2>
           <p className="checkout-page__muted">
@@ -108,16 +179,29 @@ const CheckoutPage = () => {
             <p>
               <strong>Precio:</strong> {formatPrecioDesde(sector.precio)}
             </p>
+            {cupoSector && (
+              <p className="checkout-page__muted">
+                Disponibles: {cupoSector.cantidadDisponible} /{' '}
+                {cupoSector.capacidadTotal} (vendidas{' '}
+                {cupoSector.cantidadVendida}, reservadas{' '}
+                {cupoSector.cantidadReservada})
+              </p>
+            )}
             <p className="checkout-page__muted">
               Sin carrito: una entrada por compra.
             </p>
           </div>
 
           <div className="checkout-mp">
-            <p className="checkout-mp__label">Pago (mock Mercado Pago)</p>
+            <p className="checkout-mp__label">
+              {USE_MOCK_COMPRAS
+                ? 'Pago (mock Mercado Pago local)'
+                : 'Pago (pasarela mock del BE)'}
+            </p>
             <p className="checkout-page__muted">
-              Link ficticio de checkout. No hay cobro real; al confirmar se
-              acredita la entrada en tu cuenta.
+              {USE_MOCK_COMPRAS
+                ? 'Link ficticio de checkout. No hay cobro real; al confirmar se acredita la entrada en tu cuenta (LS).'
+                : 'Se crea reserva TTL, compra con Idempotency-Key y pago APROBAR en msvc-ventas. No hay cobro real ni QR aún.'}
             </p>
             {mpPreview?.initPoint && (
               <p className="checkout-mp__link">
@@ -137,13 +221,28 @@ const CheckoutPage = () => {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={paying}
-            onClick={onPagarMock}
+            disabled={paying || !isAuthenticated}
+            onClick={onPagar}
           >
             {paying
-              ? 'Procesando pago mock…'
-              : 'Pagar con Mercado Pago (mock)'}
+              ? 'Procesando…'
+              : USE_MOCK_COMPRAS
+                ? 'Pagar con Mercado Pago (mock)'
+                : 'Confirmar compra (gateway)'}
           </button>
+          {!isAuthenticated && (
+            <p className="checkout-page__muted">
+              Tenés que{' '}
+              <Link
+                to={`/login?next=${encodeURIComponent(
+                  `/eventos/${eventoId}/comprar?sector=${sector.id}`
+                )}`}
+              >
+                iniciar sesión
+              </Link>
+              .
+            </p>
+          )}
         </div>
       )}
 

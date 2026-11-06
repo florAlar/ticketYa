@@ -1,13 +1,140 @@
 package ventas.controller;
 
+import jakarta.validation.Valid;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import ventas.dto.CompraCreateRequestDTO;
+import ventas.dto.CompraResponseDTO;
+import ventas.dto.DisponibilidadResponseDTO;
+import ventas.dto.PagoCreateRequestDTO;
+import ventas.dto.PagoResponseDTO;
+import ventas.dto.ReservaCreateRequestDTO;
+import ventas.dto.ReservaResponseDTO;
+import ventas.exception.UnauthorizedException;
+import ventas.service.VentaService;
 
+/**
+ * API E1 ventas (paths internos post StripPrefix /api).
+ * Identidad: header X-User-Id del gateway.
+ */
 @RestController
 public class VentaController {
 
+    private final VentaService ventaService;
+
+    public VentaController(VentaService ventaService) {
+        this.ventaService = ventaService;
+    }
+
+    /** Smoke infra. */
     @GetMapping("/")
     public String ok() {
         return "microservicio ventas ok!";
+    }
+
+    // --- disponibilidad (público vía GW) ---
+
+    @GetMapping("/eventos/{id}/disponibilidad")
+    public DisponibilidadResponseDTO disponibilidad(@PathVariable("id") String idEvento) {
+        return ventaService.disponibilidad(idEvento);
+    }
+
+    // --- reservas ---
+
+    @PostMapping("/reservas")
+    public ResponseEntity<ReservaResponseDTO> crearReserva(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody ReservaCreateRequestDTO body) {
+        ReservaResponseDTO created = ventaService.crearReserva(requireUser(userId), body, idempotencyKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @GetMapping("/reservas/{id}")
+    public ReservaResponseDTO getReserva(
+            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
+        return ventaService.obtenerReserva(requireUser(userId), id);
+    }
+
+    @PostMapping("/reservas/{id}/confirmacion")
+    public ReservaResponseDTO confirmar(
+            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
+        return ventaService.confirmarReserva(requireUser(userId), id);
+    }
+
+    @PostMapping("/reservas/{id}/cancelacion")
+    public ReservaResponseDTO cancelar(
+            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
+        return ventaService.cancelarReserva(requireUser(userId), id);
+    }
+
+    @PostMapping("/reservas/{id}/renovacion")
+    public ReservaResponseDTO renovar(
+            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
+        return ventaService.renovarReserva(requireUser(userId), id);
+    }
+
+    // --- compras ---
+
+    @PostMapping("/compras")
+    public ResponseEntity<CompraResponseDTO> crearCompra(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @Valid @RequestBody CompraCreateRequestDTO body) {
+        CompraResponseDTO created = ventaService.crearCompra(requireUser(userId), body, idempotencyKey);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @GetMapping("/compras/{id}")
+    public CompraResponseDTO getCompra(
+            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
+        return ventaService.obtenerCompra(requireUser(userId), id);
+    }
+
+    @GetMapping("/compras")
+    public List<CompraResponseDTO> listCompras(
+            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        return ventaService.listarCompras(requireUser(userId));
+    }
+
+    @PostMapping("/compras/{id}/pagos")
+    public ResponseEntity<PagoResponseDTO> pagar(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @PathVariable String id,
+            @RequestBody(required = false) PagoCreateRequestDTO body) {
+        PagoResponseDTO pago =
+                ventaService.iniciarPago(requireUser(userId), id, body != null ? body : new PagoCreateRequestDTO(null, null));
+        return ResponseEntity.status(HttpStatus.CREATED).body(pago);
+    }
+
+    @GetMapping("/compras/{id}/pagos")
+    public List<PagoResponseDTO> listPagos(
+            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
+        return ventaService.listarPagos(requireUser(userId), id);
+    }
+
+    // --- pagos ---
+
+    @PostMapping("/pagos/{id}/reintentos")
+    public PagoResponseDTO reintentar(
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @PathVariable String id,
+            @RequestBody(required = false) PagoCreateRequestDTO body) {
+        return ventaService.reintentarPago(
+                requireUser(userId), id, body != null ? body : new PagoCreateRequestDTO(null, null));
+    }
+
+    private static String requireUser(String userId) {
+        if (userId == null || userId.isBlank()) {
+            throw new UnauthorizedException("Falta identidad (X-User-Id). ¿Pasó por el gateway con JWT?");
+        }
+        return userId.trim();
     }
 }

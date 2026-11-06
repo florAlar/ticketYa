@@ -140,7 +140,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if ("GET".equalsIgnoreCase(method)
                 && (path.equals("/api/recomendaciones")
                         || path.startsWith("/api/recomendaciones/")
-                        || path.matches("/api/eventos/[^/]+/recomendaciones"))) {
+                        || path.matches("/api/eventos/[^/]+/recomendaciones")
+                        || path.matches("/api/eventos/[^/]+/disponibilidad"))) {
             return true;
         }
         return false;

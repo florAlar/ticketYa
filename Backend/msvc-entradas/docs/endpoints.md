@@ -3,37 +3,35 @@
 Copia de referencia para este microservicio.
 **Fuente canónica (no borrar):** `Backend/docs/endpoints.md`
 
-Paths públicos vía gateway: prefijo `/api`. Abajo se listan como en el global.
+Paths internos (sin `/api`; GW StripPrefix=1).
 
 ---
 
-## entradas — emisión, QR, validación, devoluciones
+## Estado E1 (2026-11-06)
 
-Servicio: msvc-entradas | Prefijos: /entradas, /devoluciones + /eventos/{idEvento}/validaciones
+| Endpoint | Estado | Notas |
+| --- | --- | --- |
+| POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario}]}`. Idempotente por idCompra. Llamado por msvc-ventas Feign post-pago. |
+| GET /entradas | **hecho** | Propias (`X-User-Id`) |
+| GET /entradas/{id} | **hecho** | Dueño |
+| GET /entradas/{id}/qr | **hecho** | Dueño; no si DEVUELTA/A_REINTEGRAR |
+| POST /entradas/{id}/devoluciones | **hecho** | 72h desde emisión; solo VENDIDA no usada |
+| GET /devoluciones | **hecho** | Cliente: propias; ADMIN: pendientes |
+| GET /devoluciones/{id} | **hecho** | |
+| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA (reintegro mock) |
+| POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05 contrato; ADMIN; VENDIDA→A_REINTEGRAR |
+| POST /eventos/{id}/validaciones | pendiente | E2-ACC |
 
-### Entradas y validación
+### Estados entrada
+`VENDIDA` | `USADA` | `DEVUELTA` | `A_REINTEGRAR`
 
-- GET /entradas — Listar entradas propias (CLIENTE)
-- GET /entradas/{id} — Consultar entrada propia
-- GET /entradas/{id}/qr — Obtener QR de la entrada
-- POST /eventos/{idEvento}/validaciones — Validar QR en ingreso (PERSONAL_ACCESO; atómica)
-- GET /eventos/{idEvento}/validaciones — Consultar validaciones del evento (ORGANIZADOR/ADMIN)
+### Emisión
+QR: `QR-` + 16 hex. UK `codigo_qr`.
 
-### Devoluciones
+### Config
+`ticketya.entradas.plazo-devolucion-horas` (72)
 
-- POST /entradas/{id}/devoluciones — Solicitar devolución (CLIENTE; p.ej. plazo 72h, no usada)
-- GET /devoluciones/{id} — Consultar solicitud propia
-- GET /devoluciones — Listar solicitudes pendientes (ADMIN)
-- POST /devoluciones/{id}/aprobacion — Aprobar devolución + reintegro (ADMIN)
-- POST /devoluciones/{id}/rechazo — Rechazar devolución (ADMIN)
-
-### Enrutamiento gateway (relacionado)
-
-- /entradas/** → msvc-entradas
-- /devoluciones/** → msvc-entradas
-- /eventos/{idEvento}/validaciones → msvc-entradas (antes del catch-all de eventos)
-
-### Notas del global
-
-- Rol PERSONAL_ACCESO: valida entradas y registra ingresos.
-- Cancelación de evento (PATCH estado en msvc-eventos) dispara reintegros/notifs que impactan este contexto.
+### Shape FE
+```json
+{ "id", "codigoQR", "idCompra", "idCliente", "idEvento", "idSector", "estado", "fechaEmision", "fechaIngreso", "precio" }
+```
