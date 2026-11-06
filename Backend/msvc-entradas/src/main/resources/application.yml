@@ -1,2 +1,18 @@
 server:
   port: 8084
+
+spring:
+  application:
+    name: msvc-entradas
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3310/entradas}
+    username: ${SPRING_DATASOURCE_USERNAME:ticketya}
+    password: ${SPRING_DATASOURCE_PASSWORD:ticketya_dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC

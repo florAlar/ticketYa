@@ -23,6 +23,7 @@ services:
       - "27018:27017"
     volumes:
       - preferencias_data:/data/db
+      - ../infrastructure/mongodb/preferencias:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 5s

@@ -1,12 +1,20 @@
 esta carpeta existe para centralizar la inicializacion de las DB y carga inicial de datos, de esta manera queda desacoplada la infraestructura de la funcionalidad de cada ms.
 Archivo	Responsabilidad
-mysql/usuarios/init.sql	Datos iniciales o estructuras SQL de usuarios.
-mysql/eventos/init.sql	Datos iniciales o estructuras SQL de eventos.
-mysql/ventas/init.sql	Datos iniciales o estructuras SQL de ventas.
-mysql/entradas/init.sql	Datos iniciales o estructuras SQL de entradas.
-mongodb/preferencias/init.js	Inicialización de colecciones e índices.
-redis/ventas/redis.conf	Configuración del servidor Redis.
+mysql/usuarios/init.sql	Schema + seed mínimo usuarios (rol, usuario, usuario_rol).
+mysql/eventos/init.sql	Schema + seed mínimo eventos (lugar, sector, asiento, evento, precios).
+mysql/ventas/init.sql	Schema + seed mínimo ventas (reserva, detalle, compra, pago, cupo).
+mysql/entradas/init.sql	Schema + seed mínimo entradas (entrada, devolucion, validacion_acceso).
+mysql/notificaciones/init.sql	Schema + seed mínimo notificaciones (plantilla; tablas notif/intento).
+mysql/README.md	Mapa de UUIDs seed y notas de montaje.
+mongodb/preferencias/init.js	Colecciones + índices + seed mínimo preferencias (según modelo-mongodb.md).
+mongodb/README.md	Notas de montaje Mongo.
+redis/ventas/redis.conf	Conf Redis ventas (AOF, maxmemory).
+redis/README.md	Notas de montaje Redis.
+nginx/nginx.conf	SPA + proxy `/api/` → `ms-gateway`.
 
+Los `init.sql` se montan en cada `db-mysql-*` vía `docker-entrypoint-initdb.d` (solo primer arranque del volumen). No hay DataLoader Java por microservicio.
+El `init.js` de Mongo se monta igual en `db-mongo-preferencias` (`docker-entrypoint-initdb.d`, solo primer arranque).
+El `redis.conf` se monta en `db-redis-ventas` y se arranca con `redis-server /usr/local/etc/redis/redis.conf`.
 
 ## Integración del frontend y Nginx
 

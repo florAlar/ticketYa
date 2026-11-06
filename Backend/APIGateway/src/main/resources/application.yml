@@ -1,2 +1,197 @@
 server:
   port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          # Prefijo externo /api → strip 1 → path interno del msvc (/eventos, /auth, …)
+          # URIs: localhost en host; en Docker override TICKETYA_URI_* → http://ms-*:port
+          routes:
+            # --- excepciones /eventos/** (antes del catch-all eventos) ---
+            - id: eventos-disponibilidad-ventas
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 10
+              predicates:
+                - Path=/api/eventos/*/disponibilidad
+              filters:
+                - StripPrefix=1
+
+            - id: eventos-fila-ventas
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 11
+              predicates:
+                - Path=/api/eventos/*/fila/**
+              filters:
+                - StripPrefix=1
+
+            - id: eventos-validaciones-entradas
+              uri: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
+              order: 12
+              predicates:
+                - Path=/api/eventos/*/validaciones
+              filters:
+                - StripPrefix=1
+
+            - id: eventos-recomendaciones-preferencias
+              uri: ${TICKETYA_URI_PREFERENCIAS:http://localhost:8085}
+              order: 13
+              predicates:
+                - Path=/api/eventos/*/recomendaciones
+              filters:
+                - StripPrefix=1
+
+            # --- msvc-eventos (catálogo y resto /eventos) ---
+            - id: eventos
+              uri: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+              order: 20
+              predicates:
+                - Path=/api/eventos,/api/eventos/**
+              filters:
+                - StripPrefix=1
+
+            - id: lugares
+              uri: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+              order: 21
+              predicates:
+                - Path=/api/lugares,/api/lugares/**
+              filters:
+                - StripPrefix=1
+
+            - id: sectores
+              uri: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+              order: 22
+              predicates:
+                - Path=/api/sectores,/api/sectores/**
+              filters:
+                - StripPrefix=1
+
+            - id: participantes
+              uri: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+              order: 23
+              predicates:
+                - Path=/api/participantes,/api/participantes/**
+              filters:
+                - StripPrefix=1
+
+            - id: organizadores
+              uri: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+              order: 24
+              predicates:
+                - Path=/api/organizadores,/api/organizadores/**
+              filters:
+                - StripPrefix=1
+
+            # --- msvc-usuarios ---
+            - id: auth
+              uri: ${TICKETYA_URI_USUARIOS:http://localhost:8081}
+              order: 30
+              predicates:
+                - Path=/api/auth,/api/auth/**
+              filters:
+                - StripPrefix=1
+
+            - id: usuarios
+              uri: ${TICKETYA_URI_USUARIOS:http://localhost:8081}
+              order: 31
+              predicates:
+                - Path=/api/usuarios,/api/usuarios/**
+              filters:
+                - StripPrefix=1
+
+            # --- msvc-ventas ---
+            - id: reservas
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 40
+              predicates:
+                - Path=/api/reservas,/api/reservas/**
+              filters:
+                - StripPrefix=1
+
+            - id: compras
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 41
+              predicates:
+                - Path=/api/compras,/api/compras/**
+              filters:
+                - StripPrefix=1
+
+            - id: pagos
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 42
+              predicates:
+                - Path=/api/pagos,/api/pagos/**
+              filters:
+                - StripPrefix=1
+
+            - id: reportes
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 43
+              predicates:
+                - Path=/api/reportes,/api/reportes/**
+              filters:
+                - StripPrefix=1
+
+            # --- msvc-entradas ---
+            - id: entradas
+              uri: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
+              order: 50
+              predicates:
+                - Path=/api/entradas,/api/entradas/**
+              filters:
+                - StripPrefix=1
+
+            - id: devoluciones
+              uri: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
+              order: 51
+              predicates:
+                - Path=/api/devoluciones,/api/devoluciones/**
+              filters:
+                - StripPrefix=1
+
+            # --- msvc-preferencias ---
+            - id: preferencias
+              uri: ${TICKETYA_URI_PREFERENCIAS:http://localhost:8085}
+              order: 60
+              predicates:
+                - Path=/api/preferencias,/api/preferencias/**
+              filters:
+                - StripPrefix=1
+
+            - id: recomendaciones
+              uri: ${TICKETYA_URI_PREFERENCIAS:http://localhost:8085}
+              order: 61
+              predicates:
+                - Path=/api/recomendaciones,/api/recomendaciones/**
+              filters:
+                - StripPrefix=1
+
+            - id: clientes-preferencias
+              uri: ${TICKETYA_URI_PREFERENCIAS:http://localhost:8085}
+              order: 62
+              predicates:
+                - Path=/api/clientes,/api/clientes/**
+              filters:
+                - StripPrefix=1
+
+            # --- msvc-notificaciones ---
+            - id: notificaciones
+              uri: ${TICKETYA_URI_NOTIFICACIONES:http://localhost:8086}
+              order: 70
+              predicates:
+                - Path=/api/notificaciones,/api/notificaciones/**
+              filters:
+                - StripPrefix=1
+
+# Orígenes FE (E1-GW-03). Override: TICKETYA_CORS_ORIGINS=http://a,http://b
+ticketya:
+  cors:
+    allowed-origins: ${TICKETYA_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000}
+
+# JWT — misma secret que msvc-usuarios al emitir tokens (E2-SEC / emisión E1 liviana)
+# Mín. 32 chars (HS256). Override: JWT_SECRET
+jwt:
+  secret: ${JWT_SECRET:ticketya-dev-jwt-secret-change-me-32b}

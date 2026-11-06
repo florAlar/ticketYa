@@ -1,0 +1,10 @@
+.home-hero {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Separación suave entre hero y secciones de eventos */
+.home-page .event-section:first-of-type {
+  padding-top: 1.75rem;
+}

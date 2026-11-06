@@ -1,0 +1,213 @@
+/* Mismo aire bajo header que eventos/soporte */
+.gestion-page {
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  /* section-v-padding ya da el ritmo; refuerzo si falta la clase */
+  padding-top: 2.25rem;
+  padding-bottom: 2.5rem;
+  box-sizing: border-box;
+}
+
+.gestion-page__head {
+  margin-bottom: 1.75rem;
+}
+
+.gestion-page__eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.gestion-page__eyebrow a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.gestion-page__title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.5rem, 2.5vw, 1.85rem);
+}
+
+.gestion-page__sub {
+  margin: 0;
+  color: var(--text-muted, #6b7280);
+}
+
+.gestion-page__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.gestion-card {
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.gestion-card h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.gestion-card p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.gestion-card__muted {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.88rem !important;
+}
+
+.gestion-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.gestion-card--ops {
+  border-color: color-mix(in srgb, var(--primary, #e91e8c) 35%, transparent);
+}
+
+.gestion-page__foot {
+  margin-top: 1.75rem;
+}
+
+.gestion-error {
+  color: #b91c1c;
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.gestion-event-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gestion-event-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+}
+
+.gestion-event-row__main h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.gestion-event-row__main p {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+}
+
+.gestion-event-row__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.gestion-form {
+  gap: 0.35rem;
+}
+
+.gestion-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.gestion-fieldset {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.85rem 1rem 0.5rem;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+}
+
+.gestion-fieldset legend {
+  padding: 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.gestion-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.35rem 0 0.75rem;
+}
+
+.gestion-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.gestion-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.gestion-preset-btn {
+  font-size: 0.85rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.gestion-sectores-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.gestion-sector-row {
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  background: var(--colors-surface, #f7f7fa);
+}
+
+.gestion-sector-row__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.acceso-scan {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 28rem;
+}
+
+.acceso-scan input {
+  width: 100%;
+}

@@ -88,6 +88,7 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 | ms-entradas | 8084 | 8084 |
 | ms-preferencias | 8085 | 8085 |
 | ms-notificaciones | 8086 | 8086 |
+| ms-frontend | 3000 | 80 |
 | db-mysql-usuarios | 3307 | 3306 |
 | db-mysql-eventos | 3308 | 3306 |
 | db-mysql-ventas | 3309 | 3306 |
@@ -117,6 +118,7 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 | Entradas | `http://localhost:8084` |
 | Preferencias | `http://localhost:8085` |
 | Notificaciones | `http://localhost:8086` |
+| Frontend (Nginx) | `http://localhost:3000` |
 | MySQL usuarios | `localhost:3307` |
 | MySQL eventos | `localhost:3308` |
 | MySQL ventas | `localhost:3309` |

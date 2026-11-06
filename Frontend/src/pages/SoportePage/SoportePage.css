@@ -1,0 +1,124 @@
+.soporte-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 2.25rem;
+  padding-bottom: 2.5rem;
+}
+
+.soporte-page__head h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.35rem;
+}
+
+.soporte-page__head p,
+.soporte-lead {
+  margin: 0;
+  color: var(--colors-textMuted, #7b7b7b);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  max-width: 40rem;
+}
+
+.soporte-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 720px) {
+  .soporte-page__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.soporte-card {
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
+  background: var(--colors-surface, #f7f7fa);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.soporte-card h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--colors-primary);
+}
+
+.soporte-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--colors-textSecondary, #4b4b4b);
+}
+
+.soporte-card__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--colors-textMuted, #7b7b7b);
+  line-height: 1.45;
+}
+
+.soporte-card__cta {
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  background: var(--colors-primary);
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.soporte-card__cta:hover {
+  filter: brightness(1.05);
+}
+
+.soporte-page__foot {
+  margin-top: 1.75rem;
+  font-size: 0.9rem;
+}
+
+.soporte-error {
+  color: #b91c1c;
+  margin: 0.5rem 0;
+}
+
+.soporte-ok {
+  color: #15803d;
+  margin: 0.5rem 0;
+}
+
+.soporte-page__foot a {
+  color: var(--colors-primary);
+}
+
+.soporte-back {
+  margin: 0 0 0.75rem;
+  font-size: 0.9rem;
+}
+
+.soporte-back a {
+  color: var(--colors-textMuted, #7b7b7b);
+  text-decoration: none;
+}
+
+.soporte-back a:hover {
+  color: var(--colors-primary);
+}
+
+.soporte-form {
+  margin-top: 1.25rem;
+  max-width: 28rem;
+}
+
+.soporte-form .btn {
+  margin-top: 0.5rem;
+}

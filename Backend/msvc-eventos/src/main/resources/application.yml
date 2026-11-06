@@ -1,2 +1,18 @@
 server:
   port: 8082
+
+spring:
+  application:
+    name: msvc-eventos
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3308/eventos}
+    username: ${SPRING_DATASOURCE_USERNAME:ticketya}
+    password: ${SPRING_DATASOURCE_PASSWORD:ticketya_dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC

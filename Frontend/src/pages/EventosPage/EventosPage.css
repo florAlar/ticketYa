@@ -1,0 +1,28 @@
+.eventos-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  /* extra aire bajo header (además de section-v-padding) */
+  padding-top: 2.25rem;
+  padding-bottom: 2.5rem;
+  min-height: 0;
+}
+
+.eventos-page__head {
+  margin-bottom: 1.5rem;
+}
+
+.eventos-page__title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--colors-text);
+}
+
+.eventos-page__sub {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: var(--colors-textMuted, #7b7b7b);
+}

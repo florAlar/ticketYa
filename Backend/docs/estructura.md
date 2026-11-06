@@ -23,19 +23,22 @@ TicketYa/
 │   │
 │   │   # Microservicios: un bounded context cada uno. Implementar dominio → aplicación → infraestructura → API.
 │   │   # Dentro de cada msvc, docs/ es para modelado DDD de ese contexto (agregados, ubícuo, eventos).
-│   │   # Capas Java (mismo criterio en todos; nombres varían entity/document según MySQL/Mongo):
+│   │   # Capas Java comunes (todos los msvc; NO el API Gateway):
 │   │   #   controller/  → adaptadores de entrada HTTP (no mete reglas de negocio).
 │   │   #   service/     → casos de uso / orquestación de dominio.
 │   │   #   repository/  → puertos de persistencia.
-│   │   #   entity|document/ → modelo persistido del contexto.
+│   │   #   entity|document/ → modelo persistido (entity=MySQL JPA; document=Mongo).
 │   │   #   dto/         → contratos de entrada/salida de la API.
+│   │   #   mapper/      → entity/document <-> DTO.
+│   │   #   clients/     → Feign clients hacia otros msvc (HTTP saliente).
+│   │   #   exception/   → excepciones y handlers del contexto.
 │   │   #   config/      → cableado Spring (beans, datasources).
 │   │   #   security/    → auth/autorización del msvc (si aplica).
 │   │   #   redis|queue/ → infra auxiliar del contexto (solo ventas hoy).
-│   │   # Orden de trabajo sugerido: docs DDD → entity/document + repository → service → controller → yml/compose.
+│   │   # Orden de trabajo sugerido: docs DDD → entity/document + repository → mapper/service → controller → clients.
 │   │
 │   ├── msvc-usuarios/                 # Identidad, registro, autenticación. MySQL.
-│   │   ├── src/main/java/usuarios/{controller,service,repository,entity,dto,security,config}/
+│   │   ├── src/main/java/usuarios/{controller,service,repository,entity,dto,mapper,clients,exception,security,config}/
 │   │   ├── src/main/resources/application.yml
 │   │   ├── src/test/
 │   │   ├── docs/
@@ -44,7 +47,7 @@ TicketYa/
 │   │   └── pom.xml
 │   │
 │   ├── msvc-eventos/                  # Catálogo y ciclo de vida de eventos. MySQL.
-│   │   ├── src/main/java/eventos/{controller,service,repository,entity,dto,config}/
+│   │   ├── src/main/java/eventos/{controller,service,repository,entity,dto,mapper,clients,exception,config}/
 │   │   ├── src/main/resources/application.yml
 │   │   ├── docs/
 │   │   ├── docker-compose.yml
@@ -52,7 +55,7 @@ TicketYa/
 │   │   └── pom.xml
 │   │
 │   ├── msvc-ventas/                   # Compra, fila virtual, stock temporal. MySQL + Redis.
-│   │   ├── src/main/java/ventas/{controller,service,repository,entity,dto,redis,queue,security,config}/
+│   │   ├── src/main/java/ventas/{controller,service,repository,entity,dto,mapper,clients,exception,redis,queue,security,config}/
 │   │   ├── src/main/resources/application.yml
 │   │   ├── docs/
 │   │   ├── docker-compose.yml
@@ -60,7 +63,7 @@ TicketYa/
 │   │   └── pom.xml
 │   │
 │   ├── msvc-entradas/                 # Emisión y estado de entradas. MySQL.
-│   │   ├── src/main/java/entradas/{controller,service,repository,entity,dto,config}/
+│   │   ├── src/main/java/entradas/{controller,service,repository,entity,dto,mapper,clients,exception,config}/
 │   │   ├── src/main/resources/application.yml
 │   │   ├── docs/
 │   │   ├── docker-compose.yml
@@ -68,7 +71,15 @@ TicketYa/
 │   │   └── pom.xml
 │   │
 │   ├── msvc-preferencias/             # Preferencias de usuario (documentos). MongoDB.
-│   │   ├── src/main/java/preferencias/{controller,service,repository,document,dto,config}/
+│   │   ├── src/main/java/preferencias/{controller,service,repository,document,dto,mapper,clients,exception,config}/
+│   │   ├── src/main/resources/application.yml
+│   │   ├── docs/
+│   │   ├── docker-compose.yml
+│   │   ├── Dockerfile
+│   │   └── pom.xml
+│   │
+│   ├── msvc-notificaciones/           # Plantillas e intentos de envío. MySQL.
+│   │   ├── src/main/java/notificaciones/{controller,service,repository,entity,dto,mapper,clients,exception}/
 │   │   ├── src/main/resources/application.yml
 │   │   ├── docs/
 │   │   ├── docker-compose.yml

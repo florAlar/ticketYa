@@ -30,6 +30,7 @@ services:
       - "3309:3306"
     volumes:
       - ventas_data:/var/lib/mysql
+      - ../infrastructure/mysql/ventas:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
@@ -39,10 +40,13 @@ services:
   db-redis-ventas:
     image: redis:7
     container_name: db-redis-ventas
+    restart: unless-stopped
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     ports:
       - "6380:6379"
     volumes:
       - ventas_redis_data:/data
+      - ../infrastructure/redis/ventas/redis.conf:/usr/local/etc/redis/redis.conf:ro
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

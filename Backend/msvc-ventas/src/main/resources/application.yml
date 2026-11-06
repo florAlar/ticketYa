@@ -1,2 +1,22 @@
 server:
   port: 8083
+
+spring:
+  application:
+    name: msvc-ventas
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3309/ventas}
+    username: ${SPRING_DATASOURCE_USERNAME:ticketya}
+    password: ${SPRING_DATASOURCE_PASSWORD:ticketya_dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6380}

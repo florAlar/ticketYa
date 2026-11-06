@@ -26,6 +26,7 @@ services:
       - "3311:3306"
     volumes:
       - notificaciones_data:/var/lib/mysql
+      - ../infrastructure/mysql/notificaciones:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s

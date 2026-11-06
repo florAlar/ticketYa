@@ -5,3 +5,12 @@ services:
     container_name: ms-gateway
     ports:
       - "8080:8080"
+    environment:
+      # DNS Compose entre contenedores (override de localhost del yml)
+      TICKETYA_URI_USUARIOS: http://ms-usuarios:8081
+      TICKETYA_URI_EVENTOS: http://ms-eventos:8082
+      TICKETYA_URI_VENTAS: http://ms-ventas:8083
+      TICKETYA_URI_ENTRADAS: http://ms-entradas:8084
+      TICKETYA_URI_PREFERENCIAS: http://ms-preferencias:8085
+      TICKETYA_URI_NOTIFICACIONES: http://ms-notificaciones:8086
+      TICKETYA_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000

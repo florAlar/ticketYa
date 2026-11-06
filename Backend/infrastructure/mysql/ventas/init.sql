@@ -1,0 +1,118 @@
+-- msvc-ventas | DB: ventas
+-- Schema + seed mínimo. id_cliente / id_evento / id_sector = refs lógicas (sin FK cross-DB).
+-- IDs fijos: infrastructure/mysql/README.md
+
+SET NAMES utf8mb4;
+SET time_zone = '+00:00';
+
+CREATE TABLE IF NOT EXISTS reserva (
+  id_reserva       CHAR(36)       NOT NULL,
+  id_cliente       CHAR(36)       NOT NULL COMMENT 'ref lógica usuarios.usuario',
+  id_evento        CHAR(36)       NOT NULL COMMENT 'ref lógica eventos.evento',
+  fecha_creacion   DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  fecha_expiracion DATETIME(3)    NOT NULL,
+  estado           VARCHAR(32)    NOT NULL,
+  total            DECIMAL(12, 2) NOT NULL DEFAULT 0,
+  PRIMARY KEY (id_reserva),
+  KEY ix_reserva_cliente (id_cliente),
+  KEY ix_reserva_evento (id_evento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS detalle_reserva (
+  id_detalle       CHAR(36)       NOT NULL,
+  id_reserva       CHAR(36)       NOT NULL,
+  id_sector        CHAR(36)       NOT NULL COMMENT 'ref lógica eventos.sector',
+  cantidad         INT            NOT NULL DEFAULT 1,
+  precio_unitario  DECIMAL(12, 2) NOT NULL,
+  PRIMARY KEY (id_detalle),
+  CONSTRAINT fk_detalle_reserva FOREIGN KEY (id_reserva) REFERENCES reserva (id_reserva)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS compra (
+  id_compra    CHAR(36)       NOT NULL,
+  id_reserva   CHAR(36)       NULL,
+  id_cliente   CHAR(36)       NOT NULL COMMENT 'ref lógica usuarios.usuario',
+  fecha_compra DATETIME(3)    NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  total        DECIMAL(12, 2) NOT NULL,
+  moneda       CHAR(3)        NOT NULL DEFAULT 'ARS',
+  estado       VARCHAR(32)    NOT NULL,
+  PRIMARY KEY (id_compra),
+  KEY ix_compra_cliente (id_cliente),
+  CONSTRAINT fk_compra_reserva FOREIGN KEY (id_reserva) REFERENCES reserva (id_reserva)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS pago (
+  id_pago                  CHAR(36)       NOT NULL,
+  id_compra                CHAR(36)       NOT NULL,
+  proveedor                VARCHAR(64)    NOT NULL,
+  id_transaccion_externa   VARCHAR(128)   NOT NULL,
+  monto                    DECIMAL(12, 2) NOT NULL,
+  estado                   VARCHAR(32)    NOT NULL,
+  fecha_pago               DATETIME(3)    NULL,
+  PRIMARY KEY (id_pago),
+  UNIQUE KEY uk_pago_tx_externa (id_transaccion_externa),
+  CONSTRAINT fk_pago_compra FOREIGN KEY (id_compra) REFERENCES compra (id_compra)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS cupo_sector (
+  id_cupo              CHAR(36) NOT NULL,
+  id_evento            CHAR(36) NOT NULL COMMENT 'ref lógica eventos.evento',
+  id_sector            CHAR(36) NOT NULL COMMENT 'ref lógica eventos.sector',
+  capacidad_total      INT      NOT NULL,
+  cantidad_disponible  INT      NOT NULL,
+  cantidad_reservada   INT      NOT NULL DEFAULT 0,
+  cantidad_vendida     INT      NOT NULL DEFAULT 0,
+  PRIMARY KEY (id_cupo),
+  UNIQUE KEY uk_cupo_evento_sector (id_evento, id_sector)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cupos alineados a sectores seed de eventos
+INSERT INTO cupo_sector (id_cupo, id_evento, id_sector, capacidad_total, cantidad_disponible, cantidad_reservada, cantidad_vendida) VALUES
+  ('f0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000011', 500, 499, 0, 1),
+  ('f0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000012', 120, 120, 0, 0),
+  ('f0000000-0000-4000-8000-000000000003', 'd0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000011', 500, 500, 0, 0),
+  ('f0000000-0000-4000-8000-000000000004', 'd0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000012', 120, 119, 0, 1),
+  ('f0000000-0000-4000-8000-000000000005', 'd0000000-0000-4000-8000-000000000003', 'c0000000-0000-4000-8000-000000000011', 500, 499, 0, 1)
+ON DUPLICATE KEY UPDATE cantidad_disponible = VALUES(cantidad_disponible);
+
+-- Compra aprobada cliente demo → evento indie (general)
+INSERT INTO reserva (id_reserva, id_cliente, id_evento, fecha_creacion, fecha_expiracion, estado, total) VALUES
+  ('f0000000-0000-4000-8000-000000000011', 'b0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001',
+   '2026-10-01 14:00:00.000', '2026-10-01 14:10:00.000', 'CONFIRMADA', 18000.00)
+ON DUPLICATE KEY UPDATE estado = VALUES(estado);
+
+INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio_unitario) VALUES
+  ('f0000000-0000-4000-8000-000000000012', 'f0000000-0000-4000-8000-000000000011',
+   'c0000000-0000-4000-8000-000000000011', 1, 18000.00)
+ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad);
+
+INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado) VALUES
+  ('f0000000-0000-4000-8000-000000000021', 'f0000000-0000-4000-8000-000000000011',
+   'b0000000-0000-4000-8000-000000000001', '2026-10-01 14:05:00.000', 18000.00, 'ARS', 'APROBADA')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado);
+
+INSERT INTO pago (id_pago, id_compra, proveedor, id_transaccion_externa, monto, estado, fecha_pago) VALUES
+  ('f0000000-0000-4000-8000-000000000031', 'f0000000-0000-4000-8000-000000000021',
+   'MERCADO_PAGO', 'mp_seed_tx_001', 18000.00, 'APROBADO', '2026-10-01 14:05:30.000')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado);
+
+-- Compra sobre evento cancelado (para escenario reintegro / entradas)
+INSERT INTO reserva (id_reserva, id_cliente, id_evento, fecha_creacion, fecha_expiracion, estado, total) VALUES
+  ('f0000000-0000-4000-8000-000000000041', 'b0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000003',
+   '2026-09-15 10:00:00.000', '2026-09-15 10:10:00.000', 'CONFIRMADA', 15000.00)
+ON DUPLICATE KEY UPDATE estado = VALUES(estado);
+
+INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio_unitario) VALUES
+  ('f0000000-0000-4000-8000-000000000042', 'f0000000-0000-4000-8000-000000000041',
+   'c0000000-0000-4000-8000-000000000011', 1, 15000.00)
+ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad);
+
+INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado) VALUES
+  ('f0000000-0000-4000-8000-000000000043', 'f0000000-0000-4000-8000-000000000041',
+   'b0000000-0000-4000-8000-000000000001', '2026-09-15 10:05:00.000', 15000.00, 'ARS', 'APROBADA')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado);
+
+INSERT INTO pago (id_pago, id_compra, proveedor, id_transaccion_externa, monto, estado, fecha_pago) VALUES
+  ('f0000000-0000-4000-8000-000000000044', 'f0000000-0000-4000-8000-000000000043',
+   'MERCADO_PAGO', 'mp_seed_tx_cancel_001', 15000.00, 'APROBADO', '2026-09-15 10:05:30.000')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado);

@@ -26,6 +26,7 @@ services:
       - "3307:3306"
     volumes:
       - usuarios_data:/var/lib/mysql
+      - ../infrastructure/mysql/usuarios:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s

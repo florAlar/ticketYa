@@ -1,5 +1,10 @@
 # Modelo de datos
 
+Modelo **relacional** (MySQL) de los microservicios transaccionales.
+Preferencias / historial de señales → MongoDB: ver [`modelo-mongodb.md`](./modelo-mongodb.md).
+
+En cada entidad, los atributos marcados **FK** son claves foráneas (lógicas o físicas según el msvc dueño).
+
 ```mermaid
 erDiagram
 direction TB
@@ -13,6 +18,7 @@ direction TB
     datetime fechaRegistro  ""  
     boolean activo  ""  
     }
+
 
 	USUARIO_ROL {
 		UUID idUsuario PK,FK ""  
@@ -48,7 +54,7 @@ int capacidadTotal  ""
 
 	SECTOR {
 		UUID id PK ""  
-		UUID idLugar  ""  
+		UUID idLugar FK ""  
 		string nombre  ""  
 		int capacidad  ""  
 		string tipo  "" 
@@ -57,8 +63,8 @@ int capacidadTotal  ""
 
 	PRECIO_SECTOR {
 		UUID id PK ""  
-		UUID idEvento  ""  
-		UUID idSector  ""  
+		UUID idEvento FK ""  
+		UUID idSector FK ""  
 		decimal precio  ""  
 		string moneda  ""  
 		boolean activo  ""  
@@ -66,8 +72,8 @@ int capacidadTotal  ""
 
 	RESERVA {
 		UUID idReserva PK ""  
-		UUID idCliente  ""  
-		UUID idEvento  ""  
+		UUID idCliente FK ""  
+		UUID idEvento FK ""  
 		datetime fechaCreacion  ""  
 		datetime fechaExpiracion  ""  
 		string estado  ""  
@@ -77,15 +83,15 @@ int capacidadTotal  ""
 	DETALLE_RESERVA {
 		UUID idDetalle PK ""  
 		UUID idReserva FK ""  
-		UUID idSector  ""  
+		UUID idSector FK ""  
 		int cantidad  ""  
 		decimal precioUnitario  ""  
 	}
 
 	COMPRA {
 		UUID idCompra PK ""  
-		UUID idReserva  ""  
-		UUID idCliente  ""  
+		UUID idReserva FK ""  
+		UUID idCliente FK ""  
 		datetime fechaCompra  ""  
 		decimal total  ""  
 		string moneda  ""  
@@ -94,7 +100,7 @@ int capacidadTotal  ""
 
 	PAGO {
 		UUID idPago PK ""  
-		UUID idCompra  ""  
+		UUID idCompra FK ""  
 		string proveedor  ""  
 		string idTransaccionExterna UK ""  
 		decimal monto  ""  
@@ -104,8 +110,8 @@ int capacidadTotal  ""
 
 	CUPO_SECTOR {
 		UUID idCupo PK ""  
-		UUID idEvento  ""  
-		UUID idSector  ""  
+		UUID idEvento FK ""  
+		UUID idSector FK ""  
 		int capacidadTotal  ""  
 		int cantidadDisponible  ""  
 		int cantidadReservada  ""  
@@ -114,10 +120,10 @@ int capacidadTotal  ""
 
 	ENTRADA {
 		UUID idEntrada PK ""  
-		UUID idCompra  ""  
-		UUID idCliente  ""  
-		UUID idEvento  ""  
-		UUID idSector  ""  
+		UUID idCompra FK ""  
+		UUID idCliente FK ""  
+		UUID idEvento FK ""  
+		UUID idSector FK ""  
 		string codigoQR UK ""  
 		string estado  ""  
 		datetime fechaEmision  ""  
@@ -126,7 +132,7 @@ int capacidadTotal  ""
 
 	DEVOLUCION {
 		UUID idDevolucion PK ""  
-		UUID idEntrada  ""  
+		UUID idEntrada FK ""  
 		string motivo  ""  
 		decimal monto  ""  
 		datetime fechaSolicitud  ""  
@@ -135,38 +141,18 @@ int capacidadTotal  ""
 
 	VALIDACION_ACCESO {
 		UUID idValidacion PK ""  
-		UUID idEntrada  ""  
-		UUID idPersonalAcceso  ""  
+		UUID idEntrada FK ""  
+		UUID idPersonalAcceso FK ""  
 		datetime fechaValidacion  ""  
 		string resultado  ""  
 		string dispositivo  ""  
 	}
 
-	PREFERENCIA_CLIENTE {
-		UUID id PK ""  
-		UUID idCliente  ""  
-		string categorias  ""  
-		string ciudades  ""  
-		decimal precioMinimo  ""  
-		decimal precioMaximo  ""  
-		string moneda  ""  
-		datetime fechaActualizacion  ""  
-	}
-
-	HISTORIAL_CLIENTE {
-		UUID id PK ""  
-		UUID idCliente  ""  
-		string eventosComprados  ""  
-		string eventosAsistidos  ""  
-		string categoriasFrecuentes  ""  
-		datetime ultimaActividad  ""  
-	}
-
 	NOTIFICACION {
 		UUID idNotificacion PK ""  
-		UUID idUsuario  ""  
-		UUID idEventoOrigen  ""  
-		UUID idPlantilla  ""  
+		UUID idUsuario FK ""  
+		UUID idEventoOrigen FK ""  
+		UUID idPlantilla FK ""  
 		string tipo  ""  
 		string canal  ""  
 		string asunto  ""  
@@ -178,7 +164,7 @@ int capacidadTotal  ""
 
 	INTENTO_ENVIO {
 		UUID idIntento PK ""  
-		UUID idNotificacion  ""  
+		UUID idNotificacion FK ""  
 		int numeroIntento  ""  
 		datetime fechaIntento  ""  
 		string resultado  ""  
@@ -196,14 +182,14 @@ int capacidadTotal  ""
 
 	EVENTO {
 		UUID id PK ""  
-		UUID idOrganizador  ""  
+		UUID idOrganizador FK ""  
 		string nombre  ""  
 		string descripcion  ""  
 		string tipo  ""  
 		datetime fechaInicio  ""  
 		datetime fechaFin  ""  
 		string estado  ""  
-		UUID idLugar  ""  
+		UUID idLugar FK ""  
 		datetime fechaPublicacion  ""
         boolean esAltaDemanda  
 	}
@@ -215,15 +201,28 @@ USUARIO||--o{USUARIO_ROL:"tiene"
 ROL||--o{USUARIO_ROL:"asignado"
 LUGAR||--o{SECTOR:"contiene"
 LUGAR||--o{EVENTO:"alberga"
+USUARIO||--o{EVENTO:"organiza"
 EVENTO||--o{PRECIO_SECTOR:"define"
 SECTOR||--o{PRECIO_SECTOR:"tarifado"
+USUARIO||--o{RESERVA:"reserva"
+EVENTO||--o{RESERVA:"sobre"
 RESERVA||--|{DETALLE_RESERVA:"contiene"
+SECTOR||--o{DETALLE_RESERVA:"en"
 RESERVA||--o|COMPRA:"genera"
+USUARIO||--o{COMPRA:"compra"
 COMPRA||--o{PAGO:"registra"
+EVENTO||--o{CUPO_SECTOR:"cupo"
+SECTOR||--o{CUPO_SECTOR:"cupo"
 CUPO_SECTOR||--o{DETALLE_RESERVA:"disponibilidad"
+COMPRA||--o{ENTRADA:"emite"
+USUARIO||--o{ENTRADA:"titular"
+EVENTO||--o{ENTRADA:"para"
+SECTOR||--o{ENTRADA:"sector"
 ENTRADA||--o{DEVOLUCION:"puede_tener"
 ENTRADA||--o{VALIDACION_ACCESO:"registra"
-PREFERENCIA_CLIENTE||--||HISTORIAL_CLIENTE:"complementa"
+USUARIO||--o{VALIDACION_ACCESO:"valida"
+USUARIO||--o{NOTIFICACION:"destinatario"
+EVENTO||--o{NOTIFICACION:"origen"
 NOTIFICACION||--o{INTENTO_ENVIO:"registra"
 PLANTILLA_NOTIFICACION||--o{NOTIFICACION:"utiliza"
 ```

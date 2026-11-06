@@ -1,0 +1,125 @@
+/* Toast demo — portal a body; por encima del footer de login */
+.demo-toast {
+  position: fixed;
+  z-index: 1200;
+  right: 1rem;
+  bottom: 1rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  border-radius: 12px;
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  pointer-events: auto;
+}
+
+.demo-toast__bar {
+  display: flex;
+  align-items: stretch;
+}
+
+.demo-toast__toggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border: none;
+  background: transparent;
+  color: #111;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.demo-toast__toggle:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.demo-toast__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--colors-primary, #e91e8c);
+  flex-shrink: 0;
+}
+
+.demo-toast__chev {
+  margin-left: auto;
+  opacity: 0.55;
+  font-size: 0.8rem;
+}
+
+.demo-toast__close {
+  flex-shrink: 0;
+  width: 2.4rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+  background: transparent;
+  color: #444;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.demo-toast__close:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111;
+}
+
+.demo-toast__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem 0.85rem 0.85rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: min(55vh, 18rem);
+  overflow: auto;
+}
+
+.demo-toast__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.demo-toast__role {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #444;
+}
+
+.demo-toast__creds {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111;
+  word-break: break-word;
+}
+
+.demo-toast__sep {
+  margin: 0 0.35rem;
+  color: #888;
+  font-weight: 400;
+}
+
+@media (max-width: 480px) {
+  .demo-toast {
+    right: 0.65rem;
+    bottom: 0.65rem;
+    left: 0.65rem;
+    max-width: none;
+  }
+}

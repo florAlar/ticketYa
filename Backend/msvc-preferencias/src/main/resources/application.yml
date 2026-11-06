@@ -1,2 +1,9 @@
 server:
   port: 8085
+
+spring:
+  application:
+    name: msvc-preferencias
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://ticketya:mongo_dev@localhost:27018/preferencias?authSource=admin}

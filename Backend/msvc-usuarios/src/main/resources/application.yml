@@ -1,2 +1,23 @@
 server:
   port: 8081
+
+spring:
+  application:
+    name: msvc-usuarios
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3307/usuarios}
+    username: ${SPRING_DATASOURCE_USERNAME:ticketya}
+    password: ${SPRING_DATASOURCE_PASSWORD:ticketya_dev}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+# Misma secret que APIGateway (jwt.secret / JWT_SECRET)
+jwt:
+  secret: ${JWT_SECRET:ticketya-dev-jwt-secret-change-me-32b}
+  expiration-ms: ${JWT_EXPIRATION_MS:3600000}

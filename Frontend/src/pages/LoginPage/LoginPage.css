@@ -1,0 +1,210 @@
+.auth-page {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  min-height: calc(100vh - var(--navbar-height, 72px));
+  padding: 2.5rem 1rem 3rem;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* Fondo full-bleed — assets locales 1920x720 */
+.auth-page__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-color: #0a0a0a;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover;
+  transform: none;
+}
+
+/* Velo liviano: se ve el público, el box lleva la legibilidad */
+.auth-page__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(8, 8, 12, 0.28);
+  pointer-events: none;
+}
+
+.auth-box {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 26rem;
+  padding: 2rem 1.75rem 1.75rem;
+  border-radius: 16px;
+  background: rgba(18, 18, 20, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+  color: #f3f3f3;
+  backdrop-filter: blur(10px);
+}
+
+.auth-box__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1.25rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  color: #fff;
+}
+
+.auth-box__star {
+  color: var(--colors-primary, #e91e8c);
+  font-size: 1.1rem;
+}
+
+.auth-box__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.auth-box__lead {
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  margin: 0 0 1.35rem;
+  padding: 0.3rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.auth-tabs button {
+  cursor: pointer;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.auth-tabs button:hover {
+  color: #fff;
+}
+
+.auth-tabs button.is-active {
+  background: var(--colors-primary, #e91e8c);
+  color: #fff;
+  font-weight: 600;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.auth-box .form-group {
+  margin-bottom: 0.95rem;
+}
+
+.auth-box .form-group label {
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.06em;
+}
+
+.auth-box .form-input,
+.auth-box .form-textarea {
+  background: #0e0e0e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f5f5f5;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+}
+
+.auth-box .form-input:focus,
+.auth-box .form-textarea:focus {
+  border-color: var(--colors-primary, #e91e8c);
+  background: #121212;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--colors-primary, #e91e8c) 28%, transparent);
+}
+
+.auth-box .form-input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.auth-box .form-input:disabled {
+  opacity: 0.6;
+}
+
+.auth-box .btn-primary {
+  margin-top: 0.35rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--colors-primary, #e91e8c);
+  color: #fff;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  padding: 0.85rem 1rem;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+.auth-box .btn-primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.auth-box .btn-primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.form-error {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: #ff8a8a;
+}
+
+.form-error-global {
+  margin: 0.35rem 0 0.85rem;
+  font-size: 0.88rem;
+  color: #ff8a8a;
+}
+
+.form-input.is-error {
+  border-color: #e55 !important;
+}
+
+.auth-box__hint {
+  margin: 1.15rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.auth-box__hint code {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+@media (max-width: 480px) {
+  .auth-box {
+    padding: 1.5rem 1.2rem 1.35rem;
+  }
+}
