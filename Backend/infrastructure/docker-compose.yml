@@ -5,3 +5,4 @@ include:
   - path: ../msvc-ventas/docker-compose.yml
   - path: ../msvc-entradas/docker-compose.yml
   - path: ../msvc-preferencias/docker-compose.yml
+  - path: ../msvc-notificaciones/docker-compose.yml

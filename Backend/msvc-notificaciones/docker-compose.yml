@@ -1,0 +1,36 @@
+services:
+
+  ms-notificaciones:
+    build: .
+    container_name: ms-notificaciones
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql-notificaciones:3306/notificaciones
+      SPRING_DATASOURCE_USERNAME: ticketya
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+    depends_on:
+      db-mysql-notificaciones:
+        condition: service_healthy
+
+  db-mysql-notificaciones:
+    image: mysql:8.4
+    container_name: db-mysql-notificaciones
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: notificaciones
+      MYSQL_USER: ticketya
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev}
+    ports:
+      - "3311:3306"
+    volumes:
+      - notificaciones_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  notificaciones_data:
