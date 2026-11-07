@@ -200,6 +200,14 @@ const GestionVentasPage = () => {
                   {d.motivo && <p>{d.motivo}</p>}
                 </div>
                 <div className="gestion-event-row__actions">
+                  {d.idEntrada && (
+                    <Link
+                      className="btn"
+                      to={`/gestion/entradas/${d.idEntrada}`}
+                    >
+                      Ver entrada
+                    </Link>
+                  )}
                   <GateButton
                     enabled={FEATURE.adminColaVentas}
                     type="button"
@@ -270,6 +278,9 @@ const GestionVentasPage = () => {
                         >
                           Marcar reintegro
                         </GateButton>
+                        <Link className="btn" to={`/gestion/entradas/${e.id}`}>
+                          Ver entrada
+                        </Link>
                       </div>
                     </li>
                   ))}

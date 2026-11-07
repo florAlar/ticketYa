@@ -112,8 +112,8 @@ public class EntradaServiceImpl implements EntradaService {
 
     @Override
     @Transactional(readOnly = true)
-    public EntradaResponseDTO obtenerMia(String idCliente, String idEntrada) {
-        Entrada e = requireMia(idCliente, idEntrada);
+    public EntradaResponseDTO obtener(String idCliente, String idEntrada, boolean admin) {
+        Entrada e = requireEntrada(idCliente, idEntrada, admin);
         EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(idEntrada));
         enriquecer(dto, fetchEventoCached(e.getIdEvento(), new HashMap<>()));
         return dto;
@@ -122,7 +122,7 @@ public class EntradaServiceImpl implements EntradaService {
     @Override
     @Transactional(readOnly = true)
     public QrResponseDTO qrMia(String idCliente, String idEntrada) {
-        Entrada e = requireMia(idCliente, idEntrada);
+        Entrada e = requireEntrada(idCliente, idEntrada, false);
         if (EST_DEVUELTA.equals(e.getEstado()) || EST_A_REINTEGRAR.equals(e.getEstado())) {
             throw new BusinessConflictException("Entrada no tiene QR activo (estado=" + e.getEstado() + ")");
         }
@@ -133,7 +133,7 @@ public class EntradaServiceImpl implements EntradaService {
     @Transactional
     public DevolucionResponseDTO solicitarDevolucion(
             String idCliente, String idEntrada, DevolucionCreateRequestDTO body) {
-        Entrada entrada = requireMia(idCliente, idEntrada);
+        Entrada entrada = requireEntrada(idCliente, idEntrada, false);
         if (!EST_VENDIDA.equals(entrada.getEstado())) {
             throw new BusinessConflictException("Solo entradas VENDIDA admiten devolución");
         }
@@ -235,11 +235,14 @@ public class EntradaServiceImpl implements EntradaService {
         return d;
     }
 
-    private Entrada requireMia(String idCliente, String idEntrada) {
+    private Entrada requireEntrada(String idCliente, String idEntrada, boolean admin) {
         Entrada e = entradaRepository
                 .findById(idEntrada)
                 .orElseThrow(() -> new ResourceNotFoundException("Entrada no encontrada: " + idEntrada));
-        if (!idCliente.equals(e.getIdCliente())) {
+        if (admin) {
+            return e;
+        }
+        if (idCliente == null || idCliente.isBlank() || !idCliente.equals(e.getIdCliente())) {
             throw new ResourceNotFoundException("Entrada no encontrada: " + idEntrada);
         }
         return e;

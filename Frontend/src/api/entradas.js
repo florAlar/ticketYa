@@ -69,7 +69,10 @@ export async function getEntrada(entradaId, user, opts = {}) {
 
   if (USE_MOCK_ENTRADAS) {
     await delay()
-    const found = getByIdForCliente(entradaId, user.id)
+    const isAdmin = String(user.rol || '').toUpperCase() === 'ADMIN'
+    const found = isAdmin
+      ? readEntradas().find((e) => String(e.id) === String(entradaId))
+      : getByIdForCliente(entradaId, user.id)
     if (!found) {
       const err = new Error('Entrada no encontrada')
       err.status = 404

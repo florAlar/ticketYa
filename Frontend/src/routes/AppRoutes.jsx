@@ -15,6 +15,7 @@ import GestionEventosPage from '../pages/GestionPage/GestionEventosPage'
 import GestionEventoNuevoPage from '../pages/GestionPage/GestionEventoNuevoPage'
 import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
 import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
+import GestionEntradaDetallePage from '../pages/GestionPage/GestionEntradaDetallePage'
 import AccesoPage from '../pages/AccesoPage/AccesoPage'
 import AccesoScanPage from '../pages/AccesoPage/AccesoScanPage'
 import ForbiddenPage from '../pages/ForbiddenPage/ForbiddenPage'
@@ -114,6 +115,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <GestionVentasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/entradas/:entradaId"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <GestionEntradaDetallePage />
           </ProtectedRoute>
         }
       />

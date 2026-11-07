@@ -13,7 +13,7 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 | --- | --- | --- |
 | POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario}]}`. Idempotente por idCompra. Llamado por msvc-ventas Feign post-pago. |
 | GET /entradas | **hecho** | Propias (`X-User-Id`). Enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos (best-effort). |
-| GET /entradas/{id} | **hecho** | Dueño + mismo enriquecimiento |
+| GET /entradas/{id} | **hecho** | Dueño **o ADMIN** (mismo método). Cliente: solo propias; ADMIN: cualquier id. |
 | GET /entradas/{id}/qr | **hecho** | Dueño; no si DEVUELTA/A_REINTEGRAR |
 | POST /entradas/{id}/devoluciones | **hecho** | 72h desde emisión; solo VENDIDA no usada |
 | GET /devoluciones | **hecho** | Cliente: propias; ADMIN: pendientes |

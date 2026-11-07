@@ -13,7 +13,11 @@ public interface EntradaService {
 
     List<EntradaResponseDTO> listarMias(String idCliente);
 
-    EntradaResponseDTO obtenerMia(String idCliente, String idEntrada);
+    /**
+     * Detalle por id: dueño (idCliente) o ADMIN (cualquier entrada).
+     * Un solo endpoint GET /entradas/{id}.
+     */
+    EntradaResponseDTO obtener(String idCliente, String idEntrada, boolean admin);
 
     QrResponseDTO qrMia(String idCliente, String idEntrada);
 

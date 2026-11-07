@@ -57,10 +57,19 @@ public class EntradaController {
         return entradaService.listarMias(requireUser(userId));
     }
 
+    /**
+     * GET /entradas/{id} — un solo método.
+     * Dueño (X-User-Id = idCliente) o ADMIN (cualquier id).
+     */
     @GetMapping("/entradas/{id}")
     public EntradaResponseDTO una(
-            @RequestHeader(value = "X-User-Id", required = false) String userId, @PathVariable String id) {
-        return entradaService.obtenerMia(requireUser(userId), id);
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @PathVariable String id) {
+        boolean admin = isAdmin(role);
+        // admin no exige ser dueño; cliente sí (id en header)
+        String cliente = admin ? (userId != null ? userId.trim() : "") : requireUser(userId);
+        return entradaService.obtener(cliente, id, admin);
     }
 
     @GetMapping("/entradas/{id}/qr")
