@@ -56,6 +56,28 @@ public class EventoMapper {
         return dto;
     }
 
+    public List<SectorEventoDTO> toSectoresPublic(List<PrecioSector> precios) {
+        return toSectores(precios);
+    }
+
+    public SectorEventoDTO toSectorDto(PrecioSector ps) {
+        return toSectores(List.of(ps)).stream().findFirst().orElse(null);
+    }
+
+    public SectorEventoDTO toSectorFromEntity(Sector s, BigDecimal precio, String moneda) {
+        SectorEventoDTO dto = new SectorEventoDTO();
+        if (s != null) {
+            dto.setId(s.getId());
+            dto.setNombre(s.getNombre());
+            dto.setTipo(s.getTipo());
+            dto.setCapacidad(s.getCapacidad());
+            dto.setEsNumerado(s.getEsNumerado());
+        }
+        dto.setPrecio(precio);
+        dto.setMoneda(moneda);
+        return dto;
+    }
+
     private static LugarResumenDTO toLugarResumen(Lugar lugar) {
         if (lugar == null) {
             return null;

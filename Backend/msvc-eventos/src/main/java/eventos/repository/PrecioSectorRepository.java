@@ -4,6 +4,7 @@ import eventos.entity.PrecioSector;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +36,16 @@ public interface PrecioSectorRepository extends JpaRepository<PrecioSector, Stri
             order by p.precio asc
             """)
     List<PrecioSector> findActivosByEventoId(@Param("eventoId") String eventoId);
+
+    @Query("""
+            select p from PrecioSector p
+            join fetch p.sector
+            where p.evento.id = :eventoId
+            order by p.sector.nombre asc
+            """)
+    List<PrecioSector> findAllByEventoId(@Param("eventoId") String eventoId);
+
+    Optional<PrecioSector> findByEventoIdAndSectorId(String eventoId, String sectorId);
+
+    List<PrecioSector> findByEventoId(String eventoId);
 }

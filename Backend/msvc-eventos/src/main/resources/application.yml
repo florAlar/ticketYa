@@ -16,3 +16,8 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+
+# msvc-entradas (Feign reintegro cancelación). Docker: http://ms-entradas:8084
+ticketya:
+  uri:
+    entradas: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}

@@ -44,7 +44,7 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 | INF-20 | Ingreso SPA cliente en `Frontend/`: React 19 + Vite + Router, `src/` (api/auth/pages/routes/domain/…), `package.json`, `.env.example` (`VITE_API_BASE_URL`, `VITE_USE_MOCK`) | Transversal | hecho | Copia del simulacro; `node_modules`/`dist` locales presentes. |
 | INF-21 | README de ejecución del front (`Frontend/README.md`) + scripts npm (`dev`/`build`/`lint`) | Transversal | hecho | No sustituye README raíz/Backend (INF-16). |
 | INF-22 | Contrato front documentado: `Frontend/docs/endpoints-front.md` + `endpoints-back.md` | Transversal | hecho | Paths front alineados al contrato back mandatorio. |
-| INF-23 | Facades `src/api/*` + capa mock LS (`VITE_USE_MOCK=true` por defecto) con misma forma de llamada que gateway | Transversal | hecho | Cable real (`USE_MOCK=false` + BE vivo) sigue pendiente (E2-UI-02). |
+| INF-23 | Facades `src/api/*` + capa mock LS (`VITE_USE_MOCK=true` por defecto) con misma forma de llamada que gateway | Transversal | hecho | Demock **selectivo** vía `VITE_USE_MOCK_AUTH/EVENTOS/COMPRAS/ENTRADAS=false`. Global mock sigue true (gestión admin usuarios, scan E2, etc.). |
 | INF-24 | Shell UI por roles (login/register, home, eventos, checkout, mis-entradas, soporte, gestión, acceso/scan, 404) | Transversal | hecho | Flujos con mock; varios paneles son shell hasta API real. |
 | INF-25 | `Dockerfile` multi-stage del Frontend + servicio en compose/nginx del monorepo | Transversal | hecho | `Frontend/Dockerfile` + `ms-frontend` :3000; conf nginx proxy `/api/` → `ms-gateway`. Include en `Backend/docker-compose.yml`. |
 | INF-27 | **Spring reconoce init.sql** (datasource + JPA validate + entidades/repos = schema) | E1 | hecho | 5 msvc MySQL: `ddl-auto=validate`, JDBC a `db-mysql-*`, entidades/repos al init, arranque OK + smoke `GET /`. Seeds solo init.sql. Verificado 2026-11-06. |
@@ -131,10 +131,10 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-EVE-00 | Datasource + JPA validate contra `eventos/init.sql` (parte de INF-27) | hecho | EMF OK; JDBC `db-mysql-eventos`. |
 | E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante si se agrega al schema) | hecho | 6 entidades + repos. Participante no está en init → no creado. |
-| E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | pendiente | |
-| E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | pendiente | |
-| E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | Controller→service→mapper→repo. Filtros tipo/ciudad/org/estado/fechas; orden fecha\|precio\|relevancia; page/size. Default estado PUBLICADO. precioDesde=min precio_sector activo. detalle+sectores. 404 handler. imagenUrl/destacado null/false (sin cols). Doc: `msvc-eventos/docs/endpoints.md`. Compile OK; smoke HTTP pendiente Docker. |
-| E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | pendiente | Cancelación debe poder disparar efectos hacia ventas/entradas/notifs. |
+| E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | hecho | GET/POST/PUT lugares; POST `/lugares/{id}/sectores`; PUT `/sectores/{id}`; GET asientos físicos (seed). Alta embebida también desde POST evento. |
+| E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion (nombre/fecha/lugar/≥1 precio). Body alineado form FE gestión. |
+| E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. Doc: `msvc-eventos/docs/endpoints.md`. |
+| E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | hecho | PATCH estado/fecha; GET `/organizadores/me/eventos`. CANCELADO → Feign reintegro entradas best-effort. ORG: SUSPENDIDO propios; resto ADMIN. |
 | E1-EVE-06 | Participantes y asociación a evento | pendiente | Hoy no están en init; sumar schema si se implementan. |
 
 ### 6.2 msvc-ventas
@@ -156,11 +156,11 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-ENT-00 | Datasource + JPA validate contra `entradas/init.sql` (INF-27) | hecho | EMF OK. |
-| E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. Seed intacto en init. |
-| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign desde ventas al aprobar pago. Idempotente por idCompra. |
-| E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. Doc msvc. |
-| E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde emisión; ADMIN aprueba→DEVUELTA. Cupo ventas no se revierte en E1. |
-| E1-ENT-05 | Efecto de cancelación de evento sobre entradas vendidas (reintegro) — al menos contrato E1 | hecho | `POST /eventos/{id}/reintegro-cancelacion` → A_REINTEGRAR. |
+| E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. **ValidacionAcceso sin API** (E2-ACC-01). Seed intacto. |
+| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago **best-effort** (si falla, compra queda APROBADA sin QR — log). Idempotente por idCompra. Precio solo en memoria proceso hasta restart. |
+| E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. DTO enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos (best-effort + cache por idEvento). |
+| E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde **emisión**; ADMIN→DEVUELTA. **Cupo ventas no se reabre**. Monto devolución depende de precio en memoria (0 tras restart del msvc). FE admin cola: `USE_MOCK_ENTRADAS`. |
+| E1-ENT-05 | Efecto de cancelación de evento sobre entradas vendidas (reintegro) — al menos contrato E1 | hecho | `POST /eventos/{id}/reintegro-cancelacion` → A_REINTEGRAR. No notifs; no devuelve cupo a ventas. |
 
 ### 6.4 API Gateway y usuarios (mínimo E1)
 
@@ -211,7 +211,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E2-TST-02 | Pruebas de autorización por rol | pendiente | |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
 | E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | SPA con esos flujos en **mock**. Falta BE real. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | 2026-11: demock **selectivo compras** — `VITE_USE_MOCK_AUTH/EVENTOS/COMPRAS=false`; global mock sigue true. Checkout: reserva→compra→pago BE. QR/mis-entradas aún mock (E1-ENT). Fix `http.js` Bearer. |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo: AUTH/EVENTOS/COMPRAS/**ENTRADAS**=false. Global mock true. Checkout→QR→mis-entradas BE. Falta: mock-off gestión usuarios admin, scan E2-ACC. DTO entradas ya trae nombre/lugar (Feign). |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
 ---
@@ -226,10 +226,10 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 6. **Smoke integración** — **hecho 2026-11-06**.  
 7. **E1-VEN-02…08** — **hecho**.  
 8. **E1-ENT-02…05** — **hecho** (emisión Feign, GETs/QR, devoluciones 72h, reintegro-cancelación). FE demock auth/eventos/compras/entradas.  
-9. E1-EVE write (lugares/sectores/publicación/patch estado) si hace falta gestión org.  
+9. **E1-EVE write (02/03/05)** — **hecho** (lugares/sectores, borrador→publicar, patch estado/fecha, listado org).  
 10. E1-TST + E1-REL + INF-17 (Postman).  
 11. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
-12. FE residual: mock-off gestión admin usuarios / E2-ACC scan; enriquecer DTO entradas (nombre evento).
+12. FE residual: mock-off gestión admin usuarios / E2-ACC scan. E1-EVE-06 participantes si se suma schema.
 
 Specs (DOC-MS / US / ARQ) en paralelo.
 
@@ -248,11 +248,11 @@ Specs (DOC-MS / US / ARQ) en paralelo.
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05, E1-USU-01, E2-SEC-01 | — | E2-SEC-02 RBAC fino por endpoint |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
-| Código de negocio E1 | E1-EVE-04; **E1-VEN-02…08**; **E1-ENT-02…05** | — | E1-EVE write; E2-ACC validaciones |
+| Código de negocio E1 | E1-EVE-02…05; E1-VEN-02…08; E1-ENT-02…05 (+DTO Feign) | — | E1-EVE-06 participantes; E2-ACC |
 | Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
 
-**Lectura (2026-11-06, post E1-ENT):**  
-- **Hecho E1 core:** eventos GET, JWT, ventas (reserva→pago), **entradas QR + devoluciones 72h + reintegro-cancelación**.  
-- **FE demock:** auth/eventos/compras/entradas (`VITE_USE_MOCK_*=false`). Checkout → emisión → mis-entradas.  
-- **Gap E1:** eventos write (org), tests/Postman; E2-ACC validación puerta.  
-- **Próximo:** E1-EVE write **o** E1-TST/Postman **o** E2-ACC.  
+**Lectura (2026-11-07):**  
+- **Hecho E1 core:** eventos GET+**write** (02/03/05); DTO entradas enriquecido (ENT-03 Feign); JWT; ventas; entradas QR/devo; FE demock selectivo (+ admin list `estado=TODOS`).  
+- **Deuda natural (documentada):** emisión Feign best-effort; precio devolución RAM; approve sin reopen cupo; ValidacionAcceso=E2-ACC; cancel evento→reintegro entradas best-effort; cupo ventas no auto al publicar. Ver docs msvc-entradas/eventos.  
+- **Gap E1 formal restante:** E1-EVE-06 participantes (sin schema); E1-TST / INF-17 Postman / E1-REL.  
+- **Próximo:** tests/Postman **o** E2-ACC.  

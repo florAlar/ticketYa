@@ -16,6 +16,21 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
+        return body(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
+        return body(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
+    @ExceptionHandler(BusinessConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(BusinessConflictException ex) {
+        return body(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
         return body(HttpStatus.BAD_REQUEST, ex.getMessage());

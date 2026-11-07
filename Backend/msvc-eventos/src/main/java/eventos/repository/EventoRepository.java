@@ -2,6 +2,7 @@ package eventos.repository;
 
 import eventos.entity.Evento;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,4 +47,7 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
     @EntityGraph(attributePaths = "lugar")
     @Query("select e from Evento e where e.id = :id")
     Optional<Evento> findByIdWithLugar(@Param("id") String id);
+
+    @EntityGraph(attributePaths = "lugar")
+    List<Evento> findByIdOrganizadorOrderByFechaInicioDesc(String idOrganizador);
 }

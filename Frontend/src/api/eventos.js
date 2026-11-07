@@ -123,7 +123,7 @@ export async function listEventosGestion(user, { isAdmin, token } = {}) {
     return listGestionForUser(user, { isAdmin })
   }
   if (isAdmin) {
-    const data = await http(`/api/eventos${toQuery({ size: 200 })}`, { token })
+    const data = await http(`/api/eventos${toQuery({ size: 200, estado: 'TODOS' })}`, { token })
     return unwrapEventosList(data)
   }
   return http('/api/organizadores/me/eventos', { token })

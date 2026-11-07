@@ -17,6 +17,9 @@ spring:
         jdbc:
           time_zone: UTC
 
+# msvc-eventos (Feign enriquecimiento DTO). Docker: http://ms-eventos:8082
 ticketya:
+  uri:
+    eventos: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
   entradas:
     plazo-devolucion-horas: ${TICKETYA_DEVOLUCION_HORAS:72}

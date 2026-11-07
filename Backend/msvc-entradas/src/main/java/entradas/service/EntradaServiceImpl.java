@@ -1,5 +1,6 @@
 package entradas.service;
 
+import feign.FeignException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -8,9 +9,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import entradas.clients.EventosClient;
+import entradas.clients.EventosClient.EventoDetalleFeignDTO;
+import entradas.clients.EventosClient.LugarFeignDTO;
+import entradas.clients.EventosClient.SectorFeignDTO;
 import entradas.dto.DevolucionCreateRequestDTO;
 import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
@@ -27,6 +34,8 @@ import entradas.repository.EntradaRepository;
 @Service
 public class EntradaServiceImpl implements EntradaService {
 
+    private static final Logger log = LoggerFactory.getLogger(EntradaServiceImpl.class);
+
     public static final String EST_VENDIDA = "VENDIDA";
     public static final String EST_USADA = "USADA";
     public static final String EST_DEVUELTA = "DEVUELTA";
@@ -39,6 +48,7 @@ public class EntradaServiceImpl implements EntradaService {
     private final EntradaRepository entradaRepository;
     private final DevolucionRepository devolucionRepository;
     private final EntradaMapper entradaMapper;
+    private final EventosClient eventosClient;
     private final long plazoDevolucionHoras;
 
     /** precio unitario por idEntrada (solo memoria de emisión reciente; seeds = null). */
@@ -48,10 +58,12 @@ public class EntradaServiceImpl implements EntradaService {
             EntradaRepository entradaRepository,
             DevolucionRepository devolucionRepository,
             EntradaMapper entradaMapper,
+            EventosClient eventosClient,
             @Value("${ticketya.entradas.plazo-devolucion-horas:72}") long plazoDevolucionHoras) {
         this.entradaRepository = entradaRepository;
         this.devolucionRepository = devolucionRepository;
         this.entradaMapper = entradaMapper;
+        this.eventosClient = eventosClient;
         this.plazoDevolucionHoras = plazoDevolucionHoras;
     }
 
@@ -61,7 +73,7 @@ public class EntradaServiceImpl implements EntradaService {
         // idempotente: si ya hay entradas para la compra, devolverlas
         List<Entrada> existentes = entradaRepository.findByIdCompra(request.idCompra());
         if (!existentes.isEmpty()) {
-            return existentes.stream().map(e -> entradaMapper.toEntrada(e, preciosMem.get(e.getIdEntrada()))).toList();
+            return mapEnriquecidas(existentes);
         }
 
         LocalDateTime now = nowUtc();
@@ -89,23 +101,22 @@ public class EntradaServiceImpl implements EntradaService {
             throw new IllegalArgumentException("items vacíos o cantidad 0");
         }
         entradaRepository.saveAll(creadas);
-        return creadas.stream()
-                .map(e -> entradaMapper.toEntrada(e, preciosMem.get(e.getIdEntrada())))
-                .toList();
+        return mapEnriquecidas(creadas);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<EntradaResponseDTO> listarMias(String idCliente) {
-        return entradaRepository.findByIdClienteOrderByFechaEmisionDesc(idCliente).stream()
-                .map(e -> entradaMapper.toEntrada(e, preciosMem.get(e.getIdEntrada())))
-                .toList();
+        return mapEnriquecidas(entradaRepository.findByIdClienteOrderByFechaEmisionDesc(idCliente));
     }
 
     @Override
     @Transactional(readOnly = true)
     public EntradaResponseDTO obtenerMia(String idCliente, String idEntrada) {
-        return entradaMapper.toEntrada(requireMia(idCliente, idEntrada), preciosMem.get(idEntrada));
+        Entrada e = requireMia(idCliente, idEntrada);
+        EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(idEntrada));
+        enriquecer(dto, fetchEventoCached(e.getIdEvento(), new HashMap<>()));
+        return dto;
     }
 
     @Override
@@ -240,5 +251,63 @@ public class EntradaServiceImpl implements EntradaService {
 
     private static LocalDateTime nowUtc() {
         return LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    /** Mapea + enriquece con cache por idEvento (una llamada Feign por evento distinto). */
+    private List<EntradaResponseDTO> mapEnriquecidas(List<Entrada> entradas) {
+        Map<String, EventoDetalleFeignDTO> cache = new HashMap<>();
+        List<EntradaResponseDTO> out = new ArrayList<>(entradas.size());
+        for (Entrada e : entradas) {
+            EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(e.getIdEntrada()));
+            enriquecer(dto, fetchEventoCached(e.getIdEvento(), cache));
+            out.add(dto);
+        }
+        return out;
+    }
+
+    private void enriquecer(EntradaResponseDTO dto, EventoDetalleFeignDTO evento) {
+        if (evento == null) {
+            return;
+        }
+        dto.setEventoNombre(evento.getNombre());
+        LugarFeignDTO lugar = evento.getLugar();
+        if (lugar != null) {
+            dto.setLugarNombre(lugar.getNombre());
+            dto.setLugarCiudad(lugar.getCiudad());
+        }
+        String idSector = dto.getIdSector();
+        if (idSector != null && evento.getSectores() != null) {
+            for (SectorFeignDTO s : evento.getSectores()) {
+                if (s != null && idSector.equals(s.getId())) {
+                    dto.setSectorNombre(s.getNombre());
+                    break;
+                }
+            }
+        }
+    }
+
+    /**
+     * Best-effort: si eventos cae o el id no existe, el DTO queda sin nombre/lugar (null).
+     * Cache local al request evita N Feign en listados del mismo evento.
+     */
+    private EventoDetalleFeignDTO fetchEventoCached(String idEvento, Map<String, EventoDetalleFeignDTO> cache) {
+        if (idEvento == null || idEvento.isBlank()) {
+            return null;
+        }
+        if (cache.containsKey(idEvento)) {
+            return cache.get(idEvento);
+        }
+        EventoDetalleFeignDTO ev = null;
+        try {
+            ev = eventosClient.getEvento(idEvento);
+        } catch (FeignException.NotFound e) {
+            log.debug("Evento no encontrado al enriquecer entrada: {}", idEvento);
+        } catch (FeignException e) {
+            log.warn("No se pudo enriquecer entrada con evento {}: {}", idEvento, e.status());
+        } catch (Exception e) {
+            log.warn("No se pudo enriquecer entrada con evento {}: {}", idEvento, e.toString());
+        }
+        cache.put(idEvento, ev);
+        return ev;
     }
 }
