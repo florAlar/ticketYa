@@ -12,11 +12,38 @@ spring:
           # URIs: localhost en host; en Docker override TICKETYA_URI_* → http://ms-*:port
           routes:
             # --- excepciones /eventos/** (antes del catch-all eventos) ---
+            - id: eventos-disponibilidad-batch-ventas
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 9
+              predicates:
+                - Path=/api/eventos/disponibilidad
+                - Method=GET
+              filters:
+                - StripPrefix=1
+
             - id: eventos-disponibilidad-ventas
               uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
               order: 10
               predicates:
                 - Path=/api/eventos/*/disponibilidad
+              filters:
+                - StripPrefix=1
+
+            - id: eventos-cupos-liberacion-ventas
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 9
+              predicates:
+                - Path=/api/eventos/*/cupos/liberacion
+                - Method=POST
+              filters:
+                - StripPrefix=1
+
+            - id: eventos-cupos-ventas
+              uri: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+              order: 10
+              predicates:
+                - Path=/api/eventos/*/cupos
+                - Method=POST
               filters:
                 - StripPrefix=1
 

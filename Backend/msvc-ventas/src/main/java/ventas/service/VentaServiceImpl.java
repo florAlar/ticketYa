@@ -5,11 +5,15 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,8 +23,11 @@ import ventas.clients.EntradasClient;
 import ventas.clients.EventosClient;
 import ventas.clients.EventosClient.EventoDetalleFeignDTO;
 import ventas.clients.EventosClient.SectorFeignDTO;
+import ventas.dto.AbrirCuposRequestDTO;
+import ventas.dto.LiberarCupoRequestDTO;
 import ventas.dto.CompraCreateRequestDTO;
 import ventas.dto.CompraResponseDTO;
+import ventas.dto.DisponibilidadBatchResponseDTO;
 import ventas.dto.DisponibilidadResponseDTO;
 import ventas.dto.PagoCreateRequestDTO;
 import ventas.dto.PagoResponseDTO;
@@ -105,19 +112,156 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public DisponibilidadResponseDTO disponibilidad(String idEvento) {
-        List<CupoSector> cupos = cupoSectorRepository.findByIdEvento(idEvento);
-        if (cupos.isEmpty()) {
-            throw new ResourceNotFoundException("Sin cupos comerciales para evento: " + idEvento);
+        @Transactional(readOnly = true)
+        public DisponibilidadResponseDTO disponibilidad(String idEvento) {
+            List<CupoSector> cupos = cupoSectorRepository.findByIdEvento(idEvento);
+            if (cupos.isEmpty()) {
+                throw new ResourceNotFoundException("Sin cupos comerciales para evento: " + idEvento);
+            }
+            return ventaMapper.toDisponibilidad(idEvento, cupos);
         }
-        return ventaMapper.toDisponibilidad(idEvento, cupos);
-    }
 
-    @Override
-    @Transactional
-    public ReservaResponseDTO crearReserva(
-            String idCliente, ReservaCreateRequestDTO request, String idempotencyKey) {
+        @Override
+        @Transactional(readOnly = true)
+        public DisponibilidadBatchResponseDTO disponibilidadBatch(List<String> idEventos) {
+            DisponibilidadBatchResponseDTO out = new DisponibilidadBatchResponseDTO();
+            if (idEventos == null || idEventos.isEmpty()) {
+                return out;
+            }
+            // orden estable + dedupe; tope anti-abuso
+            Set<String> ordered = new LinkedHashSet<>();
+            for (String raw : idEventos) {
+                if (raw == null) {
+                    continue;
+                }
+                String id = raw.trim();
+                if (!id.isEmpty()) {
+                    ordered.add(id);
+                }
+                if (ordered.size() >= 50) {
+                    break;
+                }
+            }
+            if (ordered.isEmpty()) {
+                return out;
+            }
+            List<CupoSector> all = cupoSectorRepository.findByIdEventoIn(ordered);
+            Map<String, List<CupoSector>> byEvento =
+                    all.stream().collect(Collectors.groupingBy(CupoSector::getIdEvento));
+            for (String id : ordered) {
+                List<CupoSector> cupos = byEvento.getOrDefault(id, List.of());
+                out.getItems().add(ventaMapper.toDisponibilidad(id, cupos));
+            }
+            return out;
+        }
+
+        @Override
+        @Transactional
+        public DisponibilidadResponseDTO abrirCupos(String idEvento, AbrirCuposRequestDTO request) {
+            if (idEvento == null || idEvento.isBlank()) {
+                throw new IllegalArgumentException("idEvento es obligatorio");
+            }
+            if (request == null || request.getSectores() == null || request.getSectores().isEmpty()) {
+                throw new IllegalArgumentException("sectores es obligatorio (al menos uno con cupo ≥ 1)");
+            }
+
+            String eventoId = idEvento.trim();
+            for (AbrirCuposRequestDTO.Item item : request.getSectores()) {
+                if (item == null || item.getIdSector() == null || item.getIdSector().isBlank()) {
+                    throw new IllegalArgumentException("sectores[].idSector es obligatorio");
+                }
+                Integer cap = item.getCapacidadTotal();
+                if (cap == null || cap < 1) {
+                    throw new IllegalArgumentException(
+                            "sectores[].capacidadTotal debe ser ≥ 1 (sector=" + item.getIdSector() + ")");
+                }
+                String idSector = item.getIdSector().trim();
+                Optional<CupoSector> existing = cupoSectorRepository.findByIdEventoAndIdSector(eventoId, idSector);
+                if (existing.isPresent()) {
+                    CupoSector cupo = existing.get();
+                    // No resetear stock ya movido; solo subir techo si el org amplió capacidad
+                    int oldTotal = cupo.getCapacidadTotal() != null ? cupo.getCapacidadTotal() : 0;
+                    if (cap > oldTotal) {
+                        int delta = cap - oldTotal;
+                        cupo.setCapacidadTotal(cap);
+                        cupo.setCantidadDisponible(
+                                (cupo.getCantidadDisponible() != null ? cupo.getCantidadDisponible() : 0) + delta);
+                        cupoSectorRepository.save(cupo);
+                    }
+                    continue;
+                }
+                CupoSector nuevo = new CupoSector();
+                nuevo.setIdCupo(UUID.randomUUID().toString());
+                nuevo.setIdEvento(eventoId);
+                nuevo.setIdSector(idSector);
+                nuevo.setCapacidadTotal(cap);
+                nuevo.setCantidadDisponible(cap);
+                nuevo.setCantidadReservada(0);
+                nuevo.setCantidadVendida(0);
+                cupoSectorRepository.save(nuevo);
+            }
+            return disponibilidad(eventoId);
+                    }
+
+                @Override
+                @Transactional
+                public DisponibilidadResponseDTO liberarCupoDevolucion(String idEvento, LiberarCupoRequestDTO request) {
+                    if (idEvento == null || idEvento.isBlank()) {
+                        throw new IllegalArgumentException("idEvento es obligatorio");
+                    }
+                    if (request == null || request.getIdSector() == null || request.getIdSector().isBlank()) {
+                        throw new IllegalArgumentException("idSector es obligatorio");
+                    }
+                    int q = request.getCantidad() == null ? 1 : request.getCantidad();
+                    if (q < 1) {
+                        throw new IllegalArgumentException("cantidad debe ser ≥ 1");
+                    }
+                    String eventoId = idEvento.trim();
+                    String idSector = request.getIdSector().trim();
+
+                    CupoSector cupo = cupoSectorRepository
+                            .findByEventoAndSectorForUpdate(eventoId, idSector)
+                            .orElseThrow(
+                                    () ->
+                                            new ResourceNotFoundException(
+                                                    "Sin cupo comercial evento=" + eventoId + " sector=" + idSector));
+
+                    int vendida = cupo.getCantidadVendida() != null ? cupo.getCantidadVendida() : 0;
+                    int disponible = cupo.getCantidadDisponible() != null ? cupo.getCantidadDisponible() : 0;
+                    int capacidad = cupo.getCapacidadTotal() != null ? cupo.getCapacidadTotal() : 0;
+                    int reservada = cupo.getCantidadReservada() != null ? cupo.getCantidadReservada() : 0;
+
+                    if (vendida < q) {
+                        throw new BusinessConflictException(
+                                "No hay vendidas suficientes para liberar (vendida=" + vendida + ", pedir=" + q + ")");
+                    }
+                    // Invariante: disponible + reservada + vendida ≈ capacidad (con holgura post-ajustes)
+                    int nuevaVendida = vendida - q;
+                    int nuevaDisponible = disponible + q;
+                    if (capacidad > 0 && nuevaDisponible + reservada + nuevaVendida > capacidad) {
+                        // Capar disponible al techo residual (no inventar stock sobre capacidad)
+                        nuevaDisponible = Math.max(0, capacidad - reservada - nuevaVendida);
+                    }
+
+                    cupo.setCantidadVendida(nuevaVendida);
+                    cupo.setCantidadDisponible(nuevaDisponible);
+                    cupoSectorRepository.save(cupo);
+                    log.info(
+                            "Cupo liberado por devolución evento={} sector={} q={} vendida {}→{} disp {}→{}",
+                            eventoId,
+                            idSector,
+                            q,
+                            vendida,
+                            nuevaVendida,
+                            disponible,
+                            nuevaDisponible);
+                    return disponibilidad(eventoId);
+                }
+
+                    @Override
+                    @Transactional
+                    public ReservaResponseDTO crearReserva(
+                            String idCliente, ReservaCreateRequestDTO request, String idempotencyKey) {
         // idempotency de reserva: reusa si la key apunta a id ya creado (via redis compra-style)
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             var existing = stockCache.getIdempotentCompraId("reserva:" + idempotencyKey);

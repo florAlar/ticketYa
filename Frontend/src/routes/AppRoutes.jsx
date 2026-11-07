@@ -16,6 +16,7 @@ import GestionEventoNuevoPage from '../pages/GestionPage/GestionEventoNuevoPage'
 import GestionEventoEditarPage from '../pages/GestionPage/GestionEventoEditarPage'
 import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
 import OrganizerAccountPage from '../pages/CuentaRolesPage/OrganizerAccountPage'
+import PerfilPage from '../pages/PerfilPage/PerfilPage'
 import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
 import GestionEntradaDetallePage from '../pages/GestionPage/GestionEntradaDetallePage'
 import AccesoPage from '../pages/AccesoPage/AccesoPage'
@@ -33,18 +34,33 @@ const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/eventos" element={<EventosPage />} />
-      <Route path="/eventos/:eventoId" element={<EventoDetallePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/cuenta/organizador" element={<OrganizerAccountPage />} />
-      <Route path="/soporte" element={<SoportePage />} />
-      <Route path="/sin-permiso" element={<ForbiddenPage />} />
+            <Route
+              path="/eventos"
+              element={
+                <ProtectedRoute>
+                  <EventosPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/eventos/:eventoId" element={<EventoDetallePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/cuenta/organizador" element={<OrganizerAccountPage />} />
+            <Route path="/soporte" element={<SoportePage />} />
+            <Route path="/sin-permiso" element={<ForbiddenPage />} />
 
       <Route
         path="/eventos/:eventoId/comprar"
         element={
           <ProtectedRoute>
             <CheckoutPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/perfil"
+        element={
+          <ProtectedRoute>
+            <PerfilPage />
           </ProtectedRoute>
         }
       />
@@ -141,7 +157,7 @@ const AppRoutes = () => {
       <Route
         path="/acceso"
         element={
-          <ProtectedRoute roles={[ROLES.ACCESO, ROLES.ADMIN]}>
+          <ProtectedRoute roles={[ROLES.ACCESO]}>
             <AccesoPage />
           </ProtectedRoute>
         }
@@ -149,7 +165,7 @@ const AppRoutes = () => {
       <Route
         path="/acceso/scan"
         element={
-          <ProtectedRoute roles={[ROLES.ACCESO, ROLES.ADMIN]}>
+          <ProtectedRoute roles={[ROLES.ACCESO]}>
             <AccesoScanPage />
           </ProtectedRoute>
         }

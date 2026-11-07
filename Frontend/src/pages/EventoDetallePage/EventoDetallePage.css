@@ -18,6 +18,34 @@
   overflow: hidden;
   max-height: 280px;
   background: var(--colors-surfaceAlt, #eee);
+  position: relative;
+}
+
+.evento-detalle-page__cupo {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 1;
+}
+
+.evento-detalle-page__cupo-line {
+  margin: 0.35rem 0 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #b45309;
+}
+
+.evento-detalle-page__cupo-line--agotado {
+  color: #b91c1c;
+}
+
+.evento-detalle-page__cupo-line--suspend {
+  color: #a16207;
+}
+
+.evento-ticket-card--agotado {
+  opacity: 0.85;
+  border-color: color-mix(in srgb, #b91c1c 35%, var(--colors-border, #ddd));
 }
 
 .evento-detalle-page__media img {
@@ -41,9 +69,15 @@
 }
 
 .evento-detalle-page__desc {
-  margin-top: 0.85rem;
+  margin: 0.75rem 0 0;
   line-height: 1.5;
-  color: var(--colors-textSecondary, #4b4b4b);
+  color: var(--text-muted, #4b5563);
+}
+
+.evento-detalle-page__artistas {
+  margin: 0.45rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
 }
 
 .evento-detalle-page__muted {

@@ -247,6 +247,27 @@
   color: rgba(255, 255, 255, 0.45);
 }
 
+.auth-box__demo-link {
+  display: block;
+  width: 100%;
+  margin-top: 0.85rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  cursor: pointer;
+}
+
+.auth-box__demo-link:hover {
+  color: #fff;
+}
+
 .auth-box--wide {
   max-width: 32rem;
 }

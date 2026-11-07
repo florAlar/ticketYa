@@ -1,27 +1,46 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DEMO_ACCOUNTS, ROLE_LABELS } from '../../auth/roles'
-import { USE_MOCK } from '../../api/config'
+import { USE_MOCK_AUTH } from '../../api/config'
 import './DemoAccountsToast.css'
 
 const DISMISS_KEY = 'ticketya_demo_toast_dismissed'
+export const DEMO_TOAST_REOPEN_EVENT = 'ticketya:demo-toast-reopen'
+
+function wasDismissed() {
+  try {
+    return sessionStorage.getItem(DISMISS_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function clearDismissed() {
+  try {
+    sessionStorage.removeItem(DISMISS_KEY)
+  } catch {
+    /* ignore */
+  }
+}
 
 /**
- * Toast flotante con cuentas mock (portal → body).
- * Lista abierta por defecto; se puede colapsar o cerrar.
+ * Toast flotante con cuentas demo/seed (portal → body).
+ * Mismas credenciales mock FE y seed MySQL (demo1234 / org1234 / …).
+ * Siempre disponible en /login (no depende de VITE_USE_MOCK).
+ * Lista abierta por defecto; se puede colapsar, cerrar o reabrir.
  */
 export default function DemoAccountsToast() {
   const [open, setOpen] = useState(true)
-  const [visible, setVisible] = useState(false)
+  const [visible, setVisible] = useState(() => !wasDismissed())
 
   useEffect(() => {
-    if (!USE_MOCK) return
-    try {
-      if (sessionStorage.getItem(DISMISS_KEY) === '1') return
-    } catch {
-      /* ignore */
+    const onReopen = () => {
+      clearDismissed()
+      setVisible(true)
+      setOpen(true)
     }
-    setVisible(true)
+    window.addEventListener(DEMO_TOAST_REOPEN_EVENT, onReopen)
+    return () => window.removeEventListener(DEMO_TOAST_REOPEN_EVENT, onReopen)
   }, [])
 
   const dismiss = useCallback((e) => {
@@ -41,7 +60,11 @@ export default function DemoAccountsToast() {
     setOpen((v) => !v)
   }, [])
 
-  if (!USE_MOCK || !visible || typeof document === 'undefined') return null
+  if (!visible || typeof document === 'undefined') return null
+
+  const modeHint = USE_MOCK_AUTH
+    ? 'Mock local (sin gateway)'
+    : 'Seed gateway / MySQL'
 
   return createPortal(
     <aside
@@ -73,22 +96,33 @@ export default function DemoAccountsToast() {
       </div>
 
       {open ? (
-        <ul className="demo-toast__list">
-          {DEMO_ACCOUNTS.map((acc) => (
-            <li key={acc.email} className="demo-toast__item">
-              <span className="demo-toast__role">
-                {ROLE_LABELS[acc.rol] || acc.rol}
-              </span>
-              <span className="demo-toast__creds">
-                {acc.email}
-                <span className="demo-toast__sep">·</span>
-                {acc.password}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="demo-toast__hint">{modeHint}</p>
+          <ul className="demo-toast__list">
+            {DEMO_ACCOUNTS.map((acc) => (
+              <li key={acc.email} className="demo-toast__item">
+                <span className="demo-toast__role">
+                  {ROLE_LABELS[acc.rol] || acc.rol}
+                </span>
+                <span className="demo-toast__creds">
+                  {acc.email}
+                  <span className="demo-toast__sep">·</span>
+                  {acc.password}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
       ) : null}
     </aside>,
     document.body
   )
+}
+
+/** Dispara reaparición del toast (p. ej. link en LoginPage). */
+export function reopenDemoAccountsToast() {
+  clearDismissed()
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(DEMO_TOAST_REOPEN_EVENT))
+  }
 }

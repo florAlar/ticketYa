@@ -78,6 +78,14 @@
   color: #111;
 }
 
+.demo-toast__hint {
+  margin: 0;
+  padding: 0.35rem 0.85rem 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #666;
+}
+
 .demo-toast__list {
   list-style: none;
   margin: 0;

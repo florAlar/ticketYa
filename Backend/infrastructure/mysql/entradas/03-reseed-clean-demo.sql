@@ -1,0 +1,28 @@
+-- Limpia y reseedea demo canónica en entradas.
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+DELETE FROM validacion_acceso;
+DELETE FROM devolucion;
+DELETE FROM entrada;
+SET FOREIGN_KEY_CHECKS = 1;
+
+INSERT INTO entrada (id_entrada, id_compra, id_cliente, id_evento, id_sector, precio, codigo_qr, estado, fecha_emision, fecha_validacion) VALUES
+  ('aa000000-0000-4000-8000-000000000001',
+   'f0000000-0000-4000-8000-000000000021',
+   'b0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000001',
+   'c0000000-0000-4000-8000-000000000011',
+   95000.00,
+   'QR-SEED-METALLICA-001', 'VENDIDA', '2026-10-01 14:06:00.000', NULL),
+  ('aa000000-0000-4000-8000-000000000002',
+   'f0000000-0000-4000-8000-000000000043',
+   'b0000000-0000-4000-8000-000000000001',
+   'd0000000-0000-4000-8000-000000000003',
+   'c0000000-0000-4000-8000-000000000011',
+   75000.00,
+   'QR-SEED-CANCEL-RIR-001', 'VENDIDA', '2026-09-15 10:06:00.000', NULL);
+
+INSERT INTO devolucion (id_devolucion, id_entrada, motivo, monto, fecha_solicitud, estado) VALUES
+  ('aa000000-0000-4000-8000-000000000011',
+   'aa000000-0000-4000-8000-000000000001',
+   'Cambio de planes (seed demo)', 95000.00, '2026-10-10 09:00:00.000', 'PENDIENTE');

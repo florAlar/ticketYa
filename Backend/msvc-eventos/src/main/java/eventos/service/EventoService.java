@@ -3,11 +3,14 @@ package eventos.service;
 import eventos.dto.AsientoResponseDTO;
 import eventos.dto.EventoDetalleResponseDTO;
 import eventos.dto.EventoFechaRequestDTO;
+import eventos.dto.EventoParticipantesRequestDTO;
 import eventos.dto.EventoRequestDTO;
 import eventos.dto.EventoResponseDTO;
 import eventos.dto.LugarRequestDTO;
 import eventos.dto.LugarResponseDTO;
 import eventos.dto.PageResponseDTO;
+import eventos.dto.ParticipanteRequestDTO;
+import eventos.dto.ParticipanteResponseDTO;
 import eventos.dto.PrecioSectorRequestDTO;
 import eventos.dto.SectorEventoDTO;
 import eventos.dto.SectorRequestDTO;
@@ -20,6 +23,7 @@ public interface EventoService {
             String tipo,
             String ciudad,
             String organizador,
+            String participante,
             String estado,
             LocalDate fechaDesde,
             LocalDate fechaHasta,
@@ -61,4 +65,17 @@ public interface EventoService {
     SectorEventoDTO actualizarSector(String idSector, SectorRequestDTO body);
 
     List<AsientoResponseDTO> listarAsientos(String idLugar, String idSector);
+
+    List<ParticipanteResponseDTO> listarParticipantes(String q, String tipo);
+
+    ParticipanteResponseDTO obtenerParticipante(String id);
+
+    ParticipanteResponseDTO crearParticipante(ParticipanteRequestDTO body);
+
+    ParticipanteResponseDTO actualizarParticipante(String id, ParticipanteRequestDTO body);
+
+    List<ParticipanteResponseDTO> listarParticipantesDeEvento(String idEvento);
+
+    List<ParticipanteResponseDTO> asociarParticipantes(
+            String idEvento, EventoParticipantesRequestDTO body, String userId, String role);
 }

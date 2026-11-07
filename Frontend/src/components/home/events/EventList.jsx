@@ -1,15 +1,36 @@
 import { useEffect, useMemo, useState } from 'react'
-import { listEventos } from '../../../api/eventos'
+import { listEventos, getDisponibilidadBatch } from '../../../api/eventos'
+import {
+  normalizeDisponibilidadDto,
+  withCupoResumen,
+} from '../../../domain/evento'
 import { resolveCard } from './cards/cardRegistry'
 
 function filterKey(filter) {
   return filter ? JSON.stringify(filter) : ''
 }
 
+function mergeCupos(list, batch) {
+  const map = new Map()
+  const items = Array.isArray(batch?.items)
+    ? batch.items
+    : Array.isArray(batch)
+      ? batch
+      : []
+  for (const raw of items) {
+    const d = normalizeDisponibilidadDto(raw)
+    if (d?.idEvento) map.set(String(d.idEvento), d)
+  }
+  return (list || []).map((ev) =>
+    withCupoResumen(ev, map.get(String(ev.id)) || null)
+  )
+}
+
 /**
  * Lista reutilizable: recibe filter (API) o items ya resueltos.
- * layout: 'grid' | 'row'
+ * layout: 'grid' | 'row' | 'grid-4'
  * card: clave del registry (featured | standard | compact)
+ * Tras listar: 1× batch disponibilidad → badge cupo en cards.
  */
 const EventList = ({
   filter,
@@ -38,19 +59,35 @@ const EventList = ({
     let cancelled = false
     const activeKey = key
 
-    listEventos(filter || {})
-      .then((data) => {
+    ;(async () => {
+      try {
+        const data = await listEventos(filter || {})
         if (cancelled) return
         const list = Array.isArray(data)
           ? data
           : data?.content || data?.items || []
+        let withCupo = list
+        try {
+          const ids = list.map((e) => e.id).filter(Boolean)
+          if (ids.length) {
+            const batch = await getDisponibilidadBatch(ids)
+            if (cancelled) return
+            withCupo = mergeCupos(list, batch)
+          }
+        } catch (err) {
+          // catálogo igual se muestra sin badge si batch falla (jar/ruta vieja)
+          if (typeof console !== 'undefined') {
+            console.warn('[EventList] batch disponibilidad falló:', err?.message || err)
+          }
+          withCupo = list
+        }
+        if (cancelled) return
         setRemote((prev) =>
           prev.key !== activeKey
             ? prev
-            : { key: activeKey, items: list, status: 'success', error: '' }
+            : { key: activeKey, items: withCupo, status: 'success', error: '' }
         )
-      })
-      .catch((err) => {
+      } catch (err) {
         if (cancelled) return
         setRemote((prev) =>
           prev.key !== activeKey
@@ -62,7 +99,8 @@ const EventList = ({
                 error: err.message || 'Error al cargar eventos',
               }
         )
-      })
+      }
+    })()
 
     return () => {
       cancelled = true

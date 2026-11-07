@@ -61,6 +61,12 @@ export const FEATURE = {
 
   /** Preferencias / recs cliente — E2-PRE dominio incompleto */
   preferencias: false,
+
+  /**
+   * Solicitud CLIENTE → ORGANIZADOR (X-ORG-01).
+   * CTA visible en /perfil; OFF hasta API de solicitudes + cola admin.
+   */
+  solicitudOrganizador: false,
 }
 
 export const GATE_HINT = 'Sin backend cableado — flujo no disponible'

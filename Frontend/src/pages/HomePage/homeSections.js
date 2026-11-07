@@ -1,6 +1,6 @@
 /**
- * Secciones de Home: filtro API + layout + tipo de card.
- * Preferencias futuras = más entradas acá (o desde backend).
+ * Secciones de Home: solo catálogo comprable (PUBLICADO).
+ * Suspendidos no van en vitrina de inicio.
  */
 export const homeSections = [
   {
@@ -9,7 +9,7 @@ export const homeSections = [
     filter: { destacados: true, limit: 8 },
     layout: 'grid',
     card: 'featured',
-    linkToAll: '/eventos?destacados=1',
+    linkToAll: '/eventos',
   },
   {
     id: 'recitales',

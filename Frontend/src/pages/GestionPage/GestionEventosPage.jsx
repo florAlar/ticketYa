@@ -93,8 +93,8 @@ const GestionEventosPage = () => {
         <h1 className="gestion-page__title">Eventos</h1>
         <p className="gestion-page__sub">
           {isAdmin
-            ? 'Admin: listado amplio + publicar / suspender / cancelar.'
-            : 'Organizador: tus eventos. Podés publicar y suspender; cancelar solo admin.'}
+            ? 'Admin: listado amplio + publicar / suspender / reanudar / cancelar.'
+            : 'Organizador: tus eventos. Publicar, suspender y volver a publicar; cancelar solo admin.'}
           {!FEATURE.eventosGestion && (
             <>
               {' '}
@@ -205,7 +205,24 @@ const GestionEventosPage = () => {
                     Suspender
                   </GateButton>
                 )}
-                {e.estado !== EVENTO_ESTADOS.CANCELADO && (
+                {e.estado === EVENTO_ESTADOS.SUSPENDIDO && (
+                  <GateButton
+                    enabled={FEATURE.eventosGestion}
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={busyId === e.id}
+                    title={
+                      FEATURE.eventosGestion
+                        ? 'Reanuda ventas: vuelve el evento a PUBLICADO'
+                        : GATE_HINT
+                    }
+                    onClick={() => onEstado(e.id, EVENTO_ESTADOS.PUBLICADO)}
+                  >
+                    Volver a publicar
+                  </GateButton>
+                )}
+                {e.estado !== EVENTO_ESTADOS.CANCELADO &&
+                  e.estado !== EVENTO_ESTADOS.FINALIZADO && (
                   <GateButton
                     enabled={FEATURE.eventosCancelar && isAdmin}
                     type="button"

@@ -13,7 +13,8 @@ import './CheckoutPage.css'
 /**
  * Compra 1 tipo de entrada (sector) — sin carrito.
  * Mock: Mercado Pago ficticio + entrada local.
- * Real: reserva → compra → pago mock BE (sin QR aún).
+ * Real: reserva → compra → pago mock BE.
+ * Sin cupo comercial (disponibilidad) no se habilita el pago.
  */
 const CheckoutPage = () => {
   const { eventoId } = useParams()
@@ -24,6 +25,7 @@ const CheckoutPage = () => {
 
   const [evento, setEvento] = useState(null)
   const [disponibilidad, setDisponibilidad] = useState(null)
+  const [dispError, setDispError] = useState('')
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
   const [paying, setPaying] = useState(false)
@@ -33,6 +35,7 @@ const CheckoutPage = () => {
   const load = useCallback(async () => {
     setStatus('loading')
     setError('')
+    setDispError('')
     setSuccess(null)
     try {
       const data = await getEvento(eventoId)
@@ -41,9 +44,17 @@ const CheckoutPage = () => {
         try {
           const disp = await getDisponibilidadEvento(eventoId, { token })
           setDisponibilidad(disp)
-        } catch {
+          setDispError('')
+        } catch (err) {
           setDisponibilidad(null)
+          setDispError(
+            err.message ||
+              'Sin stock comercial para este evento (¿se publicó con cupos?)'
+          )
         }
+      } else {
+        setDisponibilidad(null)
+        setDispError('')
       }
       setStatus('ok')
     } catch (err) {
@@ -71,8 +82,24 @@ const CheckoutPage = () => {
     return disponibilidad.sectores.find((c) => c.idSector === sector.id) || null
   }, [disponibilidad, sector])
 
+  const canPay = useMemo(() => {
+    if (!isAuthenticated || !sector || paying) return false
+    if (USE_MOCK_COMPRAS) return true
+    if (dispError || !disponibilidad) return false
+    if (!cupoSector) return false
+    const disp = Number(cupoSector.cantidadDisponible)
+    return Number.isFinite(disp) && disp >= 1
+  }, [
+    isAuthenticated,
+    sector,
+    paying,
+    dispError,
+    disponibilidad,
+    cupoSector,
+  ])
+
   const onPagar = async () => {
-    if (!isAuthenticated || !sector) return
+    if (!canPay || !sector) return
     setPaying(true)
     setError('')
     setMpPreview(null)
@@ -99,17 +126,16 @@ const CheckoutPage = () => {
         return
       }
 
-      // gateway sin entrada aún (race emisión)
       setSuccess({
         compra: result.compra,
         pago: result.pago,
         mensaje: result.mercadoPago?.mensaje,
       })
       setMpPreview(result.mercadoPago)
-      // refrescar cupo
       try {
         const disp = await getDisponibilidadEvento(eventoId, { token })
         setDisponibilidad(disp)
+        setDispError('')
       } catch {
         /* ignore */
       }
@@ -129,8 +155,7 @@ const CheckoutPage = () => {
       <h1>Comprar entrada</h1>
       {!USE_MOCK_COMPRAS && (
         <p className="checkout-page__muted">
-          Modo gateway: reserva + compra + pago mock del backend (sin emisión QR
-          todavía).
+          Modo gateway: reserva + compra + pago mock del backend.
         </p>
       )}
 
@@ -155,10 +180,9 @@ const CheckoutPage = () => {
           {success.mensaje && (
             <p className="checkout-page__muted">{success.mensaje}</p>
           )}
-          <p className="checkout-page__muted">
-            Mis entradas / QR siguen en mock o E1-ENT pendiente.
-          </p>
           <p>
+            <Link to="/mis-entradas">Ir a Mis entradas</Link>
+            {' · '}
             <Link to="/eventos">Seguir mirando eventos</Link>
           </p>
         </div>
@@ -179,7 +203,10 @@ const CheckoutPage = () => {
             <p>
               <strong>Precio:</strong> {formatPrecioDesde(sector.precio)}
             </p>
-            {cupoSector && (
+            {!USE_MOCK_COMPRAS && dispError && (
+              <p className="checkout-page__error">{dispError}</p>
+            )}
+            {!USE_MOCK_COMPRAS && !dispError && cupoSector && (
               <p className="checkout-page__muted">
                 Disponibles: {cupoSector.cantidadDisponible} /{' '}
                 {cupoSector.capacidadTotal} (vendidas{' '}
@@ -187,6 +214,19 @@ const CheckoutPage = () => {
                 {cupoSector.cantidadReservada})
               </p>
             )}
+            {!USE_MOCK_COMPRAS &&
+              !dispError &&
+              disponibilidad &&
+              !cupoSector && (
+                <p className="checkout-page__error">
+                  Este tipo de entrada no tiene cupo comercial abierto.
+                </p>
+              )}
+            {!USE_MOCK_COMPRAS &&
+              cupoSector &&
+              Number(cupoSector.cantidadDisponible) < 1 && (
+                <p className="checkout-page__error">Sin stock disponible.</p>
+              )}
             <p className="checkout-page__muted">
               Sin carrito: una entrada por compra.
             </p>
@@ -201,7 +241,7 @@ const CheckoutPage = () => {
             <p className="checkout-page__muted">
               {USE_MOCK_COMPRAS
                 ? 'Link ficticio de checkout. No hay cobro real; al confirmar se acredita la entrada en tu cuenta (LS).'
-                : 'Se crea reserva TTL, compra con Idempotency-Key y pago APROBAR en msvc-ventas. No hay cobro real ni QR aún.'}
+                : 'Se crea reserva TTL, compra con Idempotency-Key y pago APROBAR en msvc-ventas.'}
             </p>
             {mpPreview?.initPoint && (
               <p className="checkout-mp__link">
@@ -221,7 +261,7 @@ const CheckoutPage = () => {
           <button
             type="button"
             className="btn btn-primary"
-            disabled={paying || !isAuthenticated}
+            disabled={!canPay}
             onClick={onPagar}
           >
             {paying

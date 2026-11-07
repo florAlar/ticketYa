@@ -4,9 +4,12 @@ import eventos.dto.EventoDetalleResponseDTO;
 import eventos.dto.EventoResponseDTO;
 import eventos.dto.LugarDetalleDTO;
 import eventos.dto.LugarResumenDTO;
+import eventos.dto.ParticipanteResponseDTO;
 import eventos.dto.SectorEventoDTO;
 import eventos.entity.Evento;
+import eventos.entity.EventoParticipante;
 import eventos.entity.Lugar;
+import eventos.entity.Participante;
 import eventos.entity.PrecioSector;
 import eventos.entity.Sector;
 import java.math.BigDecimal;
@@ -34,7 +37,10 @@ public class EventoMapper {
     }
 
     public EventoDetalleResponseDTO toDetalle(
-            Evento evento, BigDecimal precioDesde, List<PrecioSector> precios) {
+            Evento evento,
+            BigDecimal precioDesde,
+            List<PrecioSector> precios,
+            List<EventoParticipante> participantes) {
         EventoDetalleResponseDTO dto = new EventoDetalleResponseDTO();
         dto.setId(evento.getId());
         dto.setNombre(evento.getNombre());
@@ -53,7 +59,41 @@ public class EventoMapper {
         List<SectorEventoDTO> sectores = toSectores(precios);
         dto.setSectores(sectores);
         dto.setLugar(toLugarDetalle(evento.getLugar(), sectores));
+        dto.setParticipantes(toParticipantesEvento(participantes));
         return dto;
+    }
+
+    public ParticipanteResponseDTO toParticipante(Participante p) {
+        ParticipanteResponseDTO dto = new ParticipanteResponseDTO();
+        if (p == null) {
+            return dto;
+        }
+        dto.setId(p.getId());
+        dto.setNombre(p.getNombre());
+        dto.setTipo(p.getTipo());
+        dto.setDescripcion(p.getDescripcion());
+        return dto;
+    }
+
+    public ParticipanteResponseDTO toParticipanteEvento(EventoParticipante ep) {
+        ParticipanteResponseDTO dto =
+                toParticipante(ep != null ? ep.getParticipante() : null);
+        if (ep != null) {
+            dto.setRol(ep.getRol());
+            dto.setOrden(ep.getOrden());
+        }
+        return dto;
+    }
+
+    public List<ParticipanteResponseDTO> toParticipantesEvento(List<EventoParticipante> list) {
+        List<ParticipanteResponseDTO> out = new ArrayList<>();
+        if (list == null) {
+            return out;
+        }
+        for (EventoParticipante ep : list) {
+            out.add(toParticipanteEvento(ep));
+        }
+        return out;
     }
 
     public List<SectorEventoDTO> toSectoresPublic(List<PrecioSector> precios) {

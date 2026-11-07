@@ -125,6 +125,40 @@
   aspect-ratio: 16 / 10;
   overflow: hidden;
   background: #222;
+  position: relative;
+}
+
+.event-card__cupo {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 1;
+}
+
+.evento-cupo-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+.evento-cupo-badge--agotado {
+  background: color-mix(in srgb, #b91c1c 88%, #000);
+  color: #fff;
+}
+
+.evento-cupo-badge--suspend {
+  background: color-mix(in srgb, #a16207 88%, #000);
+  color: #fff;
+}
+
+.evento-cupo-badge--aviso {
+  background: color-mix(in srgb, #b45309 85%, #000);
+  color: #fff;
 }
 
 .event-card--featured .event-card__media {

@@ -47,19 +47,29 @@ public class EventoController {
      * Default estado=PUBLICADO. Gestión admin: estado=TODOS|ALL.
      */
     @GetMapping("/eventos")
-    public PageResponseDTO<EventoResponseDTO> listar(
-            @RequestParam(required = false) String tipo,
-            @RequestParam(required = false) String ciudad,
-            @RequestParam(required = false) String organizador,
-            @RequestParam(required = false) String estado,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
-            @RequestParam(required = false, defaultValue = "fecha") String orden,
-            @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "20") int size) {
-        return eventoService.buscar(
-                tipo, ciudad, organizador, estado, fechaDesde, fechaHasta, orden, page, size);
-    }
+        public PageResponseDTO<EventoResponseDTO> listar(
+                @RequestParam(required = false) String tipo,
+                @RequestParam(required = false) String ciudad,
+                @RequestParam(required = false) String organizador,
+                @RequestParam(required = false) String participante,
+                @RequestParam(required = false) String estado,
+                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+                @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
+                @RequestParam(required = false, defaultValue = "fecha") String orden,
+                @RequestParam(required = false, defaultValue = "0") int page,
+                @RequestParam(required = false, defaultValue = "20") int size) {
+            return eventoService.buscar(
+                    tipo,
+                    ciudad,
+                    organizador,
+                    participante,
+                    estado,
+                    fechaDesde,
+                    fechaHasta,
+                    orden,
+                    page,
+                    size);
+        }
 
     @GetMapping("/eventos/{id}")
     public EventoDetalleResponseDTO detalle(@PathVariable String id) {

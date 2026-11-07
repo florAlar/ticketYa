@@ -8,76 +8,39 @@ import { EVENTO_ESTADOS, toCatalogoDto } from '../../domain/evento'
 const STORE_KEY = 'ticketya_mock_eventos_gestion'
 
 function seedFromCatalog() {
-  // Catálogo seed como eventos “de sistema” (sin org dueño → solo admin los ve todos)
-  const base = MOCK_EVENTOS.map((e) => ({
+  return MOCK_EVENTOS.map((e) => ({
     ...e,
     descripcion: e.descripcion || '',
-    idOrganizador: e.idOrganizador || 'u_system',
+    idOrganizador: e.idOrganizador || 'b0000000-0000-4000-8000-000000000002',
     participantes: e.participantes || [],
     fechaHora: e.fechaInicio,
     esAltaDemanda: Boolean(e.esAltaDemanda),
     lugar: {
-      nombre: e.lugar?.nombre || '',
-      ciudad: e.lugar?.ciudad || '',
-      direccion: e.lugar?.direccion || '',
+      id: 'c0000000-0000-4000-8000-000000000001',
+      nombre: e.lugar?.nombre || 'Estadio Más Monumental',
+      ciudad: e.lugar?.ciudad || 'Buenos Aires',
+      direccion: e.lugar?.direccion || 'Av. Figueroa Alcorta 7597',
       ubicacion: null,
       sectores: e.lugar?.sectores || [
         {
-          id: 'sec_gen',
-          nombre: 'General',
+          id: 'c0000000-0000-4000-8000-000000000011',
+          nombre: 'Campo',
           esNumerado: false,
-          capacidadTotal: 200,
+          capacidadTotal: 60000,
           precio: e.precioDesde ?? 0,
+        },
+        {
+          id: 'c0000000-0000-4000-8000-000000000012',
+          nombre: 'Platea',
+          esNumerado: true,
+          capacidadTotal: 25000,
+          precio: Math.round((e.precioDesde ?? 0) * 1.8),
         },
       ],
     },
     createdAt: e.createdAt || '2026-01-01T00:00:00.000Z',
     updatedAt: e.updatedAt || '2026-01-01T00:00:00.000Z',
   }))
-
-  // Evento cancelado de demo: el panel ventas lista sus entradas (no todo el catálogo de compras)
-  base.push({
-    id: 'e_cancel_demo',
-    nombre: 'Festival cancelado (demo admin)',
-    descripcion: 'Evento de prueba en estado CANCELADO para cola de reintegros.',
-    tipo: 'FESTIVAL',
-    idOrganizador: 'u_system',
-    participantes: [],
-    fechaInicio: '2026-12-01T20:00:00',
-    fechaHora: '2026-12-01T20:00:00',
-    estado: EVENTO_ESTADOS.CANCELADO,
-    esAltaDemanda: false,
-    lugar: {
-      nombre: 'Predio Municipal',
-      ciudad: 'Tandil',
-      direccion: '',
-      ubicacion: null,
-      sectores: [
-        {
-          id: 'sec_campo',
-          nombre: 'Campo',
-          esNumerado: false,
-          capacidadTotal: 500,
-          precio: 15000,
-        },
-      ],
-    },
-    imagenUrl: undefined,
-    precioDesde: 15000,
-    destacado: false,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-10-01T00:00:00.000Z',
-  })
-
-  return base
-}
-
-/** Garantiza el evento cancelado demo aunque el LS ya existía. */
-function ensureCancelDemo(list) {
-  if (list.some((e) => e.id === 'e_cancel_demo')) return list
-  const next = [...list, ...seedFromCatalog().filter((e) => e.id === 'e_cancel_demo')]
-  writeGestionEventos(next)
-  return next
 }
 
 export function readGestionEventos() {
@@ -89,11 +52,17 @@ export function readGestionEventos() {
       return seed
     }
     const parsed = JSON.parse(raw)
-    const list = Array.isArray(parsed) ? parsed : seedFromCatalog()
-    return ensureCancelDemo(list)
+    return Array.isArray(parsed) ? parsed : seedFromCatalog()
   } catch {
     return seedFromCatalog()
   }
+}
+
+/** Fuerza reseed del catálogo mock (3 eventos canónicos). */
+export function resetGestionEventosSeed() {
+  const seed = seedFromCatalog()
+  writeGestionEventos(seed)
+  return seed
 }
 
 export function listEventosCancelados() {
@@ -102,6 +71,24 @@ export function listEventosCancelados() {
 
 export function writeGestionEventos(list) {
   localStorage.setItem(STORE_KEY, JSON.stringify(list))
+}
+
+export function listCatalogoPublico() {
+  return readGestionEventos()
+    .filter(
+      (e) =>
+        e.estado === EVENTO_ESTADOS.PUBLICADO ||
+        e.estado === 'PUBLICADO' ||
+        e.estado === EVENTO_ESTADOS.SUSPENDIDO ||
+        e.estado === 'SUSPENDIDO'
+    )
+    .map(toCatalogoDto)
+}
+
+export function listGestionForUser(user, { isAdmin } = {}) {
+  const all = readGestionEventos()
+  if (isAdmin) return all
+  return all.filter((e) => String(e.idOrganizador) === String(user?.id))
 }
 
 export function insertGestionEvento(evento) {
@@ -113,32 +100,9 @@ export function insertGestionEvento(evento) {
 
 export function updateGestionEvento(id, patch) {
   const list = readGestionEventos()
-  const idx = list.findIndex((e) => e.id === String(id))
-  if (idx === -1) return null
-  const next = {
-    ...list[idx],
-    ...patch,
-    id: list[idx].id,
-    updatedAt: new Date().toISOString(),
-  }
-  list[idx] = next
+  const i = list.findIndex((e) => String(e.id) === String(id))
+  if (i < 0) return null
+  list[i] = { ...list[i], ...patch, updatedAt: new Date().toISOString() }
   writeGestionEventos(list)
-  return next
-}
-
-/** Catálogo público: solo PUBLICADO (+ AGOTADO visible). */
-export function listCatalogoPublico() {
-  return readGestionEventos()
-    .filter((e) =>
-      [EVENTO_ESTADOS.PUBLICADO, EVENTO_ESTADOS.AGOTADO].includes(e.estado)
-    )
-    .map(toCatalogoDto)
-}
-
-/** Listado gestión filtrado por rol. */
-export function listGestionForUser(user, { isAdmin } = {}) {
-  const all = readGestionEventos()
-  if (isAdmin) return all
-  const oid = user?.id
-  return all.filter((e) => e.idOrganizador === oid)
+  return list[i]
 }

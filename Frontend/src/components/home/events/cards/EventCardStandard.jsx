@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { formatEventoFecha, formatPrecioDesde } from '../eventFormat'
+import EventoCupoBadge from '../EventoCupoBadge'
 
 /** Card estándar (filas horizontales / listados) */
 const EventCardStandard = ({ evento }) => {
@@ -8,6 +9,7 @@ const EventCardStandard = ({ evento }) => {
     <Link to={`/eventos/${evento.id}`} className="event-card event-card--standard">
       <div className="event-card__media">
         <img src={evento.imagenUrl} alt="" loading="lazy" />
+        <EventoCupoBadge evento={evento} className="event-card__cupo" />
       </div>
       <div className="event-card__body">
         <p className="event-card__tipo">{evento.tipo}</p>

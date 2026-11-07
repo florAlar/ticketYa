@@ -12,12 +12,18 @@ const DesktopNav = () => {
     isAcceso,
   } = useAuth()
 
+  const accountTitle = user?.nombre
+    ? `${user.nombre}${user.rol ? ` (${user.rol})` : ''}`
+    : user?.email || 'Mi perfil'
+
   return (
     <nav className="desktop-nav">
       <ul className="nav-links">
         <li><NavLink to="/" end>Inicio</NavLink></li>
-        {/* Acceso: foco en puerta; catálogo no es su flujo principal */}
-        {!isAcceso && <li><NavLink to="/eventos">Eventos</NavLink></li>}
+        {/* Catálogo JWT: visible solo logueado (no anónimo). Acceso también SearchBar. */}
+        {isAuthenticated && !isAcceso && (
+          <li><NavLink to="/eventos">Eventos</NavLink></li>
+        )}
         {!isAcceso && (
           <li><NavLink to="/mis-entradas">Mis entradas</NavLink></li>
         )}
@@ -31,14 +37,10 @@ const DesktopNav = () => {
           <>
             <li>
               <NavLink
-                to={isAcceso ? '/acceso' : '/mis-entradas'}
+                to="/perfil"
                 className="nav-account"
-                title={
-                  user?.nombre
-                    ? `${user.nombre}${user.rol ? ` (${user.rol})` : ''}`
-                    : user?.email || 'Cuenta'
-                }
-                aria-label={user?.nombre || 'Cuenta'}
+                title={accountTitle}
+                aria-label={user?.nombre || 'Mi perfil'}
               >
                 <HiOutlineUser className="nav-account__icon" aria-hidden />
               </NavLink>

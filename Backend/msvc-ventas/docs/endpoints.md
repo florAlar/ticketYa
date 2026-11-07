@@ -11,7 +11,10 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 
 | Endpoint | Estado | Notas |
 | --- | --- | --- |
-| GET /eventos/{id}/disponibilidad | **hecho** | Cupos `cupo_sector`; 404 si no hay filas |
+| GET /eventos/disponibilidad?ids= | **hecho** | Batch catálogo (máx 50 ids). 1 query `cupo_sector`. Sin filas → ítem agotado total 0 |
+| GET /eventos/{id}/disponibilidad | **hecho** | Cupos `cupo_sector`; 404 si no hay filas. DTO: disponibleTotal + nivelCupo |
+| POST /eventos/{id}/cupos | **hecho** | Abre stock al publicar (body `{sectores:[{idSector,capacidadTotal≥1}]}`). Idempotente. Feign desde msvc-eventos; GW `/api/eventos/{id}/cupos` |
+| POST /eventos/{id}/cupos/liberacion | **hecho** | Devuelve stock por devolución aprobada. Body `{idSector, cantidad≥1}`. Lock pesimista; `-vendida` `+disponible`. Feign msvc-entradas; GW order 9 |
 | POST /reservas | **hecho** | TTL 10 min; lock pesimista cupo; precio vía Feign msvc-eventos; `X-User-Id`; opcional `Idempotency-Key` |
 | GET /reservas/{id} | **hecho** | Solo dueño; expira lazy si TTL vencido |
 | POST /reservas/{id}/confirmacion | **hecho** | PENDIENTE → CONFIRMADA |
@@ -46,10 +49,29 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 
 ### Shape breve
 
-**Disponibilidad**
+**Disponibilidad** (número real + clasificación DTO)
 ```json
-{ "idEvento": "…", "sectores": [{ "idSector", "capacidadTotal", "cantidadDisponible", "cantidadReservada", "cantidadVendida" }] }
+{
+  "idEvento": "…",
+  "disponibleTotal": 42,
+  "agotado": false,
+  "nivelCupo": "MENOS_DE_50",
+  "nivelCupoLabel": "Menos de 50",
+  "sectores": [{
+    "idSector": "…",
+    "capacidadTotal": 100,
+    "cantidadDisponible": 42,
+    "cantidadReservada": 0,
+    "cantidadVendida": 58,
+    "agotado": false,
+    "nivelCupo": "MENOS_DE_50",
+    "nivelCupoLabel": "Menos de 50"
+  }]
+}
 ```
+Umbrales: 0→AGOTADO; &lt;20→ULTIMOS_LUGARES; &lt;50→MENOS_DE_50; &lt;100→MENOS_DE_100; else OK.
+
+**Batch** `GET /eventos/disponibilidad?ids=a&ids=b` → `{ "items": [ /* Disponibilidad… */ ] }`
 
 **POST /reservas**
 ```json
@@ -68,6 +90,7 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 
 ### Enrutamiento gateway
 
+- `/api/eventos/disponibilidad` (GET batch) → ventas (order 9)
 - `/api/eventos/{id}/disponibilidad` → ventas (order 10)
 - `/api/reservas/**`, `/api/compras/**`, `/api/pagos/**` → ventas
 - Headers: `Authorization` (GW) → `X-User-Id`; `Idempotency-Key`

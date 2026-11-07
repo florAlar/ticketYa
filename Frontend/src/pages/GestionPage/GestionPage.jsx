@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom'
 import './GestionPage.css'
 
 /**
- * Hub: org → eventos; admin → eventos + usuarios/acceso + ventas.
- * CTAs no cableados al BE: agrisados (flujos mock/shell intactos en el repo).
+ * Hub: org → eventos; admin → eventos + usuarios + ventas.
+ * Acceso puerta/QR es solo PERSONAL_ACCESO (ruta /acceso), no el admin.
  */
 const GestionPage = () => {
   const {
@@ -67,10 +67,11 @@ const GestionPage = () => {
 
         {canManageStaff && (
           <article className="gestion-card gestion-card--ops">
-            <h2>Usuarios y acceso</h2>
+            <h2>Usuarios</h2>
             <p>
-              Rol y activo (no datos personales). Alta de personal de acceso
-              asignado a eventos. ACCESO no se desactiva: se elimina.
+              Roles y estado de cuentas de la plataforma. Podés dar de alta
+              personal de acceso (eso no es el panel de puerta/QR: ese es solo
+              para quien tiene rol PERSONAL_ACCESO).
             </p>
             <GateLink
               enabled={FEATURE.adminUsuarios}

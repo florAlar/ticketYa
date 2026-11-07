@@ -2,21 +2,28 @@ package eventos.service;
 
 import feign.FeignException;
 import eventos.clients.EntradasClient;
+import eventos.clients.VentasClient;
+import eventos.clients.VentasClient.AbrirCuposBody;
 import eventos.dto.AsientoResponseDTO;
 import eventos.dto.EventoDetalleResponseDTO;
 import eventos.dto.EventoFechaRequestDTO;
+import eventos.dto.EventoParticipantesRequestDTO;
 import eventos.dto.EventoRequestDTO;
 import eventos.dto.EventoRequestDTO.SectorInputDTO;
 import eventos.dto.EventoResponseDTO;
 import eventos.dto.LugarRequestDTO;
 import eventos.dto.LugarResponseDTO;
 import eventos.dto.PageResponseDTO;
+import eventos.dto.ParticipanteRequestDTO;
+import eventos.dto.ParticipanteResponseDTO;
 import eventos.dto.PrecioSectorRequestDTO;
 import eventos.dto.SectorEventoDTO;
 import eventos.dto.SectorRequestDTO;
 import eventos.entity.Asiento;
 import eventos.entity.Evento;
+import eventos.entity.EventoParticipante;
 import eventos.entity.Lugar;
+import eventos.entity.Participante;
 import eventos.entity.PrecioSector;
 import eventos.entity.Sector;
 import eventos.exception.BusinessConflictException;
@@ -24,8 +31,10 @@ import eventos.exception.ForbiddenException;
 import eventos.exception.ResourceNotFoundException;
 import eventos.mapper.EventoMapper;
 import eventos.repository.AsientoRepository;
+import eventos.repository.EventoParticipanteRepository;
 import eventos.repository.EventoRepository;
 import eventos.repository.LugarRepository;
+import eventos.repository.ParticipanteRepository;
 import eventos.repository.PrecioSectorRepository;
 import eventos.repository.SectorRepository;
 import java.math.BigDecimal;
@@ -67,67 +76,78 @@ public class EventoServiceImpl implements EventoService {
             SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO, PUBLICADO, BORRADOR);
 
     private final EventoRepository eventoRepository;
-    private final PrecioSectorRepository precioSectorRepository;
-    private final LugarRepository lugarRepository;
-    private final SectorRepository sectorRepository;
-    private final AsientoRepository asientoRepository;
-    private final EventoMapper eventoMapper;
-    private final EntradasClient entradasClient;
+        private final PrecioSectorRepository precioSectorRepository;
+        private final LugarRepository lugarRepository;
+        private final SectorRepository sectorRepository;
+        private final AsientoRepository asientoRepository;
+        private final ParticipanteRepository participanteRepository;
+        private final EventoParticipanteRepository eventoParticipanteRepository;
+        private final EventoMapper eventoMapper;
+        private final EntradasClient entradasClient;
+        private final VentasClient ventasClient;
 
-    public EventoServiceImpl(
-            EventoRepository eventoRepository,
-            PrecioSectorRepository precioSectorRepository,
-            LugarRepository lugarRepository,
-            SectorRepository sectorRepository,
-            AsientoRepository asientoRepository,
-            EventoMapper eventoMapper,
-            EntradasClient entradasClient) {
-        this.eventoRepository = eventoRepository;
-        this.precioSectorRepository = precioSectorRepository;
-        this.lugarRepository = lugarRepository;
-        this.sectorRepository = sectorRepository;
-        this.asientoRepository = asientoRepository;
-        this.eventoMapper = eventoMapper;
-        this.entradasClient = entradasClient;
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponseDTO<EventoResponseDTO> buscar(
-            String tipo,
-            String ciudad,
-            String organizador,
-            String estado,
-            LocalDate fechaDesde,
-            LocalDate fechaHasta,
-            String orden,
-            int page,
-            int size) {
-
-        int safePage = Math.max(page, 0);
-        int safeSize = size <= 0 ? 20 : Math.min(size, 200);
-
-        boolean todos = estado != null
-                && (estado.equalsIgnoreCase("TODOS") || estado.equalsIgnoreCase("ALL") || estado.equals("*"));
-        String estadoFiltro = todos ? null : blankToNull(estado);
-        if (estadoFiltro == null && !todos) {
-            estadoFiltro = ESTADO_CATALOGO_DEFAULT;
+        public EventoServiceImpl(
+                EventoRepository eventoRepository,
+                PrecioSectorRepository precioSectorRepository,
+                LugarRepository lugarRepository,
+                SectorRepository sectorRepository,
+                AsientoRepository asientoRepository,
+                ParticipanteRepository participanteRepository,
+                EventoParticipanteRepository eventoParticipanteRepository,
+                EventoMapper eventoMapper,
+                EntradasClient entradasClient,
+                VentasClient ventasClient) {
+            this.eventoRepository = eventoRepository;
+            this.precioSectorRepository = precioSectorRepository;
+            this.lugarRepository = lugarRepository;
+            this.sectorRepository = sectorRepository;
+            this.asientoRepository = asientoRepository;
+            this.participanteRepository = participanteRepository;
+            this.eventoParticipanteRepository = eventoParticipanteRepository;
+            this.eventoMapper = eventoMapper;
+            this.entradasClient = entradasClient;
+            this.ventasClient = ventasClient;
         }
 
-        LocalDateTime desde = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
-        LocalDateTime hasta = fechaHasta != null ? fechaHasta.atTime(LocalTime.MAX) : null;
+        @Override
+        @Transactional(readOnly = true)
+        public PageResponseDTO<EventoResponseDTO> buscar(
+                String tipo,
+                String ciudad,
+                String organizador,
+                String participante,
+                String estado,
+                LocalDate fechaDesde,
+                LocalDate fechaHasta,
+                String orden,
+                int page,
+                int size) {
 
-        Sort sort = resolveSort(orden);
-        Pageable pageable = PageRequest.of(safePage, safeSize, sort);
+            int safePage = Math.max(page, 0);
+            int safeSize = size <= 0 ? 20 : Math.min(size, 200);
 
-        Page<Evento> result = eventoRepository.buscar(
-                blankToNull(tipo),
-                blankToNull(ciudad),
-                blankToNull(organizador),
-                estadoFiltro,
-                desde,
-                hasta,
-                pageable);
+            boolean todos = estado != null
+                    && (estado.equalsIgnoreCase("TODOS") || estado.equalsIgnoreCase("ALL") || estado.equals("*"));
+            String estadoFiltro = todos ? null : blankToNull(estado);
+            if (estadoFiltro == null && !todos) {
+                estadoFiltro = ESTADO_CATALOGO_DEFAULT;
+            }
+
+            LocalDateTime desde = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
+            LocalDateTime hasta = fechaHasta != null ? fechaHasta.atTime(LocalTime.MAX) : null;
+
+            Sort sort = resolveSort(orden);
+            Pageable pageable = PageRequest.of(safePage, safeSize, sort);
+
+            Page<Evento> result = eventoRepository.buscar(
+                    blankToNull(tipo),
+                    blankToNull(ciudad),
+                    blankToNull(organizador),
+                    estadoFiltro,
+                    desde,
+                    hasta,
+                    blankToNull(participante),
+                    pageable);
 
         List<Evento> eventos = result.getContent();
         Map<String, BigDecimal> minPrecios = minPrecios(eventos.stream().map(Evento::getId).toList());
@@ -169,78 +189,85 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
-    @Transactional
-    public EventoDetalleResponseDTO crear(EventoRequestDTO request, String idOrganizador) {
-        if (request == null) {
-            throw new IllegalArgumentException("Body requerido");
-        }
-        String nombre = requireText(request.getNombre(), "nombre");
-        if (request.getFechaInicio() == null) {
-            throw new IllegalArgumentException("fechaInicio es obligatoria");
-        }
-        String tipo = blankToNull(request.getTipo());
-        if (tipo == null) {
-            tipo = "RECITAL";
-        } else {
-            tipo = tipo.toUpperCase();
-        }
-
-        Lugar lugar = resolveLugarForCreate(request);
-        List<SectorInputDTO> inputs = normalizeSectorInputs(request.getSectores());
-        if (inputs.isEmpty()) {
-            throw new IllegalArgumentException("Agregá al menos un sector/tipo de entrada con nombre");
-        }
-
-        // crear sectores nuevos del lugar si el payload no trae id de sector existente
-        List<Sector> sectoresCreados = new ArrayList<>();
-        for (SectorInputDTO in : inputs) {
-            if (blankToNull(in.getId()) != null) {
-                Sector existing = sectorRepository
-                        .findById(in.getId().trim())
-                        .orElseThrow(() -> new ResourceNotFoundException("Sector no encontrado: " + in.getId()));
-                if (!existing.getLugar().getId().equals(lugar.getId())) {
-                    throw new IllegalArgumentException("Sector no pertenece al lugar del evento");
-                }
-                applySectorInput(existing, in);
-                sectoresCreados.add(sectorRepository.save(existing));
-            } else {
-                Sector s = new Sector();
-                s.setId(UUID.randomUUID().toString());
-                s.setLugar(lugar);
-                applySectorInput(s, in);
-                sectoresCreados.add(sectorRepository.save(s));
+        @Transactional
+        public EventoDetalleResponseDTO crear(EventoRequestDTO request, String idOrganizador) {
+            if (request == null) {
+                throw new IllegalArgumentException("Body requerido");
             }
+            String nombre = requireText(request.getNombre(), "nombre");
+            String estadoPedido = blankToNull(request.getEstado());
+            boolean publicarAlFinal = estadoPedido != null && PUBLICADO.equalsIgnoreCase(estadoPedido);
+
+            if (request.getFechaInicio() != null) {
+                            // sin límite de “fecha futura” en alta (borrador o publicar)
+                        } else if (publicarAlFinal) {
+                            throw new IllegalArgumentException("fechaInicio es obligatoria para publicar");
+                        }
+
+            String tipo = blankToNull(request.getTipo());
+            if (tipo == null) {
+                tipo = "RECITAL";
+            } else {
+                tipo = tipo.toUpperCase();
+            }
+
+            Lugar lugar = resolveLugarForCreate(request, publicarAlFinal);
+            List<SectorInputDTO> inputs = normalizeSectorInputs(request.getSectores());
+            if (publicarAlFinal && inputs.isEmpty()) {
+                throw new IllegalArgumentException("Agregá al menos un sector/tipo de entrada con nombre");
+            }
+
+            // crear sectores nuevos del lugar si el payload no trae id de sector existente
+            List<Sector> sectoresCreados = new ArrayList<>();
+            for (SectorInputDTO in : inputs) {
+                if (blankToNull(in.getId()) != null) {
+                    Sector existing = sectorRepository
+                            .findById(in.getId().trim())
+                            .orElseThrow(() -> new ResourceNotFoundException("Sector no encontrado: " + in.getId()));
+                    if (!existing.getLugar().getId().equals(lugar.getId())) {
+                        throw new IllegalArgumentException("Sector no pertenece al lugar del evento");
+                    }
+                    applySectorInput(existing, in, publicarAlFinal);
+                    sectoresCreados.add(sectorRepository.save(existing));
+                } else {
+                    Sector s = new Sector();
+                    s.setId(UUID.randomUUID().toString());
+                    s.setLugar(lugar);
+                    applySectorInput(s, in, publicarAlFinal);
+                    sectoresCreados.add(sectorRepository.save(s));
+                }
+            }
+            recalcularCapacidadLugar(lugar);
+
+            Evento evento = new Evento();
+            evento.setId(UUID.randomUUID().toString());
+            evento.setIdOrganizador(idOrganizador);
+            evento.setNombre(nombre);
+            evento.setDescripcion(blankToNull(request.getDescripcion()));
+            evento.setTipo(tipo);
+            // Schema NOT NULL: borrador sin fecha → provisional +1 año (publicar exige fecha real futura)
+            evento.setFechaInicio(
+                    request.getFechaInicio() != null
+                            ? request.getFechaInicio()
+                            : LocalDateTime.now(ZoneOffset.UTC).plusYears(1));
+            evento.setFechaFin(request.getFechaFin());
+            evento.setEstado(BORRADOR);
+            evento.setLugar(lugar);
+            evento.setFechaPublicacion(null);
+            evento.setEsAltaDemanda(Boolean.TRUE.equals(request.getEsAltaDemanda()));
+            eventoRepository.save(evento);
+
+            for (int i = 0; i < inputs.size(); i++) {
+                SectorInputDTO in = inputs.get(i);
+                Sector sector = sectoresCreados.get(i);
+                upsertPrecio(evento, sector, precioOf(in), "ARS", true);
+            }
+
+            if (publicarAlFinal) {
+                return doPublicar(evento);
+            }
+            return toDetalle(evento);
         }
-        recalcularCapacidadLugar(lugar);
-
-        String estadoPedido = blankToNull(request.getEstado());
-        boolean publicarAlFinal = estadoPedido != null && PUBLICADO.equalsIgnoreCase(estadoPedido);
-
-        Evento evento = new Evento();
-        evento.setId(UUID.randomUUID().toString());
-        evento.setIdOrganizador(idOrganizador);
-        evento.setNombre(nombre);
-        evento.setDescripcion(blankToNull(request.getDescripcion()));
-        evento.setTipo(tipo);
-        evento.setFechaInicio(request.getFechaInicio());
-        evento.setFechaFin(request.getFechaFin());
-        evento.setEstado(BORRADOR);
-        evento.setLugar(lugar);
-        evento.setFechaPublicacion(null);
-        evento.setEsAltaDemanda(Boolean.TRUE.equals(request.getEsAltaDemanda()));
-        eventoRepository.save(evento);
-
-        for (int i = 0; i < inputs.size(); i++) {
-            SectorInputDTO in = inputs.get(i);
-            Sector sector = sectoresCreados.get(i);
-            upsertPrecio(evento, sector, precioOf(in), "ARS", true);
-        }
-
-        if (publicarAlFinal) {
-            return doPublicar(evento);
-        }
-        return toDetalle(evento);
-    }
 
     @Override
     @Transactional
@@ -264,8 +291,8 @@ public class EventoServiceImpl implements EventoService {
             evento.setTipo(request.getTipo().trim().toUpperCase());
         }
         if (request.getFechaInicio() != null) {
-            evento.setFechaInicio(request.getFechaInicio());
-        }
+                    evento.setFechaInicio(request.getFechaInicio());
+                }
         if (request.getFechaFin() != null) {
             evento.setFechaFin(request.getFechaFin());
         }
@@ -307,7 +334,7 @@ public class EventoServiceImpl implements EventoService {
                     sector.setId(UUID.randomUUID().toString());
                     sector.setLugar(lugar);
                 }
-                applySectorInput(sector, in);
+                applySectorInput(sector, in, false);
                 sectorRepository.save(sector);
                 upsertPrecio(evento, sector, precioOf(in), "ARS", true);
             }
@@ -389,8 +416,8 @@ public class EventoServiceImpl implements EventoService {
             throw new BusinessConflictException("No se puede cambiar fecha de un evento " + evento.getEstado());
         }
         if (body.getFechaInicio() != null) {
-            evento.setFechaInicio(body.getFechaInicio());
-        }
+                    evento.setFechaInicio(body.getFechaInicio());
+                }
         if (body.getFechaFin() != null) {
             evento.setFechaFin(body.getFechaFin());
         }
@@ -521,106 +548,297 @@ public class EventoServiceImpl implements EventoService {
             throw new ResourceNotFoundException("Sector no pertenece al lugar");
         }
         return asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(idSector).stream()
-                .map(this::toAsiento)
-                .toList();
-    }
-
-    // --- helpers dominio ---
-
-    private EventoDetalleResponseDTO doPublicar(Evento evento) {
-        if (CANCELADO.equalsIgnoreCase(evento.getEstado()) || FINALIZADO.equalsIgnoreCase(evento.getEstado())) {
-            throw new BusinessConflictException("No se puede publicar un evento " + evento.getEstado());
-        }
-        if (blankToNull(evento.getNombre()) == null) {
-            throw new BusinessConflictException("Publicación: falta nombre");
-        }
-        if (evento.getFechaInicio() == null) {
-            throw new BusinessConflictException("Publicación: falta fechaInicio");
-        }
-        if (evento.getLugar() == null) {
-            throw new BusinessConflictException("Publicación: falta lugar");
-        }
-        List<PrecioSector> activos = precioSectorRepository.findActivosByEventoId(evento.getId());
-        if (activos.isEmpty()) {
-            throw new BusinessConflictException("Publicación: se requiere al menos un precio de sector activo");
-        }
-        for (PrecioSector ps : activos) {
-            if (ps.getPrecio() == null || ps.getPrecio().compareTo(BigDecimal.ZERO) < 0) {
-                throw new BusinessConflictException("Publicación: precio inválido en sector");
+                        .map(this::toAsiento)
+                        .toList();
             }
-            Sector sec = ps.getSector();
-            if (sec == null || blankToNull(sec.getNombre()) == null) {
-                throw new BusinessConflictException("Publicación: sector incompleto");
+
+            @Override
+            @Transactional(readOnly = true)
+            public List<ParticipanteResponseDTO> listarParticipantes(String q, String tipo) {
+                return participanteRepository.buscar(blankToNull(q), blankToNull(tipo)).stream()
+                        .map(eventoMapper::toParticipante)
+                        .toList();
+            }
+
+            @Override
+            @Transactional(readOnly = true)
+            public ParticipanteResponseDTO obtenerParticipante(String id) {
+                return eventoMapper.toParticipante(requireParticipante(id));
+            }
+
+            @Override
+            @Transactional
+            public ParticipanteResponseDTO crearParticipante(ParticipanteRequestDTO body) {
+                if (body == null) {
+                    throw new IllegalArgumentException("Body requerido");
+                }
+                String nombre = requireText(body.getNombre(), "nombre");
+                Participante p = new Participante();
+                p.setId(UUID.randomUUID().toString());
+                p.setNombre(nombre);
+                p.setTipo(blankToNull(body.getTipo()) != null ? body.getTipo().trim().toUpperCase() : null);
+                p.setDescripcion(blankToNull(body.getDescripcion()));
+                return eventoMapper.toParticipante(participanteRepository.save(p));
+            }
+
+            @Override
+            @Transactional
+            public ParticipanteResponseDTO actualizarParticipante(String id, ParticipanteRequestDTO body) {
+                Participante p = requireParticipante(id);
+                if (body == null) {
+                    throw new IllegalArgumentException("Body requerido");
+                }
+                if (blankToNull(body.getNombre()) != null) {
+                    p.setNombre(body.getNombre().trim());
+                }
+                if (body.getTipo() != null) {
+                    p.setTipo(blankToNull(body.getTipo()) != null ? body.getTipo().trim().toUpperCase() : null);
+                }
+                if (body.getDescripcion() != null) {
+                    p.setDescripcion(blankToNull(body.getDescripcion()));
+                }
+                return eventoMapper.toParticipante(participanteRepository.save(p));
+            }
+
+            @Override
+            @Transactional(readOnly = true)
+            public List<ParticipanteResponseDTO> listarParticipantesDeEvento(String idEvento) {
+                requireEvento(idEvento);
+                return eventoMapper.toParticipantesEvento(
+                        eventoParticipanteRepository.findByEventoIdOrdered(idEvento));
+            }
+
+            @Override
+            @Transactional
+            public List<ParticipanteResponseDTO> asociarParticipantes(
+                                String idEvento, EventoParticipantesRequestDTO body, String userId, String role) {
+                            Evento evento = requireEvento(idEvento);
+                            assertOwnerOrAdmin(evento, userId, role);
+                            if (body == null) {
+                                throw new IllegalArgumentException("Body requerido");
+                            }
+
+                List<EventoParticipantesRequestDTO.Item> items = new ArrayList<>();
+                if (body.getParticipantes() != null && !body.getParticipantes().isEmpty()) {
+                    int i = 0;
+                    for (EventoParticipantesRequestDTO.Item it : body.getParticipantes()) {
+                        if (it == null || blankToNull(it.getId()) == null) {
+                            continue;
+                        }
+                        EventoParticipantesRequestDTO.Item copy = new EventoParticipantesRequestDTO.Item();
+                        copy.setId(it.getId().trim());
+                        copy.setRol(blankToNull(it.getRol()) != null ? it.getRol().trim().toUpperCase() : null);
+                        copy.setOrden(it.getOrden() != null ? it.getOrden() : i);
+                        items.add(copy);
+                        i++;
+                    }
+                } else if (body.getIds() != null) {
+                    int i = 0;
+                    for (String id : body.getIds()) {
+                        if (blankToNull(id) == null) {
+                            continue;
+                        }
+                        EventoParticipantesRequestDTO.Item it = new EventoParticipantesRequestDTO.Item();
+                        it.setId(id.trim());
+                        it.setOrden(i++);
+                        items.add(it);
+                    }
+                }
+
+                // dedupe por id, conserva último
+                Map<String, EventoParticipantesRequestDTO.Item> byId = new HashMap<>();
+                for (EventoParticipantesRequestDTO.Item it : items) {
+                    byId.put(it.getId(), it);
+                }
+                items = new ArrayList<>(byId.values());
+                items.sort((a, b) -> {
+                    int oa = a.getOrden() != null ? a.getOrden() : 0;
+                    int ob = b.getOrden() != null ? b.getOrden() : 0;
+                    return Integer.compare(oa, ob);
+                });
+
+                eventoParticipanteRepository.deleteByEventoId(evento.getId());
+                List<EventoParticipante> saved = new ArrayList<>();
+                int idx = 0;
+                for (EventoParticipantesRequestDTO.Item it : items) {
+                    Participante p = requireParticipante(it.getId());
+                    EventoParticipante ep = new EventoParticipante();
+                    ep.setEvento(evento);
+                    ep.setParticipante(p);
+                    ep.setRol(it.getRol());
+                    ep.setOrden(it.getOrden() != null ? it.getOrden() : idx);
+                    saved.add(eventoParticipanteRepository.save(ep));
+                    idx++;
+                }
+                return eventoMapper.toParticipantesEvento(saved);
+            }
+
+            private Participante requireParticipante(String id) {
+                return participanteRepository
+                        .findById(id)
+                        .orElseThrow(() -> new ResourceNotFoundException("Participante no encontrado: " + id));
+            }
+
+            // --- helpers dominio ---
+
+                private static final String LUGAR_BORRADOR_NOMBRE = "Por definir";
+                private static final String LUGAR_BORRADOR_CIUDAD = "Por definir";
+
+        private EventoDetalleResponseDTO doPublicar(Evento evento) {
+            if (CANCELADO.equalsIgnoreCase(evento.getEstado()) || FINALIZADO.equalsIgnoreCase(evento.getEstado())) {
+                throw new BusinessConflictException("No se puede publicar un evento " + evento.getEstado());
+            }
+            if (blankToNull(evento.getNombre()) == null) {
+                throw new BusinessConflictException("Publicación: falta nombre");
+            }
+            if (evento.getFechaInicio() == null) {
+                            throw new BusinessConflictException("Publicación: falta fechaInicio");
+                        }
+                        if (evento.getLugar() == null) {
+                throw new BusinessConflictException("Publicación: falta lugar");
+            }
+            Lugar lugar = evento.getLugar();
+            if (blankToNull(lugar.getNombre()) == null
+                    || LUGAR_BORRADOR_NOMBRE.equalsIgnoreCase(lugar.getNombre().trim())) {
+                throw new BusinessConflictException("Publicación: definí el nombre del lugar");
+            }
+            if (blankToNull(lugar.getCiudad()) == null
+                    || LUGAR_BORRADOR_CIUDAD.equalsIgnoreCase(lugar.getCiudad().trim())) {
+                throw new BusinessConflictException("Publicación: definí la ciudad del lugar");
+            }
+            List<PrecioSector> activos = precioSectorRepository.findActivosByEventoId(evento.getId());
+            if (activos.isEmpty()) {
+                throw new BusinessConflictException("Publicación: se requiere al menos un tipo de entrada con precio");
+            }
+            for (PrecioSector ps : activos) {
+                if (ps.getPrecio() == null || ps.getPrecio().compareTo(BigDecimal.ZERO) < 0) {
+                    throw new BusinessConflictException("Publicación: precio inválido en sector");
+                }
+                Sector sec = ps.getSector();
+                if (sec == null || blankToNull(sec.getNombre()) == null) {
+                    throw new BusinessConflictException("Publicación: sector incompleto");
+                }
+                Integer cap = sec.getCapacidad();
+                                if (cap == null || cap < 1) {
+                                    throw new BusinessConflictException(
+                                            "Publicación: el sector «" + sec.getNombre() + "» necesita cupo ≥ 1 (no hay cupo ilimitado)");
+                                }
+                            }
+
+                            // Abrir stock comercial en msvc-ventas ANTES de marcar PUBLICADO (fail-hard).
+                            abrirCuposEnVentas(evento.getId(), activos);
+
+                            evento.setEstado(PUBLICADO);
+                            if (evento.getFechaPublicacion() == null) {
+                                evento.setFechaPublicacion(LocalDateTime.now(ZoneOffset.UTC));
+                            }
+                            eventoRepository.save(evento);
+                            return toDetalle(evento);
+                        }
+
+                        /** Reservado: no se exige fecha futura en E1 (fuera de alcance de evaluación). */
+                                                @SuppressWarnings("unused")
+                                                private static void assertFechaInicioNoPasada(LocalDateTime fechaInicio) {
+                                                    // no-op
+                                                }
+
+                                                private void abrirCuposEnVentas(String idEvento, List<PrecioSector> activos) {
+                            AbrirCuposBody body = new AbrirCuposBody();
+                            List<AbrirCuposBody.Item> items = new ArrayList<>();
+                            for (PrecioSector ps : activos) {
+                                Sector sec = ps.getSector();
+                                items.add(new AbrirCuposBody.Item(sec.getId(), sec.getCapacidad()));
+                            }
+                            body.setSectores(items);
+                            try {
+                                ventasClient.abrirCupos(idEvento, body);
+                            } catch (FeignException e) {
+                                log.error("No se pudo abrir cupos en ventas para evento {}: status={}", idEvento, e.status());
+                                throw new BusinessConflictException(
+                                        "Publicación: no se pudo abrir el stock comercial en ventas (¿msvc-ventas arriba?). Detalle: HTTP "
+                                                + e.status());
+                            } catch (Exception e) {
+                                log.error("No se pudo abrir cupos en ventas para evento {}: {}", idEvento, e.toString());
+                                throw new BusinessConflictException(
+                                        "Publicación: no se pudo abrir el stock comercial en ventas: " + e.getMessage());
+                            }
+                        }
+
+                        private void notifyReintegroBestEffort(String idEvento) {
+            try {
+                entradasClient.reintegroCancelacion(idEvento, "ADMIN");
+            } catch (FeignException e) {
+                log.warn("Reintegro cancelación best-effort falló para evento {}: {}", idEvento, e.status());
+            } catch (Exception e) {
+                log.warn("Reintegro cancelación best-effort falló para evento {}: {}", idEvento, e.toString());
             }
         }
-        evento.setEstado(PUBLICADO);
-        if (evento.getFechaPublicacion() == null) {
-            evento.setFechaPublicacion(LocalDateTime.now(ZoneOffset.UTC));
-        }
-        eventoRepository.save(evento);
-        return toDetalle(evento);
-    }
 
-    private void notifyReintegroBestEffort(String idEvento) {
-        try {
-            entradasClient.reintegroCancelacion(idEvento, "ADMIN");
-        } catch (FeignException e) {
-            log.warn("Reintegro cancelación best-effort falló para evento {}: {}", idEvento, e.status());
-        } catch (Exception e) {
-            log.warn("Reintegro cancelación best-effort falló para evento {}: {}", idEvento, e.toString());
-        }
-    }
-
-    private Lugar resolveLugarForCreate(EventoRequestDTO request) {
-        if (blankToNull(request.getIdLugar()) != null) {
-            return requireLugar(request.getIdLugar().trim());
-        }
-        String nombre = requireText(request.getLugarNombre(), "lugarNombre (o idLugar)");
-        String ciudad = requireText(request.getLugarCiudad(), "lugarCiudad (o idLugar)");
-        Lugar lugar = new Lugar();
-        lugar.setId(UUID.randomUUID().toString());
-        lugar.setNombre(nombre);
-        lugar.setCiudad(ciudad);
-        lugar.setDireccion(blankToNull(request.getLugarDireccion()));
-        lugar.setCapacidadTotal(0);
-        return lugarRepository.save(lugar);
-    }
-
-    private void applyLugar(Lugar lugar, LugarRequestDTO body, boolean creating) {
-        if (creating || blankToNull(body.getNombre()) != null) {
-            lugar.setNombre(requireText(body.getNombre(), "nombre"));
-        }
-        if (creating || blankToNull(body.getCiudad()) != null) {
-            lugar.setCiudad(requireText(body.getCiudad(), "ciudad"));
-        }
-        if (body.getDireccion() != null) {
-            lugar.setDireccion(blankToNull(body.getDireccion()));
-        }
-        if (body.getCapacidadTotal() != null) {
-            lugar.setCapacidadTotal(Math.max(0, body.getCapacidadTotal()));
-        } else if (lugar.getCapacidadTotal() == null) {
+        private Lugar resolveLugarForCreate(EventoRequestDTO request, boolean exigirCompleto) {
+            if (blankToNull(request.getIdLugar()) != null) {
+                return requireLugar(request.getIdLugar().trim());
+            }
+            String nombre = blankToNull(request.getLugarNombre());
+            String ciudad = blankToNull(request.getLugarCiudad());
+            if (exigirCompleto) {
+                nombre = requireText(request.getLugarNombre(), "lugarNombre (o idLugar)");
+                ciudad = requireText(request.getLugarCiudad(), "lugarCiudad (o idLugar)");
+            } else {
+                if (nombre == null) {
+                    nombre = LUGAR_BORRADOR_NOMBRE;
+                }
+                if (ciudad == null) {
+                    ciudad = LUGAR_BORRADOR_CIUDAD;
+                }
+            }
+            Lugar lugar = new Lugar();
+            lugar.setId(UUID.randomUUID().toString());
+            lugar.setNombre(nombre);
+            lugar.setCiudad(ciudad);
+            lugar.setDireccion(blankToNull(request.getLugarDireccion()));
             lugar.setCapacidadTotal(0);
+            return lugarRepository.save(lugar);
         }
-    }
 
-    private void applySectorInput(Sector s, SectorInputDTO in) {
-        s.setNombre(requireText(in.getNombre(), "sectores[].nombre"));
-        boolean sinCupo = Boolean.TRUE.equals(in.getSinCupo());
-        Integer cap = in.getCapacidadTotal() != null ? in.getCapacidadTotal() : in.getCapacidad();
-        if (sinCupo) {
-            s.setCapacidad(0);
-        } else {
-            s.setCapacidad(cap != null ? Math.max(0, cap) : 0);
+        private void applyLugar(Lugar lugar, LugarRequestDTO body, boolean creating) {
+            if (creating || blankToNull(body.getNombre()) != null) {
+                lugar.setNombre(requireText(body.getNombre(), "nombre"));
+            }
+            if (creating || blankToNull(body.getCiudad()) != null) {
+                lugar.setCiudad(requireText(body.getCiudad(), "ciudad"));
+            }
+            if (body.getDireccion() != null) {
+                lugar.setDireccion(blankToNull(body.getDireccion()));
+            }
+            if (body.getCapacidadTotal() != null) {
+                lugar.setCapacidadTotal(Math.max(0, body.getCapacidadTotal()));
+            } else if (lugar.getCapacidadTotal() == null) {
+                lugar.setCapacidadTotal(0);
+            }
         }
-        s.setEsNumerado(Boolean.TRUE.equals(in.getEsNumerado()));
-        String tipo = blankToNull(in.getTipo());
-        if (tipo == null) {
-            tipo = s.getNombre().toUpperCase().replace(' ', '_');
-        }
-        s.setTipo(tipo);
-    }
 
-    private PrecioSector upsertPrecio(
+        /**
+         * Nunca cupo ilimitado. En publicación (strict) cupo ≥ 1; en borrador se admite 0/provisional.
+         */
+        private void applySectorInput(Sector s, SectorInputDTO in, boolean strictCupo) {
+            s.setNombre(requireText(in.getNombre(), "sectores[].nombre"));
+            // sinCupo del payload se ignora (no hay cupo ilimitado)
+            Integer cap = in.getCapacidadTotal() != null ? in.getCapacidadTotal() : in.getCapacidad();
+            int capacidad = cap != null ? Math.max(0, cap) : 0;
+            if (strictCupo && capacidad < 1) {
+                throw new IllegalArgumentException(
+                        "sectores[].capacidadTotal debe ser ≥ 1 para «" + s.getNombre() + "» (no hay cupo ilimitado)");
+            }
+            s.setCapacidad(capacidad);
+            s.setEsNumerado(Boolean.TRUE.equals(in.getEsNumerado()));
+            String tipo = blankToNull(in.getTipo());
+            if (tipo == null) {
+                tipo = s.getNombre().toUpperCase().replace(' ', '_');
+            }
+            s.setTipo(tipo);
+        }
+
+        private PrecioSector upsertPrecio(
             Evento evento, Sector sector, BigDecimal precio, String moneda, boolean activo) {
         PrecioSector ps = precioSectorRepository
                 .findByEventoIdAndSectorId(evento.getId(), sector.getId())
@@ -646,12 +864,14 @@ public class EventoServiceImpl implements EventoService {
     }
 
     private EventoDetalleResponseDTO toDetalle(Evento evento) {
-        // re-fetch lugar graph if needed
-        Evento full = eventoRepository.findByIdWithLugar(evento.getId()).orElse(evento);
-        BigDecimal precioDesde = precioSectorRepository.minPrecioByEventoId(full.getId());
-        List<PrecioSector> precios = precioSectorRepository.findActivosByEventoId(full.getId());
-        return eventoMapper.toDetalle(full, precioDesde, precios);
-    }
+            // re-fetch lugar graph if needed
+            Evento full = eventoRepository.findByIdWithLugar(evento.getId()).orElse(evento);
+            BigDecimal precioDesde = precioSectorRepository.minPrecioByEventoId(full.getId());
+            List<PrecioSector> precios = precioSectorRepository.findActivosByEventoId(full.getId());
+            List<EventoParticipante> participantes =
+                    eventoParticipanteRepository.findByEventoIdOrdered(full.getId());
+            return eventoMapper.toDetalle(full, precioDesde, precios, participantes);
+        }
 
     private LugarResponseDTO toLugarResponse(Lugar lugar) {
         LugarResponseDTO dto = new LugarResponseDTO();

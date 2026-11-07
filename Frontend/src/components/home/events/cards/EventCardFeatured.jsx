@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { formatEventoFecha, formatPrecioDesde } from '../eventFormat'
+import EventoCupoBadge from '../EventoCupoBadge'
 
 /** Card grande para grilla de destacados */
 const EventCardFeatured = ({ evento }) => {
@@ -8,6 +9,7 @@ const EventCardFeatured = ({ evento }) => {
     <Link to={`/eventos/${evento.id}`} className="event-card event-card--featured">
       <div className="event-card__media">
         <img src={evento.imagenUrl} alt="" loading="lazy" />
+        <EventoCupoBadge evento={evento} className="event-card__cupo" />
       </div>
       <div className="event-card__body">
         <h3 className="event-card__title">{evento.nombre}</h3>

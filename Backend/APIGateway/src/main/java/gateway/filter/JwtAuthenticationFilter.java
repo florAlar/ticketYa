@@ -141,6 +141,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 && (path.equals("/api/recomendaciones")
                         || path.startsWith("/api/recomendaciones/")
                         || path.matches("/api/eventos/[^/]+/recomendaciones")
+                        || path.equals("/api/eventos/disponibilidad")
                         || path.matches("/api/eventos/[^/]+/disponibilidad"))) {
             return true;
         }
@@ -149,6 +150,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private boolean isPublicEventoRead(String path) {
         if ("/api/eventos".equals(path)) {
+            return true;
+        }
+        if ("/api/participantes".equals(path) || path.matches("/api/participantes/[^/]+")) {
+            return true;
+        }
+        if (path.matches("/api/eventos/[^/]+/participantes")) {
             return true;
         }
         return path.matches("/api/eventos/[^/]+");
@@ -223,6 +230,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/auth/")) {
             return true;
         }
+        // Misma persona puede comprar/ver entradas propias (panel Mis entradas)
+        if (isBuyerSelfService(path, method)) {
+            return true;
+        }
         return false;
     }
 
@@ -230,14 +241,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/usuarios/me") || path.startsWith("/api/auth/")) {
             return true;
         }
-        if (path.startsWith("/api/reservas")
-                || path.startsWith("/api/compras")
-                || path.startsWith("/api/pagos")
-                || path.startsWith("/api/entradas")
-                || path.startsWith("/api/devoluciones")) {
+        if (isBuyerSelfService(path, method)) {
             return true;
         }
-        if (path.matches("/api/eventos/[^/]+/disponibilidad") && "GET".equals(method)) {
+        if ((path.equals("/api/eventos/disponibilidad")
+                        || path.matches("/api/eventos/[^/]+/disponibilidad"))
+                && "GET".equals(method)) {
             return true;
         }
         if (path.startsWith("/api/eventos/") && path.contains("/fila")) {
@@ -258,6 +267,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         if (path.matches("/api/eventos/[^/]+/validaciones")
                 && ("POST".equals(method) || "GET".equals(method))) {
+            return true;
+        }
+        // Entradas propias si también compró (Mis entradas en UI si se habilita)
+        if (isBuyerSelfService(path, method)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Flujos de comprador sobre recursos propios (msvc filtra por X-User-Id).
+     * Aplica a CLIENTE y también a ORG/ACCESO que usan la misma cuenta.
+     */
+    private boolean isBuyerSelfService(String path, String method) {
+        if (path.startsWith("/api/reservas")
+                || path.startsWith("/api/compras")
+                || path.startsWith("/api/pagos")
+                || path.startsWith("/api/entradas")
+                || path.startsWith("/api/devoluciones")) {
+            return true;
+        }
+        if ((path.equals("/api/eventos/disponibilidad")
+                        || path.matches("/api/eventos/[^/]+/disponibilidad"))
+                && "GET".equals(method)) {
             return true;
         }
         return false;

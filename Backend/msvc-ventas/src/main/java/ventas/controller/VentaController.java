@@ -9,9 +9,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import ventas.dto.AbrirCuposRequestDTO;
+import ventas.dto.LiberarCupoRequestDTO;
 import ventas.dto.CompraCreateRequestDTO;
 import ventas.dto.CompraResponseDTO;
+import ventas.dto.DisponibilidadBatchResponseDTO;
 import ventas.dto.DisponibilidadResponseDTO;
 import ventas.dto.PagoCreateRequestDTO;
 import ventas.dto.PagoResponseDTO;
@@ -41,12 +45,40 @@ public class VentaController {
 
     // --- disponibilidad (público vía GW) ---
 
-    @GetMapping("/eventos/{id}/disponibilidad")
-    public DisponibilidadResponseDTO disponibilidad(@PathVariable("id") String idEvento) {
-        return ventaService.disponibilidad(idEvento);
-    }
+        /** Batch catálogo: GET /eventos/disponibilidad?ids=a,b,c (antes del path {id}). */
+        @GetMapping("/eventos/disponibilidad")
+        public DisponibilidadBatchResponseDTO disponibilidadBatch(
+                @RequestParam(value = "ids", required = false) List<String> ids) {
+            return ventaService.disponibilidadBatch(ids != null ? ids : List.of());
+        }
 
-    // --- reservas ---
+        @GetMapping("/eventos/{id}/disponibilidad")
+        public DisponibilidadResponseDTO disponibilidad(@PathVariable("id") String idEvento) {
+            return ventaService.disponibilidad(idEvento);
+        }
+
+        /**
+         * Abre stock comercial (cupo_sector) al publicar.
+         * Interno: Feign msvc-eventos. También vía GW POST /api/eventos/{id}/cupos (ORG/ADMIN).
+         */
+        @PostMapping("/eventos/{id}/cupos")
+                public ResponseEntity<DisponibilidadResponseDTO> abrirCupos(
+                        @PathVariable("id") String idEvento, @Valid @RequestBody AbrirCuposRequestDTO body) {
+                    DisponibilidadResponseDTO dto = ventaService.abrirCupos(idEvento, body);
+                    return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+                }
+
+                /**
+                 * Devuelve 1+ unidades al disponible (devolución aprobada).
+                 * Interno: Feign msvc-entradas. GW opcional POST /api/eventos/{id}/cupos/liberacion.
+                 */
+                @PostMapping("/eventos/{id}/cupos/liberacion")
+                public DisponibilidadResponseDTO liberarCupo(
+                        @PathVariable("id") String idEvento, @Valid @RequestBody LiberarCupoRequestDTO body) {
+                    return ventaService.liberarCupoDevolucion(idEvento, body);
+                }
+
+                // --- reservas ---
 
     @PostMapping("/reservas")
     public ResponseEntity<ReservaResponseDTO> crearReserva(

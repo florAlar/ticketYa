@@ -44,7 +44,7 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 | INF-20 | Ingreso SPA cliente en `Frontend/`: React 19 + Vite + Router, `src/` (api/auth/pages/routes/domain/…), `package.json`, `.env.example` (`VITE_API_BASE_URL`, `VITE_USE_MOCK`) | Transversal | hecho | Copia del simulacro; `node_modules`/`dist` locales presentes. |
 | INF-21 | README de ejecución del front (`Frontend/README.md`) + scripts npm (`dev`/`build`/`lint`) | Transversal | hecho | No sustituye README raíz/Backend (INF-16). |
 | INF-22 | Contrato front documentado: `Frontend/docs/endpoints-front.md` + `endpoints-back.md` | Transversal | hecho | Paths front alineados al contrato back mandatorio. |
-| INF-23 | Facades `src/api/*` + capa mock LS (`VITE_USE_MOCK=true` por defecto) con misma forma de llamada que gateway | Transversal | hecho | Demock **selectivo** vía `VITE_USE_MOCK_AUTH/EVENTOS/COMPRAS/ENTRADAS=false`. Global mock sigue true (gestión admin usuarios, scan E2, etc.). |
+| INF-23 | Facades `src/api/*` + capa mock LS (`VITE_USE_MOCK=true` por defecto) con misma forma de llamada que gateway | Transversal | hecho | Demock **selectivo** vía `VITE_USE_MOCK_AUTH/EVENTOS/COMPRAS/ENTRADAS=false` (`.env` típico demock). Toast cuentas demo siempre en `/login` (mock o seed gateway) + reopen. Global mock residual: admin usuarios, scan E2, transferencia. |
 | INF-24 | Shell UI por roles (login/register, home, eventos, checkout, mis-entradas, soporte, gestión, acceso/scan, 404) | Transversal | hecho | Flujos con mock; varios paneles son shell hasta API real. |
 | INF-25 | `Dockerfile` multi-stage del Frontend + servicio en compose/nginx del monorepo | Transversal | hecho | `Frontend/Dockerfile` + `ms-frontend` :3000; conf nginx proxy `/api/` → `ms-gateway`. Include en `Backend/docker-compose.yml`. |
 | INF-27 | **Spring reconoce init.sql** (datasource + JPA validate + entidades/repos = schema) | E1 | hecho | 5 msvc MySQL: `ddl-auto=validate`, JDBC a `db-mysql-*`, entidades/repos al init, arranque OK + smoke `GET /`. Seeds solo init.sql. Verificado 2026-11-06. |
@@ -61,10 +61,10 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | --- | --- | --- | --- | --- |
 | DOC-MS-00 | Definir plantilla común de `docs/` por msvc (alcance del contexto, agregados, API pública, modelo local, eventos/mensajes, criterios de aceptación, cómo correr) | Transversal | pendiente | Una sola convención para no divergir. |
 | DOC-MS-GW | Specs + diseño de `APIGateway/docs/` (rutas, filtros, correlación, qué no hace el gateway) | E1 | pendiente | |
-| DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | pendiente | E1 puede documentar identidad liviana; E2 auth formal. |
-| DOC-MS-EVE | Specs + diseño de `msvc-eventos/docs/` | E1 | pendiente | Eventos, lugares, sectores, participantes, publicación, búsqueda. |
-| DOC-MS-VEN | Specs + diseño de `msvc-ventas/docs/` | E1 (+ fila E2) | pendiente | Reserva, compra, pago mock, idempotencia, anti doble venta; fila virtual en E2. |
-| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | pendiente | |
+| DOC-MS-EVE | Specs + diseño de `msvc-eventos/docs/` | E1 | parcial | `endpoints.md` msvc vivo (alta/publicación/cupo Feign). Falta plantilla DOC-MS-00 completa + OpenAPI. |
+| DOC-MS-VEN | Specs + diseño de `msvc-ventas/docs/` | E1 (+ fila E2) | parcial | `endpoints.md` msvc vivo (+ POST cupos). Falta plantilla completa + fila E2. |
+| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | `endpoints.md` msvc con emisión/QR/devo. E2-ACC API pendiente. |
+| DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | parcial | `endpoints.md` auth JWT. Falta plantilla DOC-MS-00 completa. |
 | DOC-MS-PRE | Specs + diseño de `msvc-preferencias/docs/` (documentos Mongo, recs) | E2 | pendiente | Incluir justificación NoSQL. Modelo doc: MOD-04. |
 | DOC-MS-NOT | Specs + diseño de `msvc-notificaciones/docs/` | E2 | pendiente | Canales, plantillas, disparos async. |
 | DOC-MS-SYNC | Mantener specs versionadas en Git y usarlas como guía antes de implementar cada feature (flujo Spec-Driven de la consigna) | Transversal | pendiente | Propuesta → requisitos → diseño → tareas → código. |
@@ -115,7 +115,7 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | API-02 | Ejemplos JSON request/response de flujos E1 (eventos, reserva, compra, entradas, devolución) | E1 | pendiente | |
 | API-03 | OpenAPI / Swagger por msvc o agregado vía gateway — descripciones, ejemplos, errores | E1 | pendiente | |
 | API-04 | Actualizar OpenAPI con endpoints E2 y security JWT | E2 | pendiente | |
-| API-05 | Implementar en Gateway el enrutado real según `endpoints.md` (incl. excepciones `/eventos/{id}/disponibilidad`, `/fila/**`, `/validaciones`, `/recomendaciones`) | E1 (rutas core) / E2 (resto) | hecho | Routes en `application.yml` (Gateway MVC). StripPrefix `/api`. Excepciones order 10–13. Compose: `TICKETYA_URI_*`. Doc: `APIGateway/docs/endpoints.md`. |
+| API-05 | Implementar en Gateway el enrutado real según `endpoints.md` (incl. excepciones `/eventos/{id}/disponibilidad`, `/cupos`, `/fila/**`, `/validaciones`, `/recomendaciones`) | E1 (rutas core) / E2 (resto) | hecho | Routes en `application.yml` (Gateway MVC). StripPrefix `/api`. Excepciones order 10–13 (+ **cupos POST** → ventas). Compose: `TICKETYA_URI_*`. Doc: `APIGateway/docs/endpoints.md`. |
 
 ---
 
@@ -130,12 +130,12 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-EVE-00 | Datasource + JPA validate contra `eventos/init.sql` (parte de INF-27) | hecho | EMF OK; JDBC `db-mysql-eventos`. |
-| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante si se agrega al schema) | hecho | 6 entidades + repos. Participante no está en init → no creado. |
+| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). |
 | E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | hecho | GET/POST/PUT lugares; POST `/lugares/{id}/sectores`; PUT `/sectores/{id}`; GET asientos físicos (seed). Alta embebida también desde POST evento. |
-| E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion (nombre/fecha/lugar/≥1 precio). Body alineado form FE gestión. |
-| E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. Doc: `msvc-eventos/docs/endpoints.md`. |
+| E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion. **2026-11-07:** borrador laxo (nombre; sin límite fecha); publicar exige lugar real + ≥1 sector precio + **capacidad ≥ 1** (no cupo ilimitado). Al publicar: Feign ventas `POST /eventos/{id}/cupos` **fail-hard**. Body alineado form FE. |
+| E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. + filtro `participante=` (id artista). Doc: `msvc-eventos/docs/endpoints.md`. |
 | E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | hecho | PATCH estado/fecha; GET `/organizadores/me/eventos`. CANCELADO → Feign reintegro entradas best-effort. ORG: SUSPENDIDO propios; resto ADMIN. |
-| E1-EVE-06 | Participantes y asociación a evento | pendiente | Hoy no están en init; sumar schema si se implementan. |
+| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema + CRUD + filtro + FE principal/teloneros. Authz ORG/ADMIN + dueño al asociar. GET público. Migración: `eventos/02-add-participantes.sql`. |
 
 ### 6.2 msvc-ventas
 
@@ -144,6 +144,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E1-VEN-00 | Datasource + JPA validate contra `ventas/init.sql` (INF-27) | hecho | EMF OK; Redis host compose ok. |
 | E1-VEN-01 | Modelo: CupoSector, Reserva, DetalleReserva, Compra, Pago (+ asientos reservados si numerado) | hecho | 5 entidades + repos. Sin tabla asiento_reservado en init → no inventada. |
 | E1-VEN-02 | Disponibilidad comercial por evento | hecho | `GET /eventos/{id}/disponibilidad` → cupo_sector. Doc msvc. |
+| E1-VEN-02b | Apertura de cupo comercial al publicar evento | hecho | `POST /eventos/{id}/cupos` body `{sectores:[{idSector,capacidadTotal≥1}]}` idempotente. Feign desde msvc-eventos en `doPublicar`. GW: excepción `Path=/api/eventos/*/cupos` Method=POST → ventas. |
 | E1-VEN-03 | Reserva temporal (TTL p.ej. 10 min), confirmación, cancelación, renovación | hecho | PENDIENTE/CONFIRMADA; job expire 30s + lazy; Redis hold. |
 | E1-VEN-04 | Compra desde reserva + **Idempotency-Key**; límite de entradas por cliente/evento | hecho | Key obligatoria (Redis 24h); max 6/cliente/evento. |
 | E1-VEN-05 | Pasarela de pagos **mock** (aprueba/rechaza) | hecho | `POST /compras/{id}/pagos` body resultado APROBAR\|RECHAZAR. |
@@ -157,9 +158,9 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-ENT-00 | Datasource + JPA validate contra `entradas/init.sql` (INF-27) | hecho | EMF OK. |
 | E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. **ValidacionAcceso sin API** (E2-ACC-01). Seed intacto. |
-| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago **best-effort** (si falla, compra queda APROBADA sin QR — log). Idempotente por idCompra. Precio solo en memoria proceso hasta restart. |
+| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago **best-effort**. Idempotente por idCompra. **`entrada.precio` persistido** (DTO + monto devolución/reintegro). |
 | E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. DTO enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos. **GET /{id}: dueño o ADMIN** (un método). FE admin: `/gestion/entradas/:id` (no mis-entradas). |
-| E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde **emisión**; ADMIN→DEVUELTA. **Cupo ventas no se reabre**. Monto devolución depende de precio en memoria (0 tras restart del msvc). FE admin cola: `USE_MOCK_ENTRADAS`. |
+| E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde **emisión**; ADMIN→DEVUELTA + **Feign ventas libera 1 cupo** fail-hard. Monto desde `entrada.precio`. FE admin cola: `USE_MOCK_ENTRADAS`. |
 | E1-ENT-05 | Efecto de cancelación de evento sobre entradas vendidas (reintegro) — al menos contrato E1 | hecho | `POST /eventos/{id}/reintegro-cancelacion` → A_REINTEGRAR. No notifs; no devuelve cupo a ventas. |
 
 ### 6.4 API Gateway y usuarios (mínimo E1)
@@ -210,8 +211,8 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E2-TST-01 | Pruebas de integración entre msvcs (Testcontainers o compose) | pendiente | |
 | E2-TST-02 | Pruebas de autorización por rol | pendiente | |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
-| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados selectivo (auth/eve/ven/ent). Mis entradas con política QR + cancelación. Falta: experiencia 100% sin mock residual y E2-ACC. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS=false. Feature gates cortan CTAs no cableados. Falta: mock-off admin usuarios, scan E2-ACC; cola cancelados admin aún sin listado BE de eventos cancelados. |
+| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. Falta: mock residual cero + E2-ACC. |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS. Alta evento: 1 fila vacía + presets click; publicar completo; sin cupo ilimitado. **Acceso nav/ruta solo PERSONAL_ACCESO** (admin no ve CTA puerta). Toast demo seed. Falta: mock-off admin usuarios; scan E2-ACC. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
 ### 7.3 Extra / nice-to-have (no consigna — baja prioridad)
@@ -220,13 +221,15 @@ Fuera del alcance formal del TP. Solo si sobra tiempo o se quiere UX de producto
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
-| X-UI-01 | SPA: pantalla **Mi perfil / cuenta** desde el ícono persona; editar datos propios | pendiente | **No lo pide el TP.** BE: `GET/PATCH /usuarios/me`. FE facade listo; falta ruta `/perfil`, form, nav (hoy persona → mis-entradas/acceso). Puede alojar CTA extensión org (X-ORG-01). |
+| X-UI-01 | SPA: pantalla **Mi perfil / cuenta** desde el ícono persona; editar datos propios | hecho | Ruta JWT `/perfil`: vista + form `nombre/apellido/ciudad`. Nav persona → `/perfil`. Facade `getMe`/`patchMe` mock+real (auth demock). Email/rol solo lectura. CTA org (X-ORG-01) gated OFF en perfil CLIENTE. |
 | X-UI-02 | Login: copy roles + guía “¿Sos organizador?” | hecho | Tab “Cuenta cliente”; CTA → `/cuenta/organizador` (guía CLIENTE self-service; ORG/ADMIN/ACCESO no self-register). Register copy solo cliente. |
 | X-UI-03 | Gestión: **Editar evento** en BORRADOR (PUT) | hecho | Listado → Editar → `/gestion/eventos/:id/editar`; solo BORRADOR + dueño/admin; `updateEvento` PUT. |
-| X-UI-04 | Feature gates FE: deshabilitar CTAs no cableados / no permitidos por rol | hecho | `featureGates.js` fino (cancel solo admin UI, reintegro unitario off, usuarios admin off, scan/transfer off). GW+msvc alineados suspend org. `http.js` error gateway caído. |
+| X-UI-04 | Feature gates FE: deshabilitar CTAs no cableados / no permitidos por rol | hecho | Gates finos + **roles puros**: `canScanAccess` / `/acceso*` solo PERSONAL_ACCESO (admin de plataforma no tiene CTA puerta). Hub admin «Usuarios» ≠ panel Acceso. |
 | X-QR-01 | Política QR: no exponer secreto si entrada no usable | hecho | BE: DTO/`GET …/qr` solo VENDIDA + evento ≠ CANCELADO; approve/reintegro → `INV-*`. FE detalle sin QR si no aplica. E2-ACC puerta sigue pendiente. |
 | X-QR-02 | Mis entradas: cancelación distinguible + trámites unificados | hecho | Lista activas + A_REINTEGRAR (badge, sin QR, aviso). Ver devoluciones = voluntarias + reintegro cancelación. BE reintegro crea devolucion EN_CURSO. |
-| X-ORG-01 | Extensión cuenta CLIENTE → ORGANIZADOR (solicitud + auth admin) | pendiente | Producto serio. Diseño §7.3.1. Guía FE hecha (X-UI-02). Falta: solicitud logueada, cola admin, approve→rol, refresh JWT. |
+| X-UI-05 | Toast cuentas demo seed en `/login` (reopen) | hecho | Siempre visible en login (no solo mock); seed gateway mismos pass; dismiss sessionStorage + CTA reopen. |
+| X-UI-06 | SPA: badge cupo (Agotado / últimos / &lt;50 / &lt;100) en listado + detalle | hecho | BE: batch `GET /eventos/disponibilidad?ids=` + DTO `disponibleTotal`/`nivelCupo`. FE: EventList 1 batch; cards + detalle; Comprar por sector si disponible≥1. |
+| X-ORG-01 | Extensión cuenta CLIENTE → ORGANIZADOR (solicitud + auth admin) | pendiente | **No se implementa ahora.** Diseño §7.3.1. FE: CTA «Solicitar cuenta de organizador» en `/perfil` (solo CLIENTE) con `FEATURE.solicitudOrganizador=false` + guía `/cuenta/organizador`. Falta: API solicitudes, form, cola admin, approve→rol, refresh JWT. |
 | X-ORG-02 | Política de roles: cuenta base CLIENTE; privilegios los otorga ADMIN | pendiente | Doc/producto (no code). CLIENTE = register; ORG = extensión (X-ORG-01) o admin asigna rol; ADMIN/ACCESO = solo admin. Seeds demo siguen. Opcional: reflejar en US-01 cuando se escriba. |
 
 ### 7.3.1 Diseño acordado — extensión a organizador (X-ORG-01)
@@ -244,7 +247,7 @@ Fuera del alcance formal del TP. Solo si sobra tiempo o se quiere UX de producto
 | Quién | Dónde | Qué |
 | --- | --- | --- |
 | Anónimo | `/cuenta/organizador` | Guía: “primero cuenta cliente”; CTA login/register; sin form de alta org free. |
-| CLIENTE logueado | `/cuenta/organizador` o `/perfil` / “Mi cuenta” | Form **Solicitar ser organizador** (si no tiene ORG ni solicitud PENDIENTE). |
+| CLIENTE logueado | `/perfil` | CTA **Solicitar cuenta de organizador** (gate `solicitudOrganizador`; OFF hasta API). Guía en `/cuenta/organizador`. |
 | CLIENTE | mismo | Estado de solicitud: PENDIENTE / APROBADA / RECHAZADA + n° trámite. |
 | ADMIN | `/gestion/usuarios` o `/gestion/solicitudes-org` | Cola: listar pendientes, ver datos, Aprobar / Rechazar. |
 
@@ -307,12 +310,13 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 7. **E1-VEN-02…08** — **hecho**.  
 8. **E1-ENT-02…05** — **hecho** (emisión Feign, GETs/QR, devoluciones 72h, reintegro-cancelación). FE demock auth/eventos/compras/entradas.  
 9. **E1-EVE write (02/03/05)** — **hecho** (lugares/sectores, borrador→publicar, patch estado/fecha, listado org).  
-10. **FE sesión 2026-11-07** — hecho extra: X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
-11. E1-TST + E1-REL + INF-17 (Postman).  
-12. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
-13. FE residual: mock-off gestión admin usuarios / E2-ACC scan; X-UI-01 perfil; X-ORG-01 extensión. E1-EVE-06 participantes si se suma schema.
+10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
+11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
+12. E1-TST + E1-REL + INF-17 (Postman).  
+13. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
+14. FE residual: mock-off gestión admin usuarios / E2-ACC scan; X-UI-01 perfil; X-ORG-01 extensión.
 
-Specs (DOC-MS / US / ARQ) en paralelo.
+Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` **parcial**.
 
 ---
 
@@ -321,22 +325,23 @@ Specs (DOC-MS / US / ARQ) en paralelo.
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-02/03/04**, **X-QR-01/02** | E2-UI-01/02 demock selectivo | X-UI-01 perfil; admin usuarios mock-off; E2-ACC; X-ORG-01 |
-| Docs por msvc (specs) | — | — | Todo DOC-MS-* |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-02…05**, **X-QR-01/02** | E2-UI-01/02 demock selectivo + cupo checkout | X-UI-01 perfil; admin usuarios mock-off; E2-ACC; X-ORG-01 |
+| Docs por msvc (specs) | — | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/GW/PRE/NOT/SYNC plantilla formal |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
-| Auth / gateway | E1-GW-01/02/03, API-05, E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
+| Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
-| Código de negocio E1 | E1-EVE-02…05; E1-VEN-02…08; E1-ENT-02…05 (+DTO Feign, QR policy) | — | E1-EVE-06 participantes; E2-ACC |
-| Extra producto | X-UI-02…04, X-QR-* | — | X-UI-01, X-ORG-01/02 |
+| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05 | — | E2-ACC |
+| Extra producto | X-UI-02…05, X-QR-* | — | X-UI-01, X-ORG-01/02 |
 | Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
 
-**Lectura (2026-11-07, cierre sesión FE/QR/roles):**  
-- **Hecho E1 core:** eventos GET+write; ventas; entradas QR/devo + política exposición QR; JWT; FE demock selectivo.  
-- **Hecho extra sesión:** mis entradas activas + cancelación/trámites; gates CTAs; login guía roles; editar borrador; GW permite PATCH estado a ORG (BE limita cancel).  
-- **Deuda natural:** emisión Feign best-effort; precio devo RAM; cupo no reabre; ValidacionAcceso=E2-ACC.  
-- **Gap E1 formal:** E1-EVE-06; E1-TST / INF-17 Postman / E1-REL.  
-- **Extra pendiente:** X-UI-01 perfil; X-ORG-01 solicitud org; X-ORG-02 doc política roles en US.  
-- **Próximo formal:** tests/Postman **o** E2-ACC; producto: perfil o extensión org si sobra.  
+**Lectura (2026-11-07, cierre sesión cupo + roles + alta evento):**  
+- **Hecho E1 core:** eventos GET+write; ventas (+ **apertura cupo al publicar**); entradas QR/devo; JWT; FE demock selectivo.  
+- **Hecho esta sesión:** form org (1 fila vacía, presets click, publicar completo, sin cupo ilimitado, borrador sin límite fecha); Feign `POST …/cupos`; checkout bloquea sin disponibilidad; toast demo seed; **admin puro sin panel Acceso**; editar borrador.  
+- **Ops:** jars nuevos en contenedores vía `docker cp` si la imagen base quedó vieja; eventos PUBLICADO *antes* del cableo cupo pueden necesitar republicar o POST cupos.  
+- **Deuda natural:** emisión Feign best-effort; ValidacionAcceso=E2-ACC. **Cupo al approve + precio entrada en DB: hechos.**  
+- **Gap E1 formal:** E1-TST / INF-17 Postman / E1-REL.  
+- **Extra pendiente:** X-UI-01 perfil; X-ORG-01 solicitud org; authz fina participantes.  
+- **Próximo formal:** smoke compra E2E estable **o** tests/Postman **o** E2-ACC.  

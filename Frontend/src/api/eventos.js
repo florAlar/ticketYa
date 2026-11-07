@@ -26,14 +26,43 @@ function applyFilter(items, filter = {}) {
     const c = String(filter.ciudad).toLowerCase()
     list = list.filter((e) => e.lugar?.ciudad?.toLowerCase().includes(c))
   }
+  if (filter.organizador) {
+    const o = String(filter.organizador).toLowerCase()
+    list = list.filter(
+      (e) =>
+        String(e.idOrganizador || '')
+          .toLowerCase()
+          .includes(o) ||
+        String(e.organizadorNombre || '')
+          .toLowerCase()
+          .includes(o)
+    )
+  }
   if (filter.q) {
     const q = String(filter.q).toLowerCase()
     list = list.filter(
       (e) =>
-        e.nombre.toLowerCase().includes(q) ||
+        e.nombre?.toLowerCase().includes(q) ||
+        e.descripcion?.toLowerCase().includes(q) ||
         e.lugar?.nombre?.toLowerCase().includes(q) ||
         e.lugar?.ciudad?.toLowerCase().includes(q)
     )
+  }
+  if (filter.fechaDesde) {
+    const from = new Date(filter.fechaDesde)
+    if (!Number.isNaN(from.getTime())) {
+      list = list.filter((e) => new Date(e.fechaInicio) >= from)
+    }
+  }
+  if (filter.fechaHasta) {
+    const to = new Date(filter.fechaHasta)
+    if (!Number.isNaN(to.getTime())) {
+      to.setHours(23, 59, 59, 999)
+      list = list.filter((e) => new Date(e.fechaInicio) <= to)
+    }
+  }
+  if (filter.esAltaDemanda === true || filter.esAltaDemanda === 'true') {
+    list = list.filter((e) => e.esAltaDemanda)
   }
 
   const orden = filter.orden || filter.sort
@@ -81,15 +110,50 @@ function unwrapEventosList(data) {
 
 /**
  * Catálogo público.
- * GET /api/eventos?tipo&ciudad&fechaDesde&fechaHasta&orden&page&size&...
+ * GET /api/eventos?tipo&ciudad&organizador&estado&fechaDesde&fechaHasta&orden&page&size
+ * Default BE: PUBLICADO. `incluirSuspendidos` → estado=TODOS + FE deja PUBLICADO|SUSPENDIDO.
+ * `q` y `esAltaDemanda` se aplican en cliente (BE listar aún no los expone).
  */
 export async function listEventos(filter = {}) {
   if (USE_MOCK_EVENTOS) {
     await delay()
-    return applyFilter(listCatalogoPublico(), filter)
+    let list = applyFilter(listCatalogoPublico(), filter)
+    if (filter.incluirSuspendidos === true || filter.incluirSuspendidos === 'true') {
+      list = list.filter((e) => {
+        const est = String(e.estado || '').toUpperCase()
+        return est === 'PUBLICADO' || est === 'SUSPENDIDO'
+      })
+    }
+    return list
   }
-  const data = await http(`/api/eventos${toQuery(filter)}`)
-  return unwrapEventosList(data)
+  const serverFilter = { ...filter }
+  const q = serverFilter.q
+  const alta = serverFilter.esAltaDemanda
+  const incluirSuspendidos =
+    serverFilter.incluirSuspendidos === true ||
+    serverFilter.incluirSuspendidos === 'true'
+  delete serverFilter.q
+  delete serverFilter.esAltaDemanda
+  delete serverFilter.incluirSuspendidos
+  delete serverFilter.destacados
+  delete serverFilter.destacado
+  if (incluirSuspendidos && !serverFilter.estado) {
+    serverFilter.estado = 'TODOS'
+  }
+  const data = await http(`/api/eventos${toQuery(serverFilter)}`)
+  let list = unwrapEventosList(data)
+  // post-filtro FE para campos no cableados en listar BE
+  if (q || alta === true || alta === 'true') {
+    list = applyFilter(list, { q, esAltaDemanda: alta })
+  }
+  // Catálogo comprable ampliado: no filtrar borradores/cancelados del TODOS admin
+  if (incluirSuspendidos) {
+    list = list.filter((e) => {
+      const est = String(e.estado || '').toUpperCase()
+      return est === 'PUBLICADO' || est === 'SUSPENDIDO'
+    })
+  }
+  return list
 }
 
 /** GET /api/eventos/{id} */
@@ -238,11 +302,240 @@ export async function deleteEvento(id, opts = {}) {
   })
 }
 
+/** GET /api/participantes?q&tipo */
+export async function listParticipantes(filter = {}, opts = {}) {
+  if (USE_MOCK_EVENTOS) {
+    await delay(80)
+    return readMockParticipantes(filter)
+  }
+  const data = await http(`/api/participantes${toQuery(filter)}`, {
+    token: opts.token,
+  })
+  return Array.isArray(data) ? data : []
+}
+
+/** POST /api/participantes */
+export async function createParticipante(body, opts = {}) {
+  if (USE_MOCK_EVENTOS) {
+    await delay(80)
+    return insertMockParticipante(body)
+  }
+  return http('/api/participantes', {
+    method: 'POST',
+    token: opts.token,
+    body: JSON.stringify(body),
+  })
+}
+
+/** PUT /api/eventos/{id}/participantes — reemplaza set */
+export async function setEventoParticipantes(eventoId, body, opts = {}) {
+  if (USE_MOCK_EVENTOS) {
+    await delay(80)
+    const items = body?.participantes || (body?.ids || []).map((id) => ({ id }))
+    const catalog = readMockParticipantes({})
+    const byId = new Map(catalog.map((p) => [String(p.id), p]))
+    const updated = updateGestionEvento(eventoId, {
+      participantes: items.map((it, i) => {
+        const cat = it.id ? byId.get(String(it.id)) : null
+        return {
+          id: it.id,
+          nombre: it.nombre || cat?.nombre || it.id,
+          rol: it.rol || (i === 0 ? 'PRINCIPAL' : 'TELONERO'),
+          orden: it.orden != null ? it.orden : i,
+        }
+      }),
+    })
+    return updated?.participantes || items
+  }
+  return http(`/api/eventos/${eventoId}/participantes`, {
+    method: 'PUT',
+    token: opts.token,
+    body: JSON.stringify(body),
+  })
+}
+
+/**
+ * Asocia artistas ya elegidos (por id) al evento.
+ * @param {{ principalId: string, principalNombre?: string, teloneros?: {id:string,nombre?:string}[] }} formPart
+ */
+export async function syncEventoParticipantes(eventoId, formPart, opts = {}) {
+  const principalId = String(formPart?.principalId || '').trim()
+  if (!principalId) {
+    const err = new Error(
+      'Elegí un artista principal del catálogo (o crealo desde el buscador)'
+    )
+    err.status = 400
+    throw err
+  }
+
+  const items = [
+    {
+      id: principalId,
+      nombre: formPart?.principalNombre || undefined,
+      rol: 'PRINCIPAL',
+      orden: 0,
+    },
+  ]
+  let orden = 1
+  const seen = new Set([principalId])
+  for (const t of formPart?.teloneros || []) {
+    const id = String(t?.id || '').trim()
+    if (!id || seen.has(id)) continue
+    seen.add(id)
+    items.push({
+      id,
+      nombre: t?.nombre || undefined,
+      rol: 'TELONERO',
+      orden: orden++,
+    })
+  }
+
+  return setEventoParticipantes(eventoId, { participantes: items }, opts)
+}
+
+const MOCK_PART_KEY = 'ticketya_mock_participantes'
+
+function readMockParticipantes(filter = {}) {
+  let list = []
+  try {
+    const raw = localStorage.getItem(MOCK_PART_KEY)
+    list = raw ? JSON.parse(raw) : []
+    if (!Array.isArray(list)) list = []
+  } catch {
+    list = []
+  }
+  if (!list.length) {
+    list = [
+      {
+        id: 'p0000000-0000-4000-8000-000000000001',
+        nombre: 'Metallica',
+        tipo: 'BANDA',
+        descripcion: 'Thrash metal — M72',
+      },
+      {
+        id: 'p0000000-0000-4000-8000-000000000002',
+        nombre: 'Gojira',
+        tipo: 'BANDA',
+        descripcion: 'Soporte M72',
+      },
+      {
+        id: 'p0000000-0000-4000-8000-000000000005',
+        nombre: 'Iron Maiden',
+        tipo: 'BANDA',
+        descripcion: 'Headliner',
+      },
+      {
+        id: 'p0000000-0000-4000-8000-000000000006',
+        nombre: 'Ghost',
+        tipo: 'BANDA',
+        descripcion: 'Soporte',
+      },
+    ]
+    try {
+      localStorage.setItem(MOCK_PART_KEY, JSON.stringify(list))
+    } catch {
+      /* ignore */
+    }
+  }
+  const q = String(filter.q || '').trim().toLowerCase()
+  const tipo = String(filter.tipo || '').trim().toLowerCase()
+  return list
+    .filter((p) => {
+      if (q && !String(p.nombre || '').toLowerCase().includes(q)) return false
+      if (tipo && String(p.tipo || '').toLowerCase() !== tipo) return false
+      return true
+    })
+    .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'))
+}
+
+function insertMockParticipante(body) {
+  const nombre = String(body?.nombre || '').trim()
+  if (!nombre) {
+    const err = new Error('nombre es obligatorio')
+    err.status = 400
+    throw err
+  }
+  const list = readMockParticipantes({})
+  const exact = list.find(
+    (p) => String(p.nombre || '').toLowerCase() === nombre.toLowerCase()
+  )
+  if (exact) return exact
+  const created = {
+    id: `p_mock_${Date.now()}`,
+    nombre,
+    tipo: body?.tipo || 'BANDA',
+    descripcion: body?.descripcion || null,
+  }
+  const next = [...list, created]
+  try {
+    localStorage.setItem(MOCK_PART_KEY, JSON.stringify(next))
+  } catch {
+    /* ignore */
+  }
+  return created
+}
+
 /** GET /api/eventos/{id}/disponibilidad — msvc-ventas */
 export async function getDisponibilidadEvento(id, opts = {}) {
   if (USE_MOCK_COMPRAS) {
     await delay(120)
-    return { idEvento: id, mock: true, mensaje: 'Disponibilidad mock local' }
+    return mockDisponibilidadItem(id)
   }
   return http(`/api/eventos/${id}/disponibilidad`, { token: opts.token })
+}
+
+/**
+ * GET /api/eventos/disponibilidad?ids=a&ids=b — batch catálogo (1 request).
+ * @returns {{ items: object[] }}
+ */
+export async function getDisponibilidadBatch(ids, opts = {}) {
+  const unique = [
+    ...new Set(
+      (Array.isArray(ids) ? ids : [])
+        .map((id) => String(id || '').trim())
+        .filter(Boolean)
+    ),
+  ].slice(0, 50)
+
+  if (!unique.length) {
+    return { items: [] }
+  }
+
+  if (USE_MOCK_COMPRAS) {
+    await delay(150)
+    return { items: unique.map((id) => mockDisponibilidadItem(id)) }
+  }
+
+  const qs = unique
+    .map((id) => `ids=${encodeURIComponent(id)}`)
+    .join('&')
+  return http(`/api/eventos/disponibilidad?${qs}`, {
+    method: 'GET',
+    token: opts.token,
+  })
+}
+
+/** Mock: número real + clasificación (misma forma que BE). */
+function mockDisponibilidadItem(idEvento) {
+  const seed = [...String(idEvento)].reduce(
+    (acc, ch) => acc + ch.charCodeAt(0),
+    0
+  )
+  // 0..149 → cubre agotado / umbrales / ok
+  const disponibleTotal = seed % 150
+  const sectores = [
+    {
+      idSector: 'mock_sec',
+      capacidadTotal: Math.max(disponibleTotal, 1),
+      cantidadDisponible: disponibleTotal,
+      cantidadReservada: 0,
+      cantidadVendida: 0,
+    },
+  ]
+  return {
+    idEvento,
+    disponibleTotal,
+    sectores,
+    mock: true,
+  }
 }

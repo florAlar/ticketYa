@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { formatEventoFecha } from '../eventFormat'
+import EventoCupoBadge from '../EventoCupoBadge'
 
 /** Card densa — preferencias / recomendaciones */
 const EventCardCompact = ({ evento }) => {
@@ -8,6 +9,7 @@ const EventCardCompact = ({ evento }) => {
     <Link to={`/eventos/${evento.id}`} className="event-card event-card--compact">
       <div className="event-card__media">
         <img src={evento.imagenUrl} alt="" loading="lazy" />
+        <EventoCupoBadge evento={evento} className="event-card__cupo" />
       </div>
       <div className="event-card__body">
         <h3 className="event-card__title">{evento.nombre}</h3>

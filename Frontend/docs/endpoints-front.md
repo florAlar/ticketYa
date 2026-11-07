@@ -25,8 +25,8 @@ El front acepta alias legado `ACCESO` y lo normaliza a `PERSONAL_ACCESO` (`src/a
 | POST | `/api/auth/register` | público (solo CLIENTE) | RegisterForm |
 | POST | `/api/auth/refresh` | JWT | `auth.refreshSession` (listo) |
 | POST | `/api/auth/logout` | JWT | `auth.logout` (listo) |
-| GET | `/api/usuarios/me` | JWT | `auth.getMe` (listo) |
-| PATCH | `/api/usuarios/me` | JWT | `auth.patchMe` (listo) |
+| GET | `/api/usuarios/me` | JWT | `auth.getMe` → `/perfil` |
+| PATCH | `/api/usuarios/me` | JWT | `auth.patchMe` → form Mi perfil |
 
 ---
 
@@ -57,7 +57,8 @@ En real esas facades responden 501 hasta que el BE los defina.
 | POST | `/api/eventos/{id}/publicacion` | ORG | publicar (UI “Publicar”) |
 | PATCH | `/api/eventos/{id}/estado` | ORG suspende propios; ADMIN cancela | botones Suspender / Cancelar (admin) |
 | GET | `/api/organizadores/me/eventos` | ORG | listado gestión org |
-| GET | `/api/eventos/{id}/disponibilidad` | — | `getDisponibilidadEvento` (msvc-ventas vía gateway) |
+| GET | `/api/eventos/{id}/disponibilidad` | público | checkout + detalle (`getDisponibilidadEvento`) |
+| GET | `/api/eventos/disponibilidad?ids=` | público | batch catálogo (`getDisponibilidadBatch` → badges home) |
 
 Query catálogo (back): `tipo`, `ciudad`, `fechaDesde`, `fechaHasta`, `participante`, `organizador`, `precioMin`, `precioMax`, `orden`, `page`, `size`.
 El front mapea `sort`→`orden`, `limit`→`size` al salir a red.
@@ -87,7 +88,7 @@ Admin pendientes reales: `GET /api/devoluciones`.
 | GET | `/api/entradas` | JWT (propias) | `/mis-entradas` |
 | GET | `/api/entradas/{id}` | JWT | detalle |
 | GET | `/api/entradas/{id}/qr` | JWT | `getEntradaQr` — solo VENDIDA + evento ≠ CANCELADO |
-| POST | `/api/eventos/{idEvento}/validaciones` | PERSONAL_ACCESO\|ADMIN | `/acceso/scan` |
+| POST | `/api/eventos/{idEvento}/validaciones` | PERSONAL_ACCESO | `/acceso/scan` |
 | GET | `/api/eventos/{idEvento}/validaciones` | ORG\|ADMIN | `listValidacionesEvento` |
 | POST | `/api/entradas/{id}/devoluciones` | CLIENTE | soporte / detalle entrada |
 | GET | `/api/devoluciones` | CLIENTE filtrado / ADMIN pendientes | mis solicitudes + cola admin |
@@ -109,7 +110,9 @@ Sin facades ni pantallas todavía (home fijo; notifs vía broker).
 | Ruta front | Endpoints |
 |---|---|
 | `/login` | POST `/api/auth/login`, `/api/auth/register` |
-| `/` `/eventos` | GET `/api/eventos` |
+| `/perfil` | GET/PATCH `/api/usuarios/me` |
+| `/` | GET `/api/eventos` (secciones home) |
+| `/eventos` | JWT · sidebar filtros · GET `/api/eventos` (+ batch disponibilidad) |
 | `/eventos/:id` | GET `/api/eventos/{id}` |
 | `/eventos/:id/comprar` | POST `/api/compras` (+ futuro reservas/disponibilidad) |
 | `/mis-entradas` | GET `/api/entradas` |

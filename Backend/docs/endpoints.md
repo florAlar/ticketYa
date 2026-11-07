@@ -156,6 +156,8 @@ Disponibilidad comercial = msvc-ventas.
 - GET: /participantes — Buscar artistas/bandas principales/teloneros
 - GET: /participantes/{id} — Consultar participante
 - POST: /participantes — Crear participante (ORGANIZADOR/ADMIN)
+- PUT: /participantes/{id} — Actualizar participante
+- GET: /eventos/{id}/participantes — Listar artistas del evento
 
 ## ventas — disponibilidad, reservas, compras, pagos, reportes, fila
 
@@ -163,7 +165,9 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 
 ### Disponibilidad y reservas
 
-- GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos/asientos libres)
+- GET /eventos/disponibilidad?ids= — Batch disponibilidad comercial (catálogo; máx 50; público)
+- GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos/asientos libres; DTO con disponibleTotal + nivelCupo)
+- POST /eventos/{id}/cupos — Abrir/asegurar cupo comercial al publicar (body sectores[{idSector,capacidadTotal}]; idempotente; Feign msvc-eventos)
 
 /EL RECURSO ES EVENTOS PERO LE PEGA A ESTE SERVICIO, HAY QUE RUTEARLO DESDE GATEWAY.
 

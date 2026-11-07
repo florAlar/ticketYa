@@ -62,15 +62,29 @@ int capacidadTotal  ""
 	}
 
 	PRECIO_SECTOR {
-		UUID id PK ""  
-		UUID idEvento FK ""  
-		UUID idSector FK ""  
-		decimal precio  ""  
-		string moneda  ""  
-		boolean activo  ""  
-	}
+			UUID id PK ""  
+			UUID idEvento FK ""  
+			UUID idSector FK ""  
+			decimal precio ""  
+			string moneda ""  
+			boolean activo ""  
+		}
 
-	RESERVA {
+		PARTICIPANTE {
+			UUID id PK ""
+			string nombre ""
+			string tipo ""
+			string descripcion ""
+		}
+
+		EVENTO_PARTICIPANTE {
+			UUID idEvento PK,FK ""
+			UUID idParticipante PK,FK ""
+			string rol ""
+			int orden ""
+		}
+
+		RESERVA {
 		UUID idReserva PK ""  
 		UUID idCliente FK ""  
 		UUID idEvento FK ""  
@@ -204,6 +218,8 @@ LUGAR||--o{EVENTO:"alberga"
 USUARIO||--o{EVENTO:"organiza"
 EVENTO||--o{PRECIO_SECTOR:"define"
 SECTOR||--o{PRECIO_SECTOR:"tarifado"
+EVENTO||--o{EVENTO_PARTICIPANTE:"tiene"
+PARTICIPANTE||--o{EVENTO_PARTICIPANTE:"en"
 USUARIO||--o{RESERVA:"reserva"
 EVENTO||--o{RESERVA:"sobre"
 RESERVA||--|{DETALLE_RESERVA:"contiene"

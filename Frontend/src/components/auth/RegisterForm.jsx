@@ -161,7 +161,7 @@ const RegisterForm = () => {
         style={{ width: '100%' }}
         disabled={status === 'loading'}
       >
-        {status === 'loading' ? 'Creando cuenta…' : 'Crear cuenta cliente'}
+        {status === 'loading' ? 'Creando cuenta…' : 'Crear cuenta'}
       </button>
     </form>
   )

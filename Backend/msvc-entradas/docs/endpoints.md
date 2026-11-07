@@ -11,14 +11,14 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 
 | Endpoint | Estado | Notas |
 | --- | --- | --- |
-| POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario}]}`. Idempotente por idCompra. Llamado por msvc-ventas Feign post-pago. |
+| POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario}]}`. Idempotente por idCompra. Persiste `entrada.precio`. Llamado por msvc-ventas Feign post-pago. |
 | GET /entradas | **hecho** | Propias (`X-User-Id`). Enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos (best-effort). |
 | GET /entradas/{id} | **hecho** | Dueño **o ADMIN** (mismo método). Cliente: solo propias; ADMIN: cualquier id. |
 | GET /entradas/{id}/qr | **hecho** | Dueño; **solo VENDIDA** y evento no CANCELADO. USADA/DEVUELTA/A_REINTEGRAR → 409. |
 | POST /entradas/{id}/devoluciones | **hecho** | 72h desde emisión; solo VENDIDA no usada |
 | GET /devoluciones | **hecho** | Cliente: propias; ADMIN: pendientes |
 | GET /devoluciones/{id} | **hecho** | |
-| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) |
+| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) + Feign ventas `POST …/cupos/liberacion` fail-hard (1 unidad del sector) |
 | POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05; VENDIDA→A_REINTEGRAR + invalida QR + crea `devolucion` **EN_CURSO** (motivo cancelación; visible al cliente, no cola admin) |
 | POST /eventos/{id}/validaciones | pendiente | E2-ACC — entity `ValidacionAcceso` existe, sin service/controller |
 | GET /eventos/{id}/validaciones | pendiente | E2 |
@@ -30,8 +30,8 @@ Estas deudas **existen a propósito** en el estado actual del monorepo (bounded 
 | Deuda | Por qué es natural ahora | Cuándo cerrarla |
 | --- | --- | --- |
 | Emisión Feign ventas→entradas **best-effort** | Compra y QR viven en BCs distintos; sin outbox/saga | ARQ-05 / compensación post-pago |
-| **Precio en RAM** (mapa proceso; 0 tras restart) | Schema `entrada` sin columna precio; no inventar DDL sin pedido | Persistir precio al emitir o copiar de ventas/eventos |
-| Approve devolución **no reabre cupo** en ventas | Devolución termina en entradas; ventas no se entera | API/evento de dominio ventas + E1-ENT-04 follow-up |
+| **~~Precio en RAM~~** | **Cerrado 2026-11-07** | Columna `entrada.precio`; emisión persiste; DTO/devo/reintegro leen DB. Volúmenes viejos: `02-add-entrada-precio.sql` |
+| ~~Approve devolución no reabre cupo~~ | **Cerrado 2026-11-07** | Feign `POST /eventos/{id}/cupos/liberacion` fail-hard al approve |
 | `ValidacionAcceso` sin endpoints | Entity lista; API = E2 | **E2-ACC-01** |
 
 ### Cerrado (higiene E1-ENT-03)
@@ -39,6 +39,7 @@ GET emisión/listado/detalle: Feign `GET /eventos/{id}` → `eventoNombre`, `lug
 - Cache por `idEvento` dentro del request (listado sin N× Feign al mismo evento).
 - Si eventos cae o 404: campos **null** (GET entradas igual 200) — best-effort consciente, no silent bug.
 - URI: `ticketya.uri.eventos` / `TICKETYA_URI_EVENTOS` (Docker: `http://ms-eventos:8082`).
+- URI ventas (liberar cupo): `ticketya.uri.ventas` / `TICKETYA_URI_VENTAS` (Docker: `http://ms-ventas:8083`).
 
 ### Estados entrada
 `VENDIDA` | `USADA` | `DEVUELTA` | `A_REINTEGRAR`

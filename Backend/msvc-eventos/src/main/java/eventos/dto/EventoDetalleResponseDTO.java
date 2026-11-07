@@ -30,4 +30,6 @@ public class EventoDetalleResponseDTO {
     private String idOrganizador;
     private boolean esAltaDemanda;
     private List<SectorEventoDTO> sectores = new ArrayList<>();
+    /** Artistas/bandas asociados al evento (con rol/orden). */
+    private List<ParticipanteResponseDTO> participantes = new ArrayList<>();
 }

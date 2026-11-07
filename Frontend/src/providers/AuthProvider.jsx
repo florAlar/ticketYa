@@ -69,6 +69,24 @@ export default function AuthProvider({ children }) {
     persist(null, null)
   }, [persist, token])
 
+  /** Fusiona campos de perfil en la sesión local (post PATCH /usuarios/me). */
+  const updateUser = useCallback(
+    (partial) => {
+      if (!token || !partial) return null
+      const base = user || {}
+      const next = {
+        ...base,
+        ...partial,
+        id: partial.id ?? base.id,
+        email: partial.email ?? base.email,
+        rol: normalizeRol(partial.rol ?? base.rol),
+      }
+      persist(token, next)
+      return next
+    },
+    [persist, token, user]
+  )
+
   const value = useMemo(() => {
     const rol = user ? normalizeRol(user.rol) : null
     return {
@@ -90,8 +108,9 @@ export default function AuthProvider({ children }) {
       login,
       register,
       logout,
+      updateUser,
     }
-  }, [token, user, login, register, logout])
+  }, [token, user, login, register, logout, updateUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

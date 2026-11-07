@@ -47,6 +47,11 @@
   color: #92400e;
 }
 
+.mis-entradas-page__badge--suspend {
+  background: color-mix(in srgb, #a16207 18%, #fff);
+  color: #854d0e;
+}
+
 .mis-entradas-page__aviso {
   margin: 0.45rem 0 0;
   font-size: 0.88rem;
@@ -64,6 +69,11 @@
 .mis-entradas-card--cancelada {
   border-color: color-mix(in srgb, #b45309 35%, var(--colors-border, #ddd));
   background: color-mix(in srgb, #b45309 6%, var(--colors-surface, #f7f7fa));
+}
+
+.mis-entradas-card--suspendida {
+  border-color: color-mix(in srgb, #a16207 35%, var(--colors-border, #ddd));
+  background: color-mix(in srgb, #a16207 6%, var(--colors-surface, #f7f7fa));
 }
 
 .mis-entradas-card__actions {

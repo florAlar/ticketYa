@@ -44,9 +44,21 @@ export function isEntradaReintegroCancelacion(entrada) {
   return ev === 'CANCELADO' && entrada.estado === ENTRADA_ESTADOS.VENDIDA
 }
 
-/** Cards que se muestran en Mis entradas: activas + afectadas por cancelación. */
+/** Evento pausado (SUSPENDIDO): entrada sigue válida; aviso en UI. */
+export function isEntradaEventoSuspendido(entrada) {
+  if (!entrada) return false
+  if (isEntradaReintegroCancelacion(entrada)) return false
+  const ev = String(entrada.eventoEstado || '').trim().toUpperCase()
+  return ev === 'SUSPENDIDO' && entrada.estado === ENTRADA_ESTADOS.VENDIDA
+}
+
+/** Cards en Mis entradas: activas + cancelación + suspendidas. */
 export function isEntradaVisibleEnListado(entrada) {
-  return isEntradaActiva(entrada) || isEntradaReintegroCancelacion(entrada)
+  return (
+    isEntradaActiva(entrada) ||
+    isEntradaReintegroCancelacion(entrada) ||
+    isEntradaEventoSuspendido(entrada)
+  )
 }
 
 /**

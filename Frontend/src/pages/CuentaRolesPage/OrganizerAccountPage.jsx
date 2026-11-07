@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom'
 import { FaStar } from 'react-icons/fa'
+import DemoAccountsToast, {
+  reopenDemoAccountsToast,
+} from '../../components/auth/DemoAccountsToast'
 import heroCrowd from '../../assets/img/people-crowd-concert-audience-show-lights-stage-performance-event-entertainment-nightclub-performing-arts-live-performance-rock-concert-musical-theatre-1033034-3875179764.jpg'
 import '../LoginPage/LoginPage.css'
 import './CuentaRolesPage.css'
 
 /**
- * Guía pública: cómo obtener cuenta ORGANIZADOR / ADMIN / ACCESO.
- * No es un formulario de alta (org formal / admin users = siguiente fase).
+ * Guía: cómo se obtienen roles ORG / ADMIN / ACCESO.
+ * CTA único → registro cliente (/login?tab=register).
+ * Demo toast para probar seeds sin auto-alta org.
  */
 const OrganizerAccountPage = () => {
   return (
@@ -26,61 +30,46 @@ const OrganizerAccountPage = () => {
 
         <h1 className="auth-box__title">¿Organizás eventos?</h1>
         <p className="auth-box__lead">
-          Las cuentas de organizador no se crean con el registro público de
-          clientes. Así se separan compradores de quien publica shows.
+          No hay alta pública de organizador. Primero creás una cuenta cliente;
+          el rol de organizador lo habilita la plataforma (o un admin).
         </p>
 
         <ul className="cuenta-roles-list">
           <li>
             <strong>Cliente</strong>
-            <span>
-              Registro libre en{' '}
-              <Link to="/login?tab=register">Crear cuenta cliente</Link>. Compra
-              entradas y gestiona devoluciones propias.
-            </span>
+            <span>Registro libre. Comprás entradas y gestionás tus trámites.</span>
           </li>
           <li>
             <strong>Organizador</strong>
             <span>
-              La plataforma (o un administrador) te habilita el rol. Después
-              iniciás sesión y usás el panel <em>Gestión</em> para borradores,
-              publicar y suspender tus eventos.
+              Se otorga sobre una cuenta ya existente. Después usás Gestión para
+              tus eventos.
             </span>
           </li>
           <li>
-            <strong>Administrador</strong>
-            <span>
-              Solo otro admin puede darte de alta o asignarte el rol. No hay
-              auto-registro.
-            </span>
-          </li>
-          <li>
-            <strong>Personal de acceso</strong>
-            <span>
-              Alta exclusiva de un administrador (y asignación a eventos). Sirve
-              para validar QR en puerta.
-            </span>
+            <strong>Administrador / Acceso</strong>
+            <span>Solo alta interna de un admin (sin auto-registro).</span>
           </li>
         </ul>
 
-        <p className="auth-box__roles-note" style={{ marginTop: '1rem' }}>
-          En el simulacro de la materia podés usar las cuentas demo del toast en
-          login (org@ / admin@ / acceso@). En producción el alta org quedará
-          como solicitud o alta interna.
-        </p>
-
-        <div className="gestion-card__actions" style={{ marginTop: '1.25rem' }}>
-          <Link className="btn btn-primary" to="/login">
-            Ir a ingresar
+        <div className="cuenta-roles-footer">
+          <Link
+            className="auth-box__roles-cta"
+            to="/login?tab=register"
+          >
+            Registrarme en la plataforma
           </Link>
-          <Link className="btn" to="/login?tab=register">
-            Prefiero cuenta cliente
-          </Link>
-          <Link className="btn" to="/">
-            Inicio
-          </Link>
+          <button
+            type="button"
+            className="auth-box__demo-link"
+            onClick={() => reopenDemoAccountsToast()}
+          >
+            Ver cuentas demo (email · contraseña)
+          </button>
         </div>
       </div>
+
+      <DemoAccountsToast />
     </section>
   )
 }

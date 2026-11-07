@@ -8,6 +8,7 @@ import {
   ENTRADA_ESTADOS,
   isEntradaQrExponible,
   isEntradaReintegroCancelacion,
+  isEntradaEventoSuspendido,
   isEntradaVisibleEnListado,
 } from '../../domain/entrada'
 import {
@@ -120,8 +121,8 @@ const MisEntradasPage = () => {
         <p className="mis-entradas-page__sub">
           Entradas de tu cuenta
           {user?.email ? ` (${user.email})` : ''}. El QR solo en tickets
-          válidos. Si un evento se cancela, la entrada queda acá con aviso (sin
-          QR); el trámite de dinero está en devoluciones.
+          válidos. Si el evento se suspende, tu entrada sigue vigente (con
+          aviso). Si se cancela, queda acá sin QR y el reintegro en devoluciones.
         </p>
       </header>
 
@@ -148,6 +149,7 @@ const MisEntradasPage = () => {
         <ul className="mis-entradas-list">
           {listado.map((e) => {
             const cancelada = isEntradaReintegroCancelacion(e)
+            const suspendida = isEntradaEventoSuspendido(e)
             const pend = pendientePorEntrada.get(e.id)
             const tramite = tramitePorEntrada.get(e.id)
             const puedeReclamo =
@@ -163,7 +165,9 @@ const MisEntradasPage = () => {
                 className={
                   cancelada
                     ? 'mis-entradas-card mis-entradas-card--cancelada'
-                    : 'mis-entradas-card'
+                    : suspendida
+                      ? 'mis-entradas-card mis-entradas-card--suspendida'
+                      : 'mis-entradas-card'
                 }
               >
                 <div className="mis-entradas-card__body">
@@ -207,6 +211,18 @@ const MisEntradasPage = () => {
                             </strong>
                           </>
                         ) : null}
+                      </p>
+                    </>
+                  )}
+
+                  {suspendida && !cancelada && (
+                    <>
+                      <p className="mis-entradas-page__badge mis-entradas-page__badge--suspend">
+                        Evento suspendido
+                      </p>
+                      <p className="mis-entradas-page__aviso">
+                        El organizador pausó la venta de entradas nuevas. Tu
+                        entrada sigue vigente y el QR de ingreso se mantiene.
                       </p>
                     </>
                   )}

@@ -93,9 +93,9 @@ export function canOperatePlatform(user) {
   return hasRole(user, ROLES.ADMIN)
 }
 
-/** Ingreso al evento: validar QR. */
+/** Ingreso al evento: validar QR — solo personal de acceso (no admin de plataforma). */
 export function canScanAccess(user) {
-  return hasRole(user, ROLES.ACCESO, ROLES.ADMIN)
+  return hasRole(user, ROLES.ACCESO)
 }
 
 /** Compra y “mis entradas” (cliente; org/admin también pueden). */

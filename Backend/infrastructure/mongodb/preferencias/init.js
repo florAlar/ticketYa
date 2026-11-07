@@ -10,7 +10,7 @@ const prefDb = db.getSiblingDB(dbName);
 prefDb.createCollection('preferencias_clientes');
 prefDb.createCollection('interacciones_eventos');
 
-// --- Índices (criterios del modelo: idCliente / idEvento) ---
+// --- Índices ---
 prefDb.preferencias_clientes.createIndex(
   { idCliente: 1 },
   { unique: true, name: 'uk_preferencias_idCliente' }
@@ -30,25 +30,23 @@ prefDb.interacciones_eventos.createIndex(
 );
 
 // --- Seed mínimo ---
-// idCliente demo = usuarios.usuario b000…0001
-// idEvento indie  = eventos.evento  d000…0001
 const ID_CLIENTE_DEMO = 'b0000000-0000-4000-8000-000000000001';
-const ID_EVENTO_INDIE = 'd0000000-0000-4000-8000-000000000001';
-const ID_EVENTO_HAMLET = 'd0000000-0000-4000-8000-000000000002';
+const ID_EVENTO_METALLICA = 'd0000000-0000-4000-8000-000000000001';
+const ID_EVENTO_UCL = 'd0000000-0000-4000-8000-000000000002';
 
 prefDb.preferencias_clientes.updateOne(
   { idCliente: ID_CLIENTE_DEMO },
   {
     $set: {
       idCliente: ID_CLIENTE_DEMO,
-      categorias: ['RECITAL', 'TEATRO'],
-      ciudades: ['Tandil'],
+      categorias: ['RECITAL', 'DEPORTE', 'FESTIVAL'],
+      ciudades: ['Buenos Aires'],
       rangoPrecio: {
-        min: NumberDecimal('5000'),
-        max: NumberDecimal('30000'),
+        min: NumberDecimal('20000'),
+        max: NumberDecimal('300000'),
         moneda: 'ARS'
       },
-      artistas: ['Indie Local'],
+      artistas: ['Metallica', 'Iron Maiden', 'Gojira'],
       fechaActualizacion: ISODate('2026-10-01T12:00:00.000Z')
     }
   },
@@ -58,18 +56,18 @@ prefDb.preferencias_clientes.updateOne(
 prefDb.interacciones_eventos.updateOne(
   {
     idCliente: ID_CLIENTE_DEMO,
-    idEvento: ID_EVENTO_INDIE,
+    idEvento: ID_EVENTO_METALLICA,
     tipo: 'COMPRA'
   },
   {
     $set: {
       idCliente: ID_CLIENTE_DEMO,
-      idEvento: ID_EVENTO_INDIE,
+      idEvento: ID_EVENTO_METALLICA,
       tipo: 'COMPRA',
       categoria: 'RECITAL',
-      fechaEvento: ISODate('2026-11-15T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-03-15T21:00:00.000Z'),
       fechaCompra: ISODate('2026-10-01T14:05:00.000Z'),
-      monto: NumberDecimal('18000.00')
+      monto: NumberDecimal('95000.00')
     }
   },
   { upsert: true }
@@ -78,16 +76,16 @@ prefDb.interacciones_eventos.updateOne(
 prefDb.interacciones_eventos.updateOne(
   {
     idCliente: ID_CLIENTE_DEMO,
-    idEvento: ID_EVENTO_HAMLET,
+    idEvento: ID_EVENTO_UCL,
     tipo: 'VISUALIZACION'
   },
   {
     $set: {
       idCliente: ID_CLIENTE_DEMO,
-      idEvento: ID_EVENTO_HAMLET,
+      idEvento: ID_EVENTO_UCL,
       tipo: 'VISUALIZACION',
-      categoria: 'TEATRO',
-      fechaEvento: ISODate('2026-11-20T20:30:00.000Z'),
+      categoria: 'DEPORTES',
+      fechaEvento: ISODate('2027-05-30T21:00:00.000Z'),
       fechaCompra: null,
       monto: null
     }

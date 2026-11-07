@@ -18,6 +18,7 @@ import entradas.clients.EventosClient;
 import entradas.clients.EventosClient.EventoDetalleFeignDTO;
 import entradas.clients.EventosClient.LugarFeignDTO;
 import entradas.clients.EventosClient.SectorFeignDTO;
+import entradas.clients.VentasClient;
 import entradas.dto.DevolucionCreateRequestDTO;
 import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
@@ -54,26 +55,26 @@ public class EntradaServiceImpl implements EntradaService {
         public static final String EVT_CANCELADO = "CANCELADO";
 
     private final EntradaRepository entradaRepository;
-    private final DevolucionRepository devolucionRepository;
-    private final EntradaMapper entradaMapper;
-    private final EventosClient eventosClient;
-    private final long plazoDevolucionHoras;
+        private final DevolucionRepository devolucionRepository;
+        private final EntradaMapper entradaMapper;
+        private final EventosClient eventosClient;
+        private final VentasClient ventasClient;
+                private final long plazoDevolucionHoras;
 
-    /** precio unitario por idEntrada (solo memoria de emisión reciente; seeds = null). */
-    private final Map<String, BigDecimal> preciosMem = new HashMap<>();
-
-    public EntradaServiceImpl(
-            EntradaRepository entradaRepository,
-            DevolucionRepository devolucionRepository,
-            EntradaMapper entradaMapper,
-            EventosClient eventosClient,
-            @Value("${ticketya.entradas.plazo-devolucion-horas:72}") long plazoDevolucionHoras) {
-        this.entradaRepository = entradaRepository;
-        this.devolucionRepository = devolucionRepository;
-        this.entradaMapper = entradaMapper;
-        this.eventosClient = eventosClient;
-        this.plazoDevolucionHoras = plazoDevolucionHoras;
-    }
+                public EntradaServiceImpl(
+                        EntradaRepository entradaRepository,
+                        DevolucionRepository devolucionRepository,
+                        EntradaMapper entradaMapper,
+                        EventosClient eventosClient,
+                        VentasClient ventasClient,
+                        @Value("${ticketya.entradas.plazo-devolucion-horas:72}") long plazoDevolucionHoras) {
+                    this.entradaRepository = entradaRepository;
+                    this.devolucionRepository = devolucionRepository;
+                    this.entradaMapper = entradaMapper;
+                    this.eventosClient = eventosClient;
+                    this.ventasClient = ventasClient;
+                    this.plazoDevolucionHoras = plazoDevolucionHoras;
+                }
 
     @Override
     @Transactional
@@ -96,15 +97,14 @@ public class EntradaServiceImpl implements EntradaService {
                 e.setIdEvento(request.idEvento());
                 e.setIdSector(item.idSector());
                 e.setCodigoQr(buildQrCode());
-                e.setEstado(EST_VENDIDA);
-                e.setFechaEmision(now);
-                e.setFechaValidacion(null);
-                creadas.add(e);
-                if (item.precioUnitario() != null) {
-                    preciosMem.put(e.getIdEntrada(), item.precioUnitario());
-                }
-            }
-        }
+                                e.setEstado(EST_VENDIDA);
+                                e.setFechaEmision(now);
+                                e.setFechaValidacion(null);
+                                e.setPrecio(
+                                        item.precioUnitario() != null ? item.precioUnitario() : BigDecimal.ZERO);
+                                creadas.add(e);
+                            }
+                        }
         if (creadas.isEmpty()) {
             throw new IllegalArgumentException("items vacíos o cantidad 0");
         }
@@ -122,8 +122,8 @@ public class EntradaServiceImpl implements EntradaService {
     @Transactional(readOnly = true)
     public EntradaResponseDTO obtener(String idCliente, String idEntrada, boolean admin) {
         Entrada e = requireEntrada(idCliente, idEntrada, admin);
-        EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(idEntrada));
-        EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), new HashMap<>());
+                EntradaResponseDTO dto = entradaMapper.toEntrada(e);
+                EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), new HashMap<>());
         enriquecer(dto, evento);
         applyQrPolicy(e, dto, evento);
         return dto;
@@ -168,9 +168,9 @@ public class EntradaServiceImpl implements EntradaService {
             throw new BusinessConflictException("Ya hay una devolución PENDIENTE para esta entrada");
         }
 
-        BigDecimal monto = preciosMem.getOrDefault(idEntrada, BigDecimal.ZERO);
-        Devolucion d = new Devolucion();
-        d.setIdDevolucion(UUID.randomUUID().toString());
+        BigDecimal monto = EntradaMapper.precioDe(entrada);
+                Devolucion d = new Devolucion();
+                d.setIdDevolucion(UUID.randomUUID().toString());
         d.setEntrada(entrada);
         d.setMotivo(body != null && body.motivo() != null ? body.motivo().trim() : null);
         d.setMonto(monto);
@@ -209,19 +209,62 @@ public class EntradaServiceImpl implements EntradaService {
     }
 
     @Override
-    @Transactional
-    public DevolucionResponseDTO aprobarDevolucion(String idDevolucion) {
-        Devolucion d = requireDevPendiente(idDevolucion);
-        Entrada entrada = d.getEntrada();
-        entrada.setEstado(EST_DEVUELTA);
-        // QR viejo deja de coincidir con pantallazos previos (UK nuevo valor INV-*)
-        invalidarCodigoQr(entrada);
-        entradaRepository.save(entrada);
-        d.setEstado(DEV_APROBADA);
-        // reintegro mock: solo estado; cupo ventas no se toca en E1 (contrato)
-        devolucionRepository.save(d);
-        return entradaMapper.toDevolucion(d);
-    }
+            @Transactional
+            public DevolucionResponseDTO aprobarDevolucion(String idDevolucion) {
+                Devolucion d = requireDevPendiente(idDevolucion);
+                Entrada entrada = d.getEntrada();
+                entrada.setEstado(EST_DEVUELTA);
+                // QR viejo deja de coincidir con pantallazos previos (UK nuevo valor INV-*)
+                invalidarCodigoQr(entrada);
+                entradaRepository.save(entrada);
+                d.setEstado(DEV_APROBADA);
+                // reintegro mock de dinero: solo estado APROBADA (pasarela real = E2)
+                devolucionRepository.save(d);
+                // Reabrir cupo en ventas; si Feign falla → excepción → rollback de approve
+                liberarCupoVentasFailHard(entrada);
+                return entradaMapper.toDevolucion(d);
+            }
+
+        /**
+         * 1 unidad del sector de la entrada vuelve a disponible en msvc-ventas.
+         * Fail-hard: sin cupo liberado no se aprueba (consistencia BC).
+         */
+        private void liberarCupoVentasFailHard(Entrada entrada) {
+            if (entrada == null
+                    || entrada.getIdEvento() == null
+                    || entrada.getIdEvento().isBlank()
+                    || entrada.getIdSector() == null
+                    || entrada.getIdSector().isBlank()) {
+                throw new BusinessConflictException(
+                        "No se puede liberar cupo: entrada sin idEvento/idSector");
+            }
+            try {
+                ventasClient.liberarCupo(
+                        entrada.getIdEvento().trim(),
+                        new VentasClient.LiberarCupoBody(entrada.getIdSector().trim(), 1));
+            } catch (FeignException ex) {
+                log.error(
+                        "Feign ventas liberar cupo falló entrada={} evento={} sector={} status={}",
+                        entrada.getIdEntrada(),
+                        entrada.getIdEvento(),
+                        entrada.getIdSector(),
+                        ex.status(),
+                        ex);
+                throw new BusinessConflictException(
+                        "No se pudo reabrir cupo en ventas al aprobar devolución (status="
+                                + ex.status()
+                                + "). Reintentá cuando ventas esté disponible.");
+            } catch (RuntimeException ex) {
+                log.error(
+                        "Error liberando cupo ventas entrada={} evento={} sector={}",
+                        entrada.getIdEntrada(),
+                        entrada.getIdEvento(),
+                        entrada.getIdSector(),
+                        ex);
+                throw new BusinessConflictException(
+                        "No se pudo reabrir cupo en ventas al aprobar devolución: " + ex.getMessage());
+            }
+        }
 
     @Override
     @Transactional
@@ -253,8 +296,8 @@ public class EntradaServiceImpl implements EntradaService {
                     d.setIdDevolucion(UUID.randomUUID().toString());
                     d.setEntrada(e);
                     d.setMotivo(MOTIVO_REINTEGRO_CANCELACION);
-                    d.setMonto(preciosMem.getOrDefault(e.getIdEntrada(), BigDecimal.ZERO));
-                    d.setFechaSolicitud(now);
+                                        d.setMonto(EntradaMapper.precioDe(e));
+                                        d.setFechaSolicitud(now);
                     d.setEstado(DEV_EN_CURSO);
                     devolucionRepository.save(d);
                 }
@@ -329,8 +372,8 @@ public class EntradaServiceImpl implements EntradaService {
         Map<String, EventoDetalleFeignDTO> cache = new HashMap<>();
         List<EntradaResponseDTO> out = new ArrayList<>(entradas.size());
         for (Entrada e : entradas) {
-            EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(e.getIdEntrada()));
-            EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), cache);
+            EntradaResponseDTO dto = entradaMapper.toEntrada(e);
+                        EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), cache);
             enriquecer(dto, evento);
             applyQrPolicy(e, dto, evento);
             out.add(dto);

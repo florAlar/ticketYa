@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import ventas.dto.CompraResponseDTO;
 import ventas.dto.DetalleReservaDTO;
 import ventas.dto.DisponibilidadResponseDTO;
+import ventas.dto.NivelCupo;
 import ventas.dto.PagoResponseDTO;
 import ventas.dto.ReservaResponseDTO;
 import ventas.entity.Compra;
@@ -19,15 +20,29 @@ public class VentaMapper {
     public DisponibilidadResponseDTO toDisponibilidad(String idEvento, List<CupoSector> cupos) {
         DisponibilidadResponseDTO dto = new DisponibilidadResponseDTO();
         dto.setIdEvento(idEvento);
-        for (CupoSector c : cupos) {
-            DisponibilidadResponseDTO.CupoSectorDTO item = new DisponibilidadResponseDTO.CupoSectorDTO();
-            item.setIdSector(c.getIdSector());
-            item.setCapacidadTotal(c.getCapacidadTotal());
-            item.setCantidadDisponible(c.getCantidadDisponible());
-            item.setCantidadReservada(c.getCantidadReservada());
-            item.setCantidadVendida(c.getCantidadVendida());
-            dto.getSectores().add(item);
+        int total = 0;
+        if (cupos != null) {
+            for (CupoSector c : cupos) {
+                DisponibilidadResponseDTO.CupoSectorDTO item = new DisponibilidadResponseDTO.CupoSectorDTO();
+                item.setIdSector(c.getIdSector());
+                item.setCapacidadTotal(c.getCapacidadTotal());
+                int disp = c.getCantidadDisponible() != null ? c.getCantidadDisponible() : 0;
+                item.setCantidadDisponible(disp);
+                item.setCantidadReservada(c.getCantidadReservada());
+                item.setCantidadVendida(c.getCantidadVendida());
+                String nivelSector = NivelCupo.fromDisponible(disp);
+                item.setNivelCupo(nivelSector);
+                item.setNivelCupoLabel(NivelCupo.label(nivelSector));
+                item.setAgotado(NivelCupo.isAgotado(nivelSector));
+                total += disp;
+                dto.getSectores().add(item);
+            }
         }
+        dto.setDisponibleTotal(total);
+        String nivel = NivelCupo.fromDisponible(total);
+        dto.setNivelCupo(nivel);
+        dto.setNivelCupoLabel(NivelCupo.label(nivel));
+        dto.setAgotado(NivelCupo.isAgotado(nivel));
         return dto;
     }
 

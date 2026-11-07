@@ -201,6 +201,153 @@
   margin-bottom: 0.5rem;
 }
 
+.gestion-participantes__teloneros {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.gestion-participantes__teloneros-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.gestion-participantes__label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.gestion-participantes__row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.gestion-participantes__row .form-input {
+  flex: 1;
+}
+
+.gestion-participantes__ac {
+  flex: 1;
+  min-width: 0;
+}
+
+.artista-ac {
+  position: relative;
+}
+
+.artista-ac__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.artista-ac__control .form-input {
+  width: 100%;
+}
+
+.artista-ac__control--selected .form-input {
+  border-color: color-mix(in srgb, var(--primary, #e91e8c) 45%, #e5e7eb);
+}
+
+.artista-ac__clear {
+  flex-shrink: 0;
+  min-width: 2rem;
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+
+.artista-ac__hint {
+  margin-top: 0.35rem !important;
+}
+
+.artista-ac__hint--warn {
+  color: #a16207 !important;
+}
+
+.artista-ac__list {
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  max-height: 14rem;
+  overflow: auto;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.artista-ac__item {
+  padding: 0.55rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.artista-ac__item--muted {
+  color: var(--text-muted, #6b7280);
+}
+
+.artista-ac__option {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.artista-ac__option:hover,
+.artista-ac__option:focus-visible {
+  background: color-mix(in srgb, var(--primary, #e91e8c) 10%, transparent);
+  outline: none;
+}
+
+.artista-ac__option--create {
+  font-weight: 600;
+  color: var(--primary, #e91e8c);
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.artista-ac__name {
+  flex: 1;
+}
+
+.artista-ac__meta {
+  font-size: 0.78rem;
+  color: var(--text-muted, #6b7280);
+  text-transform: uppercase;
+}
+
+.artista-ac__error {
+  margin-top: 0.35rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .acceso-scan {
   display: flex;
   flex-direction: column;

@@ -25,9 +25,9 @@ Protegido: Bearer JWT válido + rol:
 | Rol | Alcance (resumen) |
 | --- | --- |
 | ADMIN | todo |
-| ORGANIZADOR | eventos/lugares/…, reportes, me, GET validaciones |
+| ORGANIZADOR | eventos/lugares/…, reportes, me, GET validaciones; **también** entradas/compras/devoluciones propias (Mis entradas) |
 | CLIENTE | reservas/compras/entradas/devoluciones, disponibilidad, me, preferencias |
-| PERSONAL_ACCESO | me + POST/GET validaciones |
+| PERSONAL_ACCESO | me + POST/GET validaciones; **también** entradas/compras propias |
 
 401/403 JSON: `{"error","message"}` como el ejemplo.
 
@@ -154,7 +154,7 @@ Query: tipo | organizador | participante | ciudad | fechaDesde | fechaHasta | pr
 
 ### superposicion de servicios en endpoint  /eventos/** (mismo prefijo, distinto servicio): :
 
-- /eventos/{id}/disponibilidad | /eventos/{id}/fila/** -> msvc-ventas (consulta por disponibilidad de evento)
+- /eventos/{id}/disponibilidad | /eventos/{id}/cupos (POST) | /eventos/{id}/cupos/liberacion (POST) | /eventos/{id}/fila/** -> msvc-ventas
 - /eventos/{idEvento}/validaciones -> msvc-entradas (personal de acceso valida una entrada al momento de ingresar al evento. )
 - /eventos/{id}/recomendaciones ->msvc-preferencias
 
@@ -176,6 +176,8 @@ El gateway enruta estas rutas específicas **antes** del catch-all /eventos/** �
   /pagos,
   /reportes,
   /eventos/{id}/disponibilidad,
+  /eventos/{id}/cupos (POST, apertura stock al publicar),
+  /eventos/{id}/cupos/liberacion (POST, reabrir stock por devolución),
   /eventos/{id}/fila/**
 - msvc-entradas  → /entradas,
   /devoluciones,

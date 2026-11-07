@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import { getEvento, updateEvento } from '../../api/eventos'
+import { getEvento, updateEvento, syncEventoParticipantes } from '../../api/eventos'
 import {
   EVENTO_ESTADOS,
   EVENTO_ESTADO_LABELS,
   EVENTO_TIPOS,
   EVENTO_TIPO_LABELS,
+  validateEventoGestionForm,
 } from '../../domain/evento'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import EventoParticipantesFields, {
+  newTeloneroRow,
+  splitParticipantesForm,
+} from '../../components/gestion/EventoParticipantesFields'
 import './GestionPage.css'
 
 const PRESETS_ENTRADA = [
-  { nombre: 'Campo', precio: '15000', capacidad: '500', sinCupo: false, esNumerado: false },
-  { nombre: 'Palco', precio: '45000', capacidad: '40', sinCupo: false, esNumerado: true },
-  { nombre: 'Platea', precio: '25000', capacidad: '120', sinCupo: false, esNumerado: true },
-  { nombre: 'General', precio: '10000', capacidad: '200', sinCupo: false, esNumerado: false },
-  { nombre: 'VIP', precio: '60000', capacidad: '30', sinCupo: false, esNumerado: false },
+  { nombre: 'Campo', precio: '15000', capacidad: '500', esNumerado: false },
+  { nombre: 'Palco', precio: '45000', capacidad: '40', esNumerado: true },
+  { nombre: 'Platea', precio: '25000', capacidad: '120', esNumerado: true },
+  { nombre: 'General', precio: '10000', capacidad: '200', esNumerado: false },
+  { nombre: 'VIP', precio: '60000', capacidad: '30', esNumerado: false },
 ]
 
 let sectorKeySeq = 1
@@ -26,9 +31,8 @@ function newSectorRow(partial = {}) {
     key: `s_${Date.now()}_${sectorKeySeq++}`,
     id: partial.id || null,
     nombre: partial.nombre || '',
-    precio: partial.precio != null ? String(partial.precio) : '0',
+    precio: partial.precio != null ? String(partial.precio) : '',
     capacidad: partial.capacidad != null ? String(partial.capacidad) : '',
-    sinCupo: Boolean(partial.sinCupo),
     esNumerado: Boolean(partial.esNumerado),
   }
 }
@@ -53,13 +57,14 @@ function formFromDetalle(ev) {
         newSectorRow({
           id: s.id,
           nombre: s.nombre,
-          precio: s.precio ?? s.precioUnitario ?? 0,
+          precio: s.precio ?? s.precioUnitario ?? '',
           capacidad: s.capacidadTotal ?? s.capacidad ?? '',
-          sinCupo: s.sinCupo ?? s.capacidadTotal == null,
           esNumerado: s.esNumerado,
         })
       )
-    : [newSectorRow({ nombre: 'General', precio: '0', capacidad: '100' })]
+    : [newSectorRow()]
+
+  const parts = splitParticipantesForm(ev.participantes)
 
   return {
     form: {
@@ -70,9 +75,7 @@ function formFromDetalle(ev) {
       estado: EVENTO_ESTADOS.BORRADOR,
       esAltaDemanda: Boolean(ev.esAltaDemanda),
       destacado: Boolean(ev.destacado),
-      participantes: Array.isArray(ev.participantes)
-        ? ev.participantes.join(', ')
-        : String(ev.participantes || ''),
+      principal: parts.principal,
       idLugar: ev.lugar?.id || ev.idLugar || null,
       lugarNombre: ev.lugar?.nombre || '',
       lugarCiudad: ev.lugar?.ciudad || '',
@@ -80,11 +83,13 @@ function formFromDetalle(ev) {
       imagenUrl: ev.imagenUrl || '',
     },
     sectores,
+    teloneros: parts.teloneros,
   }
 }
 
 /**
  * Edición de evento en BORRADOR (PUT /api/eventos/{id}).
+ * Borrador laxo; la publicación completa se hace desde el listado.
  */
 const GestionEventoEditarPage = () => {
   const { eventoId } = useParams()
@@ -92,6 +97,7 @@ const GestionEventoEditarPage = () => {
   const navigate = useNavigate()
   const [form, setForm] = useState(null)
   const [sectores, setSectores] = useState([])
+  const [teloneros, setTeloneros] = useState([])
   const [loadStatus, setLoadStatus] = useState('loading')
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
@@ -128,6 +134,7 @@ const GestionEventoEditarPage = () => {
       const mapped = formFromDetalle(ev)
       setForm(mapped.form)
       setSectores(mapped.sectores)
+      setTeloneros(mapped.teloneros)
       setLoadStatus('ok')
     } catch (err) {
       setError(err.message || 'No se pudo cargar el evento')
@@ -159,9 +166,8 @@ const GestionEventoEditarPage = () => {
       newSectorRow(
         preset || {
           nombre: '',
-          precio: '0',
+          precio: '',
           capacidad: '',
-          sinCupo: false,
           esNumerado: false,
         }
       ),
@@ -178,19 +184,18 @@ const GestionEventoEditarPage = () => {
     setError('')
     setStatus('loading')
     try {
-      const cleaned = sectores
-        .map((s) => ({
-          id: s.id || undefined,
-          nombre: String(s.nombre || '').trim(),
-          precio: Number(s.precio) || 0,
-          sinCupo: Boolean(s.sinCupo),
-          capacidadTotal: s.sinCupo ? null : Number(s.capacidad) || 0,
-          esNumerado: Boolean(s.esNumerado),
-        }))
-        .filter((s) => s.nombre)
-
-      if (!cleaned.length) {
-        setError('Agregá al menos un tipo de entrada con nombre')
+      const check = validateEventoGestionForm(
+        {
+          ...form,
+          principalId: form.principal?.id,
+          principal: form.principal,
+          teloneros,
+        },
+        sectores,
+        'borrador'
+      )
+      if (!check.ok) {
+        setError(check.error)
         setStatus('error')
         return
       }
@@ -199,12 +204,33 @@ const GestionEventoEditarPage = () => {
         ...form,
         estado: EVENTO_ESTADOS.BORRADOR,
         esAltaDemanda: false,
-        sectores: cleaned,
+        fechaInicio: form.fechaInicio ? form.fechaInicio : null,
+        sectores: check.sectores.map((s) => ({
+          ...s,
+          precio: s.precio == null ? 0 : s.precio,
+          capacidadTotal: s.capacidadTotal == null ? 0 : s.capacidadTotal,
+          sinCupo: false,
+        })),
       }
+      delete payload.principal
+      delete payload.principalNombre
+      delete payload.principalId
+      delete payload.participantes
+      delete payload.teloneros
+
       await updateEvento(eventoId, payload, {
         token,
         userId: user?.id,
       })
+      await syncEventoParticipantes(
+        eventoId,
+        {
+          principalId: form.principal?.id,
+          principalNombre: form.principal?.nombre,
+          teloneros,
+        },
+        { token }
+      )
       setStatus('ok')
       navigate('/gestion/eventos', { replace: true })
     } catch (err) {
@@ -225,7 +251,8 @@ const GestionEventoEditarPage = () => {
         </p>
         <h1 className="gestion-page__title">Editar borrador</h1>
         <p className="gestion-page__sub">
-          Solo eventos en estado borrador. PUT /api/eventos/&#123;id&#125;.
+          Solo borrador. Podés dejar lugar/cupos incompletos; al publicar desde el
+          listado el backend exige todo completo y fecha futura.
           {gated && (
             <>
               {' '}
@@ -249,7 +276,7 @@ const GestionEventoEditarPage = () => {
       )}
 
       {loadStatus === 'ok' && form && (
-        <form className="gestion-form gestion-card" onSubmit={onSubmit}>
+        <form className="gestion-form gestion-card" onSubmit={onSubmit} noValidate>
           <div className="form-group">
             <label htmlFor="nombre">Nombre *</label>
             <input
@@ -306,7 +333,7 @@ const GestionEventoEditarPage = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="fechaInicio">Fecha y hora *</label>
+            <label htmlFor="fechaInicio">Fecha y hora (futura al publicar)</label>
             <input
               id="fechaInicio"
               name="fechaInicio"
@@ -314,34 +341,54 @@ const GestionEventoEditarPage = () => {
               className="form-input"
               value={form.fechaInicio}
               onChange={onChange}
-              required
               disabled={loading}
             />
           </div>
 
+          <EventoParticipantesFields
+            principal={form.principal}
+            onPrincipalChange={(v) =>
+              setForm((prev) => ({ ...prev, principal: v }))
+            }
+            teloneros={teloneros}
+            onTeloneroChange={(key, value) =>
+              setTeloneros((prev) =>
+                prev.map((t) =>
+                  t.key === key
+                    ? { ...t, id: value?.id || null, nombre: value?.nombre || '' }
+                    : t
+                )
+              )
+            }
+            onAddTelonero={() => setTeloneros((prev) => [...prev, newTeloneroRow()])}
+            onRemoveTelonero={(key) =>
+              setTeloneros((prev) => prev.filter((t) => t.key !== key))
+            }
+            token={token}
+            disabled={loading}
+          />
+
           <div className="form-group">
-            <label htmlFor="lugarNombre">Lugar *</label>
+            <label htmlFor="lugarNombre">Lugar</label>
             <input
               id="lugarNombre"
               name="lugarNombre"
               className="form-input"
               value={form.lugarNombre}
               onChange={onChange}
-              required
               disabled={loading}
             />
           </div>
 
           <div className="gestion-form__row">
             <div className="form-group">
-              <label htmlFor="lugarCiudad">Ciudad *</label>
+              <label htmlFor="lugarCiudad">Ciudad</label>
               <input
                 id="lugarCiudad"
                 name="lugarCiudad"
                 className="form-input"
                 value={form.lugarCiudad}
                 onChange={onChange}
-                required
                 disabled={loading}
               />
             </div>
@@ -373,6 +420,10 @@ const GestionEventoEditarPage = () => {
           <h2 className="gestion-page__title" style={{ fontSize: '1.05rem' }}>
             Tipos de entrada
           </h2>
+          <p className="gestion-card__muted" style={{ marginBottom: '0.75rem' }}>
+            Presets solo al click. Cupo obligatorio (≥ 1) al publicar; acá podés
+            dejarlo incompleto. No hay cupo ilimitado.
+          </p>
           <div className="gestion-card__actions" style={{ marginBottom: '0.75rem' }}>
             {PRESETS_ENTRADA.map((p) => (
               <button
@@ -430,25 +481,14 @@ const GestionEventoEditarPage = () => {
                 <input
                   className="form-input"
                   type="number"
-                  min="0"
+                  min="1"
                   value={s.capacidad}
-                  disabled={loading || s.sinCupo}
+                  disabled={loading}
                   onChange={(e) =>
                     onSectorChange(s.key, 'capacidad', e.target.value)
                   }
                 />
               </div>
-              <label className="gestion-check" style={{ marginBottom: '0.85rem' }}>
-                <input
-                  type="checkbox"
-                  checked={s.sinCupo}
-                  disabled={loading}
-                  onChange={(e) =>
-                    onSectorChange(s.key, 'sinCupo', e.target.checked)
-                  }
-                />
-                Sin cupo
-              </label>
               <label className="gestion-check" style={{ marginBottom: '0.85rem' }}>
                 <input
                   type="checkbox"
@@ -478,7 +518,7 @@ const GestionEventoEditarPage = () => {
               className="btn btn-primary"
               disabled={loading}
             >
-              {loading ? 'Guardando…' : 'Guardar cambios'}
+              {loading ? 'Guardando…' : 'Guardar borrador'}
             </GateButton>
             <Link className="btn" to="/gestion/eventos">
               Cancelar

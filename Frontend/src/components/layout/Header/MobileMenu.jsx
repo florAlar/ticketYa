@@ -26,8 +26,10 @@ const MobileMenu = ({ open, close }) => {
       <nav>
         <ul className="mobile-links">
           <li><NavLink to="/" end onClick={close}>Inicio</NavLink></li>
-          {!isAcceso && (
-            <li><NavLink to="/eventos" onClick={close}>Eventos</NavLink></li>
+          {isAuthenticated && !isAcceso && (
+            <li>
+              <NavLink to="/eventos" onClick={close}>Eventos</NavLink>
+            </li>
           )}
           {!isAcceso && (
             <li>
@@ -48,11 +50,11 @@ const MobileMenu = ({ open, close }) => {
             <>
               <li>
                 <NavLink
-                  to={isAcceso ? '/acceso' : '/mis-entradas'}
+                  to="/perfil"
                   className="nav-account"
                   onClick={close}
-                  title={user?.nombre || user?.email || 'Cuenta'}
-                  aria-label={user?.nombre || 'Cuenta'}
+                  title={user?.nombre || user?.email || 'Mi perfil'}
+                  aria-label={user?.nombre || 'Mi perfil'}
                 >
                   <HiOutlineUser className="nav-account__icon" aria-hidden />
                 </NavLink>

@@ -12,10 +12,6 @@ import entradas.entity.Entrada;
 public class EntradaMapper {
 
     public EntradaResponseDTO toEntrada(Entrada e) {
-        return toEntrada(e, null);
-    }
-
-    public EntradaResponseDTO toEntrada(Entrada e, BigDecimal precio) {
         EntradaResponseDTO dto = new EntradaResponseDTO();
         dto.setId(e.getIdEntrada());
         dto.setCodigoQR(e.getCodigoQr());
@@ -26,7 +22,7 @@ public class EntradaMapper {
         dto.setEstado(e.getEstado());
         dto.setFechaEmision(e.getFechaEmision());
         dto.setFechaIngreso(e.getFechaValidacion());
-        dto.setPrecio(precio);
+        dto.setPrecio(precioDe(e));
         return dto;
     }
 
@@ -47,5 +43,12 @@ public class EntradaMapper {
         dto.setFechaSolicitud(d.getFechaSolicitud());
         dto.setEstado(d.getEstado());
         return dto;
+    }
+
+    public static BigDecimal precioDe(Entrada e) {
+        if (e == null || e.getPrecio() == null) {
+            return BigDecimal.ZERO;
+        }
+        return e.getPrecio();
     }
 }

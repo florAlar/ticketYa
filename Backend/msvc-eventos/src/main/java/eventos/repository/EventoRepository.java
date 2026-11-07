@@ -24,6 +24,13 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
                       and (:estado is null or lower(e.estado) = lower(:estado))
                       and (:fechaDesde is null or e.fechaInicio >= :fechaDesde)
                       and (:fechaHasta is null or e.fechaInicio <= :fechaHasta)
+                      and (
+                        :participante is null
+                        or exists (
+                          select 1 from EventoParticipante ep
+                          where ep.evento = e and ep.participante.id = :participante
+                        )
+                      )
                     """,
             countQuery = """
                     select count(e) from Evento e
@@ -34,6 +41,13 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
                       and (:estado is null or lower(e.estado) = lower(:estado))
                       and (:fechaDesde is null or e.fechaInicio >= :fechaDesde)
                       and (:fechaHasta is null or e.fechaInicio <= :fechaHasta)
+                      and (
+                        :participante is null
+                        or exists (
+                          select 1 from EventoParticipante ep
+                          where ep.evento = e and ep.participante.id = :participante
+                        )
+                      )
                     """)
     Page<Evento> buscar(
             @Param("tipo") String tipo,
@@ -42,6 +56,7 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
             @Param("estado") String estado,
             @Param("fechaDesde") LocalDateTime fechaDesde,
             @Param("fechaHasta") LocalDateTime fechaHasta,
+            @Param("participante") String participante,
             Pageable pageable);
 
     @EntityGraph(attributePaths = "lugar")

@@ -10,6 +10,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ticketya
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
       TICKETYA_URI_ENTRADAS: http://ms-entradas:8084
+      TICKETYA_URI_VENTAS: http://ms-ventas:8083
     depends_on:
       db-mysql-eventos:
         condition: service_healthy

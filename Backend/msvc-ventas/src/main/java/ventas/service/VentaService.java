@@ -1,8 +1,11 @@
 package ventas.service;
 
 import java.util.List;
+import ventas.dto.AbrirCuposRequestDTO;
+import ventas.dto.LiberarCupoRequestDTO;
 import ventas.dto.CompraCreateRequestDTO;
 import ventas.dto.CompraResponseDTO;
+import ventas.dto.DisponibilidadBatchResponseDTO;
 import ventas.dto.DisponibilidadResponseDTO;
 import ventas.dto.PagoCreateRequestDTO;
 import ventas.dto.PagoResponseDTO;
@@ -13,7 +16,25 @@ public interface VentaService {
 
     DisponibilidadResponseDTO disponibilidad(String idEvento);
 
-    ReservaResponseDTO crearReserva(String idCliente, ReservaCreateRequestDTO request, String idempotencyKey);
+        /**
+         * Disponibilidad comercial de varios eventos en una query.
+         * ids vacíos → lista vacía. Sin cupos para un id → ítem agotado (total 0).
+         */
+        DisponibilidadBatchResponseDTO disponibilidadBatch(List<String> idEventos);
+
+        /**
+                 * Abre o asegura cupos comerciales para un evento (idempotente).
+                 * Usado al publicar desde msvc-eventos.
+                 */
+                DisponibilidadResponseDTO abrirCupos(String idEvento, AbrirCuposRequestDTO request);
+
+            /**
+             * Devuelve unidades vendidas al disponible (devolución aprobada).
+             * Lock pesimista sobre cupo_sector.
+             */
+            DisponibilidadResponseDTO liberarCupoDevolucion(String idEvento, LiberarCupoRequestDTO request);
+
+            ReservaResponseDTO crearReserva(String idCliente, ReservaCreateRequestDTO request, String idempotencyKey);
 
     ReservaResponseDTO obtenerReserva(String idCliente, String idReserva);
 

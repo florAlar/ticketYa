@@ -21,3 +21,4 @@ spring:
 ticketya:
   uri:
     entradas: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
+    ventas: ${TICKETYA_URI_VENTAS:http://localhost:8083}
