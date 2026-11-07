@@ -21,7 +21,17 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
                     where (:tipo is null or lower(e.tipo) = lower(:tipo))
                       and (:ciudad is null or lower(l.ciudad) like lower(concat('%', :ciudad, '%')))
                       and (:organizador is null or e.idOrganizador = :organizador)
-                      and (:estado is null or lower(e.estado) = lower(:estado))
+                      and (
+                        :estado is null
+                        or (
+                          :catalogoDefault = true
+                          and upper(e.estado) in ('PUBLICADO', 'AGOTADO')
+                        )
+                        or (
+                          :catalogoDefault = false
+                          and lower(e.estado) = lower(:estado)
+                        )
+                      )
                       and (:fechaDesde is null or e.fechaInicio >= :fechaDesde)
                       and (:fechaHasta is null or e.fechaInicio <= :fechaHasta)
                       and (
@@ -38,7 +48,17 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
                     where (:tipo is null or lower(e.tipo) = lower(:tipo))
                       and (:ciudad is null or lower(l.ciudad) like lower(concat('%', :ciudad, '%')))
                       and (:organizador is null or e.idOrganizador = :organizador)
-                      and (:estado is null or lower(e.estado) = lower(:estado))
+                      and (
+                        :estado is null
+                        or (
+                          :catalogoDefault = true
+                          and upper(e.estado) in ('PUBLICADO', 'AGOTADO')
+                        )
+                        or (
+                          :catalogoDefault = false
+                          and lower(e.estado) = lower(:estado)
+                        )
+                      )
                       and (:fechaDesde is null or e.fechaInicio >= :fechaDesde)
                       and (:fechaHasta is null or e.fechaInicio <= :fechaHasta)
                       and (
@@ -54,6 +74,7 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
             @Param("ciudad") String ciudad,
             @Param("organizador") String organizador,
             @Param("estado") String estado,
+            @Param("catalogoDefault") boolean catalogoDefault,
             @Param("fechaDesde") LocalDateTime fechaDesde,
             @Param("fechaHasta") LocalDateTime fechaHasta,
             @Param("participante") String participante,

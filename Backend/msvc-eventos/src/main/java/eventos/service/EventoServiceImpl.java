@@ -64,13 +64,14 @@ public class EventoServiceImpl implements EventoService {
 
     private static final Logger log = LoggerFactory.getLogger(EventoServiceImpl.class);
 
-    private static final String ESTADO_CATALOGO_DEFAULT = "PUBLICADO";
-    private static final String BORRADOR = "BORRADOR";
-    private static final String PUBLICADO = "PUBLICADO";
-    private static final String CANCELADO = "CANCELADO";
-    private static final String SUSPENDIDO = "SUSPENDIDO";
-    private static final String AGOTADO = "AGOTADO";
-    private static final String FINALIZADO = "FINALIZADO";
+    /** Sentinel interno: catálogo público = PUBLICADO + AGOTADO (visibles, no comprables si agotado). */
+        private static final String ESTADO_CATALOGO_DEFAULT = "CATALOGO";
+        private static final String BORRADOR = "BORRADOR";
+        private static final String PUBLICADO = "PUBLICADO";
+        private static final String CANCELADO = "CANCELADO";
+        private static final String SUSPENDIDO = "SUSPENDIDO";
+        private static final String AGOTADO = "AGOTADO";
+        private static final String FINALIZADO = "FINALIZADO";
 
     private static final Set<String> ESTADOS_PATCH = Set.of(
             SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO, PUBLICADO, BORRADOR);
@@ -127,27 +128,27 @@ public class EventoServiceImpl implements EventoService {
             int safeSize = size <= 0 ? 20 : Math.min(size, 200);
 
             boolean todos = estado != null
-                    && (estado.equalsIgnoreCase("TODOS") || estado.equalsIgnoreCase("ALL") || estado.equals("*"));
-            String estadoFiltro = todos ? null : blankToNull(estado);
-            if (estadoFiltro == null && !todos) {
-                estadoFiltro = ESTADO_CATALOGO_DEFAULT;
-            }
+                                && (estado.equalsIgnoreCase("TODOS") || estado.equalsIgnoreCase("ALL") || estado.equals("*"));
+                        String estadoRaw = todos ? null : blankToNull(estado);
+                        boolean catalogoDefault = !todos && estadoRaw == null;
+                        String estadoFiltro = catalogoDefault ? ESTADO_CATALOGO_DEFAULT : estadoRaw;
 
-            LocalDateTime desde = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
-            LocalDateTime hasta = fechaHasta != null ? fechaHasta.atTime(LocalTime.MAX) : null;
+                        LocalDateTime desde = fechaDesde != null ? fechaDesde.atStartOfDay() : null;
+                        LocalDateTime hasta = fechaHasta != null ? fechaHasta.atTime(LocalTime.MAX) : null;
 
-            Sort sort = resolveSort(orden);
-            Pageable pageable = PageRequest.of(safePage, safeSize, sort);
+                        Sort sort = resolveSort(orden);
+                        Pageable pageable = PageRequest.of(safePage, safeSize, sort);
 
-            Page<Evento> result = eventoRepository.buscar(
-                    blankToNull(tipo),
-                    blankToNull(ciudad),
-                    blankToNull(organizador),
-                    estadoFiltro,
-                    desde,
-                    hasta,
-                    blankToNull(participante),
-                    pageable);
+                        Page<Evento> result = eventoRepository.buscar(
+                                blankToNull(tipo),
+                                blankToNull(ciudad),
+                                blankToNull(organizador),
+                                estadoFiltro,
+                                catalogoDefault,
+                                desde,
+                                hasta,
+                                blankToNull(participante),
+                                pageable);
 
         List<Evento> eventos = result.getContent();
         Map<String, BigDecimal> minPrecios = minPrecios(eventos.stream().map(Evento::getId).toList());

@@ -43,9 +43,10 @@ public class EventoController {
     }
 
     /**
-     * Catálogo / listado.
-     * Default estado=PUBLICADO. Gestión admin: estado=TODOS|ALL.
-     */
+         * Catálogo / listado.
+         * Default: PUBLICADO + AGOTADO (visibles en home/catálogo).
+         * Exacto: estado=PUBLICADO|AGOTADO|…. Gestión: estado=TODOS|ALL.
+         */
     @GetMapping("/eventos")
         public PageResponseDTO<EventoResponseDTO> listar(
                 @RequestParam(required = false) String tipo,

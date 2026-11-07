@@ -135,7 +135,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion. **2026-11-07:** borrador laxo (nombre; sin límite fecha); publicar exige lugar real + ≥1 sector precio + **capacidad ≥ 1** (no cupo ilimitado). Al publicar: Feign ventas `POST /eventos/{id}/cupos` **fail-hard**. Body alineado form FE. |
 | E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. + filtro `participante=` (id artista). Doc: `msvc-eventos/docs/endpoints.md`. |
 | E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | hecho | PATCH estado/fecha; GET `/organizadores/me/eventos`. CANCELADO → Feign reintegro entradas best-effort. ORG: SUSPENDIDO propios; resto ADMIN. |
-| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema + CRUD + filtro + FE principal/teloneros. Authz ORG/ADMIN + dueño al asociar. GET público. Migración: `eventos/02-add-participantes.sql`. |
+| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema `participante`+`evento_participante`; CRUD `/participantes`; GET/PUT `/eventos/{id}/participantes`; filtro `GET /eventos?participante=`. Authz: GET público; write ORG/ADMIN; asociar dueño/ADMIN. FE: autocomplete catálogo (guarda **id**) + CTA crear + principal obligatorio / teloneros +. Seed demo: Metallica/Gojira, UCL (equipos), Iron Maiden/Ghost. Migración `02-add-participantes.sql`; reseed live `03-reseed-clean-demo.sql`. |
 
 ### 6.2 msvc-ventas
 
@@ -337,11 +337,12 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Extra producto | X-UI-02…05, X-QR-* | — | X-UI-01, X-ORG-01/02 |
 | Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
 
-**Lectura (2026-11-07, cierre sesión cupo + roles + alta evento):**  
+**Lectura (2026-11-07, cierre participantes + seed demo):**  
 - **Hecho E1 core:** eventos GET+write; ventas (+ **apertura cupo al publicar**); entradas QR/devo; JWT; FE demock selectivo.  
-- **Hecho esta sesión:** form org (1 fila vacía, presets click, publicar completo, sin cupo ilimitado, borrador sin límite fecha); Feign `POST …/cupos`; checkout bloquea sin disponibilidad; toast demo seed; **admin puro sin panel Acceso**; editar borrador.  
-- **Ops:** jars nuevos en contenedores vía `docker cp` si la imagen base quedó vieja; eventos PUBLICADO *antes* del cableo cupo pueden necesitar republicar o POST cupos.  
+- **Hecho E1-EVE-06:** participantes=artistas; API+authz; FE autocomplete por id; detalle muestra lineup.  
+- **Seed demo operable:** 14 eventos (Metallica/UCL/RiR + Iron Maiden, Rammstein, Foo Fighters, Coldplay, F1, NBA, Slipknot, Download, Oasis AGOTADO, Tool, Brasil-Arg) en 3 estadios; cupos/compras/entradas/devo + mocks FE alineados.  
+- **Ops:** jars `docker cp` si stale; reseed `*/03-reseed-clean-demo.sql`; volumen viejo sin tabla → `02-add-participantes.sql`.  
 - **Deuda natural:** emisión Feign best-effort; ValidacionAcceso=E2-ACC. **Cupo al approve + precio entrada en DB: hechos.**  
 - **Gap E1 formal:** E1-TST / INF-17 Postman / E1-REL.  
-- **Extra pendiente:** X-UI-01 perfil; X-ORG-01 solicitud org; authz fina participantes.  
+- **Extra pendiente:** X-UI-01 perfil; X-ORG-01 solicitud org.  
 - **Próximo formal:** smoke compra E2E estable **o** tests/Postman **o** E2-ACC.  

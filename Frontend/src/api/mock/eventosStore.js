@@ -75,13 +75,11 @@ export function writeGestionEventos(list) {
 
 export function listCatalogoPublico() {
   return readGestionEventos()
-    .filter(
-      (e) =>
-        e.estado === EVENTO_ESTADOS.PUBLICADO ||
-        e.estado === 'PUBLICADO' ||
-        e.estado === EVENTO_ESTADOS.SUSPENDIDO ||
-        e.estado === 'SUSPENDIDO'
-    )
+    .filter((e) => {
+      const est = String(e.estado || '').toUpperCase()
+      // Alineado a BE default catálogo: PUBLICADO + AGOTADO
+      return est === 'PUBLICADO' || est === 'AGOTADO'
+    })
     .map(toCatalogoDto)
 }
 

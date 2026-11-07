@@ -111,7 +111,7 @@ function unwrapEventosList(data) {
 /**
  * Catálogo público.
  * GET /api/eventos?tipo&ciudad&organizador&estado&fechaDesde&fechaHasta&orden&page&size
- * Default BE: PUBLICADO. `incluirSuspendidos` → estado=TODOS + FE deja PUBLICADO|SUSPENDIDO.
+ * Default BE: PUBLICADO+AGOTADO. `incluirSuspendidos` → estado=TODOS + FE deja PUBLICADO|SUSPENDIDO|AGOTADO.
  * `q` y `esAltaDemanda` se aplican en cliente (BE listar aún no los expone).
  */
 export async function listEventos(filter = {}) {
@@ -121,7 +121,7 @@ export async function listEventos(filter = {}) {
     if (filter.incluirSuspendidos === true || filter.incluirSuspendidos === 'true') {
       list = list.filter((e) => {
         const est = String(e.estado || '').toUpperCase()
-        return est === 'PUBLICADO' || est === 'SUSPENDIDO'
+        return est === 'PUBLICADO' || est === 'SUSPENDIDO' || est === 'AGOTADO'
       })
     }
     return list
@@ -150,7 +150,7 @@ export async function listEventos(filter = {}) {
   if (incluirSuspendidos) {
     list = list.filter((e) => {
       const est = String(e.estado || '').toUpperCase()
-      return est === 'PUBLICADO' || est === 'SUSPENDIDO'
+      return est === 'PUBLICADO' || est === 'SUSPENDIDO' || est === 'AGOTADO'
     })
   }
   return list
@@ -406,30 +406,24 @@ function readMockParticipantes(filter = {}) {
   }
   if (!list.length) {
     list = [
-      {
-        id: 'p0000000-0000-4000-8000-000000000001',
-        nombre: 'Metallica',
-        tipo: 'BANDA',
-        descripcion: 'Thrash metal — M72',
-      },
-      {
-        id: 'p0000000-0000-4000-8000-000000000002',
-        nombre: 'Gojira',
-        tipo: 'BANDA',
-        descripcion: 'Soporte M72',
-      },
-      {
-        id: 'p0000000-0000-4000-8000-000000000005',
-        nombre: 'Iron Maiden',
-        tipo: 'BANDA',
-        descripcion: 'Headliner',
-      },
-      {
-        id: 'p0000000-0000-4000-8000-000000000006',
-        nombre: 'Ghost',
-        tipo: 'BANDA',
-        descripcion: 'Soporte',
-      },
+      { id: 'p0000000-0000-4000-8000-000000000001', nombre: 'Metallica', tipo: 'BANDA', descripcion: 'Thrash metal — M72' },
+      { id: 'p0000000-0000-4000-8000-000000000002', nombre: 'Gojira', tipo: 'BANDA', descripcion: 'Soporte M72' },
+      { id: 'p0000000-0000-4000-8000-000000000003', nombre: 'Real Madrid CF', tipo: 'EQUIPO', descripcion: 'Finalista Champions' },
+      { id: 'p0000000-0000-4000-8000-000000000004', nombre: 'Manchester City FC', tipo: 'EQUIPO', descripcion: 'Finalista Champions' },
+      { id: 'p0000000-0000-4000-8000-000000000005', nombre: 'Iron Maiden', tipo: 'BANDA', descripcion: 'The Future Past / festivals' },
+      { id: 'p0000000-0000-4000-8000-000000000006', nombre: 'Ghost', tipo: 'BANDA', descripcion: 'Soporte / co-bill' },
+      { id: 'p0000000-0000-4000-8000-000000000007', nombre: 'Rammstein', tipo: 'BANDA', descripcion: 'Industrial metal stadium' },
+      { id: 'p0000000-0000-4000-8000-000000000008', nombre: 'Foo Fighters', tipo: 'BANDA', descripcion: 'Alternative rock' },
+      { id: 'p0000000-0000-4000-8000-000000000009', nombre: 'Coldplay', tipo: 'BANDA', descripcion: 'Pop rock stadium' },
+      { id: 'p0000000-0000-4000-8000-00000000000a', nombre: 'Los Angeles Lakers', tipo: 'EQUIPO', descripcion: 'NBA' },
+      { id: 'p0000000-0000-4000-8000-00000000000b', nombre: 'Boston Celtics', tipo: 'EQUIPO', descripcion: 'NBA' },
+      { id: 'p0000000-0000-4000-8000-00000000000c', nombre: 'Slipknot', tipo: 'BANDA', descripcion: 'Nu metal' },
+      { id: 'p0000000-0000-4000-8000-00000000000d', nombre: 'Bring Me The Horizon', tipo: 'BANDA', descripcion: 'Download co-headliner' },
+      { id: 'p0000000-0000-4000-8000-00000000000e', nombre: 'Oasis', tipo: 'BANDA', descripcion: 'Britpop reunion' },
+      { id: 'p0000000-0000-4000-8000-00000000000f', nombre: 'Tool', tipo: 'BANDA', descripcion: 'Progressive metal' },
+      { id: 'p0000000-0000-4000-8000-000000000010', nombre: 'Selección Brasil', tipo: 'EQUIPO', descripcion: 'FIFA' },
+      { id: 'p0000000-0000-4000-8000-000000000011', nombre: 'Selección Argentina', tipo: 'EQUIPO', descripcion: 'FIFA' },
+      { id: 'p0000000-0000-4000-8000-000000000012', nombre: 'Max Verstappen', tipo: 'PILOTO', descripcion: 'F1 Red Bull' },
     ]
     try {
       localStorage.setItem(MOCK_PART_KEY, JSON.stringify(list))
