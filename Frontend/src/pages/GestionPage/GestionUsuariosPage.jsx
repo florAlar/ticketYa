@@ -10,6 +10,8 @@ import {
 } from '../../api/usuarios'
 import { listEventosGestion } from '../../api/eventos'
 import { ROLE_LABELS, ROLES, normalizeRol } from '../../auth/roles'
+import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import GateButton from '../../components/ui/GateButton'
 import '../GestionPage/GestionPage.css'
 
 const GestionUsuariosPage = () => {
@@ -58,6 +60,7 @@ const GestionUsuariosPage = () => {
   )
 
   const onRol = async (id, rol) => {
+    if (!FEATURE.adminUsuarios) return
     setBusyId(id)
     setError('')
     try {
@@ -71,6 +74,7 @@ const GestionUsuariosPage = () => {
   }
 
   const onActivo = async (id, activo) => {
+    if (!FEATURE.adminUsuarios) return
     setBusyId(id)
     setError('')
     try {
@@ -84,6 +88,7 @@ const GestionUsuariosPage = () => {
   }
 
   const onDelete = async (id) => {
+    if (!FEATURE.adminUsuarios) return
     if (!window.confirm('¿Eliminar este usuario? (personal de acceso no se desactiva)')) {
       return
     }
@@ -100,6 +105,7 @@ const GestionUsuariosPage = () => {
   }
 
   const onToggleEvento = async (u, eventoId) => {
+    if (!FEATURE.adminUsuarios) return
     const cur = new Set(u.eventosAsignados || [])
     if (cur.has(eventoId)) cur.delete(eventoId)
     else cur.add(eventoId)
@@ -117,6 +123,7 @@ const GestionUsuariosPage = () => {
 
   const onCreate = async (e) => {
     e.preventDefault()
+    if (!FEATURE.adminUsuarios) return
     setError('')
     setBusyId('create')
     try {
@@ -150,17 +157,24 @@ const GestionUsuariosPage = () => {
         <p className="gestion-page__sub">
           Admin: edita solo <strong>rol</strong> y <strong>activo</strong>. Personal
           de acceso se crea acá y se asigna a eventos (no se desactiva: se elimina).
+          {!FEATURE.adminUsuarios && (
+            <>
+              {' '}
+              <strong title={GATE_HINT}>({GATE_HINT})</strong>
+            </>
+          )}
         </p>
       </header>
 
       <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
-        <button
+        <GateButton
+          enabled={FEATURE.adminUsuarios}
           type="button"
           className="btn btn-primary"
           onClick={() => setShowCreate((v) => !v)}
         >
           {showCreate ? 'Cerrar alta' : 'Nuevo personal de acceso'}
-        </button>
+        </GateButton>
         <button type="button" className="btn" onClick={load}>
           Actualizar
         </button>
@@ -254,7 +268,9 @@ const GestionUsuariosPage = () => {
                         id={`rol-${u.id}`}
                         className="form-input"
                         value={normalizeRol(u.rol)}
-                        disabled={busyId === u.id || u.id === user?.id}
+                        disabled={
+                          busyId === u.id || u.id === user?.id || !FEATURE.adminUsuarios
+                        }
                         onChange={(e) => onRol(u.id, e.target.value)}
                       >
                         {Object.values(ROLES).map((r) => (
@@ -271,7 +287,9 @@ const GestionUsuariosPage = () => {
                           id={`act-${u.id}`}
                           className="form-input"
                           value={u.activo ? '1' : '0'}
-                          disabled={busyId === u.id || u.id === user?.id}
+                          disabled={
+                            busyId === u.id || u.id === user?.id || !FEATURE.adminUsuarios
+                          }
                           onChange={(e) => onActivo(u.id, e.target.value === '1')}
                         >
                           <option value="1">Sí</option>
@@ -290,7 +308,7 @@ const GestionUsuariosPage = () => {
                             <input
                               type="checkbox"
                               checked={(u.eventosAsignados || []).includes(ev.id)}
-                              disabled={busyId === u.id}
+                              disabled={busyId === u.id || !FEATURE.adminUsuarios}
                               onChange={() => onToggleEvento(u, ev.id)}
                             />
                             {ev.label}
@@ -302,14 +320,15 @@ const GestionUsuariosPage = () => {
                 </div>
                 <div className="gestion-event-row__actions">
                   {isAcceso && (
-                    <button
+                    <GateButton
+                      enabled={FEATURE.adminUsuarios}
                       type="button"
                       className="btn"
                       disabled={busyId === u.id}
                       onClick={() => onDelete(u.id)}
                     >
                       Eliminar
-                    </button>
+                    </GateButton>
                   )}
                 </div>
               </li>

@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom'
+import { FEATURE } from '../../config/featureGates'
+import GateLink from '../../components/ui/GateLink'
 import './SoportePage.css'
 
 /**
- * Hub soporte cliente ↔ ms-ventas (devoluciones / transferencias).
- * Acciones de formulario en rutas hijas (requieren sesión).
+ * Hub soporte cliente.
+ * Devolución cableada si ENTRADAS demock; transferencia shell → gated.
  */
 const SoportePage = () => {
   return (
@@ -29,9 +31,13 @@ const SoportePage = () => {
             <li>Devolución: dentro del plazo (72 h antes)</li>
             <li>Seguimiento en Mis entradas</li>
           </ul>
-          <Link className="soporte-card__cta" to="/soporte/devolucion">
+          <GateLink
+            enabled={FEATURE.devoluciones}
+            className="soporte-card__cta"
+            to="/soporte/devolucion"
+          >
             Solicitar ahora
-          </Link>
+          </GateLink>
         </article>
 
         <article className="soporte-card">
@@ -45,9 +51,13 @@ const SoportePage = () => {
             <li>Email o usuario destino</li>
             <li>Confirmación antes de completar</li>
           </ul>
-          <Link className="soporte-card__cta" to="/soporte/transferencia">
+          <GateLink
+            enabled={FEATURE.transferencia}
+            className="soporte-card__cta"
+            to="/soporte/transferencia"
+          >
             Transferir entrada
-          </Link>
+          </GateLink>
         </article>
       </div>
 

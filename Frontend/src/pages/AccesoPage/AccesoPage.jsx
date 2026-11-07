@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import { ROLE_LABELS } from '../../auth/roles'
+import { FEATURE } from '../../config/featureGates'
+import GateLink from '../../components/ui/GateLink'
 import '../GestionPage/GestionPage.css'
 
 /**
  * Hub personal de acceso (ingreso al evento).
- * Mock de panel; validación real = ms-entradas vía gateway.
+ * Scan gated hasta E2-ACC (API validaciones); página /acceso/scan intacta.
  */
 const AccesoPage = () => {
   const { user } = useAuth()
@@ -26,12 +28,16 @@ const AccesoPage = () => {
         <article className="gestion-card">
           <h2>Escanear / validar QR</h2>
           <p>
-            En la puerta del evento: un solo ingreso por entrada. El backend
-            (ms-entradas) confirma; acá solo mock de acceso al panel.
+            En la puerta del evento: un solo ingreso por entrada. Requiere
+            API de validaciones (E2-ACC) en msvc-entradas.
           </p>
-          <Link className="btn btn-primary" to="/acceso/scan">
+          <GateLink
+            enabled={FEATURE.accesoScan}
+            className="btn btn-primary"
+            to="/acceso/scan"
+          >
             Ir a escanear
-          </Link>
+          </GateLink>
         </article>
 
         <article className="gestion-card">

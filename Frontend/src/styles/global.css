@@ -272,6 +272,47 @@ h6 {
   border-color: var(--colors-text);
 }
 
+/* CTA / nav no cableado al BE: visible pero sin flujo */
+.btn:disabled,
+button:disabled.is-gated-off,
+.is-gated-off {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: grayscale(0.35);
+  text-decoration: none;
+}
+
+a.is-gated-off,
+span.is-gated-off {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary.is-gated-off,
+.btn.is-gated-off {
+  background: transparent !important;
+  border-color: var(--colors-border, #666) !important;
+  color: var(--colors-text-muted, #888) !important;
+}
+
+.soporte-card__cta.is-gated-off {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.35);
+}
+
+.nav-links .is-gated-off,
+.mobile-links .is-gated-off {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
 /* Section Headers */
 .section-header {
 

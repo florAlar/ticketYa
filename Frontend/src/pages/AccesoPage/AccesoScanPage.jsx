@@ -2,15 +2,18 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import { validarIngreso } from '../../api/entradas'
+import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import GateButton from '../../components/ui/GateButton'
 import '../GestionPage/GestionPage.css'
 
 /**
  * Validación de ingreso.
  * POST /api/eventos/{idEvento}/validaciones (contrato back).
- * Mock: sin idEvento obligatorio busca por código en store.
+ * UI gated hasta E2-ACC; página y mock intactos.
  */
 const AccesoScanPage = () => {
   const { user, token } = useAuth()
+  const wired = FEATURE.accesoScan
   const [idEvento, setIdEvento] = useState('')
   const [codigo, setCodigo] = useState('')
   const [msg, setMsg] = useState('')
@@ -19,6 +22,7 @@ const AccesoScanPage = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault()
+    if (!wired) return
     const value = codigo.trim()
     const evento = idEvento.trim()
     if (!value) {
@@ -62,6 +66,12 @@ const AccesoScanPage = () => {
         <p className="gestion-page__sub">
           Contrato: POST /api/eventos/&#123;idEvento&#125;/validaciones. Cámara nativa:
           después.
+          {!wired && (
+            <>
+              {' '}
+              <strong title={GATE_HINT}>({GATE_HINT})</strong>
+            </>
+          )}
         </p>
       </header>
 
@@ -74,7 +84,7 @@ const AccesoScanPage = () => {
           onChange={(e) => setIdEvento(e.target.value)}
           placeholder="ej. e1"
           autoComplete="off"
-          disabled={busy}
+          disabled={busy || !wired}
         />
 
         <label htmlFor="codigo-entrada">Código QR / ID entrada</label>
@@ -85,11 +95,16 @@ const AccesoScanPage = () => {
           onChange={(e) => setCodigo(e.target.value)}
           placeholder="ej. QR-DEMO-001-NOCHE-INDIE"
           autoComplete="off"
-          disabled={busy}
+          disabled={busy || !wired}
         />
-        <button type="submit" className="btn btn-primary" disabled={busy}>
+        <GateButton
+          enabled={wired}
+          type="submit"
+          className="btn btn-primary"
+          disabled={busy}
+        >
           {busy ? 'Validando…' : 'Validar ingreso'}
-        </button>
+        </GateButton>
         {msg && (
           <p className={ok ? 'gestion-card__muted' : 'gestion-error'}>{msg}</p>
         )}

@@ -11,6 +11,8 @@ import {
   DEVOLUCION_TIPO_LABELS,
 } from '../../domain/devolucion'
 import { ENTRADA_ESTADO_LABELS } from '../../domain/entrada'
+import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import GateButton from '../../components/ui/GateButton'
 import '../GestionPage/GestionPage.css'
 
 function formatFecha(iso) {
@@ -100,6 +102,7 @@ const GestionVentasPage = () => {
   }, [cola])
 
   const onResolver = async (id, estado) => {
+    if (!FEATURE.adminColaVentas) return
     setBusyId(id)
     setError('')
     try {
@@ -113,6 +116,7 @@ const GestionVentasPage = () => {
   }
 
   const onReintegro = async (entradaId) => {
+    if (!FEATURE.adminColaVentas) return
     setBusyId(entradaId)
     setError('')
     try {
@@ -141,6 +145,12 @@ const GestionVentasPage = () => {
           Solo <strong>reclamos / devoluciones pendientes</strong> y{' '}
           <strong>entradas de eventos cancelados</strong>. No se listan todas
           las compras.
+          {!FEATURE.adminColaVentas && (
+            <>
+              {' '}
+              <strong title={GATE_HINT}>({GATE_HINT})</strong>
+            </>
+          )}
         </p>
       </header>
 
@@ -190,22 +200,24 @@ const GestionVentasPage = () => {
                   {d.motivo && <p>{d.motivo}</p>}
                 </div>
                 <div className="gestion-event-row__actions">
-                  <button
+                  <GateButton
+                    enabled={FEATURE.adminColaVentas}
                     type="button"
                     className="btn btn-primary"
                     disabled={busyId === d.id}
                     onClick={() => onResolver(d.id, DEVOLUCION_ESTADOS.APROBADA)}
                   >
                     Aprobar
-                  </button>
-                  <button
+                  </GateButton>
+                  <GateButton
+                    enabled={FEATURE.adminColaVentas}
                     type="button"
                     className="btn"
                     disabled={busyId === d.id}
                     onClick={() => onResolver(d.id, DEVOLUCION_ESTADOS.RECHAZADA)}
                   >
                     Rechazar
-                  </button>
+                  </GateButton>
                 </div>
               </li>
             ))}
@@ -249,14 +261,15 @@ const GestionVentasPage = () => {
                         </p>
                       </div>
                       <div className="gestion-event-row__actions">
-                        <button
+                        <GateButton
+                          enabled={FEATURE.adminColaVentas}
                           type="button"
                           className="btn btn-primary"
                           disabled={busyId === e.id}
                           onClick={() => onReintegro(e.id)}
                         >
                           Marcar reintegro
-                        </button>
+                        </GateButton>
                       </div>
                     </li>
                   ))}

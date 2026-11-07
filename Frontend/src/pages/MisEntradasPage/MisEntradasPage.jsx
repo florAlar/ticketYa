@@ -8,6 +8,8 @@ import {
   DEVOLUCION_ESTADO_LABELS,
   DEVOLUCION_TIPO_LABELS,
 } from '../../domain/devolucion'
+import { FEATURE } from '../../config/featureGates'
+import GateLink from '../../components/ui/GateLink'
 import './MisEntradasPage.css'
 
 function formatFecha(iso) {
@@ -136,12 +138,13 @@ const MisEntradasPage = () => {
                     Ver QR
                   </Link>
                   {puedeReclamo && (
-                    <Link
+                    <GateLink
+                      enabled={FEATURE.devoluciones}
                       className="btn"
                       to={`/mis-entradas/${e.id}#reclamo`}
                     >
                       Reclamo / devolución
-                    </Link>
+                    </GateLink>
                   )}
                   {pend && (
                     <Link className="btn" to={`/mis-entradas/${e.id}`}>

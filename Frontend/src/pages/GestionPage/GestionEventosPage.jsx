@@ -7,6 +7,9 @@ import {
   EVENTO_ESTADO_LABELS,
   EVENTO_TIPO_LABELS,
 } from '../../domain/evento'
+import { FEATURE } from '../../config/featureGates'
+import GateLink from '../../components/ui/GateLink'
+import GateButton from '../../components/ui/GateButton'
 import './GestionPage.css'
 
 function formatFecha(iso) {
@@ -49,6 +52,7 @@ const GestionEventosPage = () => {
   }, [load])
 
   const onEstado = async (id, estado) => {
+    if (!FEATURE.eventosGestion) return
     setBusyId(id)
     try {
       await patchEventoEstado(id, estado, user, {
@@ -78,9 +82,13 @@ const GestionEventosPage = () => {
       </header>
 
       <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
-        <Link className="btn btn-primary" to="/gestion/eventos/nuevo">
+        <GateLink
+          enabled={FEATURE.eventosGestion}
+          className="btn btn-primary"
+          to="/gestion/eventos/nuevo"
+        >
           Nuevo evento
-        </Link>
+        </GateLink>
         <button type="button" className="btn" onClick={load} disabled={status === 'loading'}>
           Actualizar
         </button>
@@ -92,9 +100,13 @@ const GestionEventosPage = () => {
       {status === 'ok' && items.length === 0 && (
         <div className="gestion-card">
           <p>No hay eventos en este alcance.</p>
-          <Link className="btn btn-primary" to="/gestion/eventos/nuevo">
+          <GateLink
+            enabled={FEATURE.eventosGestion}
+            className="btn btn-primary"
+            to="/gestion/eventos/nuevo"
+          >
             Crear el primero
-          </Link>
+          </GateLink>
         </div>
       )}
 
@@ -123,34 +135,37 @@ const GestionEventosPage = () => {
               </div>
               <div className="gestion-event-row__actions">
                 {e.estado === EVENTO_ESTADOS.BORRADOR && (
-                  <button
+                  <GateButton
+                    enabled={FEATURE.eventosGestion}
                     type="button"
                     className="btn btn-primary"
                     disabled={busyId === e.id}
                     onClick={() => onEstado(e.id, EVENTO_ESTADOS.PUBLICADO)}
                   >
                     Publicar
-                  </button>
+                  </GateButton>
                 )}
                 {e.estado === EVENTO_ESTADOS.PUBLICADO && (
-                  <button
+                  <GateButton
+                    enabled={FEATURE.eventosGestion}
                     type="button"
                     className="btn"
                     disabled={busyId === e.id}
                     onClick={() => onEstado(e.id, EVENTO_ESTADOS.SUSPENDIDO)}
                   >
                     Suspender
-                  </button>
+                  </GateButton>
                 )}
                 {e.estado !== EVENTO_ESTADOS.CANCELADO && (
-                  <button
+                  <GateButton
+                    enabled={FEATURE.eventosGestion}
                     type="button"
                     className="btn"
                     disabled={busyId === e.id}
                     onClick={() => onEstado(e.id, EVENTO_ESTADOS.CANCELADO)}
                   >
                     Cancelar
-                  </button>
+                  </GateButton>
                 )}
               </div>
             </li>

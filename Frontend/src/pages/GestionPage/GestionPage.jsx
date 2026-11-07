@@ -1,10 +1,13 @@
-import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import { ROLE_LABELS } from '../../auth/roles'
+import { FEATURE } from '../../config/featureGates'
+import GateLink from '../../components/ui/GateLink'
+import { Link } from 'react-router-dom'
 import './GestionPage.css'
 
 /**
  * Hub: org → eventos; admin → eventos + usuarios/acceso + ventas.
+ * CTAs no cableados al BE: agrisados (flujos mock/shell intactos en el repo).
  */
 const GestionPage = () => {
   const {
@@ -36,20 +39,28 @@ const GestionPage = () => {
               <h2>{isAdmin ? 'Todos los eventos' : 'Mis eventos'}</h2>
               <p>
                 {isAdmin
-                  ? 'Listado completo del catálogo mock (ms-eventos).'
+                  ? 'Listado completo (gateway → msvc-eventos).'
                   : 'Solo eventos donde sos el organizador.'}
               </p>
-              <Link className="btn btn-primary" to="/gestion/eventos">
+              <GateLink
+                enabled={FEATURE.eventosGestion}
+                className="btn btn-primary"
+                to="/gestion/eventos"
+              >
                 Ver listado
-              </Link>
+              </GateLink>
             </article>
 
             <article className="gestion-card">
               <h2>Crear evento</h2>
               <p>Alta con forma de entidad de referencia.</p>
-              <Link className="btn btn-primary" to="/gestion/eventos/nuevo">
+              <GateLink
+                enabled={FEATURE.eventosGestion}
+                className="btn btn-primary"
+                to="/gestion/eventos/nuevo"
+              >
                 Nuevo evento
-              </Link>
+              </GateLink>
             </article>
           </>
         )}
@@ -61,9 +72,13 @@ const GestionPage = () => {
               Rol y activo (no datos personales). Alta de personal de acceso
               asignado a eventos. ACCESO no se desactiva: se elimina.
             </p>
-            <Link className="btn btn-primary" to="/gestion/usuarios">
+            <GateLink
+              enabled={FEATURE.adminUsuarios}
+              className="btn btn-primary"
+              to="/gestion/usuarios"
+            >
               Administrar usuarios
-            </Link>
+            </GateLink>
           </article>
         )}
 
@@ -74,9 +89,13 @@ const GestionPage = () => {
               Cola: devoluciones/reclamos pendientes y entradas de eventos
               cancelados (no todas las compras).
             </p>
-            <Link className="btn btn-primary" to="/gestion/ventas">
+            <GateLink
+              enabled={FEATURE.adminColaVentas}
+              className="btn btn-primary"
+              to="/gestion/ventas"
+            >
               Ver transacciones
-            </Link>
+            </GateLink>
           </article>
         )}
       </div>

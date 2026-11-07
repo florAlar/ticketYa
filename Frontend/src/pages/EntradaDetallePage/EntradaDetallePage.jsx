@@ -12,6 +12,8 @@ import {
   DEVOLUCION_TIPOS,
   DEVOLUCION_TIPO_LABELS,
 } from '../../domain/devolucion'
+import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import GateButton from '../../components/ui/GateButton'
 import '../MisEntradasPage/MisEntradasPage.css'
 
 function formatFecha(iso) {
@@ -72,6 +74,7 @@ const EntradaDetallePage = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault()
+    if (!FEATURE.devoluciones) return
     setSending(true)
     setMsg('')
     setError('')
@@ -191,6 +194,12 @@ const EntradaDetallePage = () => {
                 <p className="mis-entradas-page__muted">
                   Devolución: hasta 72 h antes del evento. Reclamo: error de
                   datos / problema con la entrada.
+                  {!FEATURE.devoluciones && (
+                    <>
+                      {' '}
+                      <strong title={GATE_HINT}>({GATE_HINT})</strong>
+                    </>
+                  )}
                 </p>
                 <div className="form-group">
                   <label htmlFor="sol-tipo">Tipo</label>
@@ -199,7 +208,7 @@ const EntradaDetallePage = () => {
                     className="form-input"
                     value={tipo}
                     onChange={(e) => setTipo(e.target.value)}
-                    disabled={sending}
+                    disabled={sending || !FEATURE.devoluciones}
                   >
                     <option value={DEVOLUCION_TIPOS.DEVOLUCION}>
                       Devolución
@@ -217,17 +226,18 @@ const EntradaDetallePage = () => {
                     onChange={(e) => setMotivo(e.target.value)}
                     required
                     minLength={5}
-                    disabled={sending}
+                    disabled={sending || !FEATURE.devoluciones}
                     placeholder="Contanos el motivo…"
                   />
                 </div>
-                <button
+                <GateButton
+                  enabled={FEATURE.devoluciones}
                   type="submit"
                   className="btn btn-primary"
                   disabled={sending}
                 >
                   {sending ? 'Enviando…' : 'Enviar solicitud'}
-                </button>
+                </GateButton>
               </form>
             ) : (
               <p className="mis-entradas-page__muted">
