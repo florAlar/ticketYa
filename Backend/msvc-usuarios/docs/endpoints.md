@@ -26,7 +26,7 @@ JWT: `jwt.secret` / `JWT_SECRET` **igual que API Gateway**. Claims: `userId`, `e
 
 Seeds demo (init.sql): demo@ / org@ / admin@ / acceso@ — pass en README mysql (`demo1234` etc.).
 
-Patrón tomado de `usersejemplo`: AuthService + JwtUtil + PasswordEncoder + exceptions + mapper.
+
 
 Smoke: `GET /` → `microservicio usuarios ok!`
 

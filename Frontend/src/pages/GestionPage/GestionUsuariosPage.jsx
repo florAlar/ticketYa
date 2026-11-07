@@ -30,6 +30,12 @@ const GestionUsuariosPage = () => {
   })
 
   const load = useCallback(async () => {
+    if (!FEATURE.adminUsuarios) {
+      setStatus('gated')
+      setItems([])
+      setEventos([])
+      return
+    }
     setStatus('loading')
     setError('')
     try {
@@ -175,10 +181,29 @@ const GestionUsuariosPage = () => {
         >
           {showCreate ? 'Cerrar alta' : 'Nuevo personal de acceso'}
         </GateButton>
-        <button type="button" className="btn" onClick={load}>
+        <GateButton
+          enabled={FEATURE.adminUsuarios}
+          type="button"
+          className="btn"
+          onClick={load}
+        >
           Actualizar
-        </button>
+        </GateButton>
       </div>
+
+      {status === 'gated' && (
+        <div className="gestion-card">
+          <p>
+            Gestión de usuarios no habilitada en el front: el alta de personal
+            de acceso y asignación a eventos aún no están en el contrato BE
+            completo.
+          </p>
+          <p className="gestion-card__muted">{GATE_HINT}</p>
+          <Link className="btn" to="/gestion">
+            ← Panel
+          </Link>
+        </div>
+      )}
 
       {error && <p className="gestion-error">{error}</p>}
       {status === 'loading' && <p className="gestion-card__muted">Cargando…</p>}

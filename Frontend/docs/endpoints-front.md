@@ -52,10 +52,10 @@ En real esas facades responden 501 hasta que el BE los defina.
 | GET | `/api/eventos` | público | Home, `/eventos`; admin gestión (listado amplio) |
 | GET | `/api/eventos/{id}` | público | detalle / checkout |
 | POST | `/api/eventos` | ORG | `/gestion/eventos/nuevo` |
-| PUT | `/api/eventos/{id}` | ORG | `updateEvento` (listo) |
+| PUT | `/api/eventos/{id}` | ORG dueño / ADMIN | `/gestion/eventos/:id/editar` (solo BORRADOR en UI) |
 | DELETE | `/api/eventos/{id}` | ORG | `deleteEvento` (listo) |
 | POST | `/api/eventos/{id}/publicacion` | ORG | publicar (UI “Publicar”) |
-| PATCH | `/api/eventos/{id}/estado` | ADMIN (suspender/cancelar) | botones estado |
+| PATCH | `/api/eventos/{id}/estado` | ORG suspende propios; ADMIN cancela | botones Suspender / Cancelar (admin) |
 | GET | `/api/organizadores/me/eventos` | ORG | listado gestión org |
 | GET | `/api/eventos/{id}/disponibilidad` | — | `getDisponibilidadEvento` (msvc-ventas vía gateway) |
 
@@ -86,7 +86,7 @@ Admin pendientes reales: `GET /api/devoluciones`.
 |---|---|---|---|
 | GET | `/api/entradas` | JWT (propias) | `/mis-entradas` |
 | GET | `/api/entradas/{id}` | JWT | detalle |
-| GET | `/api/entradas/{id}/qr` | JWT | `getEntradaQr` |
+| GET | `/api/entradas/{id}/qr` | JWT | `getEntradaQr` — solo VENDIDA + evento ≠ CANCELADO |
 | POST | `/api/eventos/{idEvento}/validaciones` | PERSONAL_ACCESO\|ADMIN | `/acceso/scan` |
 | GET | `/api/eventos/{idEvento}/validaciones` | ORG\|ADMIN | `listValidacionesEvento` |
 | POST | `/api/entradas/{id}/devoluciones` | CLIENTE | soporte / detalle entrada |

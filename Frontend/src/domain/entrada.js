@@ -20,14 +20,45 @@ export const ENTRADA_ESTADO_LABELS = {
 }
 
 /**
+ * Política alineada al BE: QR solo si VENDIDA y evento no CANCELADO.
+ * @param {{ estado?: string, eventoEstado?: string|null, codigoQR?: string|null }} entrada
+ */
+export function isEntradaQrExponible(entrada) {
+  if (!entrada) return false
+  if (entrada.estado !== ENTRADA_ESTADOS.VENDIDA) return false
+  const evEst = String(entrada.eventoEstado || '').trim().toUpperCase()
+  if (evEst === 'CANCELADO') return false
+  return true
+}
+
+/** Entrada usable como ticket (QR). */
+export function isEntradaActiva(entrada) {
+  return isEntradaQrExponible(entrada)
+}
+
+/** Reintegro impuesto por cancelación de evento (sigue en la lista, sin QR). */
+export function isEntradaReintegroCancelacion(entrada) {
+  if (!entrada) return false
+  if (entrada.estado === ENTRADA_ESTADOS.A_REINTEGRAR) return true
+  const ev = String(entrada.eventoEstado || '').trim().toUpperCase()
+  return ev === 'CANCELADO' && entrada.estado === ENTRADA_ESTADOS.VENDIDA
+}
+
+/** Cards que se muestran en Mis entradas: activas + afectadas por cancelación. */
+export function isEntradaVisibleEnListado(entrada) {
+  return isEntradaActiva(entrada) || isEntradaReintegroCancelacion(entrada)
+}
+
+/**
  * @typedef {object} Entrada
  * @property {string} id
- * @property {string} codigoQR
+ * @property {string|null} [codigoQR]
  * @property {string} idCompra
  * @property {string} idCliente
  * @property {string} idEvento
  * @property {string} [eventoNombre]
  * @property {string} [eventoFecha]
+ * @property {string} [eventoEstado]
  * @property {string} [idSector]
  * @property {string} [sectorNombre]
  * @property {string|null} [fila]
@@ -41,14 +72,15 @@ export const ENTRADA_ESTADO_LABELS = {
  */
 
 export function toEntradaListItem(e) {
-  return {
+  const base = {
     id: e.id,
-    codigoQR: e.codigoQR,
+    codigoQR: e.codigoQR ?? null,
     idCompra: e.idCompra,
     idCliente: e.idCliente,
     idEvento: e.idEvento,
     eventoNombre: e.eventoNombre || 'Evento',
     eventoFecha: e.eventoFecha || null,
+    eventoEstado: e.eventoEstado || null,
     idSector: e.idSector,
     sectorNombre: e.sectorNombre || 'General',
     fila: e.fila ?? null,
@@ -60,4 +92,9 @@ export function toEntradaListItem(e) {
     lugarNombre: e.lugarNombre || '',
     lugarCiudad: e.lugarCiudad || '',
   }
+  // Defensa en profundidad FE: nunca devolver secreto si la política no aplica
+  if (!isEntradaQrExponible(base)) {
+    base.codigoQR = null
+  }
+  return base
 }

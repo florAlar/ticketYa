@@ -17,6 +17,7 @@ function seedEntradas() {
       idEvento: 'e1',
       eventoNombre: 'Noche de Indie en el Lago',
       eventoFecha: '2026-11-15T21:00:00',
+      eventoEstado: 'PUBLICADO',
       idSector: 'sec_gen',
       sectorNombre: 'General',
       fila: null,
@@ -36,6 +37,7 @@ function seedEntradas() {
       idEvento: 'e2',
       eventoNombre: 'Hamlet — función especial',
       eventoFecha: '2026-11-20T20:30:00',
+      eventoEstado: 'PUBLICADO',
       idSector: 'sec_platea',
       sectorNombre: 'Platea',
       fila: 'A',
@@ -49,12 +51,13 @@ function seedEntradas() {
     },
     {
       id: 'ent_demo_003',
-      codigoQR: 'QR-DEMO-003-USADA',
+      codigoQR: null,
       idCompra: 'cmp_demo_3',
       idCliente: 'u_demo',
       idEvento: 'e8',
       eventoNombre: 'Esperando la carroza',
       eventoFecha: '2026-09-01T21:00:00',
+      eventoEstado: 'FINALIZADO',
       idSector: 'sec_gen',
       sectorNombre: 'General',
       fila: null,
@@ -68,18 +71,19 @@ function seedEntradas() {
     },
     {
       id: 'ent_cancel_001',
-      codigoQR: 'QR-CANCEL-FEST-001',
+      codigoQR: null,
       idCompra: 'cmp_cancel_1',
       idCliente: 'u_demo',
       idEvento: 'e_cancel_demo',
       eventoNombre: 'Festival cancelado (demo admin)',
       eventoFecha: '2026-12-01T20:00:00',
+      eventoEstado: 'CANCELADO',
       idSector: 'sec_campo',
       sectorNombre: 'Campo',
       fila: null,
       asiento: null,
       precio: 15000,
-      estado: ENTRADA_ESTADOS.VENDIDA,
+      estado: ENTRADA_ESTADOS.A_REINTEGRAR,
       fechaEmision: '2026-10-10T12:00:00.000Z',
       fechaIngreso: null,
       lugarNombre: 'Predio Municipal',
@@ -87,18 +91,19 @@ function seedEntradas() {
     },
     {
       id: 'ent_cancel_002',
-      codigoQR: 'QR-CANCEL-FEST-002',
+      codigoQR: null,
       idCompra: 'cmp_cancel_2',
       idCliente: 'u_org',
       idEvento: 'e_cancel_demo',
       eventoNombre: 'Festival cancelado (demo admin)',
       eventoFecha: '2026-12-01T20:00:00',
+      eventoEstado: 'CANCELADO',
       idSector: 'sec_campo',
       sectorNombre: 'Campo',
       fila: null,
       asiento: null,
       precio: 15000,
-      estado: ENTRADA_ESTADOS.VENDIDA,
+      estado: ENTRADA_ESTADOS.A_REINTEGRAR,
       fechaEmision: '2026-10-11T12:00:00.000Z',
       fechaIngreso: null,
       lugarNombre: 'Predio Municipal',
@@ -116,7 +121,30 @@ export function readEntradas() {
       return seed
     }
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : seedEntradas()
+    if (!Array.isArray(parsed)) return seedEntradas()
+    // Migración barata: demo cancelado viejo (VENDIDA+QR) → A_REINTEGRAR sin QR
+    let dirty = false
+    const next = parsed.map((row) => {
+      const e = { ...row }
+      if (
+        e.idEvento === 'e_cancel_demo' ||
+        String(e.id || '').startsWith('ent_cancel_')
+      ) {
+        if (
+          e.estado !== ENTRADA_ESTADOS.A_REINTEGRAR ||
+          e.codigoQR ||
+          e.eventoEstado !== 'CANCELADO'
+        ) {
+          dirty = true
+          e.estado = ENTRADA_ESTADOS.A_REINTEGRAR
+          e.codigoQR = null
+          e.eventoEstado = 'CANCELADO'
+        }
+      }
+      return toEntradaListItem(e)
+    })
+    if (dirty) writeEntradas(next)
+    return next
   } catch {
     return seedEntradas()
   }
@@ -126,10 +154,12 @@ export function writeEntradas(list) {
   localStorage.setItem(STORE_KEY, JSON.stringify(list))
 }
 
-/** Entradas de un cliente (dueño = idCliente). */
+/** Entradas de un cliente (dueño = idCliente). QR ya sanitizado. */
 export function listByClienteId(idCliente) {
   if (!idCliente) return []
-  return readEntradas().filter((e) => e.idCliente === String(idCliente))
+  return readEntradas()
+    .filter((e) => e.idCliente === String(idCliente))
+    .map((e) => toEntradaListItem(e))
 }
 
 export function listByEventoIds(eventoIds) {
@@ -156,7 +186,7 @@ export function getByIdForCliente(id, idCliente) {
   const e = getById(id)
   if (!e) return null
   if (e.idCliente !== String(idCliente)) return null
-  return e
+  return toEntradaListItem(e)
 }
 
 /** Emite entrada post-pago mock (sin carrito: 1 click = 1 entrada). */

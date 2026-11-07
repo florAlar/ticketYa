@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useSearchParams } from 'react-router-dom'
 import { FaStar } from 'react-icons/fa'
 import useAuth from '../../hooks/useAuth'
 import LoginForm from '../../components/auth/LoginForm'
@@ -10,7 +10,7 @@ import './LoginPage.css'
 
 /**
  * Tabs: Ingresar | Registrarse (sin /register aparte).
- * Mock local por defecto; gateway :8080 con VITE_USE_MOCK=false.
+ * Registro público = solo CLIENTE. Org/admin/acceso: guía aparte.
  */
 const LoginPage = () => {
   const { isAuthenticated } = useAuth()
@@ -18,7 +18,7 @@ const LoginPage = () => {
   const tab = params.get('tab') === 'register' ? 'register' : 'login'
 
   const title = useMemo(
-    () => (tab === 'register' ? 'Crear cuenta' : 'Ingresar'),
+    () => (tab === 'register' ? 'Crear cuenta cliente' : 'Ingresar'),
     [tab]
   )
 
@@ -52,8 +52,8 @@ const LoginPage = () => {
         <h1 className="auth-box__title">{title}</h1>
         <p className="auth-box__lead">
           {tab === 'login'
-            ? 'Accedé a tus entradas y compras.'
-            : 'Registrate para comprar y gestionar entradas.'}
+            ? 'Accedé a tus entradas, compras o panel según tu rol.'
+            : 'El registro público es solo para compradores (cliente).'}
         </p>
 
         <div className="auth-tabs" role="tablist">
@@ -73,11 +73,22 @@ const LoginPage = () => {
             className={tab === 'register' ? 'is-active' : ''}
             onClick={() => selectTab('register')}
           >
-            Registrarse
+            Cuenta cliente
           </button>
         </div>
 
         {tab === 'login' ? <LoginForm /> : <RegisterForm />}
+
+        <div className="auth-box__roles">
+          <p className="auth-box__roles-title">¿Otro tipo de cuenta?</p>
+          <Link className="auth-box__roles-cta" to="/cuenta/organizador">
+            ¿Sos organizador?
+          </Link>
+          <p className="auth-box__roles-note">
+            Administrador y personal de acceso no se registran acá: un admin de
+            la plataforma tiene que darte de alta.
+          </p>
+        </div>
       </div>
 
       <DemoAccountsToast />

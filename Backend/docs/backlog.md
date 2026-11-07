@@ -202,7 +202,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E2-SEC-01 | JWT + roles (CLIENTE, ORGANIZADOR, ADMIN, PERSONAL_ACCESO); emitir en usuarios; validar en gateway | hecho | Emisión msvc-usuarios + validación/RBAC gateway (misma `jwt.secret`). |
-| E2-SEC-02 | Autorización por endpoint según rol | pendiente | |
+| E2-SEC-02 | Autorización por endpoint según rol | parcial | GW RBAC por path/rol existe. 2026-11: `PATCH /eventos/{id}/estado` ya no es admin-only en GW (ORG llega a msvc; BE limita SUSPENDIDO vs CANCELADO). Falta auditoría fina resto paths + tests E2-TST-02. |
 | E2-NFR-01 | Cache: qué, dónde, TTL, invalidación; qué no cachear (disponibilidad asientos) | pendiente | |
 | E2-NFR-02 | Resiliencia: timeouts, reintentos, fallback ante externos | pendiente | |
 | E2-NFR-03 | Trazabilidad HTTP + log centralizado de operaciones críticas con correlation id | pendiente | |
@@ -210,9 +210,89 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E2-TST-01 | Pruebas de integración entre msvcs (Testcontainers o compose) | pendiente | |
 | E2-TST-02 | Pruebas de autorización por rol | pendiente | |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
-| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | SPA con esos flujos en **mock**. Falta BE real. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo: AUTH/EVENTOS/COMPRAS/**ENTRADAS**=false. Global mock true. Checkout→QR→mis-entradas BE. Falta: mock-off gestión usuarios admin, scan E2-ACC. DTO entradas ya trae nombre/lugar (Feign). |
+| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados selectivo (auth/eve/ven/ent). Mis entradas con política QR + cancelación. Falta: experiencia 100% sin mock residual y E2-ACC. |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS=false. Feature gates cortan CTAs no cableados. Falta: mock-off admin usuarios, scan E2-ACC; cola cancelados admin aún sin listado BE de eventos cancelados. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
+
+### 7.3 Extra / nice-to-have (no consigna — baja prioridad)
+
+Fuera del alcance formal del TP. Solo si sobra tiempo o se quiere UX de producto.
+
+| ID | Tarea | Estado | Notas |
+| --- | --- | --- | --- |
+| X-UI-01 | SPA: pantalla **Mi perfil / cuenta** desde el ícono persona; editar datos propios | pendiente | **No lo pide el TP.** BE: `GET/PATCH /usuarios/me`. FE facade listo; falta ruta `/perfil`, form, nav (hoy persona → mis-entradas/acceso). Puede alojar CTA extensión org (X-ORG-01). |
+| X-UI-02 | Login: copy roles + guía “¿Sos organizador?” | hecho | Tab “Cuenta cliente”; CTA → `/cuenta/organizador` (guía CLIENTE self-service; ORG/ADMIN/ACCESO no self-register). Register copy solo cliente. |
+| X-UI-03 | Gestión: **Editar evento** en BORRADOR (PUT) | hecho | Listado → Editar → `/gestion/eventos/:id/editar`; solo BORRADOR + dueño/admin; `updateEvento` PUT. |
+| X-UI-04 | Feature gates FE: deshabilitar CTAs no cableados / no permitidos por rol | hecho | `featureGates.js` fino (cancel solo admin UI, reintegro unitario off, usuarios admin off, scan/transfer off). GW+msvc alineados suspend org. `http.js` error gateway caído. |
+| X-QR-01 | Política QR: no exponer secreto si entrada no usable | hecho | BE: DTO/`GET …/qr` solo VENDIDA + evento ≠ CANCELADO; approve/reintegro → `INV-*`. FE detalle sin QR si no aplica. E2-ACC puerta sigue pendiente. |
+| X-QR-02 | Mis entradas: cancelación distinguible + trámites unificados | hecho | Lista activas + A_REINTEGRAR (badge, sin QR, aviso). Ver devoluciones = voluntarias + reintegro cancelación. BE reintegro crea devolucion EN_CURSO. |
+| X-ORG-01 | Extensión cuenta CLIENTE → ORGANIZADOR (solicitud + auth admin) | pendiente | Producto serio. Diseño §7.3.1. Guía FE hecha (X-UI-02). Falta: solicitud logueada, cola admin, approve→rol, refresh JWT. |
+| X-ORG-02 | Política de roles: cuenta base CLIENTE; privilegios los otorga ADMIN | pendiente | Doc/producto (no code). CLIENTE = register; ORG = extensión (X-ORG-01) o admin asigna rol; ADMIN/ACCESO = solo admin. Seeds demo siguen. Opcional: reflejar en US-01 cuando se escriba. |
+
+### 7.3.1 Diseño acordado — extensión a organizador (X-ORG-01)
+
+**Negocio:** ser organizador requiere **autorización**. No hay alta pública directa de ORGANIZADOR.
+
+**Regla de entrada**
+1. El usuario ya es **CLIENTE** (registro normal `/login?tab=register`).
+2. Pide **extensión** de cuenta a organizador (solicitud con datos + motivo).
+3. Un **ADMIN** aprueba o rechaza.
+4. Si aprueba: se asigna rol **ORGANIZADOR** (ideal: conservar CLIENTE + ORG, o reemplazo según política de roles M2M).
+5. PERSONAL_ACCESO y ADMIN **no** usan este flujo (alta solo admin / otro admin).
+
+**Actores y pantallas FE**
+| Quién | Dónde | Qué |
+| --- | --- | --- |
+| Anónimo | `/cuenta/organizador` | Guía: “primero cuenta cliente”; CTA login/register; sin form de alta org free. |
+| CLIENTE logueado | `/cuenta/organizador` o `/perfil` / “Mi cuenta” | Form **Solicitar ser organizador** (si no tiene ORG ni solicitud PENDIENTE). |
+| CLIENTE | mismo | Estado de solicitud: PENDIENTE / APROBADA / RECHAZADA + n° trámite. |
+| ADMIN | `/gestion/usuarios` o `/gestion/solicitudes-org` | Cola: listar pendientes, ver datos, Aprobar / Rechazar. |
+
+**Datos mínimos de la solicitud (negocio)**
+- idUsuario (del JWT)
+- fechaSolicitud
+- motivo / descripción de actividad (texto)
+- opcional fase 2: teléfono, nombre fantasía, CUIT, sitio web
+- estado: `PENDIENTE` \| `APROBADA` \| `RECHAZADA`
+- idAdminResolutor, fechaResolucion, notaAdmin (si rechaza)
+
+**API tentativa (msvc-usuarios)**
+- `POST /organizadores/solicitudes` — CLIENTE; body `{ motivo, … }`; 409 si ya PENDIENTE o ya ORG
+- `GET /organizadores/solicitudes/me` — CLIENTE; su última/historial
+- `GET /organizadores/solicitudes?estado=PENDIENTE` — ADMIN
+- `POST /organizadores/solicitudes/{id}/aprobacion` — ADMIN → roles += ORGANIZADOR (o PUT roles)
+- `POST /organizadores/solicitudes/{id}/rechazo` — ADMIN + `{ nota? }`
+
+Tabla o colección `solicitud_organizador` (MySQL usuarios). No reusar `devolucion`.
+
+**Estados de UX**
+```
+CLIENTE sin solicitud → CTA “Quiero organizar eventos”
+       ↓ POST solicitud
+PENDIENTE → “En revisión”; sin panel Gestión aún
+       ↓ admin aprueba
+ORGANIZADOR (+ CLIENTE) → homePath /gestion; puede crear eventos
+       ↓ admin rechaza
+CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
+```
+
+**Qué no es**
+- No es el register con rol org.
+- No es mock “crear user ORGANIZADOR” en LS como camino de producción (solo demo TP si hiciera falta).
+- Admin/acceso siguen fuera de self-service.
+
+**Orden de implementación cuando se ataque**
+1. Modelo + endpoints usuarios + GW RBAC.
+2. FE cliente: form + estado solicitud (logueado).
+3. FE admin: cola approve/reject (destrabar parte de `adminUsuarios` o hub nuevo).
+4. Post-approve: refresh JWT / me para ver rol nuevo sin re-login forzado si el token no trae roles frescos (refresh o re-login).
+5. Notif E2 opcional: “tu solicitud fue aprobada”.
+
+**Relación con lo ya hecho**
+- Copy y ruta `/cuenta/organizador` (guía) = base UX (**X-UI-02** hecho).
+- `X-UI-01` perfil puede alojar el CTA de extensión.
+- Seeds `org@` siguen para demo sin pasar por solicitud.
+- Política roles base (**X-ORG-02**): CLIENTE self-service; resto lo otorga ADMIN (ORG vía este flujo).
 
 ---
 
@@ -227,9 +307,10 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 7. **E1-VEN-02…08** — **hecho**.  
 8. **E1-ENT-02…05** — **hecho** (emisión Feign, GETs/QR, devoluciones 72h, reintegro-cancelación). FE demock auth/eventos/compras/entradas.  
 9. **E1-EVE write (02/03/05)** — **hecho** (lugares/sectores, borrador→publicar, patch estado/fecha, listado org).  
-10. E1-TST + E1-REL + INF-17 (Postman).  
-11. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
-12. FE residual: mock-off gestión admin usuarios / E2-ACC scan. E1-EVE-06 participantes si se suma schema.
+10. **FE sesión 2026-11-07** — hecho extra: X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
+11. E1-TST + E1-REL + INF-17 (Postman).  
+12. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
+13. FE residual: mock-off gestión admin usuarios / E2-ACC scan; X-UI-01 perfil; X-ORG-01 extensión. E1-EVE-06 participantes si se suma schema.
 
 Specs (DOC-MS / US / ARQ) en paralelo.
 
@@ -240,19 +321,22 @@ Specs (DOC-MS / US / ARQ) en paralelo.
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03 | E2-UI-01/02 demock selectivo auth+eve+ven+ent | mock residual gestión/usuarios admin, E2-ACC |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-02/03/04**, **X-QR-01/02** | E2-UI-01/02 demock selectivo | X-UI-01 perfil; admin usuarios mock-off; E2-ACC; X-ORG-01 |
 | Docs por msvc (specs) | — | — | Todo DOC-MS-* |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
-| Auth / gateway | E1-GW-01/02/03, API-05, E1-USU-01, E2-SEC-01 | — | E2-SEC-02 RBAC fino por endpoint |
+| Auth / gateway | E1-GW-01/02/03, API-05, E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
-| Código de negocio E1 | E1-EVE-02…05; E1-VEN-02…08; E1-ENT-02…05 (+DTO Feign) | — | E1-EVE-06 participantes; E2-ACC |
+| Código de negocio E1 | E1-EVE-02…05; E1-VEN-02…08; E1-ENT-02…05 (+DTO Feign, QR policy) | — | E1-EVE-06 participantes; E2-ACC |
+| Extra producto | X-UI-02…04, X-QR-* | — | X-UI-01, X-ORG-01/02 |
 | Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
 
-**Lectura (2026-11-07):**  
-- **Hecho E1 core:** eventos GET+**write** (02/03/05); DTO entradas enriquecido (ENT-03 Feign); JWT; ventas; entradas QR/devo; FE demock selectivo (+ admin list `estado=TODOS`).  
-- **Deuda natural (documentada):** emisión Feign best-effort; precio devolución RAM; approve sin reopen cupo; ValidacionAcceso=E2-ACC; cancel evento→reintegro entradas best-effort; cupo ventas no auto al publicar. Ver docs msvc-entradas/eventos.  
-- **Gap E1 formal restante:** E1-EVE-06 participantes (sin schema); E1-TST / INF-17 Postman / E1-REL.  
-- **Próximo:** tests/Postman **o** E2-ACC.  
+**Lectura (2026-11-07, cierre sesión FE/QR/roles):**  
+- **Hecho E1 core:** eventos GET+write; ventas; entradas QR/devo + política exposición QR; JWT; FE demock selectivo.  
+- **Hecho extra sesión:** mis entradas activas + cancelación/trámites; gates CTAs; login guía roles; editar borrador; GW permite PATCH estado a ORG (BE limita cancel).  
+- **Deuda natural:** emisión Feign best-effort; precio devo RAM; cupo no reabre; ValidacionAcceso=E2-ACC.  
+- **Gap E1 formal:** E1-EVE-06; E1-TST / INF-17 Postman / E1-REL.  
+- **Extra pendiente:** X-UI-01 perfil; X-ORG-01 solicitud org; X-ORG-02 doc política roles en US.  
+- **Próximo formal:** tests/Postman **o** E2-ACC; producto: perfil o extensión org si sobra.  

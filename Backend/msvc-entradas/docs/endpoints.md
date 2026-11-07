@@ -14,12 +14,12 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 | POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario}]}`. Idempotente por idCompra. Llamado por msvc-ventas Feign post-pago. |
 | GET /entradas | **hecho** | Propias (`X-User-Id`). Enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos (best-effort). |
 | GET /entradas/{id} | **hecho** | Dueño **o ADMIN** (mismo método). Cliente: solo propias; ADMIN: cualquier id. |
-| GET /entradas/{id}/qr | **hecho** | Dueño; no si DEVUELTA/A_REINTEGRAR |
+| GET /entradas/{id}/qr | **hecho** | Dueño; **solo VENDIDA** y evento no CANCELADO. USADA/DEVUELTA/A_REINTEGRAR → 409. |
 | POST /entradas/{id}/devoluciones | **hecho** | 72h desde emisión; solo VENDIDA no usada |
 | GET /devoluciones | **hecho** | Cliente: propias; ADMIN: pendientes |
 | GET /devoluciones/{id} | **hecho** | |
-| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA (reintegro mock) |
-| POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05 contrato; ADMIN; VENDIDA→A_REINTEGRAR |
+| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) |
+| POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05; VENDIDA→A_REINTEGRAR + invalida QR + crea `devolucion` **EN_CURSO** (motivo cancelación; visible al cliente, no cola admin) |
 | POST /eventos/{id}/validaciones | pendiente | E2-ACC — entity `ValidacionAcceso` existe, sin service/controller |
 | GET /eventos/{id}/validaciones | pendiente | E2 |
 
@@ -43,6 +43,13 @@ GET emisión/listado/detalle: Feign `GET /eventos/{id}` → `eventoNombre`, `lug
 ### Estados entrada
 `VENDIDA` | `USADA` | `DEVUELTA` | `A_REINTEGRAR`
 
+### Política QR (exposición)
+- `codigoQR` en list/detalle **solo** si entrada `VENDIDA` y evento (Feign) **no** `CANCELADO`.
+- Si no aplica → campo `null` (el secreto no viaja al cliente).
+- `GET …/qr` misma regla; si no → conflicto de negocio.
+- Al aprobar devolución o reintegro por cancelación: se **rota** `codigo_qr` a `INV-*` (pantallazo previo deja de coincidir con DB).
+- Validación de puerta (aceptar/rechazar ingreso) = **E2-ACC** (sigue pendiente); esta política es exposición + invalidación de secreto.
+
 ### Emisión
 QR: `QR-` + 16 hex. UK `codigo_qr`.
 
@@ -52,5 +59,5 @@ QR: `QR-` + 16 hex. UK `codigo_qr`.
 
 ### Shape FE
 ```json
-{ "id", "codigoQR", "idCompra", "idCliente", "idEvento", "idSector", "estado", "fechaEmision", "fechaIngreso", "precio", "eventoNombre", "sectorNombre", "lugarNombre", "lugarCiudad" }
+{ "id", "codigoQR", "idCompra", "idCliente", "idEvento", "idSector", "estado", "fechaEmision", "fechaIngreso", "precio", "eventoNombre", "eventoEstado", "sectorNombre", "lugarNombre", "lugarCiudad" }
 ```

@@ -6,7 +6,7 @@ import {
   crearSolicitudEntrada,
   listSolicitudesEntrada,
 } from '../../api/soporteCliente'
-import { ENTRADA_ESTADOS, ENTRADA_ESTADO_LABELS } from '../../domain/entrada'
+import { ENTRADA_ESTADOS, ENTRADA_ESTADO_LABELS, isEntradaQrExponible, isEntradaReintegroCancelacion } from '../../domain/entrada'
 import {
   DEVOLUCION_ESTADO_LABELS,
   DEVOLUCION_TIPOS,
@@ -70,7 +70,11 @@ const EntradaDetallePage = () => {
   const puedeGestionar =
     entrada &&
     entrada.estado === ENTRADA_ESTADOS.VENDIDA &&
+    isEntradaQrExponible(entrada) &&
     !pendiente
+
+  const mostrarQr = entrada && isEntradaQrExponible(entrada) && !!entrada.codigoQR
+  const cancelada = entrada && isEntradaReintegroCancelacion(entrada)
 
   const onSubmit = async (e) => {
     e.preventDefault()
@@ -142,27 +146,65 @@ const EntradaDetallePage = () => {
             <p>
               <strong>Compra:</strong> {entrada.idCompra}
             </p>
-
-            <div
-              className="entrada-qr-box"
-              aria-label="Código QR de la entrada"
-              style={{
-                marginTop: '1rem',
-                padding: '1.25rem',
-                borderRadius: 12,
-                border: '1px dashed var(--colors-border, #ccc)',
-                textAlign: 'center',
-                fontFamily: 'ui-monospace, monospace',
-                wordBreak: 'break-all',
-              }}
-            >
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', opacity: 0.7 }}>
-                Código QR (mock)
+            {entrada.eventoEstado ? (
+              <p>
+                <strong>Evento:</strong> {entrada.eventoEstado}
               </p>
-              <p style={{ margin: 0, fontWeight: 600 }}>{entrada.codigoQR}</p>
-            </div>
+            ) : null}
+
+            {mostrarQr ? (
+              <div
+                className="entrada-qr-box"
+                aria-label="Código QR de la entrada"
+                style={{
+                  marginTop: '1rem',
+                  padding: '1.25rem',
+                  borderRadius: 12,
+                  border: '1px dashed var(--colors-border, #ccc)',
+                  textAlign: 'center',
+                  fontFamily: 'ui-monospace, monospace',
+                  wordBreak: 'break-all',
+                }}
+              >
+                <p
+                  style={{
+                    margin: '0 0 0.5rem',
+                    fontSize: '0.8rem',
+                    opacity: 0.7,
+                  }}
+                >
+                  Código QR
+                </p>
+                <p style={{ margin: 0, fontWeight: 600 }}>{entrada.codigoQR}</p>
+              </div>
+            ) : cancelada ? (
+              <div style={{ marginTop: '1rem' }}>
+                <p className="mis-entradas-page__badge mis-entradas-page__badge--cancel">
+                  Evento cancelado
+                </p>
+                <p className="mis-entradas-page__aviso" role="status">
+                  No hay QR de ingreso. El reintegro lo gestiona la plataforma:
+                  te vamos a avisar cuando se acredite el dinero. El número de
+                  trámite está en Mis entradas → Ver devoluciones.
+                </p>
+              </div>
+            ) : (
+              <p
+                className="mis-entradas-page__muted"
+                style={{ marginTop: '1rem' }}
+                role="status"
+              >
+                Esta entrada no tiene QR de ingreso (estado{' '}
+                {ENTRADA_ESTADO_LABELS[entrada.estado] || entrada.estado}
+                {entrada.eventoEstado === 'CANCELADO'
+                  ? ', evento cancelado'
+                  : ''}
+                ).
+              </p>
+            )}
           </div>
 
+          {!cancelada && (
           <section className="entrada-gestion" style={{ marginTop: '1.5rem' }}>
             <h2 className="mis-entradas-page__title" style={{ fontSize: '1.15rem' }}>
               Reclamo / devolución
@@ -247,6 +289,7 @@ const EntradaDetallePage = () => {
               </p>
             )}
           </section>
+          )}
         </>
       )}
     </section>

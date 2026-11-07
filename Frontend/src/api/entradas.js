@@ -6,7 +6,7 @@ import {
   patchEntradaEstado,
   readEntradas,
 } from './mock/entradasStore'
-import { ENTRADA_ESTADOS, toEntradaListItem } from '../domain/entrada'
+import { ENTRADA_ESTADOS, isEntradaQrExponible, toEntradaListItem } from '../domain/entrada'
 
 const delay = (ms = 280) => new Promise((r) => setTimeout(r, ms))
 
@@ -21,6 +21,7 @@ function normalizeEntrada(e) {
     idEvento: e.idEvento,
     eventoNombre: e.eventoNombre,
     eventoFecha: e.eventoFecha || null,
+    eventoEstado: e.eventoEstado || null,
     idSector: e.idSector,
     sectorNombre: e.sectorNombre,
     fila: e.fila ?? null,
@@ -98,6 +99,15 @@ export async function getEntradaQr(entradaId, user, opts = {}) {
     if (!found) {
       const err = new Error('Entrada no encontrada')
       err.status = 404
+      throw err
+    }
+    if (!isEntradaQrExponible(found) || !found.codigoQR) {
+      const err = new Error(
+        `Entrada no tiene QR activo (estado=${found.estado}${
+          found.eventoEstado ? `, evento=${found.eventoEstado}` : ''
+        })`
+      )
+      err.status = 409
       throw err
     }
     return { id: found.id, codigoQR: found.codigoQR }

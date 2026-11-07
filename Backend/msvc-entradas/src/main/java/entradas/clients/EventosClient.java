@@ -23,6 +23,8 @@ public interface EventosClient {
     class EventoDetalleFeignDTO {
         private String id;
         private String nombre;
+        /** PUBLICADO | CANCELADO | … — para política de exposición de QR. */
+        private String estado;
         private LugarFeignDTO lugar;
         private List<SectorFeignDTO> sectores = new ArrayList<>();
     }

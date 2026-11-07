@@ -42,6 +42,30 @@
   color: var(--colors-primary, #e91e8c);
 }
 
+.mis-entradas-page__badge--cancel {
+  background: color-mix(in srgb, #b45309 18%, #fff);
+  color: #92400e;
+}
+
+.mis-entradas-page__aviso {
+  margin: 0.45rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  color: var(--colors-textMuted, #5c5c5c);
+  max-width: 36rem;
+}
+
+.mis-entradas-page__mono {
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  word-break: break-all;
+}
+
+.mis-entradas-card--cancelada {
+  border-color: color-mix(in srgb, #b45309 35%, var(--colors-border, #ddd));
+  background: color-mix(in srgb, #b45309 6%, var(--colors-surface, #f7f7fa));
+}
+
 .mis-entradas-card__actions {
   display: flex;
   flex-wrap: wrap;

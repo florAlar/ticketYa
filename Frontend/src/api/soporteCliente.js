@@ -7,7 +7,12 @@ import {
   listDevolucionesByEntrada,
 } from './mock/devolucionesStore'
 import { ENTRADA_ESTADOS } from '../domain/entrada'
-import { DEVOLUCION_TIPOS } from '../domain/devolucion'
+import {
+  DEVOLUCION_TIPOS,
+  normalizeDevolucion,
+  mergeTramitesConCancelaciones,
+} from '../domain/devolucion'
+import { listMisEntradas } from './entradas'
 
 const delay = (ms = 280) => new Promise((r) => setTimeout(r, ms))
 
@@ -22,11 +27,25 @@ export async function listMisSolicitudes(user, opts = {}) {
     err.status = 401
     throw err
   }
+  let raw
   if (USE_MOCK_ENTRADAS) {
     await delay()
-    return listDevolucionesByCliente(user.id)
+    raw = listDevolucionesByCliente(user.id)
+  } else {
+    raw = await http('/api/devoluciones', { token: opts.token })
   }
-  return http('/api/devoluciones', { token: opts.token })
+  const list = Array.isArray(raw) ? raw : raw?.content || raw?.items || []
+  const normalized = list.map(normalizeDevolucion)
+
+  // Completar huecos A_REINTEGRAR sin fila de devolución (mock viejo / BE sin trámite)
+  try {
+    const entradas = opts.entradas
+      ? opts.entradas
+      : await listMisEntradas(user, { token: opts.token })
+    return mergeTramitesConCancelaciones(normalized, entradas)
+  } catch {
+    return normalized
+  }
 }
 
 /**

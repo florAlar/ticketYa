@@ -42,7 +42,7 @@ function seed() {
     },
     {
       id: 'dev_old',
-      tipo: DEVOLUCION_TIPOS.DEVOLUCION,
+      tipo: DEVOLUCION_TIPOS.RECLAMO,
       idEntrada: 'ent_demo_003',
       idCompra: 'cmp_demo_3',
       idCliente: 'u_demo',
@@ -54,6 +54,22 @@ function seed() {
       estado: DEVOLUCION_ESTADOS.APROBADA,
       idAdministrador: 'u_admin',
       monto: 9000,
+    },
+    {
+      id: 'dev_cancel_001',
+      tipo: DEVOLUCION_TIPOS.CANCELACION_EVENTO,
+      idEntrada: 'ent_cancel_001',
+      idCompra: 'cmp_cancel_1',
+      idCliente: 'u_demo',
+      clienteEmail: 'demo@ticketya.com',
+      idEvento: 'e_cancel_demo',
+      eventoNombre: 'Festival cancelado (demo admin)',
+      fechaSolicitud: '2026-10-12T10:00:00.000Z',
+      motivo:
+        'Reintegro por cancelación del evento. Te avisamos cuando se acredite el dinero.',
+      estado: DEVOLUCION_ESTADOS.EN_CURSO,
+      idAdministrador: null,
+      monto: 15000,
     },
   ]
 }
@@ -67,7 +83,17 @@ export function readDevoluciones() {
       return s
     }
     const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? parsed : seed()
+    if (!Array.isArray(parsed)) return seed()
+    // Si falta el trámite demo de cancelación, lo agregamos una vez
+    if (!parsed.some((d) => d.id === 'dev_cancel_001')) {
+      const cancelSeed = seed().find((d) => d.id === 'dev_cancel_001')
+      if (cancelSeed) {
+        const next = [cancelSeed, ...parsed]
+        writeDevoluciones(next)
+        return next
+      }
+    }
+    return parsed
   } catch {
     return seed()
   }
@@ -128,7 +154,7 @@ export function insertDevolucion(payload) {
     throw err
   }
   const item = {
-    id: `${tipo === DEVOLUCION_TIPOS.RECLAMO ? 'rec' : 'dev'}_${Date.now()}`,
+    id: `${tipo === DEVOLUCION_TIPOS.RECLAMO ? 'rec' : tipo === DEVOLUCION_TIPOS.CANCELACION_EVENTO ? 'reint' : 'dev'}_${Date.now()}`,
     tipo,
     idEntrada,
     idCompra: payload.idCompra || null,
@@ -138,7 +164,10 @@ export function insertDevolucion(payload) {
     eventoNombre: payload.eventoNombre || null,
     fechaSolicitud: new Date().toISOString(),
     motivo,
-    estado: DEVOLUCION_ESTADOS.PENDIENTE,
+    estado:
+      tipo === DEVOLUCION_TIPOS.CANCELACION_EVENTO
+        ? DEVOLUCION_ESTADOS.EN_CURSO
+        : DEVOLUCION_ESTADOS.PENDIENTE,
     idAdministrador: null,
     monto: payload.monto != null ? Number(payload.monto) : null,
   }
@@ -160,7 +189,10 @@ export function patchDevolucionEstado(id, estado, idAdministrador) {
   list[idx] = {
     ...list[idx],
     estado: next,
-    idAdministrador: idAdministrador || list[idx].idAdministrador,
+    idAdministrador:
+      next === DEVOLUCION_ESTADOS.EN_CURSO
+        ? list[idx].idAdministrador
+        : idAdministrador || list[idx].idAdministrador,
   }
   writeDevoluciones(list)
   return list[idx]

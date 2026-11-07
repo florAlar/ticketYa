@@ -7,7 +7,7 @@ import {
   EVENTO_ESTADO_LABELS,
   EVENTO_TIPO_LABELS,
 } from '../../domain/evento'
-import { FEATURE } from '../../config/featureGates'
+import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateLink from '../../components/ui/GateLink'
 import GateButton from '../../components/ui/GateButton'
 import './GestionPage.css'
@@ -27,11 +27,18 @@ function formatFecha(iso) {
 const GestionEventosPage = () => {
   const { user, token, isAdmin, canManageAllEvents } = useAuth()
   const [items, setItems] = useState([])
-  const [status, setStatus] = useState('loading')
+  const [status, setStatus] = useState(
+    FEATURE.eventosGestion ? 'loading' : 'gated'
+  )
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
 
   const load = useCallback(async () => {
+    if (!FEATURE.eventosGestion) {
+      setStatus('gated')
+      setItems([])
+      return
+    }
     setStatus('loading')
     setError('')
     try {
@@ -52,8 +59,18 @@ const GestionEventosPage = () => {
   }, [load])
 
   const onEstado = async (id, estado) => {
-    if (!FEATURE.eventosGestion) return
+    const next = String(estado || '').toUpperCase()
+    if (next === EVENTO_ESTADOS.CANCELADO || next === 'CANCELADO') {
+      if (!FEATURE.eventosCancelar || !isAdmin) return
+    } else if (next === EVENTO_ESTADOS.SUSPENDIDO || next === 'SUSPENDIDO') {
+      if (!FEATURE.eventosSuspender) return
+    } else if (next === EVENTO_ESTADOS.PUBLICADO || next === 'PUBLICADO') {
+      if (!FEATURE.eventosGestion) return
+    } else if (!FEATURE.eventosGestion) {
+      return
+    }
     setBusyId(id)
+    setError('')
     try {
       await patchEventoEstado(id, estado, user, {
         isAdmin: canManageAllEvents,
@@ -76,8 +93,14 @@ const GestionEventosPage = () => {
         <h1 className="gestion-page__title">Eventos</h1>
         <p className="gestion-page__sub">
           {isAdmin
-            ? 'Admin: GET /api/eventos (alcance amplio).'
-            : 'Organizador: GET /api/organizadores/me/eventos.'}
+            ? 'Admin: listado amplio + publicar / suspender / cancelar.'
+            : 'Organizador: tus eventos. Podés publicar y suspender; cancelar solo admin.'}
+          {!FEATURE.eventosGestion && (
+            <>
+              {' '}
+              <strong title={GATE_HINT}>({GATE_HINT})</strong>
+            </>
+          )}
         </p>
       </header>
 
@@ -89,13 +112,25 @@ const GestionEventosPage = () => {
         >
           Nuevo evento
         </GateLink>
-        <button type="button" className="btn" onClick={load} disabled={status === 'loading'}>
+        <GateButton
+          enabled={FEATURE.eventosGestion}
+          type="button"
+          className="btn"
+          disabled={status === 'loading'}
+          onClick={load}
+        >
           Actualizar
-        </button>
+        </GateButton>
       </div>
 
       {error && <p className="gestion-error">{error}</p>}
       {status === 'loading' && <p className="gestion-card__muted">Cargando…</p>}
+      {status === 'gated' && (
+        <div className="gestion-card">
+          <p>Gestión de eventos no cableada al backend en esta build.</p>
+          <p className="gestion-card__muted">{GATE_HINT}</p>
+        </div>
+      )}
 
       {status === 'ok' && items.length === 0 && (
         <div className="gestion-card">
@@ -121,7 +156,7 @@ const GestionEventosPage = () => {
                   {' · '}
                   {formatFecha(e.fechaInicio || e.fechaHora)}
                   {' · '}
-                  {e.lugar?.ciudad || '—'}
+                  {e.lugar?.ciudad || e.lugarCiudad || '—'}
                 </p>
                 <p className="gestion-card__muted">
                   Estado:{' '}
@@ -135,6 +170,15 @@ const GestionEventosPage = () => {
               </div>
               <div className="gestion-event-row__actions">
                 {e.estado === EVENTO_ESTADOS.BORRADOR && (
+                  <GateLink
+                    enabled={FEATURE.eventosGestion}
+                    className="btn"
+                    to={`/gestion/eventos/${e.id}/editar`}
+                  >
+                    Editar
+                  </GateLink>
+                )}
+                {e.estado === EVENTO_ESTADOS.BORRADOR && (
                   <GateButton
                     enabled={FEATURE.eventosGestion}
                     type="button"
@@ -147,10 +191,15 @@ const GestionEventosPage = () => {
                 )}
                 {e.estado === EVENTO_ESTADOS.PUBLICADO && (
                   <GateButton
-                    enabled={FEATURE.eventosGestion}
+                    enabled={FEATURE.eventosSuspender}
                     type="button"
                     className="btn"
                     disabled={busyId === e.id}
+                    title={
+                      FEATURE.eventosSuspender
+                        ? undefined
+                        : GATE_HINT
+                    }
                     onClick={() => onEstado(e.id, EVENTO_ESTADOS.SUSPENDIDO)}
                   >
                     Suspender
@@ -158,10 +207,17 @@ const GestionEventosPage = () => {
                 )}
                 {e.estado !== EVENTO_ESTADOS.CANCELADO && (
                   <GateButton
-                    enabled={FEATURE.eventosGestion}
+                    enabled={FEATURE.eventosCancelar && isAdmin}
                     type="button"
                     className="btn"
                     disabled={busyId === e.id}
+                    title={
+                      !isAdmin
+                        ? 'Solo administrador puede cancelar un evento'
+                        : !FEATURE.eventosCancelar
+                          ? GATE_HINT
+                          : undefined
+                    }
                     onClick={() => onEstado(e.id, EVENTO_ESTADOS.CANCELADO)}
                   >
                     Cancelar

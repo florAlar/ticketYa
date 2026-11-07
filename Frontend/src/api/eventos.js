@@ -93,7 +93,7 @@ export async function listEventos(filter = {}) {
 }
 
 /** GET /api/eventos/{id} */
-export async function getEvento(id) {
+export async function getEvento(id, opts = {}) {
   if (USE_MOCK_EVENTOS) {
     await delay()
     const found = readGestionEventos().find((e) => e.id === String(id))
@@ -104,7 +104,7 @@ export async function getEvento(id) {
     }
     return toEventoDetalleDto(found)
   }
-  return http(`/api/eventos/${id}`)
+  return http(`/api/eventos/${id}`, { token: opts.token })
 }
 
 /**
@@ -206,7 +206,17 @@ export async function patchEventoEstado(id, estado, user, { isAdmin, token } = {
 export async function updateEvento(id, body, opts = {}) {
   if (USE_MOCK_EVENTOS) {
     await delay()
-    return updateGestionEvento(id, body)
+    const built = buildEventoFromForm(body, {
+      idOrganizador: opts.userId || body.idOrganizador,
+      id: String(id),
+    })
+    const updated = updateGestionEvento(id, built)
+    if (!updated) {
+      const err = new Error('Evento no encontrado')
+      err.status = 404
+      throw err
+    }
+    return updated
   }
   return http(`/api/eventos/${id}`, {
     method: 'PUT',

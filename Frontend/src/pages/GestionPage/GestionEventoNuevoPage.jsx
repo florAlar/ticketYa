@@ -8,6 +8,8 @@ import {
   EVENTO_TIPOS,
   EVENTO_TIPO_LABELS,
 } from '../../domain/evento'
+import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import GateButton from '../../components/ui/GateButton'
 import './GestionPage.css'
 
 /** Presets de tipos de entrada (admin/org puede editar o agregar más). */
@@ -92,6 +94,7 @@ const GestionEventoNuevoPage = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault()
+    if (!FEATURE.eventosGestion) return
     setError('')
     setStatus('loading')
     try {
@@ -128,6 +131,7 @@ const GestionEventoNuevoPage = () => {
   }
 
   const loading = status === 'loading'
+  const gated = !FEATURE.eventosGestion
 
   return (
     <section className="gestion-page container-slim section-v-padding">
@@ -141,9 +145,23 @@ const GestionEventoNuevoPage = () => {
           Podés cargar varios tipos de entrada (Campo, Palco, etc.), con o sin
           cupo, y sumar más filas.
           {isAdmin ? ' · Alta como admin.' : ` · org: ${user?.id}`}
+          {gated && (
+            <>
+              {' '}
+              <strong title={GATE_HINT}>({GATE_HINT})</strong>
+            </>
+          )}
         </p>
       </header>
 
+      {gated ? (
+        <div className="gestion-card">
+          <p>Alta de eventos no disponible: backend de eventos en mock o no cableado.</p>
+          <Link className="btn" to="/gestion/eventos">
+            ← Volver al listado
+          </Link>
+        </div>
+      ) : (
       <form className="gestion-form gestion-card" onSubmit={onSubmit}>
         <div className="form-group">
           <label htmlFor="nombre">Nombre *</label>
@@ -402,9 +420,10 @@ const GestionEventoNuevoPage = () => {
               name="esAltaDemanda"
               checked={form.esAltaDemanda}
               onChange={onChange}
-              disabled={loading}
+              disabled={loading || true}
+              title="Fila virtual E2 — no cableada"
             />
-            Alta demanda (fila virtual)
+            Alta demanda (fila virtual — no disponible aún)
           </label>
           <label className="gestion-check">
             <input
@@ -433,14 +452,20 @@ const GestionEventoNuevoPage = () => {
         {error && <p className="gestion-error">{error}</p>}
 
         <div className="gestion-card__actions">
-          <button type="submit" className="btn btn-primary" disabled={loading}>
+          <GateButton
+            enabled={FEATURE.eventosGestion}
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading}
+          >
             {loading ? 'Guardando…' : 'Guardar evento'}
-          </button>
+          </GateButton>
           <Link className="btn" to="/gestion/eventos">
             Cancelar
           </Link>
         </div>
       </form>
+      )}
     </section>
   )
 }

@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Security del msvc (patrón usersejemplo).
+ * Security del msvc
  * Auth JWT de borde = API Gateway; aquí solo BCrypt + permitAll (stateless).
  */
 @Configuration

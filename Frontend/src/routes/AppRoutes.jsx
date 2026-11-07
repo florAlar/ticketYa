@@ -13,7 +13,9 @@ import TransferenciaPage from '../pages/SoportePage/TransferenciaPage'
 import GestionPage from '../pages/GestionPage/GestionPage'
 import GestionEventosPage from '../pages/GestionPage/GestionEventosPage'
 import GestionEventoNuevoPage from '../pages/GestionPage/GestionEventoNuevoPage'
+import GestionEventoEditarPage from '../pages/GestionPage/GestionEventoEditarPage'
 import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
+import OrganizerAccountPage from '../pages/CuentaRolesPage/OrganizerAccountPage'
 import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
 import GestionEntradaDetallePage from '../pages/GestionPage/GestionEntradaDetallePage'
 import AccesoPage from '../pages/AccesoPage/AccesoPage'
@@ -34,6 +36,7 @@ const AppRoutes = () => {
       <Route path="/eventos" element={<EventosPage />} />
       <Route path="/eventos/:eventoId" element={<EventoDetallePage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/cuenta/organizador" element={<OrganizerAccountPage />} />
       <Route path="/soporte" element={<SoportePage />} />
       <Route path="/sin-permiso" element={<ForbiddenPage />} />
 
@@ -99,6 +102,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
             <GestionEventoNuevoPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/eventos/:eventoId/editar"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
+            <GestionEventoEditarPage />
           </ProtectedRoute>
         }
       />

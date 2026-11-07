@@ -14,10 +14,21 @@ export async function http(path, options = {}) {
     ...extraHeaders,
   }
 
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...rest,
-    headers,
-  })
+  let res
+  try {
+    res = await fetch(`${API_BASE_URL}${path}`, {
+      ...rest,
+      headers,
+    })
+  } catch (e) {
+    const err = new Error(
+      'No se pudo conectar con el API Gateway. ¿Está levantado en ' +
+        `${API_BASE_URL}? (${e?.message || 'failed to fetch'})`
+    )
+    err.status = 0
+    err.cause = e
+    throw err
+  }
 
   const text = await res.text()
   let data = null

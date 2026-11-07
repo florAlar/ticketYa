@@ -42,8 +42,16 @@ public class EntradaServiceImpl implements EntradaService {
     public static final String EST_A_REINTEGRAR = "A_REINTEGRAR";
 
     public static final String DEV_PENDIENTE = "PENDIENTE";
-    public static final String DEV_APROBADA = "APROBADA";
-    public static final String DEV_RECHAZADA = "RECHAZADA";
+        public static final String DEV_APROBADA = "APROBADA";
+        public static final String DEV_RECHAZADA = "RECHAZADA";
+        /** Reintegro por cancelación; no entra a cola admin (solo PENDIENTE). */
+        public static final String DEV_EN_CURSO = "EN_CURSO";
+
+        public static final String MOTIVO_REINTEGRO_CANCELACION =
+                "Reintegro por cancelación del evento";
+
+        /** Evento no admite ingreso ni exhibición de QR. */
+        public static final String EVT_CANCELADO = "CANCELADO";
 
     private final EntradaRepository entradaRepository;
     private final DevolucionRepository devolucionRepository;
@@ -115,7 +123,9 @@ public class EntradaServiceImpl implements EntradaService {
     public EntradaResponseDTO obtener(String idCliente, String idEntrada, boolean admin) {
         Entrada e = requireEntrada(idCliente, idEntrada, admin);
         EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(idEntrada));
-        enriquecer(dto, fetchEventoCached(e.getIdEvento(), new HashMap<>()));
+        EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), new HashMap<>());
+        enriquecer(dto, evento);
+        applyQrPolicy(e, dto, evento);
         return dto;
     }
 
@@ -123,8 +133,15 @@ public class EntradaServiceImpl implements EntradaService {
     @Transactional(readOnly = true)
     public QrResponseDTO qrMia(String idCliente, String idEntrada) {
         Entrada e = requireEntrada(idCliente, idEntrada, false);
-        if (EST_DEVUELTA.equals(e.getEstado()) || EST_A_REINTEGRAR.equals(e.getEstado())) {
-            throw new BusinessConflictException("Entrada no tiene QR activo (estado=" + e.getEstado() + ")");
+        EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), new HashMap<>());
+        if (!puedeExponerQr(e, evento)) {
+            String motivo = !EST_VENDIDA.equals(e.getEstado())
+                    ? "estado=" + e.getEstado()
+                    : "evento no habilita QR"
+                            + (evento != null && evento.getEstado() != null
+                                    ? " (" + evento.getEstado() + ")"
+                                    : "");
+            throw new BusinessConflictException("Entrada no tiene QR activo (" + motivo + ")");
         }
         return entradaMapper.toQr(e);
     }
@@ -197,6 +214,8 @@ public class EntradaServiceImpl implements EntradaService {
         Devolucion d = requireDevPendiente(idDevolucion);
         Entrada entrada = d.getEntrada();
         entrada.setEstado(EST_DEVUELTA);
+        // QR viejo deja de coincidir con pantallazos previos (UK nuevo valor INV-*)
+        invalidarCodigoQr(entrada);
         entradaRepository.save(entrada);
         d.setEstado(DEV_APROBADA);
         // reintegro mock: solo estado; cupo ventas no se toca en E1 (contrato)
@@ -214,15 +233,35 @@ public class EntradaServiceImpl implements EntradaService {
     }
 
     @Override
-    @Transactional
-    public int reintegroPorCancelacionEvento(String idEvento) {
-        List<Entrada> list = entradaRepository.findByIdEventoAndEstado(idEvento, EST_VENDIDA);
-        for (Entrada e : list) {
-            e.setEstado(EST_A_REINTEGRAR);
+        @Transactional
+        public int reintegroPorCancelacionEvento(String idEvento) {
+            List<Entrada> list = entradaRepository.findByIdEventoAndEstado(idEvento, EST_VENDIDA);
+            LocalDateTime now = nowUtc();
+            for (Entrada e : list) {
+                e.setEstado(EST_A_REINTEGRAR);
+                invalidarCodigoQr(e);
+                // Trámite visible al cliente en GET /devoluciones (no es solicitud voluntaria)
+                boolean yaTieneTramiteCancel =
+                        devolucionRepository.findByEntradaIdEntrada(e.getIdEntrada()).stream()
+                                .anyMatch(
+                                        d ->
+                                                d.getMotivo() != null
+                                                        && d.getMotivo()
+                                                                .startsWith(MOTIVO_REINTEGRO_CANCELACION));
+                if (!yaTieneTramiteCancel) {
+                    Devolucion d = new Devolucion();
+                    d.setIdDevolucion(UUID.randomUUID().toString());
+                    d.setEntrada(e);
+                    d.setMotivo(MOTIVO_REINTEGRO_CANCELACION);
+                    d.setMonto(preciosMem.getOrDefault(e.getIdEntrada(), BigDecimal.ZERO));
+                    d.setFechaSolicitud(now);
+                    d.setEstado(DEV_EN_CURSO);
+                    devolucionRepository.save(d);
+                }
+            }
+            entradaRepository.saveAll(list);
+            return list.size();
         }
-        entradaRepository.saveAll(list);
-        return list.size();
-    }
 
     private Devolucion requireDevPendiente(String id) {
         Devolucion d = devolucionRepository
@@ -252,8 +291,37 @@ public class EntradaServiceImpl implements EntradaService {
         return "QR-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase();
     }
 
+    /** Reemplaza el código para que un pantallazo previo no coincida con el valor actual en DB. */
+    private static void invalidarCodigoQr(Entrada e) {
+        e.setCodigoQr(
+                "INV-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16).toUpperCase());
+    }
+
     private static LocalDateTime nowUtc() {
         return LocalDateTime.now(ZoneOffset.UTC);
+    }
+
+    /**
+     * QR solo si entrada VENDIDA y el evento no está CANCELADO.
+     * Si Feign no trae evento, se confía en el estado de la entrada (best-effort).
+     */
+    static boolean puedeExponerQr(Entrada e, EventoDetalleFeignDTO evento) {
+        if (e == null || !EST_VENDIDA.equals(e.getEstado())) {
+            return false;
+        }
+        if (evento != null && evento.getEstado() != null) {
+            String est = evento.getEstado().trim();
+            if (!est.isEmpty() && EVT_CANCELADO.equalsIgnoreCase(est)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void applyQrPolicy(Entrada e, EntradaResponseDTO dto, EventoDetalleFeignDTO evento) {
+        if (!puedeExponerQr(e, evento)) {
+            dto.setCodigoQR(null);
+        }
     }
 
     /** Mapea + enriquece con cache por idEvento (una llamada Feign por evento distinto). */
@@ -262,7 +330,9 @@ public class EntradaServiceImpl implements EntradaService {
         List<EntradaResponseDTO> out = new ArrayList<>(entradas.size());
         for (Entrada e : entradas) {
             EntradaResponseDTO dto = entradaMapper.toEntrada(e, preciosMem.get(e.getIdEntrada()));
-            enriquecer(dto, fetchEventoCached(e.getIdEvento(), cache));
+            EventoDetalleFeignDTO evento = fetchEventoCached(e.getIdEvento(), cache);
+            enriquecer(dto, evento);
+            applyQrPolicy(e, dto, evento);
             out.add(dto);
         }
         return out;
@@ -273,6 +343,7 @@ public class EntradaServiceImpl implements EntradaService {
             return;
         }
         dto.setEventoNombre(evento.getNombre());
+        dto.setEventoEstado(evento.getEstado());
         LugarFeignDTO lugar = evento.getLugar();
         if (lugar != null) {
             dto.setLugarNombre(lugar.getNombre());

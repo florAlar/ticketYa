@@ -183,9 +183,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 && ("GET".equals(method) || "PUT".equals(method) || "PATCH".equals(method))) {
             return true;
         }
-        if (path.matches("/api/eventos/[^/]+/estado") && "PATCH".equals(method)) {
-            return true;
-        }
+        // PATCH estado: ORG puede SUSPENDIDO (lo filtra msvc-eventos); CANCELADO/etc = ADMIN allí.
+        // No bloquear acá todo el path o el front org ve botones que siempre fallan.
         if (path.matches("/api/devoluciones/[^/]+/(aprobacion|rechazo)") && "POST".equals(method)) {
             return true;
         }

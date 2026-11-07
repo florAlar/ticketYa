@@ -3,6 +3,8 @@ import { USE_MOCK, USE_MOCK_ENTRADAS } from './config'
 import {
   listDevolucionesPendientes,
   patchDevolucionEstado,
+  insertDevolucion,
+  listDevolucionesByEntrada,
 } from './mock/devolucionesStore'
 import { listEventosCancelados } from './mock/eventosStore'
 import {
@@ -10,7 +12,11 @@ import {
   patchEntradaEstado,
 } from './mock/entradasStore'
 import { ENTRADA_ESTADOS } from '../domain/entrada'
-import { DEVOLUCION_ESTADOS } from '../domain/devolucion'
+import {
+  DEVOLUCION_ESTADOS,
+  DEVOLUCION_TIPOS,
+  MOTIVO_CANCELACION_PREFIX,
+} from '../domain/devolucion'
 
 const delay = (ms = 280) => new Promise((r) => setTimeout(r, ms))
 
@@ -102,7 +108,11 @@ export async function resolverDevolucion(id, estado, user, opts = {}) {
       throw err
     }
     if (next === DEVOLUCION_ESTADOS.APROBADA && d.idEntrada) {
-      const e = patchEntradaEstado(d.idEntrada, ENTRADA_ESTADOS.DEVUELTA)
+      const inv =
+        'INV-' + Math.random().toString(16).slice(2, 10).toUpperCase()
+      const e = patchEntradaEstado(d.idEntrada, ENTRADA_ESTADOS.DEVUELTA, {
+        codigoQR: inv,
+      })
       if (!e) {
         // devolución mock ok pero entrada era de otro store (p.ej. BE) — no fallar duro
         console.warn('Mock: entrada no estaba en store local', d.idEntrada)
@@ -137,11 +147,38 @@ export async function marcarReintegroEntradaCancelada(entradaId, user, opts = {}
   requireAdmin(user)
   if (USE_MOCK_ENTRADAS) {
     await delay()
-    const e = patchEntradaEstado(entradaId, ENTRADA_ESTADOS.A_REINTEGRAR)
+    const inv =
+      'INV-' + Math.random().toString(16).slice(2, 10).toUpperCase()
+    const e = patchEntradaEstado(entradaId, ENTRADA_ESTADOS.A_REINTEGRAR, {
+      codigoQR: inv,
+      eventoEstado: 'CANCELADO',
+    })
     if (!e) {
       const err = new Error('Entrada no encontrada')
       err.status = 404
       throw err
+    }
+    const ya = listDevolucionesByEntrada(entradaId).some(
+      (d) =>
+        d.tipo === DEVOLUCION_TIPOS.CANCELACION_EVENTO ||
+        String(d.motivo || '').startsWith(MOTIVO_CANCELACION_PREFIX)
+    )
+    if (!ya) {
+      insertDevolucion({
+        tipo: DEVOLUCION_TIPOS.CANCELACION_EVENTO,
+        idEntrada: e.id,
+        idCompra: e.idCompra,
+        idCliente: e.idCliente,
+        idEvento: e.idEvento,
+        eventoNombre: e.eventoNombre,
+        motivo: `${MOTIVO_CANCELACION_PREFIX}. Te avisamos cuando se acredite el dinero.`,
+        monto: e.precio,
+        // insertDevolucion fuerza PENDIENTE — parcheamos a EN_CURSO
+      })
+      const created = listDevolucionesByEntrada(entradaId)[0]
+      if (created) {
+        patchDevolucionEstado(created.id, DEVOLUCION_ESTADOS.EN_CURSO, user.id)
+      }
     }
     return e
   }

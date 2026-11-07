@@ -11,6 +11,7 @@ import lombok.Setter;
 public class EntradaResponseDTO {
 
     private String id;
+    /** Null si la política de QR no permite exhibirlo. */
     private String codigoQR;
     private String idCompra;
     private String idCliente;
@@ -22,6 +23,8 @@ public class EntradaResponseDTO {
     /** Opcional: no está en schema entrada; se rellena en emisión si viene. */
     private BigDecimal precio;
     private String eventoNombre;
+    /** Estado del evento (Feign); p.ej. CANCELADO → sin QR. */
+    private String eventoEstado;
     private String sectorNombre;
     private String lugarNombre;
     private String lugarCiudad;

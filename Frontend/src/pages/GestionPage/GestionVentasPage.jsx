@@ -115,12 +115,15 @@ const GestionVentasPage = () => {
     }
   }
 
-  const onReintegro = async (entradaId) => {
-    if (!FEATURE.adminColaVentas) return
-    setBusyId(entradaId)
+  const onReintegroEvento = async (idEvento) => {
+    if (!FEATURE.adminReintegroEvento) return
+    setBusyId(idEvento)
     setError('')
     try {
-      await marcarReintegroEntradaCancelada(entradaId, user, { token })
+      await marcarReintegroEntradaCancelada(idEvento, user, {
+        token,
+        idEvento,
+      })
       await load()
     } catch (err) {
       setError(err.message || 'No se pudo marcar reintegro')
@@ -132,7 +135,8 @@ const GestionVentasPage = () => {
   const empty =
     status === 'ok' &&
     cola.devoluciones.length === 0 &&
-    cola.entradasEventosCancelados.length === 0
+    cola.entradasEventosCancelados.length === 0 &&
+    cola.eventosCancelados.length === 0
 
   return (
     <section className="gestion-page container section-v-padding">
@@ -143,8 +147,8 @@ const GestionVentasPage = () => {
         <h1 className="gestion-page__title">Cola de ventas</h1>
         <p className="gestion-page__sub">
           Solo <strong>reclamos / devoluciones pendientes</strong> y{' '}
-          <strong>entradas de eventos cancelados</strong>. No se listan todas
-          las compras.
+          <strong>reintegro por evento cancelado</strong> (API masiva). No se
+          listan todas las compras.
           {!FEATURE.adminColaVentas && (
             <>
               {' '}
@@ -155,9 +159,14 @@ const GestionVentasPage = () => {
       </header>
 
       <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
-        <button type="button" className="btn" onClick={load}>
+        <GateButton
+          enabled={FEATURE.adminColaVentas}
+          type="button"
+          className="btn"
+          onClick={load}
+        >
           Actualizar
-        </button>
+        </GateButton>
       </div>
 
       {error && <p className="gestion-error">{error}</p>}
@@ -236,7 +245,7 @@ const GestionVentasPage = () => {
       {entradasPorEvento.length > 0 && (
         <section>
           <h2 className="gestion-page__title" style={{ fontSize: '1.15rem' }}>
-            Eventos cancelados — entradas a reintegrar
+            Eventos cancelados — reintegro
           </h2>
           {entradasPorEvento.map(({ evento, entradas }) => (
             <div key={evento.id} style={{ marginBottom: '1.25rem' }}>
@@ -246,9 +255,25 @@ const GestionVentasPage = () => {
                   {evento.id} · {formatFecha(evento.fechaInicio)} · CANCELADO ·{' '}
                   {entradas.length} entrada(s)
                 </p>
+                <div className="gestion-card__actions" style={{ marginTop: '0.65rem' }}>
+                  <GateButton
+                    enabled={FEATURE.adminReintegroEvento}
+                    type="button"
+                    className="btn btn-primary"
+                    disabled={busyId === evento.id}
+                    title={
+                      FEATURE.adminReintegroEvento
+                        ? 'POST /api/eventos/{id}/reintegro-cancelacion'
+                        : GATE_HINT
+                    }
+                    onClick={() => onReintegroEvento(evento.id)}
+                  >
+                    Reintegrar evento
+                  </GateButton>
+                </div>
               </div>
               {entradas.length === 0 ? (
-                <p className="gestion-card__muted">Sin entradas vendidas pendientes.</p>
+                <p className="gestion-card__muted">Sin entradas en cola local.</p>
               ) : (
                 <ul className="gestion-event-list">
                   {entradas.map((e) => (
@@ -264,19 +289,17 @@ const GestionVentasPage = () => {
                         </p>
                         <p className="gestion-card__muted">
                           {ENTRADA_ESTADO_LABELS[e.estado] || e.estado}
-                          {' · '}
-                          {e.codigoQR}
                         </p>
                       </div>
                       <div className="gestion-event-row__actions">
                         <GateButton
-                          enabled={FEATURE.adminColaVentas}
+                          enabled={FEATURE.adminReintegroEntrada}
                           type="button"
-                          className="btn btn-primary"
-                          disabled={busyId === e.id}
-                          onClick={() => onReintegro(e.id)}
+                          className="btn"
+                          disabled
+                          title="No hay endpoint BE por entrada suelta — usá reintegro del evento"
                         >
-                          Marcar reintegro
+                          Reintegro unitario
                         </GateButton>
                         <Link className="btn" to={`/gestion/entradas/${e.id}`}>
                           Ver entrada

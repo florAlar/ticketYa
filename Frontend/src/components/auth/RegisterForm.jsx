@@ -150,13 +150,18 @@ const RegisterForm = () => {
 
       {apiError && <p className="form-error-global">{apiError}</p>}
 
+      <p className="auth-box__roles-note" style={{ marginBottom: '0.75rem' }}>
+        Esta cuenta será de <strong>cliente</strong> (comprar entradas). No
+        incluye panel de organizador ni admin.
+      </p>
+
       <button
         type="submit"
         className="btn btn-primary"
         style={{ width: '100%' }}
         disabled={status === 'loading'}
       >
-        {status === 'loading' ? 'Creando cuenta…' : 'Registrarse'}
+        {status === 'loading' ? 'Creando cuenta…' : 'Crear cuenta cliente'}
       </button>
     </form>
   )
