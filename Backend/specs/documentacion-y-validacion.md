@@ -432,7 +432,7 @@ POST /devoluciones/{id}/rechazo            POST /eventos/{idEvento}/reintegro-ca
 
 | Paso | Alcance | Criterio de aceptación |
 |---|---|---|
-| **P1.1** | springdoc en usuarios + `OpenAPI` bean (info/servers/security) + anotaciones O2 | `/v3/api-docs` responde 200 con 11 operaciones; Swagger UI carga; `mvn test` sigue verde; ningún endpoint de negocio cambia de comportamiento |
+| **P1.1** | springdoc en usuarios + `OpenAPI` bean (info/servers/security) + anotaciones O2 | `/v3/api-docs` responde 200 con 12 operaciones en 10 paths (11 de negocio + smoke); Swagger UI carga; `mvn test` sigue verde; ningún endpoint de negocio cambia de comportamiento |
 | **P1.2** | eventos | 24 operaciones; schemas de `EventoRequestDTO`/`EventoDetalleResponseDTO` completos; ejemplos con seeds; errores 400/403/404/409 |
 | **P1.3** | ventas | 17 operaciones; `Idempotency-Key` visible y obligatoria en compras; `NivelCupo` como enum; errores 409 de cupo documentados |
 | **P1.4** | entradas | 10 operaciones; QR y política de exposición (409 en USADA/DEVUELTA/A_REINTEGRAR); devolución 72 h documentada |
@@ -441,6 +441,12 @@ POST /devoluciones/{id}/rechazo            POST /eventos/{idEvento}/reintegro-ca
 **Validación de compatibilidad (fail-fast):** en P1.1, si springdoc 3.2.0 no arranca con
 Boot 4.1.2, se detiene la fase y se propone alternativa (pin de versión, `springdoc` 3.x
 posterior o generación estática). No se replica a los otros módulos hasta que P1.1 pase.
+
+> **Operación (P1.1):** el stack completo ya corre bajo el proyecto compose `backend`
+> (`Backend/docker-compose.yml` con `include`). Ejecutar `docker compose up` desde el
+> directorio de un msvc intenta crear contenedores con los mismos `container_name` y falla
+> por conflicto. Para reconstruir un solo servicio usar desde `Backend/`:
+> `docker compose build ms-usuarios && docker compose up -d --no-deps --force-recreate ms-usuarios`.
 
 ---
 
@@ -896,6 +902,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 |---|---|---|---|
 | P0.1 | 2026-11-08 | **OK** | `maven:3.9-eclipse-temurin-17` → Maven 3.9.16 + JDK 17.0.20. Build base de `msvc-usuarios` con `mvn -B -ntp -DskipTests package` → **BUILD SUCCESS** (21.9 s). Artefacto `msvc-usuarios-0.0.1-SNAPSHOT.jar` (73 MB) generado con owner del usuario host. |
 | P0.2 | 2026-11-08 | **OK** | springdoc `3.2.0` resuelve en Maven Central (HTTP 200) y su POM referencia artefactos de Boot 4. Testcontainers gestionado por Boot 4.1.2 → BOM **2.0.5**, artefactos `testcontainers-mysql` / `testcontainers-junit-jupiter`. Imagen `mysql:8.4` ya presente localmente. |
+| P1.1 | 2026-11-08 | **OK** | springdoc `3.2.0` + `OpenApiConfig` + anotaciones O2 en `msvc-usuarios`. `/v3/api-docs` → HTTP 200, OpenAPI 3.1.0, **12 operaciones / 10 paths**, 3 servers (directo, gateway local, gateway prod), `bearerAuth`, 8 schemas (`ApiError`, `LoginRequest/Response`, `RegisterRequest`, `RolesUpdate`, `UserSession`, `Usuario`, `UsuarioUpdate`). Swagger UI y `swagger-config` → 200. Login vía gateway (`POST /api/auth/login`, `demo@ticketya.com`) → 200. Build `mvn package -DskipTests` → **BUILD SUCCESS**. |
 
 Comando de build verificado (M1):
 
