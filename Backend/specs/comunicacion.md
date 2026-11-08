@@ -43,4 +43,4 @@
 | `Idempotency-Key` | Compras/pagos/reservas (anti reintento duplicado) |
 | `X-Correlation-Id` | Seguimiento entre servicios; el gateway puede generarlo |
 
-Contrato de rutas: `docs/endpoints.md`. Vista front: `Frontend/docs/endpoints-front.md`.
+Contrato de rutas: `specs/endpoints.md`. Vista front: `Frontend/docs/endpoints-front.md`.

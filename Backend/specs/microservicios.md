@@ -15,9 +15,9 @@ Cada contexto es un proyecto Spring Boot independiente (carpeta + `pom.xml` + `D
 ## Estado actual (scaffold)
 
 - Smoke `GET /` en gateway y cada msvc (texto ok).
-- Lógica de dominio y rutas de negocio: pendientes (ver `docs/backlog.md`).
-- Prefijos públicos y solapes: `docs/endpoints.md`.
-- Modelo de dominio global: `docs/diagramas/modelo.md` (preferencias Mongo aún no modelado como documentos — backlog MOD-04).
+- Lógica de dominio y rutas de negocio: pendientes (ver `specs/backlog.md`).
+- Prefijos públicos y solapes: `specs/endpoints.md`.
+- Modelo de dominio global: `specs/diagramas/modelo.md` (preferencias Mongo aún no modelado como documentos — backlog MOD-04).
 
 ## Docs por contexto
 
@@ -27,4 +27,4 @@ Cada msvc/gateway tiene `docs/` para specs del bounded context (plantilla y cont
 
 - Individual: `Backend/<msvc>/docker-compose.yml` (app + su DB).
 - Completo: `Backend/docker-compose.yml` (`include` de todos).
-- Detalle de puertos y diagramas Docker: `docs/infraestructura.md`.
+- Detalle de puertos y diagramas Docker: `specs/infraestructura.md`.

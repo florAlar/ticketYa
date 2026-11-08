@@ -7,7 +7,7 @@
 - Cada microservicio y el API Gateway tienen su propio `docker-compose.yml`, donde se define la aplicación y sus dependencias. El API Gateway no necesita una base de datos.
 - `backend/docker-compose.yml` integra los Compose individuales mediante `include` para levantar todo el entorno.
 - `infrastructure/` centraliza los scripts de inicialización y las configuraciones de las bases de datos.
-- `docs/` contiene las decisiones arquitectónicas y la documentación del proyecto.
+- `specs/` contiene las decisiones arquitectónicas y la documentación del proyecto.
 - No se comparten entidades JPA ni documentos MongoDB entre microservicios. Cada uno administra sus propios modelos y datos.
 
 ## Estructura del proyecto
@@ -53,4 +53,4 @@ Define cómo se levantan y conectan los contenedores.
 
 Compose configura las dependencias mediante `depends_on`, para que al levantar un microservicio también se inicien los servicios de los que depende, como su base de datos.
 
-**Detalle de puertos y comandos:** consultar `docs/infraestructura.md`.
+**Detalle de puertos y comandos:** consultar `specs/infraestructura.md`.

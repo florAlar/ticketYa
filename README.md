@@ -4,13 +4,14 @@ Monorepo del trabajo práctico: venta de entradas (microservicios + API Gateway 
 
 ```text
 ticketYa/
-├── Backend/     # Spring Boot: gateway + msvcs + docs + compose
+├── Backend/     # Spring Boot: gateway + msvcs + specs/ + docs/ + compose
 ├── Frontend/    # SPA React (Vite) — habla solo con el gateway :8080
 ├── .env.example
 └── README.md
 ```
 
-Consigna y backlog del backend: `Backend/docs/consigna.md`, `Backend/docs/backlog.md`.
+Specs de trabajo (consigna, backlog, reglas): `Backend/specs/`.  
+Documentación formal de entrega: `Backend/docs/`.
 
 ## Frontend + gateway (local)
 
@@ -71,7 +72,7 @@ cd Backend
 docker compose up -d --build
 ```
 
-Puertos apps `8080`–`8086`. Ver `Backend/docs/infraestructura.md` y `Backend/README.md`.
+Puertos apps `8080`–`8086`. Ver `Backend/specs/infraestructura.md` y `Backend/README.md`.
 
 ## Notas
 

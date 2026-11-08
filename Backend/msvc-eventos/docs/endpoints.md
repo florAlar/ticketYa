@@ -1,7 +1,7 @@
 # Endpoints — msvc-eventos
 
 Copia de referencia para este microservicio.
-**Fuente canónica (no borrar):** `Backend/docs/endpoints.md`
+**Fuente canónica (no borrar):** `Backend/specs/endpoints.md`
 
 Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/api`).
 Directo al msvc (dev): `http://localhost:8082`.

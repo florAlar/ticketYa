@@ -1,0 +1,284 @@
+# TicketYa — Reglas de negocio (resumen colaborativo)
+
+Documento de trabajo para el equipo.  
+Objetivo: entender **qué puede hacer cada rol** y **cómo funciona el circuito** sin entrar en detalle técnico.
+
+- **Fuente:** specs y endpoints ya existentes en el monorepo (consigna, backlog, endpoints globales y por microservicio).  
+- **No inventa** reglas nuevas. Si algo no está cerrado, va en **Decisiones pendientes**.  
+- **Specs de trabajo:** `Backend/specs/` (antes `Backend/docs/`).  
+- **Documentación formal de entrega:** `Backend/docs/` (carpeta nueva, se completa para entregar).
+
+---
+
+## 1. Qué es TicketYa (en una frase)
+
+Plataforma para **publicar eventos**, **buscar y comprar entradas** con reserva temporal y pago simulado, **emitir QR**, **devolver** y **cancelar**, evitando vender de más el mismo lugar.
+
+Primera entrega (núcleo): eventos, lugares, publicación, búsqueda, reserva, compra, QR, no doble venta, devoluciones y cancelaciones.  
+Segunda entrega: fila virtual, control de acceso en puerta, preferencias/recomendaciones, notificaciones, reportes y refuerzos de arquitectura.
+
+---
+
+## 2. Roles — qué hace cada uno
+
+Roles definidos en la plataforma:
+
+| Rol | En simple |
+| --- | --- |
+| **CLIENTE** | Busca eventos, reserva, compra, ve sus entradas/QR, pide devolución, edita su perfil. |
+| **ORGANIZADOR** | Crea y configura **sus** eventos, publica, edita borradores, puede suspender los propios, ve listado propio; también puede comprar como cualquier persona (mis entradas). |
+| **ADMIN** | Opera la plataforma: usuarios (listar, activar/desactivar, roles), cualquier evento (incl. cancelar), cola de devoluciones, consulta de entradas ajenas si hace falta. |
+| **PERSONAL_ACCESO** | En la **segunda entrega**: validar QR en la puerta. Hoy el rol existe en seeds/demo; el escaneo aún no está implementado. |
+
+Registro público: **solo CLIENTE**.  
+Organizador, admin y personal de acceso **no** se auto-registran por la web abierta.
+
+### 2.1 Mapa rápido por acción
+
+| Acción | Quién |
+| --- | --- |
+| Ver catálogo / detalle de evento | Cualquiera (público) |
+| Registrarse / iniciar sesión | Público → queda CLIENTE al registrarse |
+| Editar mi perfil (nombre, apellido, ciudad) | Usuario logueado |
+| Crear / editar borrador de evento | ORGANIZADOR (dueño) o ADMIN |
+| Publicar evento | ORGANIZADOR (dueño) o ADMIN |
+| Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera |
+| Cancelar evento | **ADMIN** (dispara reintegro de entradas vendidas) |
+| Cambiar fecha del evento | Dueño ORGANIZADOR o ADMIN |
+| Alta de lugares / sectores / artistas | ORGANIZADOR o ADMIN |
+| Asociar artistas a un evento | Dueño del evento o ADMIN |
+| Reservar / comprar / pagar | CLIENTE (y en la práctica quien el gateway autorice a compras; organizador también puede tener “mis entradas”) |
+| Ver mis entradas y QR usable | Dueño de la entrada |
+| Ver una entrada de otro | ADMIN |
+| Pedir devolución | CLIENTE dueño, con reglas de plazo y estado |
+| Aprobar / rechazar devolución | ADMIN |
+| Listar usuarios / cambiar estado / asignar roles | ADMIN |
+| Validar ingreso con QR en puerta | PERSONAL_ACCESO — **pendiente E2** |
+| Reportes de ventas del evento | ORGANIZADOR dueño — **pendiente E2** |
+| Fila virtual alta demanda | — **pendiente E2** |
+| Preferencias y recomendaciones | CLIENTE — **pendiente E2** |
+| Notificaciones | — **pendiente E2** |
+
+---
+
+## 3. Cuentas y roles (política de producto)
+
+### Acordado / en uso hoy
+
+- Alta pública → siempre **CLIENTE**.  
+- Cuentas demo de prueba (cliente, org, admin, acceso) viven en datos seed para el TP.  
+- ADMIN puede **listar usuarios**, **activar/desactivar** y **asignar roles** por API (el front de admin usuarios todavía no está del todo cableado: list/estado/roles sí existen en backend; otras acciones de UI pueden seguir apagadas).
+
+### Diseño acordado pero **no implementado** (extensión a organizador)
+
+Ser organizador **requiere autorización**. No hay “registrarme como organizador” abierto.
+
+1. La persona ya es CLIENTE.  
+2. Pide extensión de cuenta (solicitud con motivo).  
+3. Un ADMIN aprueba o rechaza.  
+4. Si aprueba → se otorga rol ORGANIZADOR.  
+5. ADMIN y PERSONAL_ACCESO **no** usan ese flujo (los da otro admin / seed).
+
+En el front hay guía (“¿querés organizar?”) y el botón de solicitud está **apagado** hasta que exista la API.
+
+### Aún no cerrado del todo
+
+- Al aprobar organizador: ¿queda **CLIENTE + ORGANIZADOR** a la vez, o se reemplaza el rol? (el diseño lo deja como decisión de política de roles).  
+- ¿Puede haber más de un rol activo a la vez en la vida real del producto? El modelo de datos permite varios roles por usuario; la regla de negocio fina no está escrita como entrega formal.
+
+---
+
+## 4. Eventos y lugares
+
+### Estados de un evento
+
+`BORRADOR` → `PUBLICADO` → puede pasar a `AGOTADO`, `SUSPENDIDO`, `CANCELADO`, `FINALIZADO`.
+
+### Borrador
+
+- Se puede crear con poco: **nombre** alcanza al inicio.  
+- Fecha/lugar/sectores se completan después.  
+- Solo se puede **borrar** si sigue en borrador.  
+- Edición completa del borrador: dueño o admin.
+
+### Publicar (reglas que sí aplican)
+
+Para pasar a publicado hace falta, entre otras:
+
+- Nombre y **fecha de inicio futura**  
+- Lugar real (no un placeholder tipo “Por definir”)  
+- Al menos un sector con **precio** y **capacidad ≥ 1**  
+- **No hay cupo ilimitado** (la opción de “sin cupo” se ignora)
+
+Al publicar, el sistema **abre el stock de venta** (cupos por sector). Si eso falla, la publicación no queda a medias: es un paso que debe funcionar.
+
+### Catálogo y búsqueda
+
+- El listado público, por defecto, muestra eventos **publicados** (y en la demo operable también se contemplan agotados en catálogo según seed/config de trabajo).  
+- Filtros previstos: tipo, ciudad, fechas, organizador, participante (artista), orden, paginación.  
+- Admin puede pedir ver **todos** los estados en gestión.
+
+### Participantes
+
+- Son **artistas / bandas / equipos**, no los compradores.  
+- Se asocian al evento (principal, telonero, etc.).  
+- Sirven para buscar por artista.
+
+### Suspender vs cancelar
+
+- **Suspender:** el organizador puede suspender **sus** eventos; el admin cualquiera.  
+- **Cancelar:** admin; las entradas vendidas pasan a reintegro (ver §6).  
+- Nota: el listado global de endpoints a veces resume “suspender/cancelar = admin”; la regla **implementada y documentada en eventos** es la de la tabla de roles de arriba. Conviene **alinear el texto global** cuando se arme la doc formal.
+
+---
+
+## 5. Compra (circuito de la primera entrega)
+
+Orden del circuito:
+
+1. El cliente elige evento y **sector** (y cantidad).  
+2. Se crea una **reserva temporal** (en la práctica ~10 minutos).  
+3. Confirma y crea la **compra** (con clave para no duplicar si reintenta).  
+4. **Pago mock**: aprueba o rechaza.  
+5. Si aprueba → se **emiten entradas con QR**.  
+6. Si rechaza o vence la reserva → se **libera el cupo**.
+
+### Reglas de negocio ya fijadas en el núcleo
+
+- Límite: **como máximo 6 entradas** por cliente y por evento.  
+- Anti doble venta: el stock se maneja por **cupo del sector** (no se vende de más aunque haya muchos a la vez).  
+- Disponibilidad comercial ≠ plano de asientos del lugar: el lugar puede tener asientos físicos en el modelo de eventos; **la venta actual opera por cupo de sector**, no por “elegí butaca 12 fila B” en el flujo de compra implementado.
+
+### Niveles de cupo (para la UI)
+
+Según lugares libres: agotado / últimos / menos de 50 / menos de 100 / ok.  
+Si no hay disponible, el checkout no debe dejar comprar.
+
+---
+
+## 6. Entradas, QR, devoluciones y cancelación
+
+### Estados de una entrada
+
+`VENDIDA` | `USADA` | `DEVUELTA` | `A_REINTEGRAR`
+
+### QR (política de exposición)
+
+- El código usable se muestra solo si la entrada está **VENDIDA** y el evento **no está cancelado**.  
+- Si se aprueba una devolución o hay reintegro por cancelación, el QR se **invalida** (deja de servir un pantallazo viejo).  
+- Marcar la entrada como **usada en la puerta** = segunda entrega (aún no).
+
+### Devolución pedida por el cliente
+
+- Solo entrada vendida y no usada.  
+- Plazo: **72 horas** contadas desde la **emisión** (no desde la fecha del show, según lo documentado en entradas).  
+- Admin **aprueba o rechaza**.  
+- Si aprueba: entrada devuelta, QR invalidado, **se libera 1 lugar** del sector en ventas, reintegro mock.
+
+### Cancelación del evento
+
+- Entradas vendidas → a reintegrar; QR invalidado.  
+- Queda un trámite visible para el cliente (no es la misma cola de “devolución voluntaria” del admin).  
+- En el diseño actual, ese paso hacia entradas es **best-effort**: el evento puede quedar cancelado aunque falle el aviso a entradas (deuda de consistencia reconocida; no es un olvido).
+
+### Emisión tras el pago
+
+- La compra vive en ventas y el QR en entradas (servicios distintos).  
+- La emisión post-pago es **best-effort** entre servicios: hay deuda natural de consistencia fuerte hasta definir compensaciones (segunda entrega / arquitectura).
+
+---
+
+## 7. Qué hace cada “área” del sistema (sin jerga)
+
+| Área | Se ocupa de |
+| --- | --- |
+| Usuarios | Cuentas, login, roles, perfil |
+| Eventos | Eventos, lugares, sectores, artistas, publicar, estados |
+| Ventas | Cupos, reservas, compras, pago mock, (más adelante fila y reportes) |
+| Entradas | QR, devoluciones, (más adelante validación en puerta) |
+| Preferencias | Gustos, recomendaciones, historial (E2, base NoSQL) |
+| Notificaciones | Avisos email/push (E2) |
+| Gateway | Única puerta de entrada del front; valida sesión y manda al área correcta |
+
+El front **solo habla con el gateway**, no con cada servicio por su cuenta.
+
+---
+
+## 8. Primera entrega vs segunda (para no mezclar)
+
+**Ya cubierto en el núcleo (funcional de E1, según backlog de trabajo):**  
+publicar y buscar, reservar y comprar con pago mock, QR, cupos/anti sobreventa, devoluciones admin, cancelación con reintegro, identidad con roles (adelantamos JWT respecto de la consigna E1 “sin auth formal”).
+
+**Explicitamente de la segunda entrega (no bloquear el cierre funcional E1):**  
+fila virtual, scan de acceso, preferencias/recs, notificaciones, reportes organizador, compose completo de apps, pruebas de carga, etc.
+
+**Entregables formales de la consigna E1 que aún marcan pendiente en backlog (no son “otra feature de compra”):**  
+historias de usuario, diagramas de arquitectura/secuencia, endpoints documentados finos / OpenAPI, Postman, tests unitarios y test de concurrencia. Van a `Backend/docs/` cuando se armen para entregar.
+
+---
+
+## 9. Decisiones pendientes (para seguir en grupo)
+
+Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por sí solas: son charlas de producto/arquitectura.
+
+### Roles y cuentas
+
+1. Al aprobar organizador: ¿**suma** rol ORGANIZADOR al CLIENTE o **reemplaza**?  
+2. ¿ADMIN puede también ser comprador con la misma cuenta en producción, o solo en demo?  
+3. ¿PERSONAL_ACCESO puede tener entradas propias (hoy el gateway le deja compras/entradas) o solo puerta?  
+4. ¿Cuándo cableamos del todo el panel admin de usuarios en el front (listado/estado/roles sí; alta acceso / asignar eventos / borrar siguen fuera o a medias)?  
+5. Extensión CLIENTE→ORG: ¿la implementamos en este TP o queda diseño + CTA apagado?
+
+### Eventos y stock
+
+6. Venta por **butaca numerada** (elegir asiento concreto) vs **solo cupo por sector** como ahora. La consigna menciona asientos; el núcleo implementado vende por cupo. ¿Se deja justificado así o hay que ampliar?  
+7. ¿Quién puede **cancelar**: solo admin (como ahora) o también el organizador dueño?  
+8. Estado **AGOTADO**: ¿lo pone solo el stock en cero de forma automática / derivada, o es un estado que alguien setea a mano? (hoy conviven estado de evento y nivel de cupo en ventas.)  
+9. **FINALIZADO**: ¿regla automática por fecha o acción manual?
+
+### Compra y consistencia
+
+10. Si el pago aprueba pero falla la emisión del QR: ¿qué ve el cliente y cómo se repara? (hoy best-effort; falta política de compensación.)  
+11. Si se cancela el evento y falla el reintegro masivo: ¿se reintenta, queda cola, aviso manual?  
+12. Renovación de reserva: ¿cuántas veces / tope de tiempo total?
+
+### Devoluciones
+
+13. Las 72 h: confirmar con el grupo si queda **desde emisión** (como entradas hoy) o **hasta 72 h antes del evento** (texto de consigna). Hay que **elegir una** y unificar consigna / implementación / doc formal.  
+14. ¿El organizador ve devoluciones de sus eventos o solo admin?  
+15. Transferencia de entrada a otro usuario: hoy no hay API; ¿E2, extra, o fuera de alcance?
+
+### Segunda entrega (solo para no olvidar el orden)
+
+16. Fila virtual: reglas de tandas y quién habilita.  
+17. Preferencias: qué guarda el cliente y qué tan “inteligente” es la recomendación (puede ser simple).  
+18. Notificaciones: canales y en qué momentos exactos avisan.  
+19. Reportes: métricas mínimas del organizador.
+
+### Documentación y entrega
+
+20. Qué entra sí o sí en `Backend/docs/` para la primera entrega formal (US, diagramas, Postman, tests).  
+21. Alinear textos viejos (endpoints globales vs reglas reales de suspender/org, “scaffold pendiente” en microservicios.md, etc.) sin reescribir historia a mano alzada.
+
+---
+
+## 10. Cómo usar este archivo
+
+- Si el grupo **cierra** una decisión de la §9: moverla a la sección que corresponda (§2–§6) en una frase clara y tachar el ítem pendiente.  
+- Si algo se implementa distinto a lo escrito acá: **actualizar este resumen** en la misma sesión (fuente de verdad de negocio del equipo).  
+- Detalle de rutas, JSON y estados de implementación: seguir en `Backend/specs/` y en `*/docs/endpoints.md` de cada servicio.  
+- Texto para el profesor / entrega: copiar y pulir hacia `Backend/docs/`.
+
+---
+
+## 11. Origen (trazabilidad breve)
+
+Resumen armado a partir de:
+
+- `Backend/specs/consigna.md` — alcance E1/E2 y roles de la consigna  
+- `Backend/specs/backlog.md` — qué está hecho, diseño X-ORG, residual FE  
+- `Backend/specs/endpoints.md` — roles y mapa de acciones por recurso  
+- `Backend/APIGateway/docs/endpoints.md` — quién entra a qué  
+- `Backend/msvc-eventos|ventas|entradas|usuarios/docs/endpoints.md` — reglas ya implementadas (publicar, cupo, 72 h, QR, estados)
+
+Última pasada de este resumen: 2026-11-08. Solo lectura de lo existente + organización; sin reglas inventadas.

@@ -1,7 +1,7 @@
 # Endpoints — API Gateway
 
 Copia de referencia para este servicio.
-**Fuente canónica (no borrar):** `Backend/docs/endpoints.md`
+**Fuente canónica (no borrar):** `Backend/specs/endpoints.md`
 
 Este archivo no sustituye el global: solo concentra lo que el gateway debe enrutar / validar.
 

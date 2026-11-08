@@ -1,7 +1,7 @@
 # Endpoints — msvc-entradas
 
 Copia de referencia para este microservicio.
-**Fuente canónica (no borrar):** `Backend/docs/endpoints.md`
+**Fuente canónica (no borrar):** `Backend/specs/endpoints.md`
 
 Paths internos (sin `/api`; GW StripPrefix=1).
 

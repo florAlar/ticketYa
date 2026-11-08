@@ -9,7 +9,7 @@ Solo corre en **primer arranque** del volumen vacío.
 |---|---|
 | preferencias | `preferencias/init.js` |
 
-Modelo: `Backend/docs/diagramas/modelo-mongodb.md`.
+Modelo: `Backend/specs/diagramas/modelo-mongodb.md`.
 
 ## Colecciones
 

@@ -212,7 +212,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E2-TST-02 | Pruebas de autorización por rol | pendiente | |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
 | E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. Falta: mock residual cero + E2-ACC. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS. Alta evento: 1 fila vacía + presets click; publicar completo; sin cupo ilimitado. **Acceso nav/ruta solo PERSONAL_ACCESO** (admin no ve CTA puerta). Toast demo seed. Falta: mock-off admin usuarios; scan E2-ACC. |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS (`.env` actual). Alta/publicar/cupo/checkout OK. Catálogo default BE: PUBLICADO+AGOTADO. **Siguiente FE:** demock **admin usuarios selectivo** (list/get + PATCH estado + PUT roles → BE; alta PERSONAL_ACCESO / eventosAsignados / DELETE siguen OFF/501; ideal flag `VITE_USE_MOCK_USUARIOS` + `FEATURE.adminUsuarios` solo lo cableable). Residual E2: scan ACC, transferencia, prefs, X-ORG-01. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
 ### 7.3 Extra / nice-to-have (no consigna — baja prioridad)
@@ -312,9 +312,9 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 9. **E1-EVE write (02/03/05)** — **hecho** (lugares/sectores, borrador→publicar, patch estado/fecha, listado org).  
 10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
 11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
-12. E1-TST + E1-REL + INF-17 (Postman).  
-13. E2: PRE → NOT → FILA/ACC/REP → NFR → DEP/TST.  
-14. FE residual: mock-off gestión admin usuarios / E2-ACC scan; X-UI-01 perfil; X-ORG-01 extensión.
+12. **FE residual (próxima sesión):** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
+13. E1-TST + E1-REL + INF-17 (Postman) — gap formal cuando haga falta entrega.  
+14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.
 
 Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` **parcial**.
 
@@ -325,7 +325,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-02…05**, **X-QR-01/02** | E2-UI-01/02 demock selectivo + cupo checkout | X-UI-01 perfil; admin usuarios mock-off; E2-ACC; X-ORG-01 |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-01…05**, **X-QR-01/02**, **X-UI-06** | E2-UI-01/02 demock AUTH/EVE/COM/ENT + cupo/AGOTADO | **admin usuarios demock selectivo** (próx.); E2-ACC; X-ORG-01; transferencia/prefs |
 | Docs por msvc (specs) | — | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/GW/PRE/NOT/SYNC plantilla formal |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
@@ -334,15 +334,15 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
 | Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05 | — | E2-ACC |
-| Extra producto | X-UI-02…05, X-QR-* | — | X-UI-01, X-ORG-01/02 |
+| Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
 | Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
 
-**Lectura (2026-11-07, cierre participantes + seed demo):**  
-- **Hecho E1 core:** eventos GET+write; ventas (+ **apertura cupo al publicar**); entradas QR/devo; JWT; FE demock selectivo.  
-- **Hecho E1-EVE-06:** participantes=artistas; API+authz; FE autocomplete por id; detalle muestra lineup.  
-- **Seed demo operable:** 14 eventos (Metallica/UCL/RiR + Iron Maiden, Rammstein, Foo Fighters, Coldplay, F1, NBA, Slipknot, Download, Oasis AGOTADO, Tool, Brasil-Arg) en 3 estadios; cupos/compras/entradas/devo + mocks FE alineados.  
-- **Ops:** jars `docker cp` si stale; reseed `*/03-reseed-clean-demo.sql`; volumen viejo sin tabla → `02-add-participantes.sql`.  
-- **Deuda natural:** emisión Feign best-effort; ValidacionAcceso=E2-ACC. **Cupo al approve + precio entrada en DB: hechos.**  
+**Lectura (2026-11-07, cierre sesión — seed amplio + catálogo AGOTADO):**  
+- **Hecho E1 core:** eventos GET+write; ventas (+ cupo al publicar); entradas QR/devo; JWT; FE demock AUTH/EVENTOS/COMPRAS/ENTRADAS.  
+- **Hecho E1-EVE-06:** participantes=artistas; API+authz; FE autocomplete por id.  
+- **Seed demo:** 14 eventos / 3 estadios (Oasis **AGOTADO** visible); cupos ventas + mocks FE; `init.sql` + `03-reseed-clean-demo.sql`.  
+- **Catálogo BE default:** PUBLICADO + **AGOTADO** (home/list sin `estado=`); jar `ms-eventos` redeployed.  
+- **Ops:** `init.sql` solo en volumen nuevo; live → reseed `03-*.sql` o borrar volumen; jars `docker cp` si stale.  
+- **Demock residual:** admin usuarios aún con `VITE_USE_MOCK=true` / gate OFF; E2-ACC/transfer/prefs/X-ORG-01 = BE o gated.  
 - **Gap E1 formal:** E1-TST / INF-17 Postman / E1-REL.  
-- **Extra pendiente:** X-UI-01 perfil; X-ORG-01 solicitud org.  
-- **Próximo formal:** smoke compra E2E estable **o** tests/Postman **o** E2-ACC.  
+- **Próxima sesión (acordado):** demock **admin usuarios selectivo** (list/estado/roles reales; alta acceso + eventosAsignados + DELETE OFF).  

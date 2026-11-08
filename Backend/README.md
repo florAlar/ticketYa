@@ -1,6 +1,8 @@
 # TicketYa — Backend
 
-Microservicios Spring Boot + API Gateway. Documentación en `docs/` (consigna, backlog, endpoints, infra).
+Microservicios Spring Boot + API Gateway.
+Specs de trabajo del equipo: `specs/` (consigna, backlog, endpoints, infra, reglas de negocio).
+Documentación formal de entrega: `docs/`.
 
 ## Requisitos
 
@@ -22,7 +24,7 @@ Microservicios Spring Boot + API Gateway. Documentación en `docs/` (consigna, b
 | Notificaciones | http://localhost:8086/ |
 | Frontend (Docker/Nginx) | http://localhost:3000/ |
 
-DBs publicadas: MySQL 3307–3311, Mongo 27018, Redis 6380. Detalle: `docs/infraestructura.md`.
+DBs publicadas: MySQL 3307–3311, Mongo 27018, Redis 6380. Detalle: `specs/infraestructura.md`.
 
 ## Levantar con Docker
 
@@ -68,16 +70,18 @@ mvn.cmd -DskipTests spring-boot:run
 
 Si el msvc necesita DB, levantar antes solo el servicio de datos del compose correspondiente.
 
-## Docs útiles
+## Specs y docs
 
 | Archivo | Contenido |
 | --- | --- |
-| `docs/consigna.md` | TP |
-| `docs/backlog.md` | Tareas E1/E2 |
-| `docs/endpoints.md` | Rutas y enrutado |
-| `docs/microservicios.md` | Mapa de servicios |
-| `docs/comunicacion.md` | Cliente ↔ gateway ↔ msvc |
-| `docs/infraestructura.md` | Docker y puertos |
-| `docs/diagramas/modelo.md` | ER global |
+| `specs/reglas-de-negocio.md` | Resumen humano + decisiones pendientes |
+| `specs/consigna.md` | TP |
+| `specs/backlog.md` | Tareas E1/E2 |
+| `specs/endpoints.md` | Rutas y enrutado |
+| `specs/microservicios.md` | Mapa de servicios |
+| `specs/comunicacion.md` | Cliente ↔ gateway ↔ msvc |
+| `specs/infraestructura.md` | Docker y puertos |
+| `specs/diagramas/modelo.md` | ER global |
+| `docs/` | Entrega formal (índice en `docs/README.md`) |
 
 Front del monorepo: ver README raíz y `Frontend/README.md`.
