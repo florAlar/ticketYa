@@ -447,6 +447,11 @@ posterior o generación estática). No se replica a los otros módulos hasta que
 > directorio de un msvc intenta crear contenedores con los mismos `container_name` y falla
 > por conflicto. Para reconstruir un solo servicio usar desde `Backend/`:
 > `docker compose build ms-usuarios && docker compose up -d --no-deps --force-recreate ms-usuarios`.
+>
+> **Lección P1.2 (genéricos):** no fijar `content = @Content(schema = @Schema(implementation = PageResponseDTO.class))`
+> en la respuesta de un método que devuelve `PageResponseDTO<T>`: el override con la clase
+> cruda borra el genérico y deja `content.items: {}`. Dejar que springdoc infiera del tipo de
+> retorno produce `PageResponseDTOEventoResumen` con `items.$ref → EventoResumen`.
 
 ---
 
@@ -903,6 +908,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 | P0.1 | 2026-11-08 | **OK** | `maven:3.9-eclipse-temurin-17` → Maven 3.9.16 + JDK 17.0.20. Build base de `msvc-usuarios` con `mvn -B -ntp -DskipTests package` → **BUILD SUCCESS** (21.9 s). Artefacto `msvc-usuarios-0.0.1-SNAPSHOT.jar` (73 MB) generado con owner del usuario host. |
 | P0.2 | 2026-11-08 | **OK** | springdoc `3.2.0` resuelve en Maven Central (HTTP 200) y su POM referencia artefactos de Boot 4. Testcontainers gestionado por Boot 4.1.2 → BOM **2.0.5**, artefactos `testcontainers-mysql` / `testcontainers-junit-jupiter`. Imagen `mysql:8.4` ya presente localmente. |
 | P1.1 | 2026-11-08 | **OK** | springdoc `3.2.0` + `OpenApiConfig` + anotaciones O2 en `msvc-usuarios`. `/v3/api-docs` → HTTP 200, OpenAPI 3.1.0, **12 operaciones / 10 paths**, 3 servers (directo, gateway local, gateway prod), `bearerAuth`, 8 schemas (`ApiError`, `LoginRequest/Response`, `RegisterRequest`, `RolesUpdate`, `UserSession`, `Usuario`, `UsuarioUpdate`). Swagger UI y `swagger-config` → 200. Login vía gateway (`POST /api/auth/login`, `demo@ticketya.com`) → 200. Build `mvn package -DskipTests` → **BUILD SUCCESS**. |
+| P1.2 | 2026-11-08 | **OK** (con reparación de entorno) | springdoc + anotaciones O2 en `msvc-eventos`. `/v3/api-docs` → 200, OpenAPI 3.1.0, **25 operaciones / 17 paths** (24 de negocio + smoke), 19 schemas, 6 operaciones públicas y 19 con `bearerAuth` (coincide con el gateway). `PageResponseDTO<EventoResponseDTO>` resuelve a `PageResponseDTOEventoResumen` con `content.items.$ref → EventoResumen`. Swagger UI y YAML → 200. Smoke: `GET /api/eventos` (12 visibles de 14) y `GET /api/eventos/{id}` → 200; `GET /api/organizadores/me/eventos` con `org@ticketya.com` → 200 (14 eventos). **Entorno:** el volumen `backend_eventos_data` estaba incompleto (solo `participante`, vacía; `ms-eventos` llevaba horas en `Exited (1)` por `missing table [asiento]`). Se aplicaron `init.sql` + `03-reseed-clean-demo.sql` (idempotentes, sin datos previos que perder) y el servicio quedó `Up`. |
 
 Comando de build verificado (M1):
 
