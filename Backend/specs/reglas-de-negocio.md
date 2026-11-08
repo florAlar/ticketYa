@@ -1,25 +1,8 @@
 # TicketYa — Reglas de negocio (resumen colaborativo)
 
-Documento de trabajo para el equipo.  
-Objetivo: entender **qué puede hacer cada rol** y **cómo funciona el circuito** sin entrar en detalle técnico.
 
-- **Fuente:** specs y endpoints ya existentes en el monorepo (consigna, backlog, endpoints globales y por microservicio).  
-- **No inventa** reglas nuevas. Si algo no está cerrado, va en **Decisiones pendientes**.  
-- **Specs de trabajo:** `Backend/specs/` (antes `Backend/docs/`).  
-- **Documentación formal de entrega:** `Backend/docs/` (carpeta nueva, se completa para entregar).
 
----
-
-## 1. Qué es TicketYa (en una frase)
-
-Plataforma para **publicar eventos**, **buscar y comprar entradas** con reserva temporal y pago simulado, **emitir QR**, **devolver** y **cancelar**, evitando vender de más el mismo lugar.
-
-Primera entrega (núcleo): eventos, lugares, publicación, búsqueda, reserva, compra, QR, no doble venta, devoluciones y cancelaciones.  
-Segunda entrega: fila virtual, control de acceso en puerta, preferencias/recomendaciones, notificaciones, reportes y refuerzos de arquitectura.
-
----
-
-## 2. Roles — qué hace cada uno
+## Roles — qué hace cada uno
 
 Roles definidos en la plataforma:
 
@@ -63,7 +46,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 
 ## 3. Cuentas y roles (política de producto)
 
-### Acordado / en uso hoy
+### en uso hoy
 
 - Alta pública → siempre **CLIENTE**.  
 - Cuentas demo de prueba (cliente, org, admin, acceso) viven en datos seed para el TP.  
@@ -71,9 +54,9 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 
 ### Diseño acordado pero **no implementado** (extensión a organizador)
 
-Ser organizador **requiere autorización**. No hay “registrarme como organizador” abierto.
+Ser organizador **requiere autorización del administrador de la platafoprma**. No hay “registrarme como organizador” abierto.
 
-1. La persona ya es CLIENTE.  
+1. La persona ya es CLIENTE, o tiene una cuenta activa en la plataforma con los datos personales precargados.  
 2. Pide extensión de cuenta (solicitud con motivo).  
 3. Un ADMIN aprueba o rechaza.  
 4. Si aprueba → se otorga rol ORGANIZADOR.  
@@ -188,7 +171,7 @@ Si no hay disponible, el checkout no debe dejar comprar.
 
 ---
 
-## 7. Qué hace cada “área” del sistema (sin jerga)
+## 7. Qué hace cada “área” del sistema
 
 | Área | Se ocupa de |
 | --- | --- |
@@ -217,7 +200,7 @@ historias de usuario, diagramas de arquitectura/secuencia, endpoints documentado
 
 ---
 
-## 9. Decisiones pendientes (para seguir en grupo)
+## 9. Decisiones pendientes 
 
 Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por sí solas: son charlas de producto/arquitectura.
 
@@ -248,7 +231,7 @@ Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por s
 14. ¿El organizador ve devoluciones de sus eventos o solo admin?  
 15. Transferencia de entrada a otro usuario: hoy no hay API; ¿E2, extra, o fuera de alcance?
 
-### Segunda entrega (solo para no olvidar el orden)
+### Segunda entrega  para no olvidar el orden)
 
 16. Fila virtual: reglas de tandas y quién habilita.  
 17. Preferencias: qué guarda el cliente y qué tan “inteligente” es la recomendación (puede ser simple).  
@@ -281,4 +264,3 @@ Resumen armado a partir de:
 - `Backend/APIGateway/docs/endpoints.md` — quién entra a qué  
 - `Backend/msvc-eventos|ventas|entradas|usuarios/docs/endpoints.md` — reglas ya implementadas (publicar, cupo, 72 h, QR, estados)
 
-Última pasada de este resumen: 2026-11-08. Solo lectura de lo existente + organización; sin reglas inventadas.
