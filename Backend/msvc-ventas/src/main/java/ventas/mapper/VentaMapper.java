@@ -75,6 +75,8 @@ public class VentaMapper {
         dto.setTotal(compra.getTotal());
         dto.setMoneda(compra.getMoneda());
         dto.setEstado(compra.getEstado());
+        dto.setEmisionEstado(compra.getEmisionEstado());
+        dto.setEmisionIntentos(compra.getEmisionIntentos());
         return dto;
     }
 

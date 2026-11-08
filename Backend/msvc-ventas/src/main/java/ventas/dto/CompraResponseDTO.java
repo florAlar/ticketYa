@@ -16,4 +16,7 @@ public class CompraResponseDTO {
     private BigDecimal total;
     private String moneda;
     private String estado;
+    /** NO_REQUIERE | PENDIENTE | EMITIDA | FALLIDA — QR en msvc-entradas */
+    private String emisionEstado;
+    private Integer emisionIntentos;
 }

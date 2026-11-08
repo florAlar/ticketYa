@@ -41,4 +41,20 @@ public class Compra {
 
     @Column(name = "estado", length = 32, nullable = false)
     private String estado;
+
+    /**
+     * Emisión de QR en msvc-entradas tras pago aprobado.
+     * NO_REQUIERE | PENDIENTE | EMITIDA | FALLIDA
+     */
+    @Column(name = "emision_estado", length = 16, nullable = false)
+    private String emisionEstado;
+
+    @Column(name = "emision_intentos", nullable = false)
+    private Integer emisionIntentos;
+
+    @Column(name = "emision_ultimo_error", length = 255)
+    private String emisionUltimoError;
+
+    @Column(name = "emision_actualizado")
+    private LocalDateTime emisionActualizado;
 }

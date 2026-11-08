@@ -36,8 +36,13 @@ CREATE TABLE IF NOT EXISTS compra (
   total        DECIMAL(12, 2) NOT NULL,
   moneda       CHAR(3)        NOT NULL DEFAULT 'ARS',
   estado       VARCHAR(32)    NOT NULL,
+  emision_estado       VARCHAR(16)  NOT NULL DEFAULT 'NO_REQUIERE' COMMENT 'NO_REQUIERE|PENDIENTE|EMITIDA|FALLIDA',
+  emision_intentos     INT          NOT NULL DEFAULT 0,
+  emision_ultimo_error VARCHAR(255) NULL,
+  emision_actualizado  DATETIME(3)  NULL,
   PRIMARY KEY (id_compra),
   KEY ix_compra_cliente (id_cliente),
+  KEY ix_compra_emision (estado, emision_estado),
   CONSTRAINT fk_compra_reserva FOREIGN KEY (id_reserva) REFERENCES reserva (id_reserva)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -112,10 +117,11 @@ INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio
    'c0000000-0000-4000-8000-000000000011', 1, 95000.00)
 ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad), precio_unitario = VALUES(precio_unitario);
 
-INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado) VALUES
+INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado, emision_estado, emision_intentos, emision_ultimo_error, emision_actualizado) VALUES
   ('f0000000-0000-4000-8000-000000000021', 'f0000000-0000-4000-8000-000000000011',
-   'b0000000-0000-4000-8000-000000000001', '2026-10-01 14:05:00.000', 95000.00, 'ARS', 'APROBADA')
-ON DUPLICATE KEY UPDATE estado = VALUES(estado), total = VALUES(total);
+   'b0000000-0000-4000-8000-000000000001', '2026-10-01 14:05:00.000', 95000.00, 'ARS', 'APROBADA',
+   'EMITIDA', 1, NULL, '2026-10-01 14:05:35.000')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado), total = VALUES(total), emision_estado = VALUES(emision_estado);
 
 INSERT INTO pago (id_pago, id_compra, proveedor, id_transaccion_externa, monto, estado, fecha_pago) VALUES
   ('f0000000-0000-4000-8000-000000000031', 'f0000000-0000-4000-8000-000000000021',
@@ -133,10 +139,11 @@ INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio
    'c0000000-0000-4000-8000-000000000013', 1, 75000.00)
 ON DUPLICATE KEY UPDATE cantidad = VALUES(cantidad), precio_unitario = VALUES(precio_unitario);
 
-INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado) VALUES
+INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado, emision_estado, emision_intentos, emision_ultimo_error, emision_actualizado) VALUES
   ('f0000000-0000-4000-8000-000000000043', 'f0000000-0000-4000-8000-000000000041',
-   'b0000000-0000-4000-8000-000000000001', '2026-09-15 10:05:00.000', 75000.00, 'ARS', 'APROBADA')
-ON DUPLICATE KEY UPDATE estado = VALUES(estado), total = VALUES(total);
+   'b0000000-0000-4000-8000-000000000001', '2026-09-15 10:05:00.000', 75000.00, 'ARS', 'APROBADA',
+   'EMITIDA', 1, NULL, '2026-09-15 10:05:35.000')
+ON DUPLICATE KEY UPDATE estado = VALUES(estado), total = VALUES(total), emision_estado = VALUES(emision_estado);
 
 INSERT INTO pago (id_pago, id_compra, proveedor, id_transaccion_externa, monto, estado, fecha_pago) VALUES
   ('f0000000-0000-4000-8000-000000000044', 'f0000000-0000-4000-8000-000000000043',

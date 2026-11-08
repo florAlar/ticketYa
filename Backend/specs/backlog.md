@@ -158,7 +158,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-ENT-00 | Datasource + JPA validate contra `entradas/init.sql` (INF-27) | hecho | EMF OK. |
 | E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. **ValidacionAcceso sin API** (E2-ACC-01). Seed intacto. |
-| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago **best-effort**. Idempotente por idCompra. **`entrada.precio` persistido** (DTO + monto devolución/reintegro). |
+| E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago con **reintentos + emision_estado PENDIENTE/EMITIDA/FALLIDA + job** (ya no fire-and-forget). Idempotente por idCompra. **`entrada.precio` persistido**. |
 | E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. DTO enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos. **GET /{id}: dueño o ADMIN** (un método). FE admin: `/gestion/entradas/:id` (no mis-entradas). |
 | E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde **emisión**; ADMIN→DEVUELTA + **Feign ventas libera 1 cupo** fail-hard. Monto desde `entrada.precio`. FE admin cola: `USE_MOCK_ENTRADAS`. |
 | E1-ENT-05 | Efecto de cancelación de evento sobre entradas vendidas (reintegro) — al menos contrato E1 | hecho | `POST /eventos/{id}/reintegro-cancelacion` → A_REINTEGRAR. No notifs; no devuelve cupo a ventas. |

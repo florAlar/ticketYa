@@ -48,9 +48,10 @@ INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio
   ('f0000000-0000-4000-8000-000000000012', 'f0000000-0000-4000-8000-000000000011',
    'c0000000-0000-4000-8000-000000000011', 1, 95000.00);
 
-INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado) VALUES
+INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado, emision_estado, emision_intentos, emision_ultimo_error, emision_actualizado) VALUES
   ('f0000000-0000-4000-8000-000000000021', 'f0000000-0000-4000-8000-000000000011',
-   'b0000000-0000-4000-8000-000000000001', '2026-10-01 14:05:00.000', 95000.00, 'ARS', 'APROBADA');
+   'b0000000-0000-4000-8000-000000000001', '2026-10-01 14:05:00.000', 95000.00, 'ARS', 'APROBADA',
+   'EMITIDA', 1, NULL, '2026-10-01 14:05:35.000');
 
 INSERT INTO pago (id_pago, id_compra, proveedor, id_transaccion_externa, monto, estado, fecha_pago) VALUES
   ('f0000000-0000-4000-8000-000000000031', 'f0000000-0000-4000-8000-000000000021',
@@ -65,9 +66,10 @@ INSERT INTO detalle_reserva (id_detalle, id_reserva, id_sector, cantidad, precio
   ('f0000000-0000-4000-8000-000000000042', 'f0000000-0000-4000-8000-000000000041',
    'c0000000-0000-4000-8000-000000000013', 1, 75000.00);
 
-INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado) VALUES
+INSERT INTO compra (id_compra, id_reserva, id_cliente, fecha_compra, total, moneda, estado, emision_estado, emision_intentos, emision_ultimo_error, emision_actualizado) VALUES
   ('f0000000-0000-4000-8000-000000000043', 'f0000000-0000-4000-8000-000000000041',
-   'b0000000-0000-4000-8000-000000000001', '2026-09-15 10:05:00.000', 75000.00, 'ARS', 'APROBADA');
+   'b0000000-0000-4000-8000-000000000001', '2026-09-15 10:05:00.000', 75000.00, 'ARS', 'APROBADA',
+   'EMITIDA', 1, NULL, '2026-09-15 10:05:35.000');
 
 INSERT INTO pago (id_pago, id_compra, proveedor, id_transaccion_externa, monto, estado, fecha_pago) VALUES
   ('f0000000-0000-4000-8000-000000000044', 'f0000000-0000-4000-8000-000000000043',

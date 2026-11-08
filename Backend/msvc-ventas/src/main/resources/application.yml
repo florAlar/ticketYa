@@ -31,3 +31,8 @@ ticketya:
     max-entradas-cliente-evento: ${TICKETYA_MAX_ENTRADAS:6}
     idempotency-ttl-hours: 24
     expire-job-ms: 30000
+    # Emisión QR post-pago (Feign msvc-entradas): reintentos inmediatos + job
+    emision-intentos-inmediatos: ${TICKETYA_EMISION_INTENTOS_INMEDIATOS:3}
+    emision-delay-ms: ${TICKETYA_EMISION_DELAY_MS:250}
+    emision-max-intentos: ${TICKETYA_EMISION_MAX_INTENTOS:20}
+    emision-job-ms: ${TICKETYA_EMISION_JOB_MS:30000}

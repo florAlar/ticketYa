@@ -28,4 +28,6 @@ public interface CompraRepository extends JpaRepository<Compra, String> {
             @Param("idCliente") String idCliente,
             @Param("idEvento") String idEvento,
             @Param("estados") Collection<String> estados);
+
+    List<Compra> findByEstadoAndEmisionEstadoOrderByFechaCompraAsc(String estado, String emisionEstado);
 }

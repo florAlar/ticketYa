@@ -23,7 +23,7 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 | POST /compras | **hecho** | Body `{idReserva}`; **Idempotency-Key obligatorio**; límite 6 entr/cliente/evento |
 | GET /compras/{id} | **hecho** | Dueño |
 | GET /compras | **hecho** | Listado propio |
-| POST /compras/{id}/pagos | **hecho** | Mock: body `{ "resultado": "APROBAR"\|"RECHAZAR" }` (default APROBAR) |
+| POST /compras/{id}/pagos | **hecho** | Mock: body `{ "resultado": "APROBAR"\|"RECHAZAR" }` (default APROBAR). Tras APROBAR: compra APROBADA + emisión QR con reintentos + estado `emisionEstado` |
 | GET /compras/{id}/pagos | **hecho** | |
 | POST /pagos/{id}/reintentos | **hecho** | Solo si pago RECHAZADO y se puede reabrir; tras rechazo con liberación de cupo suele exigir nueva reserva |
 | Reportes / fila virtual | pendiente | E2 |
@@ -33,6 +33,21 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 - Reserva: `PENDIENTE` → `CONFIRMADA` → `COMPRADA` \| `CANCELADA` \| `EXPIRADA`
 - Compra: `PENDIENTE_PAGO` → `APROBADA` \| `RECHAZADA`
 - Pago: `APROBADO` \| `RECHAZADO`
+- **Emisión QR** (campo `compra.emision_estado`, no confunde con estado de compra):
+  - `NO_REQUIERE` — aún no hay pago aprobado
+  - `PENDIENTE` — pago OK, QR aún no confirmado en entradas
+  - `EMITIDA` — QR creados (Feign OK; idempotente por idCompra)
+  - `FALLIDA` — superó máx. reintentos (job deja de insistir)
+
+### Emisión post-pago (2026-11-08)
+
+- Tras commit del pago: hasta N intentos inmediatos (`emision-intentos-inmediatos`, default 3).
+- Si falla: queda `PENDIENTE`; job cada `emision-job-ms` (30s) reprocesa.
+- Tope total `emision-max-intentos` (20) → `FALLIDA`.
+- **No** revierte la compra ni el cupo vendido (política TP).
+- Outbox formal: **no** implementado (opcional; ver `specs/reglas-de-negocio.md`).
+- DTO compra: `emisionEstado`, `emisionIntentos`.
+- Volúmenes viejos: `infrastructure/mysql/ventas/02-add-compra-emision.sql`.
 
 ### Anti doble venta
 
@@ -43,9 +58,11 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 ### Config
 
 - `ticketya.uri.eventos` / `TICKETYA_URI_EVENTOS` (Docker: `http://ms-eventos:8082`)
+- `ticketya.uri.entradas` / `TICKETYA_URI_ENTRADAS` (Docker: `http://ms-entradas:8084`)
 - `ticketya.ventas.reserva-ttl-minutes` (10)
 - `ticketya.ventas.max-entradas-cliente-evento` (6)
 - Job expire cada 30s
+- `ticketya.ventas.emision-intentos-inmediatos` (3), `emision-delay-ms` (250), `emision-max-intentos` (20), `emision-job-ms` (30000)
 
 ### Shape breve
 

@@ -164,10 +164,27 @@ Si no hay disponible, el checkout no debe dejar comprar.
 - Queda un trámite visible para el cliente (no es la misma cola de “devolución voluntaria” del admin).  
 - En el diseño actual, ese paso hacia entradas es **best-effort**: el evento puede quedar cancelado aunque falle el aviso a entradas (deuda de consistencia reconocida; no es un olvido).
 
-### Emisión tras el pago
+### Emisión tras el pago (problema y solución en simple)
 
-- La compra vive en ventas y el QR en entradas (servicios distintos).  
-- La emisión post-pago es **best-effort** entre servicios: hay deuda natural de consistencia fuerte hasta definir compensaciones (segunda entrega / arquitectura).
+**El problema**  
+El pago se confirma en **ventas**. Los QR se crean en **entradas** (otro servicio).  
+Si justo en ese momento entradas no responde, antes podía pasar: “pago OK” pero el cliente **sin entradas**.  
+Eso no se “arregla mágicamente” solo porque usamos Feign: hay que **reintentar y recordar** qué compras todavía no tienen QR.
+
+**Lo que hace el sistema ahora (alcanza para el TP)**  
+1. El pago aprobado deja la compra en **APROBADA** y marca la emisión como **PENDIENTE**.  
+2. En cuanto termina de guardarse el pago, ventas **intenta varias veces** crear los QR en entradas.  
+3. Si igual no pudo, la compra queda **PENDIENTE de emisión**; un **trabajo automático** (cada ~30 s) vuelve a intentar.  
+4. La emisión en entradas es **idempotente por compra**: reintentar no duplica entradas.  
+5. Si después de muchos intentos no se pudo: estado **FALLIDA** (queda visible para soporte; no se inventa un reembolso automático).  
+6. La respuesta de compra expone `emisionEstado` (`NO_REQUIERE` | `PENDIENTE` | `EMITIDA` | `FALLIDA`) para que el front pueda decir “generando entradas…” si hace falta.
+
+**Qué no hacemos todavía (opcional, más adelante)**  
+- Tabla **outbox** (cola formal de mensajes en la misma transacción del pago): más “de libro”, no necesaria si el estado PENDIENTE + job alcanza.  
+- Compensar el pago (anular compra y devolver cupo) si nunca salió el QR: política de producto aún no cerrada; el TP se cubre con reintento + pendiente.
+
+**Sigue best-effort (otro flujo)**  
+Cancelar evento → avisar reintegro a entradas: todavía best-effort (distinto de la emisión post-pago).
 
 ---
 
@@ -221,7 +238,7 @@ Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por s
 
 ### Compra y consistencia
 
-10. Si el pago aprueba pero falla la emisión del QR: ¿qué ve el cliente y cómo se repara? (hoy best-effort; falta política de compensación.)  
+10. ~~Si el pago aprueba pero falla la emisión del QR~~ → **cerrado para el TP**: reintentos + `emisionEstado` PENDIENTE/EMITIDA/FALLIDA + job (sin outbox). Opcional futuro: outbox o compensación de pago.  
 11. Si se cancela el evento y falla el reintegro masivo: ¿se reintenta, queda cola, aviso manual?  
 12. Renovación de reserva: ¿cuántas veces / tope de tiempo total?
 

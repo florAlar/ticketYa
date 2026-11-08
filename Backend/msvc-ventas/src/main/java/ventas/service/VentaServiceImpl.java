@@ -19,7 +19,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ventas.clients.EntradasClient;
 import ventas.clients.EventosClient;
 import ventas.clients.EventosClient.EventoDetalleFeignDTO;
 import ventas.clients.EventosClient.SectorFeignDTO;
@@ -76,9 +75,9 @@ public class VentaServiceImpl implements VentaService {
     private final CompraRepository compraRepository;
     private final PagoRepository pagoRepository;
     private final EventosClient eventosClient;
-    private final EntradasClient entradasClient;
     private final StockCache stockCache;
     private final VentaMapper ventaMapper;
+    private final EmisionEntradasService emisionEntradasService;
 
     private final Duration reservaTtl;
     private final int maxEntradasPorClienteEvento;
@@ -91,9 +90,9 @@ public class VentaServiceImpl implements VentaService {
             CompraRepository compraRepository,
             PagoRepository pagoRepository,
             EventosClient eventosClient,
-            EntradasClient entradasClient,
             StockCache stockCache,
             VentaMapper ventaMapper,
+            EmisionEntradasService emisionEntradasService,
             @Value("${ticketya.ventas.reserva-ttl-minutes:10}") long reservaTtlMinutes,
             @Value("${ticketya.ventas.max-entradas-cliente-evento:6}") int maxEntradasPorClienteEvento,
             @Value("${ticketya.ventas.idempotency-ttl-hours:24}") long idempotencyTtlHours) {
@@ -103,9 +102,9 @@ public class VentaServiceImpl implements VentaService {
         this.compraRepository = compraRepository;
         this.pagoRepository = pagoRepository;
         this.eventosClient = eventosClient;
-        this.entradasClient = entradasClient;
         this.stockCache = stockCache;
         this.ventaMapper = ventaMapper;
+        this.emisionEntradasService = emisionEntradasService;
         this.reservaTtl = Duration.ofMinutes(reservaTtlMinutes);
         this.maxEntradasPorClienteEvento = maxEntradasPorClienteEvento;
         this.idempotencyTtl = Duration.ofHours(idempotencyTtlHours);
@@ -421,6 +420,8 @@ public class VentaServiceImpl implements VentaService {
         compra.setTotal(reserva.getTotal());
         compra.setMoneda("ARS");
         compra.setEstado(EST_COMPRA_PENDIENTE);
+        compra.setEmisionEstado(EmisionEntradasService.EMISION_NO_REQUIERE);
+        compra.setEmisionIntentos(0);
         compraRepository.save(compra);
 
         stockCache.putIdempotentCompraId(idempotencyKey, compra.getIdCompra(), idempotencyTtl);
@@ -565,27 +566,9 @@ public class VentaServiceImpl implements VentaService {
         reserva.setEstado(EST_RES_COMPRADA);
         reservaRepository.save(reserva);
         compra.setEstado(EST_COMPRA_APROBADA);
+        emisionEntradasService.marcarPendienteYAgendar(compra);
         compraRepository.save(compra);
         stockCache.releaseReservaHold(reserva.getIdReserva());
-
-        // Emisión QR en msvc-entradas (best-effort: no revierte la venta si falla)
-        try {
-            List<EntradasClient.EmitirRequest.Item> items = detalles.stream()
-                    .map(d -> new EntradasClient.EmitirRequest.Item(
-                            d.getIdSector(), d.getCantidad(), d.getPrecioUnitario()))
-                    .toList();
-            entradasClient.emitir(new EntradasClient.EmitirRequest(
-                    compra.getIdCompra(),
-                    compra.getIdCliente(),
-                    reserva.getIdEvento(),
-                    items));
-            log.info("Entradas emitidas para compra {}", compra.getIdCompra());
-        } catch (Exception ex) {
-            log.error(
-                    "No se pudieron emitir entradas para compra {}: {}",
-                    compra.getIdCompra(),
-                    ex.getMessage());
-        }
     }
 
     private void rechazarVenta(Compra compra) {
