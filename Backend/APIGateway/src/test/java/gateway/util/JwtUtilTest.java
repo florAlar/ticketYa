@@ -50,18 +50,6 @@ class JwtUtilTest {
     }
 
     @Test
-    void extractRoles_conClaimCsv_devuelveLista() {
-        JwtUtil jwtUtil = nuevoJwtUtil();
-        String token = crearToken("user-1", "a@b.com", "Usuario Uno", "CLIENTE",
-                List.of("CLIENTE", "ADMIN"));
-
-        List<String> roles = jwtUtil.extractRoles(token);
-
-        assertTrue(roles.contains("CLIENTE"));
-        assertTrue(roles.contains("ADMIN"));
-    }
-
-    @Test
     void extractRol_devuelveRolPrincipal() {
         JwtUtil jwtUtil = nuevoJwtUtil();
         // Rol ADMIN no está en la lista de roles, se agrega al principio
@@ -154,5 +142,40 @@ class JwtUtilTest {
 
         String rol = jwtUtil.extractClaim(token, c -> c.get("rol", String.class));
         assertEquals("CLIENTE", rol);
+    }
+
+    @Test
+    void extractRoles_conClaimCsv_devuelveLista() throws Exception {
+        JwtUtil jwtUtil = nuevoJwtUtil();
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String token = Jwts.builder()
+                .claim("userId", "user-1")
+                .claim("email", "a@b.com")
+                .claim("rol", "CLIENTE")
+                .claim("roles", "CLIENTE,ORGANIZADOR")
+                .subject("a@b.com")
+                .signWith(key)
+                .compact();
+
+        List<String> roles = jwtUtil.extractRoles(token);
+
+        assertEquals(List.of("CLIENTE", "ORGANIZADOR"), roles);
+    }
+
+    @Test
+    void validateToken_tokenExpirado_devuelveFalso() throws Exception {
+        JwtUtil jwtUtil = nuevoJwtUtil();
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        String token = Jwts.builder()
+                .claim("userId", "user-1")
+                .claim("email", "a@b.com")
+                .claim("rol", "CLIENTE")
+                .claim("roles", List.of("CLIENTE"))
+                .subject("a@b.com")
+                .expiration(new Date(System.currentTimeMillis() - 1000))
+                .signWith(key)
+                .compact();
+
+        assertFalse(jwtUtil.validateToken(token));
     }
 }
