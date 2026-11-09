@@ -1,0 +1,5887 @@
+{
+  "generatedAt": "2026-11-08",
+  "generator": "springdoc-openapi-starter-webmvc-ui 3.2.0",
+  "openapi": "3.1.0",
+  "description": "Bundle consolidado de contratos OpenAPI de TicketYa (E1). Cada clave es el artifactId del microservicio.",
+  "microservices": {
+    "msvc-entradas": {
+      "paths": 11,
+      "operations": 11,
+      "schemas": 6
+    },
+    "msvc-eventos": {
+      "paths": 17,
+      "operations": 25,
+      "schemas": 19
+    },
+    "msvc-usuarios": {
+      "paths": 10,
+      "operations": 12,
+      "schemas": 8
+    },
+    "msvc-ventas": {
+      "paths": 14,
+      "operations": 16,
+      "schemas": 14
+    }
+  },
+  "specs": {
+    "msvc-entradas": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "TicketYa — Entradas, QR y devoluciones",
+        "description": "Emisión de entradas post-compra, consulta por cliente, código QR,\nsolicitud/aprobación/rechazo de devoluciones y reintegro por\ncancelación de evento.\nEl API Gateway valida el JWT y propaga X-User-Id / X-User-Role;\neste microservicio filtra entradas y devoluciones por cliente.\n",
+        "contact": {
+          "name": "Equipo TicketYa — TUDAi 2026",
+          "email": "equipo@ticketya.com.ar"
+        },
+        "license": {
+          "name": "Uso académico — TUDAi 2026"
+        },
+        "version": "1.0.0"
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8084",
+          "description": "Local — directo al microservicio"
+        },
+        {
+          "url": "http://localhost:8080/api",
+          "description": "Local — vía API Gateway (StripPrefix=1)",
+          "x-gateway": true
+        },
+        {
+          "url": "https://ticketya.com.ar/api",
+          "description": "Producción — vía API Gateway",
+          "x-gateway": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "Entradas",
+          "description": "Entradas, código QR y devoluciones de entrada."
+        }
+      ],
+      "paths": {
+        "/eventos/{idEvento}/reintegro-cancelacion": {
+          "post": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Reintegro por cancelación de evento",
+            "description": "Marca entradas VENDIDA del evento como A_REINTEGRAR y crea devoluciones\nEN_CURSO (no entran a cola de admin). Require ADMIN.\n",
+            "operationId": "reintegroCancelacion",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Reintegro ejecutado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Se requiere rol ADMIN",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/entradas/{id}/devoluciones": {
+          "post": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Solicitar devolución",
+            "description": "Solicita devolución de una entrada propia VENDIDA dentro del plazo\n(72 h por defecto desde la emisión).\nEstado de la devolución: PENDIENTE → cola de admin.\nEntradas USADA / DEVUELTA / A_REINTEGRAR → 409.\n",
+            "operationId": "solicitarDev",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la entrada",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DevolucionCreateRequest"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "201": {
+                "description": "Devolución solicitada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Devolucion"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es dueña de la entrada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Entrada inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Entrada no devoluble o plazo vencido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/entradas/emision": {
+          "post": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Emitir entradas",
+            "description": "Crea entradas con código QR a partir de una compra.\nLlamado por msvc-ventas (Feign) o por el cliente autenticado dueño de la compra.\nEstado de entrada: VENDIDA.\n",
+            "operationId": "emitir",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EmitirEntradasRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Entradas emitidas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Entrada"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido o compra no pagada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es dueño de la compra ni staff",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Compra inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/devoluciones/{id}/rechazo": {
+          "post": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Rechazar devolución",
+            "description": "Rechaza una devolución PENDIENTE. Estado: RECHAZADA.",
+            "operationId": "rechazar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la devolución",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Devolución rechazada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Devolucion"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Se requiere rol ADMIN",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Devolución inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "No está PENDIENTE",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/devoluciones/{id}/aprobacion": {
+          "post": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Aprobar devolución",
+            "description": "Aprueba una devolución PENDIENTE y libera el cupo en msvc-ventas\n(POST /eventos/{id}/cupos/liberacion).\nEstado: APROBADA → entrada DEVUELTA.\n",
+            "operationId": "aprobar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la devolución",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Devolución aprobada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Devolucion"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Se requiere rol ADMIN",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Devolución inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "No está PENDIENTE",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/entradas": {
+          "get": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Listar mis entradas",
+            "description": "Entradas del cliente autenticado (X-User-Id).",
+            "operationId": "misEntradas",
+            "responses": {
+              "200": {
+                "description": "Entradas del cliente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Entrada"
+                      }
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/entradas/{id}": {
+          "get": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Obtener una entrada",
+            "description": "Entrada propia (cliente dueño) o cualquiera (ADMIN).\nDevuelve QR solo si la política lo permite (evento no cancelado).\n",
+            "operationId": "una",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la entrada",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Entrada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Entrada"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es dueño ni ADMIN",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Entrada inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/entradas/{id}/qr": {
+          "get": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Código QR de una entrada",
+            "description": "QR de entrada propia. Devuelto solo si el evento está activo (no CANCELADO)\ny la entrada no está USADA/DEVUELTA/A_REINTEGRAR.\n",
+            "operationId": "qr",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la entrada",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "QR de la entrada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Qr"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es dueña de la entrada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Entrada inexistente o sin QR",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/devoluciones": {
+          "get": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Listar devoluciones",
+            "description": "ADMIN: devoluciones PENDIENTE (scope=pendientes/all).\nCliente: devoluciones propias.\n",
+            "operationId": "listDev",
+            "parameters": [
+              {
+                "name": "scope",
+                "in": "query",
+                "description": "scope: pendientes | all (solo ADMIN)",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Devoluciones",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Devolucion"
+                      }
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/devoluciones/{id}": {
+          "get": {
+            "tags": [
+              "Entradas"
+            ],
+            "summary": "Obtener una devolución",
+            "description": "Devolución propia o cualquiera (ADMIN).",
+            "operationId": "getDev",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la devolución",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Devolución",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Devolucion"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Devolución inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/": {
+          "get": {
+            "tags": [
+              "Entradas",
+              "Smoke"
+            ],
+            "summary": "Smoke del microservicio",
+            "description": "Chequeo de infraestructura. No forma parte del contrato de negocio.",
+            "operationId": "ok",
+            "responses": {
+              "200": {
+                "description": "Texto de estado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "DevolucionCreateRequest": {
+            "type": "object",
+            "description": "Solicitud de devolución de una entrada",
+            "properties": {
+              "motivo": {
+                "type": "string",
+                "description": "Motivo de la devolución",
+                "example": "No puedo asistir al evento"
+              }
+            }
+          },
+          "Devolucion": {
+            "type": "object",
+            "description": "Devolución de entrada con estado y monto reembolsado",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID de la devolución",
+                "example": "55555555-5555-4555-8555-555555555555"
+              },
+              "idEntrada": {
+                "type": "string",
+                "description": "UUID de la entrada",
+                "example": "66666666-6666-4666-8666-666666666666"
+              },
+              "idCliente": {
+                "type": "string",
+                "description": "UUID del cliente",
+                "example": "b0000000-0000-4000-8000-000000000001"
+              },
+              "motivo": {
+                "type": "string",
+                "description": "Motivo de la devolución",
+                "example": "No puedo asistir al evento"
+              },
+              "monto": {
+                "type": "number",
+                "description": "Monto a reembolsar",
+                "example": 95000.0
+              },
+              "fechaSolicitud": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha de solicitud",
+                "example": "2026-03-01T12:30:00"
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado: PENDIENTE | APROBADA | RECHAZADA | EN_CURSO",
+                "enum": [
+                  "PENDIENTE",
+                  "APROBADA",
+                  "RECHAZADA",
+                  "EN_CURSO"
+                ],
+                "example": "PENDIENTE"
+              }
+            }
+          },
+          "EmitirEntradaItem": {
+            "type": "object",
+            "description": "Entradas a emitir en un sector",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "c0000000-0000-4000-8000-000000000011",
+                "minLength": 1
+              },
+              "cantidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Cantidad de entradas (mín. 1)",
+                "example": 2,
+                "minimum": 1
+              },
+              "precioUnitario": {
+                "type": "number",
+                "description": "Precio unitario pagado",
+                "example": 95000.0
+              }
+            },
+            "required": [
+              "cantidad",
+              "idSector"
+            ]
+          },
+          "EmitirEntradasRequest": {
+            "type": "object",
+            "description": "Entradas a emitir por compra",
+            "properties": {
+              "idCompra": {
+                "type": "string",
+                "description": "UUID de la compra origen",
+                "example": "33333333-3333-4333-8333-333333333333",
+                "minLength": 1
+              },
+              "idCliente": {
+                "type": "string",
+                "description": "UUID del cliente",
+                "example": "b0000000-0000-4000-8000-000000000001",
+                "minLength": 1
+              },
+              "idEvento": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "d0000000-0000-4000-8000-000000000001",
+                "minLength": 1
+              },
+              "items": {
+                "type": "array",
+                "description": "Líneas de entrada por sector",
+                "items": {
+                  "$ref": "#/components/schemas/EmitirEntradaItem"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "idCliente",
+              "idCompra",
+              "idEvento",
+              "items"
+            ]
+          },
+          "Entrada": {
+            "type": "object",
+            "description": "Entrada emitida con código QR y datos del evento",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID de la entrada",
+                "example": "66666666-6666-4666-8666-666666666666"
+              },
+              "codigoQR": {
+                "type": "string",
+                "description": "Código QR (null si no exhibible)",
+                "example": "TKT-8f3a1c-0001"
+              },
+              "idCompra": {
+                "type": "string",
+                "description": "UUID de la compra",
+                "example": "33333333-3333-4333-8333-333333333333"
+              },
+              "idCliente": {
+                "type": "string",
+                "description": "UUID del cliente",
+                "example": "b0000000-0000-4000-8000-000000000001"
+              },
+              "idEvento": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "d0000000-0000-4000-8000-000000000001"
+              },
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "c0000000-0000-4000-8000-000000000011"
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado: VENDIDA | USADA | DEVUELTA | A_REINTEGRAR",
+                "enum": [
+                  "VENDIDA",
+                  "USADA",
+                  "DEVUELTA",
+                  "A_REINTEGRAR"
+                ],
+                "example": "VENDIDA"
+              },
+              "fechaEmision": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha de emisión",
+                "example": "2026-03-01T12:10:00"
+              },
+              "fechaIngreso": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha de ingreso validada (null si no ingresó)",
+                "example": "null"
+              },
+              "precio": {
+                "type": "number",
+                "description": "Precio unitario pagado",
+                "example": 95000.0
+              },
+              "eventoNombre": {
+                "type": "string",
+                "description": "Nombre del evento",
+                "example": "Metallica — M72 World Tour"
+              },
+              "eventoEstado": {
+                "type": "string",
+                "description": "Estado del evento (p.ej. PUBLICADO, CANCELADO)",
+                "example": "PUBLICADO"
+              },
+              "sectorNombre": {
+                "type": "string",
+                "description": "Nombre del sector",
+                "example": "Campo"
+              },
+              "lugarNombre": {
+                "type": "string",
+                "description": "Nombre del lugar",
+                "example": "Estadio Obras"
+              },
+              "lugarCiudad": {
+                "type": "string",
+                "description": "Ciudad del lugar",
+                "example": "Buenos Aires"
+              }
+            }
+          },
+          "Qr": {
+            "type": "object",
+            "description": "Código QR de una entrada",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID de la entrada",
+                "example": "66666666-6666-4666-8666-666666666666"
+              },
+              "codigoQR": {
+                "type": "string",
+                "description": "Código QR legible",
+                "example": "TKT-8f3a1c-0001"
+              }
+            }
+          }
+        },
+        "securitySchemes": {
+          "bearerAuth": {
+            "type": "http",
+            "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id, X-User-Email,\nX-User-Role y X-User-Roles a este microservicio.\n",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+          }
+        }
+      }
+    },
+    "msvc-eventos": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "TicketYa — Eventos, lugares y participantes",
+        "description": "Catálogo de eventos, gestión de borradores, publicación, fechas,\nsectores con precio, lugares y artistas/bandas.\nEl API Gateway valida el JWT y propaga X-User-Id / X-User-Role;\neste microservicio revalida los roles en las operaciones de escritura.\n",
+        "contact": {
+          "name": "Equipo TicketYa — TUDAi 2026",
+          "email": "equipo@ticketya.com.ar"
+        },
+        "license": {
+          "name": "Uso académico — TUDAi 2026"
+        },
+        "version": "1.0.0"
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8082",
+          "description": "Local — directo al microservicio"
+        },
+        {
+          "url": "http://localhost:8080/api",
+          "description": "Local — vía API Gateway (StripPrefix=1)",
+          "x-gateway": true
+        },
+        {
+          "url": "https://ticketya.com.ar/api",
+          "description": "Producción — vía API Gateway",
+          "x-gateway": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "Eventos",
+          "description": "Catálogo, detalle y gestión del ciclo de vida del evento."
+        },
+        {
+          "name": "Participantes",
+          "description": "Artistas, bandas y elenco; asociación a eventos."
+        },
+        {
+          "name": "Lugares",
+          "description": "Lugares, sectores y asientos usados por los eventos."
+        }
+      ],
+      "paths": {
+        "/sectores/{id}": {
+          "put": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Editar sector",
+            "description": "Actualiza un sector existente. Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "actualizarSector",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del sector",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SectorRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Sector actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/SectorEvento"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Sector inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/participantes/{id}": {
+          "get": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Obtener un participante",
+            "description": "Detalle de un artista/banda/elenco. Endpoint público.",
+            "operationId": "uno",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del participante",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Participante encontrado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Participante"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Participante inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "put": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Editar participante",
+            "description": "Actualiza un artista/banda/elenco. Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "actualizar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del participante",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ParticipanteRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Participante actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Participante"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Participante inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/lugares/{id}": {
+          "get": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Obtener un lugar",
+            "description": "Detalle del lugar con sus sectores. Requiere JWT.",
+            "operationId": "uno_1",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del lugar",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Lugar encontrado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Lugar"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Lugar inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "put": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Editar lugar",
+            "description": "Actualiza los datos del lugar. Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "actualizar_1",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del lugar",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LugarRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Lugar actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Lugar"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Lugar inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}": {
+          "get": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Obtener detalle de un evento",
+            "description": "Lugar completo, sectores con precio vigente, participantes y datos de\npublicación. Endpoint público a través del gateway.\n",
+            "operationId": "detalle",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "e0000000-0000-4000-8000-000000000001"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Detalle del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventoDetalle"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "put": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Editar evento",
+            "description": "Actualiza un evento editable. Reemplaza lugar/sectores según el body.\nRequiere ser dueño del evento o ADMIN.\n",
+            "operationId": "actualizar_2",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EventoRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Evento actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventoDetalle"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente o no es dueño",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "El estado del evento no permite edición",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "delete": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Eliminar evento en borrador",
+            "description": "Solo se puede eliminar un evento en estado BORRADOR. Dueño o ADMIN.",
+            "operationId": "eliminar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "204": {
+                "description": "Evento eliminado (sin cuerpo)"
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente o no es dueño",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "El evento no está en BORRADOR",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/sectores/{sectorId}/precio": {
+          "put": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Definir precio de un sector",
+            "description": "Alta o actualización del precio del sector para el evento. Dueño o ADMIN.",
+            "operationId": "precioSector",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "sectorId",
+                "in": "path",
+                "description": "UUID del sector",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PrecioSectorRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Precio vigente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/SectorEvento"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Precio ausente o sector ajeno al lugar",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente o no es dueño",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento, sector o lugar inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Conflicto de estado del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/participantes": {
+          "get": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Participantes de un evento",
+            "description": "Artistas/bandas asociados, con rol y orden. Endpoint público.",
+            "operationId": "deEvento",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Participantes del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Participante"
+                      }
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "put": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Asociar participantes a un evento",
+            "description": "Reemplaza el set de participantes del evento. Acepta `ids` (simple) o\n`participantes` (id + rol + orden). Dueño del evento o ADMIN.\n",
+            "operationId": "asociar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EventoParticipantesRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Participantes asociados",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Participante"
+                      }
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente o no es dueño",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento o participante inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/participantes": {
+          "get": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Buscar participantes",
+            "description": "Catálogo abierto de artistas/bandas, con búsqueda y filtro por tipo.",
+            "operationId": "listar",
+            "parameters": [
+              {
+                "name": "q",
+                "in": "query",
+                "description": "Búsqueda por nombre",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Indio"
+              },
+              {
+                "name": "tipo",
+                "in": "query",
+                "description": "Tipo: ARTISTA | BANDA | ELENCO",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "BANDA"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Participantes",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Participante"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "post": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Crear participante",
+            "description": "Alta de artista/banda/elenco. Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "crear",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ParticipanteRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Participante creado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Participante"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/lugares": {
+          "get": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Listar lugares",
+            "description": "Lugares con sus sectores. Requiere JWT (el gateway no lo expone como público).",
+            "operationId": "listar_1",
+            "parameters": [
+              {
+                "name": "ciudad",
+                "in": "query",
+                "description": "Ciudad a filtrar",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Buenos Aires"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Lugares",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Lugar"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "post": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Crear lugar",
+            "description": "Alta de lugar. Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "crear_1",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LugarRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Lugar creado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Lugar"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/lugares/{id}/sectores": {
+          "post": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Crear sector en un lugar",
+            "description": "Alta de sector (nombre, capacidad, tipo, numerado). Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "crearSector",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del lugar",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/SectorRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Sector creado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/SectorEvento"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Lugar inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos": {
+          "get": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Buscar eventos",
+            "description": "Catálogo paginado. Sin `estado` devuelve los visibles (PUBLICADO + AGOTADO).\n`estado` exacto filtra por ese estado; `TODOS`/`ALL`/`*` devuelve todos\n(uso de gestión). Endpoint público a través del gateway.\n",
+            "operationId": "listar_2",
+            "parameters": [
+              {
+                "name": "tipo",
+                "in": "query",
+                "description": "Tipo de evento",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "RECITAL"
+              },
+              {
+                "name": "ciudad",
+                "in": "query",
+                "description": "Ciudad del lugar",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Buenos Aires"
+              },
+              {
+                "name": "organizador",
+                "in": "query",
+                "description": "UUID del organizador",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "c0000000-0000-4000-8000-000000000002"
+              },
+              {
+                "name": "participante",
+                "in": "query",
+                "description": "UUID de un participante (artista/banda)",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "d0000000-0000-4000-8000-000000000001"
+              },
+              {
+                "name": "estado",
+                "in": "query",
+                "description": "Estado exacto o TODOS/ALL/*",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "PUBLICADO"
+              },
+              {
+                "name": "fechaDesde",
+                "in": "query",
+                "description": "Fecha desde (ISO yyyy-MM-dd)",
+                "required": false,
+                "schema": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "example": "2026-01-01"
+              },
+              {
+                "name": "fechaHasta",
+                "in": "query",
+                "description": "Fecha hasta (ISO yyyy-MM-dd)",
+                "required": false,
+                "schema": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "example": "2026-12-31"
+              },
+              {
+                "name": "orden",
+                "in": "query",
+                "description": "Orden: fecha | precio | nombre",
+                "required": false,
+                "schema": {
+                  "type": "string",
+                  "default": "fecha"
+                },
+                "example": "fecha"
+              },
+              {
+                "name": "page",
+                "in": "query",
+                "description": "Página (0-based)",
+                "required": false,
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 0
+                },
+                "example": 0
+              },
+              {
+                "name": "size",
+                "in": "query",
+                "description": "Tamaño de página",
+                "required": false,
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 20
+                },
+                "example": 20
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Página de eventos",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/PageResponseDTOEventoResumen"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Filtro u orden inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "post": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Crear evento (borrador)",
+            "description": "Alta de evento. Si el body no trae `estado`, queda en BORRADOR; con\n`PUBLICADO` se publica al final del alta (valida fechas, lugar y precios).\nRequiere rol ORGANIZADOR o ADMIN (gateway + revalidación local).\n",
+            "operationId": "crear_2",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EventoRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Evento creado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventoDetalle"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido o falta fecha para publicar",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id (no pasó por el gateway)",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Conflicto de publicación o stock en ventas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/publicacion": {
+          "post": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Publicar evento",
+            "description": "Valida nombre, fecha, lugar y al menos un sector con precio; abre el stock\nen msvc-ventas y pasa a PUBLICADO. Si la apertura de cupos falla, la\npublicación falla (no queda estado parcial). Dueño o ADMIN.\n",
+            "operationId": "publicar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Evento publicado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventoDetalle"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Datos incompletos",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente o no es dueño",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Publicación inválida o fallo al abrir cupos",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/fecha": {
+          "patch": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Reprogramar evento",
+            "description": "Cambia fechaInicio/fechaFin. No permitido en estados no editables. Dueño o ADMIN.",
+            "operationId": "patchFecha",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EventoFechaRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Fechas actualizadas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventoDetalle"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Faltan fechas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente o no es dueño",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "El estado del evento no permite reprogramar",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/estado": {
+          "patch": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Cambiar estado del evento",
+            "description": "Transiciones de estado (SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO, …).\nPasar a PUBLICADO requiere rol ADMIN; desde BORRADOR solo se puede publicar.\n",
+            "operationId": "patchEstado",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/EventoEstadoRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Estado actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/EventoDetalle"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Estado ausente o inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id o rol",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Sin permiso para esa transición",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Transición no permitida",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/organizadores/me/eventos": {
+          "get": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Listar mis eventos",
+            "description": "Eventos del organizador autenticado (todos los estados). Requiere ORGANIZADOR o ADMIN.",
+            "operationId": "misEventos",
+            "responses": {
+              "200": {
+                "description": "Eventos del organizador",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventoResumen"
+                      }
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/lugares/{id}/sectores/{sectorId}/asientos": {
+          "get": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Listar asientos de un sector",
+            "description": "Asientos del sector del lugar. Requiere JWT.",
+            "operationId": "asientos",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del lugar",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "sectorId",
+                "in": "path",
+                "description": "UUID del sector",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Asientos",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Asiento"
+                      }
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Lugar o sector inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/sectores": {
+          "get": {
+            "tags": [
+              "Eventos"
+            ],
+            "summary": "Listar sectores del evento con precio",
+            "description": "Sectores del lugar con el precio vigente del evento (si existe). Requiere JWT.",
+            "operationId": "sectoresEvento",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Sectores con precio",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SectorEvento"
+                      }
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/": {
+          "get": {
+            "tags": [
+              "Eventos",
+              "Smoke"
+            ],
+            "summary": "Smoke del microservicio",
+            "description": "Chequeo de infraestructura. No forma parte del contrato de negocio.",
+            "operationId": "ok",
+            "responses": {
+              "200": {
+                "description": "Texto de estado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "SectorRequest": {
+            "type": "object",
+            "description": "Alta o edición de un sector del lugar",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del sector",
+                "example": "Platea alta"
+              },
+              "capacidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad",
+                "example": 300
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo de sector",
+                "example": "PLATEA"
+              },
+              "esNumerado": {
+                "type": "boolean",
+                "description": "Sector numerado",
+                "example": true
+              }
+            }
+          },
+          "SectorEvento": {
+            "type": "object",
+            "description": "Sector del lugar con el precio vigente del evento",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "a0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del sector",
+                "example": "Campo"
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo de sector",
+                "example": "CAMPO"
+              },
+              "capacidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad",
+                "example": 500
+              },
+              "esNumerado": {
+                "type": "boolean",
+                "description": "Sector numerado",
+                "example": false
+              },
+              "precio": {
+                "type": "number",
+                "description": "Precio vigente",
+                "example": 25000.0
+              },
+              "moneda": {
+                "type": "string",
+                "description": "Moneda",
+                "example": "ARS"
+              }
+            }
+          },
+          "ParticipanteRequest": {
+            "type": "object",
+            "description": "Alta o edición de artista/banda/elenco",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Indio Solari"
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo: ARTISTA | BANDA | ELENCO",
+                "example": "ARTISTA"
+              },
+              "descripcion": {
+                "type": "string",
+                "description": "Descripción",
+                "example": "Cantante y compositor"
+              }
+            }
+          },
+          "Participante": {
+            "type": "object",
+            "description": "Artista/banda/elenco; rol y orden solo en contexto de evento",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del participante",
+                "example": "d0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Indio Solari"
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo",
+                "example": "ARTISTA"
+              },
+              "descripcion": {
+                "type": "string",
+                "description": "Descripción",
+                "example": "Cantante y compositor"
+              },
+              "rol": {
+                "type": "string",
+                "description": "Rol en el evento (solo en contexto de evento)",
+                "example": "PRINCIPAL"
+              },
+              "orden": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Orden de aparición (solo en contexto de evento)",
+                "example": 1
+              }
+            }
+          },
+          "LugarRequest": {
+            "type": "object",
+            "description": "Alta o edición de un lugar",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del lugar",
+                "example": "Estadio Obras"
+              },
+              "direccion": {
+                "type": "string",
+                "description": "Dirección",
+                "example": "Av. del Libertador 7395"
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Buenos Aires"
+              },
+              "capacidadTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad total",
+                "example": 4500
+              }
+            }
+          },
+          "Lugar": {
+            "type": "object",
+            "description": "Lugar con sus sectores",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del lugar",
+                "example": "f0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Estadio Obras"
+              },
+              "direccion": {
+                "type": "string",
+                "description": "Dirección",
+                "example": "Av. del Libertador 7395"
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Buenos Aires"
+              },
+              "capacidadTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad total",
+                "example": 4500
+              },
+              "sectores": {
+                "type": "array",
+                "description": "Sectores del lugar",
+                "items": {
+                  "$ref": "#/components/schemas/SectorEvento"
+                }
+              }
+            }
+          },
+          "EventoRequest": {
+            "type": "object",
+            "description": "Alta o edición de evento; lugar embebido o existente + sectores",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del evento",
+                "example": "Festival TicketYa 2026"
+              },
+              "descripcion": {
+                "type": "string",
+                "description": "Descripción",
+                "example": "Una noche de rock y electrónica"
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo de evento",
+                "example": "FESTIVAL"
+              },
+              "fechaInicio": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Inicio (ISO-8601)",
+                "example": "2026-03-14T20:00:00"
+              },
+              "fechaFin": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fin (ISO-8601)",
+                "example": "2026-03-15T02:00:00"
+              },
+              "estado": {
+                "type": "string",
+                "description": "Si se omite en alta → BORRADOR. PUBLICADO publica al final del alta",
+                "example": "BORRADOR"
+              },
+              "esAltaDemanda": {
+                "type": "boolean",
+                "description": "Marca de alta demanda",
+                "example": false
+              },
+              "idLugar": {
+                "type": "string",
+                "description": "UUID de un lugar existente (alternativo a los campos lugar*)",
+                "example": "f0000000-0000-4000-8000-000000000001"
+              },
+              "lugarNombre": {
+                "type": "string",
+                "description": "Nombre del lugar embebido",
+                "example": "Estadio Obras"
+              },
+              "lugarCiudad": {
+                "type": "string",
+                "description": "Ciudad del lugar embebido",
+                "example": "Buenos Aires"
+              },
+              "lugarDireccion": {
+                "type": "string",
+                "description": "Dirección del lugar embebido",
+                "example": "Av. del Libertador 7395"
+              },
+              "sectores": {
+                "type": "array",
+                "description": "Sectores/tipos de entrada con precio",
+                "items": {
+                  "$ref": "#/components/schemas/EventoSectorInput"
+                }
+              }
+            }
+          },
+          "EventoSectorInput": {
+            "type": "object",
+            "description": "Sector del evento con precio y capacidad",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del sector si ya existe",
+                "example": "a0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del tipo de entrada",
+                "example": "Campo"
+              },
+              "precio": {
+                "type": "number",
+                "description": "Precio unitario en ARS",
+                "example": 25000.0
+              },
+              "capacidadTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad total del sector",
+                "example": 500
+              },
+              "capacidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad (alias de capacidadTotal)",
+                "example": 500
+              },
+              "sinCupo": {
+                "type": "boolean",
+                "description": "Sector sin cupo limitado",
+                "example": false
+              },
+              "esNumerado": {
+                "type": "boolean",
+                "description": "Sector numerado",
+                "example": false
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo de sector",
+                "example": "CAMPO"
+              }
+            }
+          },
+          "EventoDetalle": {
+            "type": "object",
+            "description": "Evento con lugar, sectores con precio y participantes",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "e0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Festival TicketYa 2026"
+              },
+              "descripcion": {
+                "type": "string",
+                "description": "Descripción",
+                "example": "Una noche de rock y electrónica"
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo",
+                "example": "FESTIVAL"
+              },
+              "fechaInicio": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Inicio (ISO-8601)",
+                "example": "2026-03-14T20:00:00"
+              },
+              "fechaFin": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fin (ISO-8601)",
+                "example": "2026-03-15T02:00:00"
+              },
+              "fechaPublicacion": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha de publicación",
+                "example": "2026-01-20T10:00:00"
+              },
+              "lugar": {
+                "$ref": "#/components/schemas/LugarDetalle",
+                "description": "Lugar con sectores"
+              },
+              "imagenUrl": {
+                "type": "string",
+                "description": "Imagen (null en E1)",
+                "example": "null"
+              },
+              "precioDesde": {
+                "type": "number",
+                "description": "Precio mínimo del evento",
+                "example": 25000.0
+              },
+              "destacado": {
+                "type": "boolean",
+                "description": "Destacado (false en E1)",
+                "example": false
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado",
+                "example": "PUBLICADO"
+              },
+              "idOrganizador": {
+                "type": "string",
+                "description": "UUID del organizador",
+                "example": "c0000000-0000-4000-8000-000000000002"
+              },
+              "esAltaDemanda": {
+                "type": "boolean",
+                "description": "Alta demanda",
+                "example": false
+              },
+              "sectores": {
+                "type": "array",
+                "description": "Sectores del lugar con precio del evento",
+                "items": {
+                  "$ref": "#/components/schemas/SectorEvento"
+                }
+              },
+              "participantes": {
+                "type": "array",
+                "description": "Artistas/bandas asociados con rol y orden",
+                "items": {
+                  "$ref": "#/components/schemas/Participante"
+                }
+              }
+            }
+          },
+          "LugarDetalle": {
+            "type": "object",
+            "description": "Lugar embebido en el detalle del evento",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del lugar",
+                "example": "f0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Estadio Obras"
+              },
+              "direccion": {
+                "type": "string",
+                "description": "Dirección",
+                "example": "Av. del Libertador 7395"
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Buenos Aires"
+              },
+              "sectores": {
+                "type": "array",
+                "description": "Sectores del lugar",
+                "items": {
+                  "$ref": "#/components/schemas/SectorEvento"
+                }
+              }
+            }
+          },
+          "PrecioSectorRequest": {
+            "type": "object",
+            "description": "Precio de un sector para el evento",
+            "properties": {
+              "precio": {
+                "type": "number",
+                "description": "Precio unitario",
+                "example": 25000.0
+              },
+              "moneda": {
+                "type": "string",
+                "description": "Moneda ISO-4217",
+                "example": "ARS"
+              },
+              "activo": {
+                "type": "boolean",
+                "description": "Precio activo",
+                "example": true
+              }
+            }
+          },
+          "EventoParticipanteItem": {
+            "type": "object",
+            "description": "Participante asociado con rol y orden",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del participante",
+                "example": "d0000000-0000-4000-8000-000000000001"
+              },
+              "rol": {
+                "type": "string",
+                "description": "Rol en el evento: PRINCIPAL | TELONERO | …",
+                "example": "PRINCIPAL"
+              },
+              "orden": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Orden de aparición",
+                "example": 1
+              }
+            }
+          },
+          "EventoParticipantesRequest": {
+            "type": "object",
+            "description": "Set completo de participantes a asociar al evento",
+            "properties": {
+              "ids": {
+                "type": "array",
+                "description": "Ids de participantes (orden = índice, rol null)",
+                "example": [
+                  "d0000000-0000-4000-8000-000000000001"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "participantes": {
+                "type": "array",
+                "description": "Participantes con rol y orden (preferido)",
+                "items": {
+                  "$ref": "#/components/schemas/EventoParticipanteItem"
+                }
+              }
+            }
+          },
+          "EventoFechaRequest": {
+            "type": "object",
+            "description": "Reprogramación de un evento",
+            "properties": {
+              "fechaInicio": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Nueva fecha de inicio (ISO-8601)",
+                "example": "2026-04-10T21:00:00"
+              },
+              "fechaFin": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Nueva fecha de fin (ISO-8601)",
+                "example": "2026-04-11T02:00:00"
+              }
+            }
+          },
+          "EventoEstadoRequest": {
+            "type": "object",
+            "description": "Nuevo estado del evento",
+            "properties": {
+              "estado": {
+                "type": "string",
+                "description": "Estado destino: PUBLICADO, SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO",
+                "example": "SUSPENDIDO"
+              }
+            }
+          },
+          "EventoResumen": {
+            "type": "object",
+            "description": "Evento en catálogo/listado",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "e0000000-0000-4000-8000-000000000001"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Festival TicketYa 2026"
+              },
+              "tipo": {
+                "type": "string",
+                "description": "Tipo",
+                "example": "FESTIVAL"
+              },
+              "fechaInicio": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Inicio (ISO-8601)",
+                "example": "2026-03-14T20:00:00"
+              },
+              "lugar": {
+                "$ref": "#/components/schemas/LugarResumen",
+                "description": "Lugar resumido"
+              },
+              "imagenUrl": {
+                "type": "string",
+                "description": "Imagen (null en E1)",
+                "example": "null"
+              },
+              "precioDesde": {
+                "type": "number",
+                "description": "Precio mínimo del evento",
+                "example": 25000.0
+              },
+              "destacado": {
+                "type": "boolean",
+                "description": "Destacado (false en E1)",
+                "example": false
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado",
+                "example": "PUBLICADO"
+              },
+              "idOrganizador": {
+                "type": "string",
+                "description": "UUID del organizador",
+                "example": "c0000000-0000-4000-8000-000000000002"
+              },
+              "esAltaDemanda": {
+                "type": "boolean",
+                "description": "Alta demanda",
+                "example": false
+              }
+            }
+          },
+          "LugarResumen": {
+            "type": "object",
+            "description": "Lugar resumido para el catálogo",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Estadio Obras"
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Buenos Aires"
+              }
+            }
+          },
+          "Asiento": {
+            "type": "object",
+            "description": "Asiento de un sector numerado",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del asiento",
+                "example": "a1000000-0000-4000-8000-000000000001"
+              },
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "a0000000-0000-4000-8000-000000000001"
+              },
+              "fila": {
+                "type": "string",
+                "description": "Fila",
+                "example": "A"
+              },
+              "numero": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Número",
+                "example": 12
+              },
+              "codigo": {
+                "type": "string",
+                "description": "Código legible",
+                "example": "A-12"
+              }
+            }
+          },
+          "PageResponseDTOEventoResumen": {
+            "type": "object",
+            "properties": {
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EventoResumen"
+                }
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Página actual (0-based)",
+                "example": 0
+              },
+              "size": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Tamaño de página",
+                "example": 20
+              },
+              "totalElements": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Total de elementos",
+                "example": 42
+              },
+              "totalPages": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Total de páginas",
+                "example": 3
+              }
+            }
+          }
+        },
+        "securitySchemes": {
+          "bearerAuth": {
+            "type": "http",
+            "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id, X-User-Email,\nX-User-Role y X-User-Roles a este microservicio.\n",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+          }
+        }
+      }
+    },
+    "msvc-usuarios": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "TicketYa — Usuarios y autenticación",
+        "description": "Identidad, sesión y administración de usuarios de TicketYa.\nLa autenticación y el RBAC los aplica el API Gateway; este microservicio\nconfía en los headers X-User-Id / X-User-Role propagados tras validar el JWT.\n",
+        "contact": {
+          "name": "Equipo TicketYa — TUDAi 2026",
+          "email": "equipo@ticketya.com.ar"
+        },
+        "license": {
+          "name": "Uso académico — TUDAi 2026"
+        },
+        "version": "1.0.0"
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8081",
+          "description": "Local — directo al microservicio"
+        },
+        {
+          "url": "http://localhost:8080/api",
+          "description": "Local — vía API Gateway (StripPrefix=1)",
+          "x-gateway": true
+        },
+        {
+          "url": "https://ticketya.com.ar/api",
+          "description": "Producción — vía API Gateway",
+          "x-gateway": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "Usuarios",
+          "description": "Perfil propio y administración de usuarios (ADMIN en el gateway)."
+        },
+        {
+          "name": "Auth",
+          "description": "Registro, login, refresh y logout. Vía gateway: /api/auth/**."
+        }
+      ],
+      "paths": {
+        "/usuarios/{id}/roles": {
+          "get": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Consultar roles de un usuario",
+            "description": "Roles asignados. Restringido a ADMIN en el gateway.",
+            "operationId": "getRoles",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del usuario",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Nombres de roles",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "CLIENTE"
+                      }
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Usuario inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "put": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Reemplazar roles de un usuario",
+            "description": "Asigna el conjunto de roles indicado (reemplaza los anteriores). Acepta el alias ACCESO y lo normaliza a PERSONAL_ACCESO. Restringido a ADMIN.",
+            "operationId": "putRoles",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del usuario",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RolesUpdate"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Roles resultantes",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "ORGANIZADOR"
+                      }
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Lista de roles vacía o inválida",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Usuario o rol inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/auth/register": {
+          "post": {
+            "tags": [
+              "Auth"
+            ],
+            "summary": "Registrar cliente",
+            "description": "Alta pública. Solo crea cuentas con rol CLIENTE.",
+            "operationId": "register",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RegisterRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Cuenta creada y sesión iniciada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/LoginResponse"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "El email ya está registrado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/auth/refresh": {
+          "post": {
+            "tags": [
+              "Auth"
+            ],
+            "summary": "Renovar sesión",
+            "description": "Re-emite el JWT si el Bearer recibido es válido y la cuenta sigue activa.",
+            "operationId": "refresh",
+            "parameters": [
+              {
+                "name": "Authorization",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Token renovado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/LoginResponse"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Token inválido, expirado o cuenta desactivada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/auth/logout": {
+          "post": {
+            "tags": [
+              "Auth"
+            ],
+            "summary": "Cerrar sesión",
+            "description": "Stateless: el cliente descarta el token. Responde 204 (no-op en E1).",
+            "operationId": "logout",
+            "responses": {
+              "204": {
+                "description": "Sesión cerrada (sin cuerpo)"
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/auth/login": {
+          "post": {
+            "tags": [
+              "Auth"
+            ],
+            "summary": "Iniciar sesión",
+            "description": "Valida credenciales (BCrypt) y emite un JWT con userId, email, rol y roles.\nEndpoint público.\n",
+            "operationId": "login",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LoginRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Sesión iniciada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/LoginResponse"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Credenciales inválidas o cuenta desactivada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/usuarios/{id}/estado": {
+          "patch": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Activar o desactivar usuario",
+            "description": "Cambia el flag activo. Restringido a ADMIN en el gateway.",
+            "operationId": "patchEstado",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del usuario",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "description": "Estado deseado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "example": {
+                      "activo": true
+                    }
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Estado actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Usuario"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Falta el campo activo",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Usuario inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/usuarios/me": {
+          "get": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Obtener mi perfil",
+            "description": "Devuelve el usuario indicado por el header X-User-Id que propaga el gateway.",
+            "operationId": "me",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "description": "UUID del usuario autenticado (lo inyecta el gateway)",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "b0000000-0000-4000-8000-000000000001"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Perfil del usuario",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Usuario"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id (no pasó por el gateway)",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Usuario inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "patch": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Editar mi perfil",
+            "description": "Actualiza nombre, apellido y ciudad. Email, roles y estado no se modifican.",
+            "operationId": "patchMe",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "description": "UUID del usuario autenticado",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UsuarioUpdate"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Perfil actualizado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Usuario"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Usuario inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/usuarios": {
+          "get": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Listar usuarios",
+            "description": "Listado completo con roles. En el gateway está restringido a ADMIN.",
+            "operationId": "listAll",
+            "responses": {
+              "200": {
+                "description": "Listado de usuarios",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Usuario"
+                      }
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente (gateway exige ADMIN)",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/usuarios/{id}": {
+          "get": {
+            "tags": [
+              "Usuarios"
+            ],
+            "summary": "Obtener usuario por id",
+            "description": "Detalle de cualquier usuario. En el gateway está restringido a ADMIN.",
+            "operationId": "byId",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del usuario",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "b0000000-0000-4000-8000-000000000002"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Usuario encontrado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Usuario"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Usuario inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/": {
+          "get": {
+            "tags": [
+              "Usuarios",
+              "Smoke"
+            ],
+            "summary": "Smoke del microservicio",
+            "description": "Chequeo de infraestructura. No forma parte del contrato de negocio.",
+            "operationId": "ok",
+            "responses": {
+              "200": {
+                "description": "Texto de estado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "RolesUpdate": {
+            "type": "object",
+            "description": "Conjunto de roles a asignar (reemplaza los anteriores)",
+            "properties": {
+              "roles": {
+                "type": "array",
+                "description": "Nombres de rol: CLIENTE, ORGANIZADOR, ADMIN, PERSONAL_ACCESO (ACCESO se normaliza)",
+                "example": [
+                  "CLIENTE",
+                  "ORGANIZADOR"
+                ],
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "roles"
+            ]
+          },
+          "ApiError": {
+            "type": "object",
+            "properties": {
+              "timestamp": {
+                "type": "string"
+              },
+              "status": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "error": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          },
+          "RegisterRequest": {
+            "type": "object",
+            "description": "Alta pública de cliente",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Ana",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Email único",
+                "example": "ana@example.com",
+                "minLength": 1
+              },
+              "password": {
+                "type": "string",
+                "description": "Contraseña (mínimo 6 caracteres)",
+                "example": "secreto123",
+                "maxLength": 100,
+                "minLength": 6
+              },
+              "apellido": {
+                "type": "string",
+                "description": "Apellido",
+                "example": "Pérez"
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Buenos Aires"
+              }
+            },
+            "required": [
+              "email",
+              "nombre",
+              "password"
+            ]
+          },
+          "LoginResponse": {
+            "type": "object",
+            "description": "Sesión emitida: token + datos del usuario",
+            "properties": {
+              "token": {
+                "type": "string",
+                "description": "JWT a enviar como Bearer",
+                "example": "eyJhbGciOiJIUzI1NiJ9..."
+              },
+              "type": {
+                "type": "string",
+                "description": "Tipo de token",
+                "example": "Bearer"
+              },
+              "user": {
+                "$ref": "#/components/schemas/UserSession",
+                "description": "Datos de sesión"
+              }
+            }
+          },
+          "UserSession": {
+            "type": "object",
+            "description": "Usuario autenticado y sus roles",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del usuario",
+                "example": "b0000000-0000-4000-8000-000000000001"
+              },
+              "email": {
+                "type": "string",
+                "description": "Email",
+                "example": "demo@ticketya.com"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Usuario Demo"
+              },
+              "rol": {
+                "type": "string",
+                "description": "Rol principal",
+                "example": "CLIENTE"
+              },
+              "roles": {
+                "type": "array",
+                "description": "Todos los roles del usuario",
+                "example": [
+                  "CLIENTE"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "activo": {
+                "type": "boolean",
+                "description": "Cuenta activa",
+                "example": true
+              }
+            }
+          },
+          "LoginRequest": {
+            "type": "object",
+            "description": "Credenciales de acceso",
+            "properties": {
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Email registrado",
+                "example": "demo@ticketya.com",
+                "minLength": 1
+              },
+              "password": {
+                "type": "string",
+                "description": "Contraseña",
+                "example": "demo1234",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "email",
+              "password"
+            ]
+          },
+          "Usuario": {
+            "type": "object",
+            "description": "Usuario con su rol principal y todos sus roles",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del usuario",
+                "example": "b0000000-0000-4000-8000-000000000001"
+              },
+              "email": {
+                "type": "string",
+                "description": "Email único",
+                "example": "demo@ticketya.com"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Usuario"
+              },
+              "apellido": {
+                "type": "string",
+                "description": "Apellido",
+                "example": "Demo"
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Buenos Aires"
+              },
+              "activo": {
+                "type": "boolean",
+                "description": "Cuenta activa",
+                "example": true
+              },
+              "rol": {
+                "type": "string",
+                "description": "Rol principal",
+                "example": "CLIENTE"
+              },
+              "roles": {
+                "type": "array",
+                "description": "Roles asignados",
+                "example": [
+                  "CLIENTE"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "UsuarioUpdate": {
+            "type": "object",
+            "description": "Campos editables del perfil propio",
+            "properties": {
+              "nombre": {
+                "type": "string",
+                "description": "Nombre",
+                "example": "Ana",
+                "maxLength": 100,
+                "minLength": 2
+              },
+              "apellido": {
+                "type": "string",
+                "description": "Apellido",
+                "example": "Pérez",
+                "maxLength": 100,
+                "minLength": 0
+              },
+              "ciudad": {
+                "type": "string",
+                "description": "Ciudad",
+                "example": "Rosario",
+                "maxLength": 120,
+                "minLength": 0
+              }
+            }
+          }
+        },
+        "securitySchemes": {
+          "bearerAuth": {
+            "type": "http",
+            "description": "JWT emitido por POST /auth/login (o /auth/refresh).\nEl gateway valida la firma y propaga X-User-Id, X-User-Email,\nX-User-Role y X-User-Roles a los microservicios.\n",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+          }
+        }
+      }
+    },
+    "msvc-ventas": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "TicketYa — Ventas, reservas, compras y pagos",
+        "description": "Disponibilidad comercial por sector, reservas temporales con TTL,\ncompras idempotentes, pagos mock y reintentos.\nEl API Gateway valida el JWT y propaga X-User-Id; este microservicio\nfiltra reservas/compras/pagos por la identidad recibida.\n",
+        "contact": {
+          "name": "Equipo TicketYa — TUDAi 2026",
+          "email": "equipo@ticketya.com.ar"
+        },
+        "license": {
+          "name": "Uso académico — TUDAi 2026"
+        },
+        "version": "1.0.0"
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8083",
+          "description": "Local — directo al microservicio"
+        },
+        {
+          "url": "http://localhost:8080/api",
+          "description": "Local — vía API Gateway (StripPrefix=1)",
+          "x-gateway": true
+        },
+        {
+          "url": "https://ticketya.com.ar/api",
+          "description": "Producción — vía API Gateway",
+          "x-gateway": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "Ventas",
+          "description": "Disponibilidad, reservas, compras, pagos y cupos comerciales."
+        }
+      ],
+      "paths": {
+        "/reservas": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Crear reserva temporal",
+            "description": "Reserva cupo por sector con TTL (10 min por defecto). El cliente sale de\nX-User-Id. `Idempotency-Key` es opcional: si se repite, devuelve la reserva\nya creada para esa key.\n",
+            "operationId": "crearReserva",
+            "parameters": [
+              {
+                "name": "Idempotency-Key",
+                "in": "header",
+                "description": "Clave de idempotencia opcional para reintentos seguros",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "reserva-2026-03-14-0001"
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ReservaCreateRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Reserva creada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Reserva"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido o sin precio activo",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Cupo insuficiente o límite por cliente superado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reservas/{id}/renovacion": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Renovar reserva",
+            "description": "Extiende el TTL de una reserva propia activa (no es automática ni ilimitada).",
+            "operationId": "renovar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la reserva",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Reserva renovada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Reserva"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Reserva inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Reserva no activa o expirada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reservas/{id}/confirmacion": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Confirmar reserva",
+            "description": "Marca la intención de compra. Solo reservas propias y activas.",
+            "operationId": "confirmar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la reserva",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Reserva confirmada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Reserva"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Reserva inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Estado o expiración no permiten confirmar",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reservas/{id}/cancelacion": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Cancelar reserva",
+            "description": "Cancela una reserva propia y libera el cupo. No cancelable con compra en curso o aprobada.",
+            "operationId": "cancelar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la reserva",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Reserva cancelada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Reserva"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Reserva inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Compra en curso/aprobada; no cancelable",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/pagos/{id}/reintentos": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Reintentar pago rechazado",
+            "description": "Solo se reintenta un pago RECHAZADO y una compra reintentable. Body opcional.",
+            "operationId": "reintentar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del pago",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PagoCreateRequest"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "200": {
+                "description": "Pago reintentado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Pago"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Resultado inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Pago inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Pago no RECHAZADO, compra no reintentable o sin reserva activa",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/cupos": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Abrir cupos comerciales del evento",
+            "description": "Crea/asegura el stock por sector al publicar. Idempotente por (idEvento, idSector):\nsi el cupo ya existe no resetea vendido/reservado.\nUso principal: Feign desde msvc-eventos; vía gateway requiere ORGANIZADOR o ADMIN.\n",
+            "operationId": "abrirCupos",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AbrirCuposRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Cupos abiertos/asegurados",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Disponibilidad"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido o sin sectores",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Conflicto al abrir el cupo",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/cupos/liberacion": {
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Liberar cupo por devolución",
+            "description": "Devuelve unidades al disponible del sector (devolución aprobada).\nUso principal: Feign desde msvc-entradas; vía gateway requiere ORGANIZADOR o ADMIN.\n",
+            "operationId": "liberarCupo",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LiberarCupoRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "Cupo liberado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Disponibilidad"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Body inválido (idSector/cantidad)",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Sector sin cupo comercial",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/compras": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Listar compras propias",
+            "description": "Compras del usuario autenticado.",
+            "operationId": "listCompras",
+            "responses": {
+              "200": {
+                "description": "Compras del usuario",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Compra"
+                      }
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Crear compra desde una reserva",
+            "description": "Convierte una reserva válida en compra. `Idempotency-Key` es **obligatoria**\n(400 si falta); repetir la key devuelve la compra ya creada.\n",
+            "operationId": "crearCompra",
+            "parameters": [
+              {
+                "name": "Idempotency-Key",
+                "in": "header",
+                "description": "Clave de idempotencia obligatoria",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "compra-2026-03-14-0001"
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/CompraCreateRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "201": {
+                "description": "Compra creada",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Compra"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Falta Idempotency-Key o body inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Reserva inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "Reserva no activa o ya usada en otra compra",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/compras/{id}/pagos": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Listar pagos de una compra",
+            "description": "Pagos registrados para una compra propia.",
+            "operationId": "listPagos",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la compra",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Pagos de la compra",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Pago"
+                      }
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Compra inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "post": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Iniciar pago de una compra",
+            "description": "Pago mock: `resultado` APROBAR (default) o RECHAZAR; `proveedor` opcional\n(default MOCK_PASARELA). Body opcional. Con APROBAR se dispara la emisión\nde entradas en msvc-entradas (reintentos + job).\n",
+            "operationId": "pagar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la compra",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PagoCreateRequest"
+                  }
+                }
+              }
+            },
+            "responses": {
+              "201": {
+                "description": "Pago registrado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Pago"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Resultado inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Compra inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "La compra no admite pago en su estado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reservas/{id}": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Consultar reserva propia",
+            "description": "Solo devuelve reservas del usuario autenticado.",
+            "operationId": "getReserva",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la reserva",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Reserva",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Reserva"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Reserva inexistente o de otro usuario",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/eventos/{id}/disponibilidad": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Disponibilidad de un evento",
+            "description": "Cupos por sector, total disponible y clasificación `nivelCupo`\n(AGOTADO | ULTIMOS_LUGARES | MENOS_DE_50 | MENOS_DE_100 | OK).\nEndpoint público a través del gateway.\n",
+            "operationId": "disponibilidad",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "d0000000-0000-4000-8000-000000000001"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Disponibilidad del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Disponibilidad"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento sin cupos comerciales",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/eventos/disponibilidad": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Disponibilidad de varios eventos",
+            "description": "Batch para catálogo: devuelve la disponibilidad comercial de hasta 50 eventos.\nEndpoint público a través del gateway.\n",
+            "operationId": "disponibilidadBatch",
+            "parameters": [
+              {
+                "name": "ids",
+                "in": "query",
+                "description": "Ids de evento separados por coma (máx. 50)",
+                "required": false,
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "example": "d0000000-0000-4000-8000-000000000001,d0000000-0000-4000-8000-000000000002"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Disponibilidad por evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/DisponibilidadBatch"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Lista de ids inválida o demasiado grande",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/compras/{id}": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Consultar compra propia",
+            "description": "Solo devuelve compras del usuario autenticado.",
+            "operationId": "getCompra",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID de la compra",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Compra",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Compra"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Compra inexistente o de otro usuario",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/": {
+          "get": {
+            "tags": [
+              "Ventas",
+              "Smoke"
+            ],
+            "summary": "Smoke del microservicio",
+            "description": "Chequeo de infraestructura. No forma parte del contrato de negocio.",
+            "operationId": "ok",
+            "responses": {
+              "200": {
+                "description": "Texto de estado",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "ReservaCreateRequest": {
+            "type": "object",
+            "description": "Reserva temporal de cupos por sector",
+            "properties": {
+              "idEvento": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "d0000000-0000-4000-8000-000000000001",
+                "minLength": 1
+              },
+              "items": {
+                "type": "array",
+                "description": "Sectores y cantidades a reservar",
+                "items": {
+                  "$ref": "#/components/schemas/ReservaItem"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "idEvento",
+              "items"
+            ]
+          },
+          "ReservaItem": {
+            "type": "object",
+            "description": "Cantidad a reservar en un sector",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "c0000000-0000-4000-8000-000000000011",
+                "minLength": 1
+              },
+              "cantidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Cantidad de entradas (mín. 1; máx. por cliente aplica en servidor)",
+                "example": 2,
+                "minimum": 1
+              }
+            },
+            "required": [
+              "cantidad",
+              "idSector"
+            ]
+          },
+          "DetalleReserva": {
+            "type": "object",
+            "description": "Línea de reserva: sector, cantidad y precio unitario",
+            "properties": {
+              "idDetalle": {
+                "type": "string",
+                "description": "UUID del detalle",
+                "example": "22222222-2222-4222-8222-222222222222"
+              },
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "c0000000-0000-4000-8000-000000000011"
+              },
+              "cantidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Cantidad reservada",
+                "example": 2
+              },
+              "precioUnitario": {
+                "type": "number",
+                "description": "Precio unitario",
+                "example": 95000.0
+              }
+            }
+          },
+          "Reserva": {
+            "type": "object",
+            "description": "Reserva temporal con TTL y detalle por sector",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID de la reserva",
+                "example": "11111111-1111-4111-8111-111111111111"
+              },
+              "idCliente": {
+                "type": "string",
+                "description": "UUID del cliente",
+                "example": "b0000000-0000-4000-8000-000000000001"
+              },
+              "idEvento": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "d0000000-0000-4000-8000-000000000001"
+              },
+              "fechaCreacion": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha de creación",
+                "example": "2026-03-01T12:00:00"
+              },
+              "fechaExpiracion": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Expiración del TTL",
+                "example": "2026-03-01T12:10:00"
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado: ACTIVA | CONFIRMADA | CANCELADA | EXPIRADA",
+                "example": "ACTIVA"
+              },
+              "total": {
+                "type": "number",
+                "description": "Total de la reserva",
+                "example": 190000.0
+              },
+              "detalles": {
+                "type": "array",
+                "description": "Detalle por sector",
+                "items": {
+                  "$ref": "#/components/schemas/DetalleReserva"
+                }
+              }
+            }
+          },
+          "PagoCreateRequest": {
+            "type": "object",
+            "description": "Datos del pago mock; el body completo es opcional",
+            "properties": {
+              "resultado": {
+                "type": "string",
+                "description": "Resultado simulado: APROBAR (default) | RECHAZAR",
+                "example": "APROBAR"
+              },
+              "proveedor": {
+                "type": "string",
+                "description": "Proveedor de pago (default MOCK_PASARELA)",
+                "example": "MOCK_PASARELA"
+              }
+            }
+          },
+          "Pago": {
+            "type": "object",
+            "description": "Pago registrado para una compra",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID del pago",
+                "example": "44444444-4444-4444-8444-444444444444"
+              },
+              "idCompra": {
+                "type": "string",
+                "description": "UUID de la compra",
+                "example": "33333333-3333-4333-8333-333333333333"
+              },
+              "proveedor": {
+                "type": "string",
+                "description": "Proveedor de pago",
+                "example": "MOCK_PASARELA"
+              },
+              "idTransaccionExterna": {
+                "type": "string",
+                "description": "Identificador de la transacción en el proveedor",
+                "example": "MOCK-8f3a1c"
+              },
+              "monto": {
+                "type": "number",
+                "description": "Importe pagado",
+                "example": 190000.0
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado: APROBADO | RECHAZADO",
+                "example": "APROBADO"
+              },
+              "fechaPago": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha del pago",
+                "example": "2026-03-01T12:06:00"
+              }
+            }
+          },
+          "AbrirCupoItem": {
+            "type": "object",
+            "description": "Capacidad comercial de un sector",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "a0000000-0000-4000-8000-000000000001",
+                "minLength": 1
+              },
+              "capacidadTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad total a abrir",
+                "example": 500,
+                "minimum": 1
+              }
+            },
+            "required": [
+              "capacidadTotal",
+              "idSector"
+            ]
+          },
+          "AbrirCuposRequest": {
+            "type": "object",
+            "description": "Sectores y capacidades para abrir el stock comercial",
+            "properties": {
+              "sectores": {
+                "type": "array",
+                "description": "Sectores a abrir (al menos uno)",
+                "items": {
+                  "$ref": "#/components/schemas/AbrirCupoItem"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "sectores"
+            ]
+          },
+          "CupoSector": {
+            "type": "object",
+            "description": "Disponibilidad de un sector del evento",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "c0000000-0000-4000-8000-000000000011"
+              },
+              "capacidadTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad total del sector",
+                "example": 120
+              },
+              "cantidadDisponible": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Unidades libres",
+                "example": 118
+              },
+              "cantidadReservada": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Unidades reservadas (TTL activo)",
+                "example": 2
+              },
+              "cantidadVendida": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Unidades vendidas",
+                "example": 0
+              },
+              "agotado": {
+                "type": "boolean",
+                "description": "true si el sector no tiene unidades libres",
+                "example": false
+              },
+              "nivelCupo": {
+                "type": "string",
+                "description": "Clasificación del disponible del sector",
+                "enum": [
+                  "AGOTADO",
+                  "ULTIMOS_LUGARES",
+                  "MENOS_DE_50",
+                  "MENOS_DE_100",
+                  "OK"
+                ],
+                "example": "MENOS_DE_100"
+              },
+              "nivelCupoLabel": {
+                "type": "string",
+                "description": "Etiqueta para UI del sector",
+                "example": "Menos de 100"
+              }
+            }
+          },
+          "Disponibilidad": {
+            "type": "object",
+            "description": "Disponibilidad comercial por sector y clasificación de cupo",
+            "properties": {
+              "idEvento": {
+                "type": "string",
+                "description": "UUID del evento",
+                "example": "d0000000-0000-4000-8000-000000000001"
+              },
+              "disponibleTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Suma de unidades disponibles de todos los sectores",
+                "example": 118
+              },
+              "agotado": {
+                "type": "boolean",
+                "description": "true si no queda ninguna unidad",
+                "example": false
+              },
+              "nivelCupo": {
+                "type": "string",
+                "description": "Clasificación del disponible total",
+                "enum": [
+                  "AGOTADO",
+                  "ULTIMOS_LUGARES",
+                  "MENOS_DE_50",
+                  "MENOS_DE_100",
+                  "OK"
+                ],
+                "example": "OK"
+              },
+              "nivelCupoLabel": {
+                "type": "string",
+                "description": "Etiqueta para UI (null si OK o sin aviso)",
+                "example": "Últimos lugares"
+              },
+              "sectores": {
+                "type": "array",
+                "description": "Disponibilidad por sector",
+                "items": {
+                  "$ref": "#/components/schemas/CupoSector"
+                }
+              }
+            }
+          },
+          "LiberarCupoRequest": {
+            "type": "object",
+            "description": "Unidades a devolver al disponible de un sector",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "a0000000-0000-4000-8000-000000000001",
+                "minLength": 1
+              },
+              "cantidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Unidades a devolver",
+                "example": 1,
+                "minimum": 1
+              }
+            },
+            "required": [
+              "idSector"
+            ]
+          },
+          "CompraCreateRequest": {
+            "type": "object",
+            "description": "Compra a crear desde una reserva válida",
+            "properties": {
+              "idReserva": {
+                "type": "string",
+                "description": "UUID de la reserva a convertir en compra",
+                "example": "11111111-1111-4111-8111-111111111111",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "idReserva"
+            ]
+          },
+          "Compra": {
+            "type": "object",
+            "description": "Compra creada a partir de una reserva",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "UUID de la compra",
+                "example": "33333333-3333-4333-8333-333333333333"
+              },
+              "idReserva": {
+                "type": "string",
+                "description": "UUID de la reserva origen",
+                "example": "11111111-1111-4111-8111-111111111111"
+              },
+              "idCliente": {
+                "type": "string",
+                "description": "UUID del cliente",
+                "example": "b0000000-0000-4000-8000-000000000001"
+              },
+              "fechaCompra": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Fecha de la compra",
+                "example": "2026-03-01T12:05:00"
+              },
+              "total": {
+                "type": "number",
+                "description": "Importe total",
+                "example": 190000.0
+              },
+              "moneda": {
+                "type": "string",
+                "description": "Moneda ISO-4217",
+                "example": "ARS"
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado: PENDIENTE_PAGO | APROBADA | RECHAZADA",
+                "example": "PENDIENTE_PAGO"
+              },
+              "emisionEstado": {
+                "type": "string",
+                "description": "Estado de emisión de QR en msvc-entradas: NO_REQUIERE | PENDIENTE | EMITIDA | FALLIDA",
+                "example": "PENDIENTE"
+              },
+              "emisionIntentos": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Intentos de emisión de entradas",
+                "example": 0
+              }
+            }
+          },
+          "DisponibilidadBatch": {
+            "type": "object",
+            "description": "Disponibilidad comercial de varios eventos (máx. 50)",
+            "properties": {
+              "items": {
+                "type": "array",
+                "description": "Disponibilidad por evento",
+                "items": {
+                  "$ref": "#/components/schemas/Disponibilidad"
+                }
+              }
+            }
+          }
+        },
+        "securitySchemes": {
+          "bearerAuth": {
+            "type": "http",
+            "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id, X-User-Email,\nX-User-Role y X-User-Roles a este microservicio.\n",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+          }
+        }
+      }
+    }
+  }
+}
