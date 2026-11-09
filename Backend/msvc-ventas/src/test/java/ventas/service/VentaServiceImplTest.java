@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -604,7 +605,7 @@ class VentaServiceImplTest {
         reserva.setIdCliente(ID_CLIENTE);
         reserva.setIdEvento(ID_EVENTO);
         reserva.setEstado("PENDIENTE");
-        reserva.setFechaExpiracion(LocalDateTime.now().plusMinutes(10));
+        reserva.setFechaExpiracion(LocalDateTime.now(ZoneOffset.UTC).plusMinutes(10));
         when(reservaRepository.findById(ID_RESERVA)).thenReturn(Optional.of(reserva));
         when(detalleReservaRepository.findByReservaIdReserva(ID_RESERVA)).thenReturn(new ArrayList<>());
         when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> inv.getArgument(0));
