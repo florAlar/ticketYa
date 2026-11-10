@@ -8,22 +8,20 @@ La documentación de **trabajo diario del equipo** (backlog, specs vivas, reglas
 Backend/specs/
 ```
 
-## Contenido previsto (primera entrega)
+## Contenido (primera entrega)
 
-Ir completando acá, a partir de `specs/` y de lo que pida la consigna:
-
-| Artefacto | Estado | Notas |
+| Artefacto | Estado | Dónde |
 | --- | --- | --- |
-| Features y user stories (+ criterios de aceptación) | pendiente | Consigna §5.A |
-| Arquitectura (módulos, responsabilidades) | pendiente | §5.B |
-| Diagramas de secuencia de compra | pendiente | éxito / pago rechazado / reserva vencida |
-| Modelo de datos (ER / solapes) | pendiente | partiendo de `specs/diagramas/` |
-| Diseño de API (endpoints + ejemplos) | pendiente | partiendo de `specs/endpoints.md` |
-| OpenAPI / Swagger | pendiente | |
-| README de ejecución | ver Backend/README + monorepo | no duplicar de más |
-| Datos de prueba | seeds en `infrastructure/` | referenciar, no copiar dumps enormes |
-| Colección Postman (o similar) | pendiente | |
-| Informe de tests E1 | pendiente | unitarias + concurrencia |
+| Features y user stories (+ criterios de aceptación) | listo | [`user-stories.md`](./user-stories.md) |
+| Arquitectura (módulos, responsabilidades, APIs, comunicación) | listo | [`arquitectura.md`](./arquitectura.md) |
+| Diagramas de secuencia de compra | listo | [`diagramas-secuencia.md`](./diagramas-secuencia.md) — éxito, pago rechazado, reserva vencida, devolución y entrada numerada |
+| Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
+| Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
+| OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
+| Colección Postman | listo | [`postman/`](./postman/) (104 requests, 0 fallos) |
+| Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
+| README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
+| Datos de prueba | listo | seeds en `Backend/infrastructure/` (ver `infrastructure/mysql/README.md`) |
 
 ## Regla de oro
 
@@ -31,6 +29,10 @@ Ir completando acá, a partir de `specs/` y de lo que pida la consigna:
 2. Cuando esté estable, se **pasa en limpio** a esta carpeta `docs/`.  
 3. No inventar reglas en la entrega que no estén en specs o en código.
 
-## Arranque
+## Decisiones y limitaciones declaradas (Entrega 1)
 
-Por ahora esta carpeta solo tiene este índice a propósito: el contenido formal se llena cuando el grupo cierre cada artefacto.
+- **Asientos numerados:** implementados como asientos virtuales (layout `filas` × `asientosPorFila`; solo se persisten los tomados en `ventas.asiento_reservado`). Los sectores generales siguen vendiéndose por cantidad. Ver `diagramas-secuencia.md` §5. Las tablas `asiento` y `precio_asiento` de eventos quedaron sin uso (limpieza pendiente, SEAT-07).
+- **Prueba de concurrencia del mismo asiento:** unitaria (lock emulado); el test con MySQL real para asientos está pendiente (SEAT-06).
+- **Devoluciones:** el plazo de 72 h se cuenta desde la emisión de la entrada (la consigna dice "antes del evento"). Decisión pendiente en `specs/reglas-de-negocio.md` §9.13.
+- **Pago rechazado:** libera el cupo y cancela la reserva; para reintentar hay que crear una reserva nueva.
+- **Cancelación de evento:** el aviso de reintegro a entradas es *best-effort*.
