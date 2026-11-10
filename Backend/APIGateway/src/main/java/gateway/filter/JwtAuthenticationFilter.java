@@ -10,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -35,9 +37,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String HDR_USER_ROLES = "X-User-Roles";
 
     private final JwtUtil jwtUtil;
+    private final boolean jwtEnabled;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+        this(jwtUtil, true);
+    }
+
+    /**
+     * jwtEnabled=false (Entrega 1): sin Bearer, el request pasa con los headers X-User-* del cliente
+     * (identificación por encabezado). Con Bearer se valida igual. Entrega 2: ticketya.security.jwt-enabled=true.
+     */
+    @Autowired
+    public JwtAuthenticationFilter(
+            JwtUtil jwtUtil, @Value("${ticketya.security.jwt-enabled:true}") boolean jwtEnabled) {
         this.jwtUtil = jwtUtil;
+        this.jwtEnabled = jwtEnabled;
+        if (!jwtEnabled) {
+            log.warn("JWT DESHABILITADO (ticketya.security.jwt-enabled=false): identificación por headers X-User-*. "
+                    + "Solo para Entrega 1 / pruebas.");
+        }
     }
 
     private static final List<String> PUBLIC_PREFIXES = List.of(
@@ -71,7 +89,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        boolean hasBearer = authHeader != null && authHeader.startsWith("Bearer ");
+        if (!jwtEnabled && !hasBearer) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        if (!hasBearer) {
             log.warn("Missing or invalid Authorization header for path: {}", path);
             writeError(response, HttpStatus.UNAUTHORIZED, "No autenticado",
                     "Debe proporcionar un token JWT válido");

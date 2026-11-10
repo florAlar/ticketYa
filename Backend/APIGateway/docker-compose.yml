@@ -13,4 +13,5 @@ services:
       TICKETYA_URI_ENTRADAS: http://ms-entradas:8084
       TICKETYA_URI_PREFERENCIAS: http://ms-preferencias:8085
       TICKETYA_URI_NOTIFICACIONES: http://ms-notificaciones:8086
+      TICKETYA_JWT_ENABLED: ${TICKETYA_JWT_ENABLED:-false}
       TICKETYA_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
