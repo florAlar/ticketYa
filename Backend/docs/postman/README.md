@@ -47,6 +47,12 @@ No hace falta loguearse a mano. Un script *pre-request* de la colección hace lo
 
 Cada request declara en su descripción el rol que usa y el status esperado.
 
+**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección pasa completa (104 requests, 307 assertions, 0 fallos) con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles). Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
+
+```bash
+curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
+```
+
 ## Carpetas
 
 | Carpeta | Requests | Cobertura |
