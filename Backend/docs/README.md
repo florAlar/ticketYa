@@ -32,7 +32,7 @@ Backend/specs/
 ## Decisiones y limitaciones declaradas (Entrega 1)
 
 - **Asientos numerados:** implementados como asientos virtuales (layout `filas` × `asientosPorFila`; solo se persisten los tomados en `ventas.asiento_reservado`). Los sectores generales siguen vendiéndose por cantidad. Ver `diagramas-secuencia.md` §5. Las tablas `asiento` y `precio_asiento` de eventos quedaron sin uso (limpieza pendiente, SEAT-07).
-- **Prueba de concurrencia del mismo asiento:** unitaria (lock emulado); el test con MySQL real para asientos está pendiente (SEAT-06).
+- **Prueba de concurrencia del mismo asiento:** unitaria (lock emulado) y de integración con MySQL real (`AsientoReservadoConcurrenciaIT`, perfil `-Pit`). Ver `testing/concurrencia.md` §3.3.
 - **Devoluciones:** el plazo de 72 h se cuenta desde la emisión de la entrada (la consigna dice "antes del evento"). Decisión pendiente en `specs/reglas-de-negocio.md` §9.13.
 - **Pago rechazado:** libera el cupo y cancela la reserva; para reintentar hay que crear una reserva nueva.
 - **Cancelación de evento:** el aviso de reintegro a entradas es *best-effort*.
