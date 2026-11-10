@@ -65,6 +65,9 @@ VITE_USE_MOCK=true
 
 Más detalle: [`Frontend/README.md`](Frontend/README.md).
 
+## Users Stories
+[Acceder User Stories](https://trello.com/b/HhT3lZdK/us-tpe)
+
 ## Backend (resumen)
 
 ```bash
