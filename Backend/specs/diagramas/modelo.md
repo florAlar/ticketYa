@@ -1,244 +1,276 @@
 # Modelo de datos
 
-Modelo **relacional** (MySQL) de los microservicios transaccionales.
-Preferencias / historial de señales → MongoDB: ver [`modelo-mongodb.md`](./modelo-mongodb.md).
-
-En cada entidad, los atributos marcados **FK** son claves foráneas (lógicas o físicas según el msvc dueño).
-
 ```mermaid
-erDiagram
+classDiagram
 direction TB
-    USUARIO {
-    UUID idUsuario PK ""  
-    string nombre  ""  
-    string apellido  ""  
-    string email UK ""  
-    string passwordHash  ""  
-    string ciudad  ""  
-    datetime fechaRegistro  ""  
-    boolean activo  ""  
+
+namespace msvc_usuarios {
+    class usuario {
+        +CHAR36 id_usuario PK
+        +VARCHAR nombre
+        +VARCHAR apellido
+        +VARCHAR email UK
+        +VARCHAR password_hash
+        +VARCHAR ciudad
+        +DATETIME fecha_registro
+        +BOOL activo
     }
-
-
-	USUARIO_ROL {
-		UUID idUsuario PK,FK ""  
-		UUID idRol PK,FK ""  
-	}
-
-	ROL {
-		UUID idRol PK ""  
-		string nombre UK ""  
-	}
-        ASIENTO {
-    UUID id PK
-    UUID idSector FK
-    string fila
-    int numero
-    string codigo
-}
-PRECIO_ASIENTO {
-UUID id PK
-UUID idEvento FK
-UUID idAsiento FK
-decimal precio
-string moneda
-boolean activo
-}
-LUGAR {
-UUID id PK ""  
-string nombre  ""  
-string direccion  ""  
-string ciudad  ""  
-int capacidadTotal  ""  
+    class rol {
+        +CHAR36 id_rol PK
+        +VARCHAR nombre UK
+    }
+    class usuario_rol {
+        +CHAR36 id_usuario PK FK
+        +CHAR36 id_rol PK FK
+    }
 }
 
-	SECTOR {
-		UUID id PK ""  
-		UUID idLugar FK ""  
-		string nombre  ""  
-		int capacidad  ""  
-		string tipo  "" 
-        boolean esNumerado 
-	}
+namespace msvc_eventos {
+    class lugar {
+        +CHAR36 id PK
+        +VARCHAR nombre
+        +VARCHAR direccion
+        +VARCHAR ciudad
+        +INT capacidad_total
+    }
+    class sector {
+        +CHAR36 id PK
+        +CHAR36 id_lugar FK
+        +VARCHAR nombre
+        +INT capacidad
+        +VARCHAR tipo
+        +BOOL es_numerado
+    }
+    class asiento {
+        +CHAR36 id PK
+        +CHAR36 id_sector FK
+        +VARCHAR fila
+        +INT numero
+        +VARCHAR codigo
+    }
+    class evento {
+        +CHAR36 id PK
+        +CHAR36 id_organizador REF
+        +CHAR36 id_lugar FK
+        +VARCHAR nombre
+        +TEXT descripcion
+        +VARCHAR tipo
+        +DATETIME fecha_inicio
+        +DATETIME fecha_fin
+        +VARCHAR estado
+        +DATETIME fecha_publicacion
+        +BOOL es_alta_demanda
+    }
+    class precio_sector {
+        +CHAR36 id PK
+        +CHAR36 id_evento FK
+        +CHAR36 id_sector FK
+        +DECIMAL precio
+        +CHAR moneda
+        +BOOL activo
+    }
+    class precio_asiento {
+        +CHAR36 id PK
+        +CHAR36 id_evento FK
+        +CHAR36 id_asiento FK
+        +DECIMAL precio
+        +CHAR moneda
+        +BOOL activo
+    }
+    class participante {
+        +CHAR36 id PK
+        +VARCHAR nombre
+        +VARCHAR tipo
+        +TEXT descripcion
+    }
+    class evento_participante {
+        +CHAR36 id_evento PK FK
+        +CHAR36 id_participante PK FK
+        +VARCHAR rol
+        +INT orden
+    }
+}
 
-	PRECIO_SECTOR {
-			UUID id PK ""  
-			UUID idEvento FK ""  
-			UUID idSector FK ""  
-			decimal precio ""  
-			string moneda ""  
-			boolean activo ""  
-		}
+namespace msvc_ventas {
+    class reserva {
+        +CHAR36 id_reserva PK
+        +CHAR36 id_cliente REF
+        +CHAR36 id_evento REF
+        +DATETIME fecha_creacion
+        +DATETIME fecha_expiracion
+        +VARCHAR estado
+        +DECIMAL total
+    }
+    class detalle_reserva {
+        +CHAR36 id_detalle PK
+        +CHAR36 id_reserva FK
+        +CHAR36 id_sector REF
+        +INT cantidad
+        +DECIMAL precio_unitario
+    }
+    class compra {
+        +CHAR36 id_compra PK
+        +CHAR36 id_reserva FK
+        +CHAR36 id_cliente REF
+        +DATETIME fecha_compra
+        +DECIMAL total
+        +CHAR moneda
+        +VARCHAR estado
+        +VARCHAR emision_estado
+        +INT emision_intentos
+        +VARCHAR emision_ultimo_error
+        +DATETIME emision_actualizado
+    }
+    class pago {
+        +CHAR36 id_pago PK
+        +CHAR36 id_compra FK
+        +VARCHAR proveedor
+        +VARCHAR id_transaccion_externa UK
+        +DECIMAL monto
+        +VARCHAR estado
+        +DATETIME fecha_pago
+    }
+    class cupo_sector {
+        +CHAR36 id_cupo PK
+        +CHAR36 id_evento REF
+        +CHAR36 id_sector REF
+        +INT capacidad_total
+        +INT cantidad_disponible
+        +INT cantidad_reservada
+        +INT cantidad_vendida
+    }
+}
 
-		PARTICIPANTE {
-			UUID id PK ""
-			string nombre ""
-			string tipo ""
-			string descripcion ""
-		}
+namespace msvc_entradas {
+    class entrada {
+        +CHAR36 id_entrada PK
+        +CHAR36 id_compra REF
+        +CHAR36 id_cliente REF
+        +CHAR36 id_evento REF
+        +CHAR36 id_sector REF
+        +DECIMAL precio
+        +VARCHAR codigo_qr UK
+        +VARCHAR estado
+        +DATETIME fecha_emision
+        +DATETIME fecha_validacion
+    }
+    class devolucion {
+        +CHAR36 id_devolucion PK
+        +CHAR36 id_entrada FK
+        +VARCHAR motivo
+        +DECIMAL monto
+        +DATETIME fecha_solicitud
+        +VARCHAR estado
+    }
+    class validacion_acceso {
+        +CHAR36 id_validacion PK
+        +CHAR36 id_entrada FK
+        +CHAR36 id_personal_acceso REF
+        +DATETIME fecha_validacion
+        +VARCHAR resultado
+        +VARCHAR dispositivo
+    }
+}
 
-		EVENTO_PARTICIPANTE {
-			UUID idEvento PK,FK ""
-			UUID idParticipante PK,FK ""
-			string rol ""
-			int orden ""
-		}
+namespace msvc_notificaciones {
+    class plantilla_notificacion {
+        +CHAR36 id_plantilla PK
+        +VARCHAR tipo_evento
+        +VARCHAR canal
+        +VARCHAR asunto
+        +TEXT contenido
+        +BOOL activa
+    }
+    class notificacion {
+        +CHAR36 id_notificacion PK
+        +CHAR36 id_usuario REF
+        +CHAR36 id_evento_origen REF
+        +CHAR36 id_plantilla FK
+        +VARCHAR tipo
+        +VARCHAR canal
+        +VARCHAR asunto
+        +TEXT contenido
+        +DATETIME fecha_creacion
+        +DATETIME fecha_envio
+        +VARCHAR estado
+    }
+    class intento_envio {
+        +CHAR36 id_intento PK
+        +CHAR36 id_notificacion FK
+        +INT numero_intento
+        +DATETIME fecha_intento
+        +VARCHAR resultado
+        +VARCHAR detalle_error
+    }
+}
 
-		RESERVA {
-		UUID idReserva PK ""  
-		UUID idCliente FK ""  
-		UUID idEvento FK ""  
-		datetime fechaCreacion  ""  
-		datetime fechaExpiracion  ""  
-		string estado  ""  
-		decimal total  ""  
-	}
+namespace msvc_preferencias_MongoDB {
+    class preferencias_clientes {
+        +ObjectId _id PK
+        +string idCliente UK REF
+        +string[] categorias
+        +string[] ciudades
+        +rangoPrecio min max moneda
+        +string[] artistas
+        +Instant fechaActualizacion
+    }
+    class interacciones_eventos {
+        +ObjectId _id PK
+        +string idCliente REF
+        +string idEvento REF
+        +string tipo
+        +string categoria
+        +Instant fechaEvento
+        +Instant fechaCompra
+        +decimal monto
+    }
+}
 
-	DETALLE_RESERVA {
-		UUID idDetalle PK ""  
-		UUID idReserva FK ""  
-		UUID idSector FK ""  
-		int cantidad  ""  
-		decimal precioUnitario  ""  
-	}
+%% ---- FK físicas (dentro de cada microservicio) ----
+usuario "1" -- "0..*" usuario_rol : tiene
+rol "1" -- "0..*" usuario_rol : asignado
 
-	COMPRA {
-		UUID idCompra PK ""  
-		UUID idReserva FK ""  
-		UUID idCliente FK ""  
-		datetime fechaCompra  ""  
-		decimal total  ""  
-		string moneda  ""  
-		string estado  ""  
-	}
+lugar "1" -- "0..*" sector : contiene
+lugar "1" -- "0..*" evento : alberga
+sector "1" -- "0..*" asiento : tiene
+evento "1" -- "0..*" precio_sector : define
+sector "1" -- "0..*" precio_sector : tarifado
+evento "1" -- "0..*" precio_asiento : define
+asiento "1" -- "0..*" precio_asiento : tarifado
+evento "1" -- "0..*" evento_participante : tiene
+participante "1" -- "0..*" evento_participante : participa
 
-	PAGO {
-		UUID idPago PK ""  
-		UUID idCompra FK ""  
-		string proveedor  ""  
-		string idTransaccionExterna UK ""  
-		decimal monto  ""  
-		string estado  ""  
-		datetime fechaPago  ""  
-	}
+reserva "1" -- "1..*" detalle_reserva : contiene
+reserva "0..1" -- "0..*" compra : origina
+compra "1" -- "0..*" pago : registra
 
-	CUPO_SECTOR {
-		UUID idCupo PK ""  
-		UUID idEvento FK ""  
-		UUID idSector FK ""  
-		int capacidadTotal  ""  
-		int cantidadDisponible  ""  
-		int cantidadReservada  ""  
-		int cantidadVendida  ""  
-	}
+entrada "1" -- "0..*" devolucion : puede tener
+entrada "1" -- "0..*" validacion_acceso : registra
 
-	ENTRADA {
-		UUID idEntrada PK ""  
-		UUID idCompra FK ""  
-		UUID idCliente FK ""  
-		UUID idEvento FK ""  
-		UUID idSector FK ""  
-		string codigoQR UK ""  
-		string estado  ""  
-		datetime fechaEmision  ""  
-		datetime fechaValidacion  ""  
-	}
+plantilla_notificacion "0..1" -- "0..*" notificacion : utiliza
+notificacion "1" -- "0..*" intento_envio : registra
 
-	DEVOLUCION {
-		UUID idDevolucion PK ""  
-		UUID idEntrada FK ""  
-		string motivo  ""  
-		decimal monto  ""  
-		datetime fechaSolicitud  ""  
-		string estado  ""  
-	}
+preferencias_clientes .. interacciones_eventos : mismo idCliente
 
-	VALIDACION_ACCESO {
-		UUID idValidacion PK ""  
-		UUID idEntrada FK ""  
-		UUID idPersonalAcceso FK ""  
-		datetime fechaValidacion  ""  
-		string resultado  ""  
-		string dispositivo  ""  
-	}
+%% ---- Referencias lógicas entre microservicios (sin FK) ----
+evento ..> usuario : id_organizador
+reserva ..> usuario : id_cliente
+compra ..> usuario : id_cliente
+entrada ..> usuario : id_cliente
+validacion_acceso ..> usuario : id_personal_acceso
+notificacion ..> usuario : id_usuario
+preferencias_clientes ..> usuario : idCliente
+interacciones_eventos ..> usuario : idCliente
 
-	NOTIFICACION {
-		UUID idNotificacion PK ""  
-		UUID idUsuario FK ""  
-		UUID idEventoOrigen FK ""  
-		UUID idPlantilla FK ""  
-		string tipo  ""  
-		string canal  ""  
-		string asunto  ""  
-		string contenido  ""  
-		datetime fechaCreacion  ""  
-		datetime fechaEnvio  ""  
-		string estado  ""  
-	}
+reserva ..> evento : id_evento
+cupo_sector ..> evento : id_evento
+entrada ..> evento : id_evento
+notificacion ..> evento : id_evento_origen
+interacciones_eventos ..> evento : idEvento
 
-	INTENTO_ENVIO {
-		UUID idIntento PK ""  
-		UUID idNotificacion FK ""  
-		int numeroIntento  ""  
-		datetime fechaIntento  ""  
-		string resultado  ""  
-		string detalleError  ""  
-	}
+detalle_reserva ..> sector : id_sector
+cupo_sector ..> sector : id_sector
+entrada ..> sector : id_sector
 
-	PLANTILLA_NOTIFICACION {
-		UUID idPlantilla PK ""  
-		string tipoEvento  ""  
-		string canal  ""  
-		string asunto  ""  
-		string contenido  ""  
-		boolean activa  ""  
-	}
-
-	EVENTO {
-		UUID id PK ""  
-		UUID idOrganizador FK ""  
-		string nombre  ""  
-		string descripcion  ""  
-		string tipo  ""  
-		datetime fechaInicio  ""  
-		datetime fechaFin  ""  
-		string estado  ""  
-		UUID idLugar FK ""  
-		datetime fechaPublicacion  ""
-        boolean esAltaDemanda  
-	}
-
-ASIENTO }o--|| SECTOR : pertenece
-PRECIO_ASIENTO }o--|| ASIENTO : establece
-PRECIO_ASIENTO }o--|| EVENTO : corresponde
-USUARIO||--o{USUARIO_ROL:"tiene"
-ROL||--o{USUARIO_ROL:"asignado"
-LUGAR||--o{SECTOR:"contiene"
-LUGAR||--o{EVENTO:"alberga"
-USUARIO||--o{EVENTO:"organiza"
-EVENTO||--o{PRECIO_SECTOR:"define"
-SECTOR||--o{PRECIO_SECTOR:"tarifado"
-EVENTO||--o{EVENTO_PARTICIPANTE:"tiene"
-PARTICIPANTE||--o{EVENTO_PARTICIPANTE:"en"
-USUARIO||--o{RESERVA:"reserva"
-EVENTO||--o{RESERVA:"sobre"
-RESERVA||--|{DETALLE_RESERVA:"contiene"
-SECTOR||--o{DETALLE_RESERVA:"en"
-RESERVA||--o|COMPRA:"genera"
-USUARIO||--o{COMPRA:"compra"
-COMPRA||--o{PAGO:"registra"
-EVENTO||--o{CUPO_SECTOR:"cupo"
-SECTOR||--o{CUPO_SECTOR:"cupo"
-CUPO_SECTOR||--o{DETALLE_RESERVA:"disponibilidad"
-COMPRA||--o{ENTRADA:"emite"
-USUARIO||--o{ENTRADA:"titular"
-EVENTO||--o{ENTRADA:"para"
-SECTOR||--o{ENTRADA:"sector"
-ENTRADA||--o{DEVOLUCION:"puede_tener"
-ENTRADA||--o{VALIDACION_ACCESO:"registra"
-USUARIO||--o{VALIDACION_ACCESO:"valida"
-USUARIO||--o{NOTIFICACION:"destinatario"
-EVENTO||--o{NOTIFICACION:"origen"
-NOTIFICACION||--o{INTENTO_ENVIO:"registra"
-PLANTILLA_NOTIFICACION||--o{NOTIFICACION:"utiliza"
+entrada ..> compra : id_compra
 ```

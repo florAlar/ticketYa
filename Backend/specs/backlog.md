@@ -38,7 +38,7 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 | INF-14 | `docs/diagramas/modelo.md` — ER Mermaid **solo MySQL** (preferencias fuera) | E1 | hecho | Preferencias/historial sacados del ER; FKs explícitas en atributos + relaciones. Mongo → `modelo-mongodb.md`. |
 | INF-15 | Seeds / init de datos de prueba por contexto | E1 | hecho | Via `infrastructure/mysql/*/init.sql` (no DataLoader Java). UUIDs fijos cross-msvc documentados en `mysql/README.md`. Passwords BCrypt demo. |
 | INF-16 | README raíz / Backend con instrucciones de ejecución verificables | E1 | hecho | `Backend/README.md` + README monorepo (light): compose, puertos, smoke curl, link a docs. |
-| INF-17 | Colección Postman (o similar) de endpoints | E1 | pendiente | Actualizar en E2. |
+| INF-17 | Colección Postman (o similar) de endpoints | E1 | hecho | `docs/postman/` (colección v2.1 E1 + environment local). Actualizar en E2. Sin ejecutar en verificación 2026-11-10 (Docker apagado). |
 | INF-18 | Higiene compose preferencias: URI Mongo con `${MONGO_PASSWORD:-…}` (sin literal frágil) | Transversal | hecho | `msvc-preferencias/docker-compose.yml` usa `${MONGO_PASSWORD:-mongo_dev}`. |
 | INF-19 | Alinear docs (`arquitectura`, `bases-de-datos`) con `msvc-notificaciones` y conteo real de servicios | Transversal | pendiente | |
 | INF-20 | Ingreso SPA cliente en `Frontend/`: React 19 + Vite + Router, `src/` (api/auth/pages/routes/domain/…), `package.json`, `.env.example` (`VITE_API_BASE_URL`, `VITE_USE_MOCK`) | Transversal | hecho | Copia del simulacro; `node_modules`/`dist` locales presentes. |
@@ -76,8 +76,8 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
 | MOD-01 | ER global MySQL en `docs/diagramas/modelo.md` (Mermaid) | E1 | hecho | Sin preferencias/historial (Mongo). FKs explícitas. Link a `modelo-mongodb.md`. |
-| MOD-02 | Partir / complementar el modelo en **un DER (o vista) por microservicio** con claves y ownership de datos | E1 | parcial | Ownership implícito en `init.sql` por carpeta msvc; falta diagrama/doc por contexto (opcional si el init + ER global bastan). |
-| MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | parcial | UUIDs seed fijos en `infrastructure/mysql/README.md` + comentarios `ref lógica` en init. Completar párrafo formal en docs si hace falta. |
+| MOD-02 | Partir / complementar el modelo en **un DER (o vista) por microservicio** con claves y ownership de datos | E1 | hecho | `specs/diagramas/modelo.md` reescrito (2026-11-10): `classDiagram` global con un `namespace` por msvc (5 MySQL + Mongo), columnas reales verificadas contra `init.sql` y entidades JPA. Sintaxis Mermaid validada; render visual a revisar en el visor. |
+| MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | hecho | Las 17 referencias lógicas entre msvc quedan dibujadas como líneas punteadas (columnas `REF`) en el diagrama de `modelo.md`. |
 | MOD-04 | **Modelo de preferencias en MongoDB** (`docs/diagramas/modelo-mongodb.md`) | E2 | hecho | Doc + init.js INF-28. Código Spring Data / recs = E2-PRE-*. |
 | MOD-05 | Modelo local notificaciones (MySQL) alineado a ER + `notificaciones/init.sql` | E2 | hecho | Init + JPA (Plantilla/Notificacion/IntentoEnvio) en INF-27. Specs DOC-MS siguen pendientes. |
 | MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | pendiente | |
@@ -177,9 +177,20 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
-| E1-TST-01 | Unitarias: compra, devoluciones, búsqueda | pendiente | |
-| E1-TST-02 | Prueba de concurrencia: mismo asiento / último cupo → una sola venta exitosa | pendiente | |
-| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | pendiente | Datos base = init.sql (INF-15); Postman = INF-17. |
+| E1-TST-01 | Unitarias: compra, devoluciones, búsqueda | hecho | JUnit5+Mockito por msvc. Verificado 2026-11-10: gateway 23, usuarios 51, eventos 101, entradas 48 OK. Ventas (~107) **no verificable local**: `~/.m2` jacoco-0.8.8 pom corrupto (ver HIG-04). Preferencias/notificaciones sin unitarias reales (E2, HIG-01/03). |
+| E1-TST-02 | Prueba de concurrencia: mismo asiento / último cupo → una sola venta exitosa | hecho | Unitario + IT Testcontainers MySQL (`CupoSectorConcurrenciaIT`) + informe `docs/testing/concurrencia.md`. IT no re-ejecutado 2026-11-10 (requiere Docker). |
+| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | parcial | Datos = init.sql (INF-15) hecho; Postman = INF-17 hecho; README ejecución existe pero desactualizado (dice "sin API de negocio aún"). |
+
+### 6.6 Higiene detectada en verificación 2026-11-10
+
+| ID | Tarea | Estado | Notas |
+| --- | --- | --- | --- |
+| HIG-01 | `msvc-notificaciones`: `contextLoads` falla sin MySQL (único test del módulo) | pendiente | Hacerlo independiente de DB (slice/H2/mock) o reemplazar por unitarias reales. |
+| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. |
+| HIG-03 | `msvc-preferencias`: sin tests | pendiente | Hacerlo junto con E2-PRE-*. |
+| HIG-04 | Entorno local: `~/.m2/.../org.jacoco.build-0.8.8.pom` truncado → `mvn test` en ventas no resuelve jacoco | pendiente | Problema de máquina (borrar carpeta y re-resolver), no de código. Re-verificar los tests de ventas. |
+| HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | pendiente | Ver E1-REL-01. |
+| HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | pendiente | Docker Desktop apagado en la sesión. Cubre también E2-DEP-01. |
 
 ---
 
@@ -313,7 +324,7 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
 11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
 12. **FE residual (próxima sesión):** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
-13. E1-TST + E1-REL + INF-17 (Postman) — gap formal cuando haga falta entrega.  
+13. E1-TST + INF-17 (Postman) — **hecho** (equipo, rama feature/tests); E1-REL parcial (README). Higiene HIG-01…06 abierta.  
 14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.
 
 Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` **parcial**.
@@ -335,7 +346,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
 | Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05 | — | E2-ACC |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
-| Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
+| Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
 
 **Lectura (2026-11-07, cierre sesión — seed amplio + catálogo AGOTADO):**  
 - **Hecho E1 core:** eventos GET+write; ventas (+ cupo al publicar); entradas QR/devo; JWT; FE demock AUTH/EVENTOS/COMPRAS/ENTRADAS.  
@@ -344,5 +355,11 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - **Catálogo BE default:** PUBLICADO + **AGOTADO** (home/list sin `estado=`); jar `ms-eventos` redeployed.  
 - **Ops:** `init.sql` solo en volumen nuevo; live → reseed `03-*.sql` o borrar volumen; jars `docker cp` si stale.  
 - **Demock residual:** admin usuarios aún con `VITE_USE_MOCK=true` / gate OFF; E2-ACC/transfer/prefs/X-ORG-01 = BE o gated.  
-- **Gap E1 formal:** E1-TST / INF-17 Postman / E1-REL.  
+- **Gap E1 formal:** cerrado salvo E1-REL (README). Ver actualización 2026-11-10.  
 - **Próxima sesión (acordado):** demock **admin usuarios selectivo** (list/estado/roles reales; alta acceso + eventosAsignados + DELETE OFF).  
+
+**Verificación real 2026-11-10 (tests locales, Docker apagado):**  
+- Unitarias OK: gateway 23, usuarios 51, eventos 101, entradas 48. Ventas no verificable (HIG-04). Preferencias sin tests; notificaciones `contextLoads` falla sin MySQL.  
+- FE: `build` OK, `lint` 12 errores (HIG-02).  
+- Sin verificar: stack compose, smoke, IT Testcontainers, Postman (HIG-06).  
+- E2 sin código de negocio: ACC, FILA, PRE (solo docs Mongo + repos), NOT (solo entidades/service stub), REP, NFR-01/02/03.  
