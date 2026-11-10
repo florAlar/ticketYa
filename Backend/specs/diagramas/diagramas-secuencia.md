@@ -1,6 +1,6 @@
 # Diagramas de secuencia — Compra de entradas
 
-Fuente: `msvc-ventas` (`VentaServiceImpl`, `EmisionEntradasService`, `ReservaExpirationJob`) y `specs/reglas-de-negocio.md` §5–§6.
+Fuente: `msvc-ventas` (`VentaServiceImpl`, `EmisionEntradasService`, `ReservaExpirationJob`) y [`reglas-de-negocio.md`](../reglas-de-negocio.md) §5–§6.
 Las rutas son las públicas del gateway (`/api/...`).
 
 ## Estados que intervienen
@@ -201,4 +201,4 @@ Hay dos defensas combinadas:
 1. **Bloqueo pesimista** (`SELECT … FOR UPDATE`) sobre `cupo_sector`: serializa las reservas concurrentes de un mismo sector. Si N clientes piden el último lugar (o el mismo asiento) a la vez, uno obtiene la reserva y los demás reciben `409`.
 2. **Clave única** `(id_evento, id_sector, fila, numero)` en `asiento_reservado`: segunda defensa a nivel de base para el mismo asiento.
 
-Evidencia: `docs/testing/concurrencia.md` (último cupo y mismo asiento, con MySQL real) y `ReservaAsientoConcurrenciaTest` (20 hilos compiten por el mismo asiento; un solo éxito).
+Evidencia: [`docs/testing/concurrencia.md`](../../docs/testing/concurrencia.md) (último cupo y mismo asiento, con MySQL real) y `ReservaAsientoConcurrenciaTest` (20 hilos compiten por el mismo asiento; un solo éxito).

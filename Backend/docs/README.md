@@ -14,7 +14,7 @@ Backend/specs/
 | --- | --- | --- |
 | Features y user stories (+ criterios de aceptación) | listo | [`user-stories.md`](./user-stories.md) |
 | Arquitectura (módulos, responsabilidades, APIs, comunicación) | listo | [`arquitectura.md`](./arquitectura.md) |
-| Diagramas de secuencia de compra | listo | [`diagramas-secuencia.md`](./diagramas-secuencia.md) — éxito, pago rechazado, reserva vencida, devolución y entrada numerada |
+| Diagramas de secuencia de compra | listo | [`diagramas-secuencia.md`](../specs/diagramas/diagramas-secuencia.md) — éxito, pago rechazado, reserva vencida, devolución y entrada numerada |
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
 | Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
@@ -31,7 +31,7 @@ Backend/specs/
 
 ## Decisiones y limitaciones declaradas (Entrega 1)
 
-- **Asientos numerados:** implementados como asientos virtuales (layout `filas` × `asientosPorFila`; solo se persisten los tomados en `ventas.asiento_reservado`). Los sectores generales siguen vendiéndose por cantidad. Ver `diagramas-secuencia.md` §5. Las tablas `asiento` y `precio_asiento` de eventos quedaron sin uso (limpieza pendiente, SEAT-07).
+- **Asientos numerados:** implementados como asientos virtuales (layout `filas` × `asientosPorFila`; solo se persisten los tomados en `ventas.asiento_reservado`). Los sectores generales siguen vendiéndose por cantidad. Ver `specs/diagramas/diagramas-secuencia.md` §5. Las tablas `asiento` y `precio_asiento` de eventos quedaron sin uso (limpieza pendiente, SEAT-07).
 - **Prueba de concurrencia del mismo asiento:** unitaria (lock emulado) y de integración con MySQL real (`AsientoReservadoConcurrenciaIT`, perfil `-Pit`). Ver `testing/concurrencia.md` §3.3.
 - **Devoluciones:** el plazo de 72 h se cuenta desde la emisión de la entrada (la consigna dice "antes del evento"). Decisión pendiente en `specs/reglas-de-negocio.md` §9.13.
 - **Pago rechazado:** libera el cupo y cancela la reserva; para reintentar hay que crear una reserva nueva.
