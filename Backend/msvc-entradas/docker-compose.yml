@@ -3,6 +3,7 @@ services:
   ms-entradas:
     build: .
     container_name: ms-entradas
+    restart: on-failure
     ports:
       - "8084:8084"
     environment:
@@ -30,7 +31,7 @@ services:
       - entradas_data:/var/lib/mysql
       - ../infrastructure/mysql/entradas:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
       timeout: 5s
       retries: 10

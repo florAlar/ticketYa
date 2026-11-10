@@ -44,4 +44,8 @@ Mongo preferencias: `../mongodb/preferencias/` (aparte). No hay loader por msvc 
 
 - FK **físicas** solo dentro de la misma DB.
 - Cross-msvc: columnas comentadas `ref lógica` (CHAR 36), sin FK.
-- Para re-aplicar: borrar volumen Docker del MySQL correspondiente, o script `eventos/03-reseed-clean-demo.sql` (+ ventas/entradas).
+- Para re-aplicar: borrar volumen Docker del MySQL correspondiente, o script `eventos/migrations/03-reseed-clean-demo.sql` (+ ventas/entradas).
+
+## Migraciones (`migrations/`)
+
+Los `02-*` y `03-*` viven en `<db>/migrations/` y **no** corren solos: MySQL solo ejecuta los `.sql` de primer nivel de `docker-entrypoint-initdb.d`, y los ejecuta en orden alfabético (un `02-*` correría antes que `init.sql`). Aplicarlos a mano sobre un volumen existente.
