@@ -40,6 +40,8 @@ namespace msvc_eventos {
         +INT capacidad
         +VARCHAR tipo
         +BOOL es_numerado
+        +INT filas
+        +INT asientos_por_fila
     }
     class asiento {
         +CHAR36 id PK
@@ -108,6 +110,15 @@ namespace msvc_ventas {
         +INT cantidad
         +DECIMAL precio_unitario
     }
+    class asiento_reservado {
+        +CHAR36 id_asiento_reservado PK
+        +CHAR36 id_reserva FK
+        +CHAR36 id_evento REF
+        +CHAR36 id_sector REF
+        +VARCHAR fila
+        +INT numero
+        +VARCHAR estado
+    }
     class compra {
         +CHAR36 id_compra PK
         +CHAR36 id_reserva FK
@@ -148,6 +159,8 @@ namespace msvc_entradas {
         +CHAR36 id_cliente REF
         +CHAR36 id_evento REF
         +CHAR36 id_sector REF
+        +VARCHAR fila
+        +INT numero
         +DECIMAL precio
         +VARCHAR codigo_qr UK
         +VARCHAR estado
@@ -241,6 +254,7 @@ evento "1" -- "0..*" evento_participante : tiene
 participante "1" -- "0..*" evento_participante : participa
 
 reserva "1" -- "1..*" detalle_reserva : contiene
+reserva "1" -- "0..*" asiento_reservado : bloquea
 reserva "0..1" -- "0..*" compra : origina
 compra "1" -- "0..*" pago : registra
 
@@ -264,12 +278,14 @@ interacciones_eventos ..> usuario : idCliente
 
 reserva ..> evento : id_evento
 cupo_sector ..> evento : id_evento
+asiento_reservado ..> evento : id_evento
 entrada ..> evento : id_evento
 notificacion ..> evento : id_evento_origen
 interacciones_eventos ..> evento : idEvento
 
 detalle_reserva ..> sector : id_sector
 cupo_sector ..> sector : id_sector
+asiento_reservado ..> sector : id_sector
 entrada ..> sector : id_sector
 
 entrada ..> compra : id_compra

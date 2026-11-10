@@ -30,10 +30,20 @@ public record EmitirEntradasRequestDTO(
             @Schema(description = "UUID del sector", example = "c0000000-0000-4000-8000-000000000011")
             @NotBlank String idSector,
 
-            @Schema(description = "Cantidad de entradas (mín. 1)", example = "2")
+            @Schema(description = "Cantidad de entradas (mín. 1). Si hay asientos debe coincidir con su cantidad",
+                    example = "2")
             @NotNull @Min(1) Integer cantidad,
 
             @Schema(description = "Precio unitario pagado", example = "95000.00")
-            BigDecimal precioUnitario) {
+            BigDecimal precioUnitario,
+
+            @Schema(description = "Asientos vendidos (sector numerado): se emite una entrada por asiento. "
+                    + "Null o vacío en sectores generales.", nullable = true)
+            List<@Valid AsientoRefDTO> asientos) {
+
+        /** Sector general: solo cantidad y precio. */
+        public Item(String idSector, Integer cantidad, BigDecimal precioUnitario) {
+            this(idSector, cantidad, precioUnitario, null);
+        }
     }
 }

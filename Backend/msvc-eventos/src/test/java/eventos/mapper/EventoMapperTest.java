@@ -293,6 +293,8 @@ class EventoMapperTest {
         s.setTipo("PLATEA");
         s.setCapacidad(300);
         s.setEsNumerado(true);
+        s.setFilas(20);
+        s.setAsientosPorFila(15);
 
         SectorEventoDTO dto = mapper.toSectorFromEntity(s, BigDecimal.valueOf(50000), "ARS");
 
@@ -301,6 +303,8 @@ class EventoMapperTest {
         assertEquals("PLATEA", dto.getTipo());
         assertEquals(Integer.valueOf(300), dto.getCapacidad());
         assertEquals(true, dto.getEsNumerado());
+        assertEquals(Integer.valueOf(20), dto.getFilas());
+        assertEquals(Integer.valueOf(15), dto.getAsientosPorFila());
         assertEquals(BigDecimal.valueOf(50000), dto.getPrecio());
         assertEquals("ARS", dto.getMoneda());
     }

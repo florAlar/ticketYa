@@ -5,6 +5,7 @@ import { listMisEntradas } from './entradas'
 import { insertCompra } from './mock/comprasStore'
 import { insertEntrada } from './mock/entradasStore'
 import { COMPRA_ESTADOS } from '../domain/compra'
+import { MAX_ASIENTOS_POR_COMPRA } from '../domain/asiento'
 import { ENTRADA_ESTADOS, toEntradaListItem } from '../domain/entrada'
 import { EVENTO_ESTADOS } from '../domain/evento'
 
@@ -23,13 +24,27 @@ function newIdempotencyKey() {
  * Mock: un paso (pago OK + emite entrada local).
  * Real (gateway): POST /reservas → POST /compras (+ Idempotency-Key) → POST /compras/{id}/pagos.
  *
- * body: { idEvento, idSector } o { idReserva }
+ * body: { idEvento, idSector, asientos? } o { idReserva }
+ *   - sector general: sin `asientos` → 1 entrada (cantidad 1).
+ *   - sector numerado: `asientos: [{fila, numero}]` (1..MAX_ASIENTOS_POR_COMPRA) → 1 entrada por asiento.
  * opts: { token, idempotencyKey, resultadoPago: 'APROBAR'|'RECHAZAR' }
  */
-export async function comprarEntrada({ idEvento, idSector, idReserva }, user, opts = {}) {
+export async function comprarEntrada(
+  { idEvento, idSector, idReserva, asientos },
+  user,
+  opts = {}
+) {
   if (!user?.id) {
     const err = new Error('Tenés que iniciar sesión para comprar')
     err.status = 401
+    throw err
+  }
+  const seats = Array.isArray(asientos) ? asientos : []
+  if (seats.length > MAX_ASIENTOS_POR_COMPRA) {
+    const err = new Error(
+      `Máximo ${MAX_ASIENTOS_POR_COMPRA} asientos por compra`
+    )
+    err.status = 400
     throw err
   }
 
@@ -61,8 +76,9 @@ export async function comprarEntrada({ idEvento, idSector, idReserva }, user, op
 
     const now = new Date().toISOString()
     const compraId = `cmp_${Date.now()}`
-    const entradaId = `ent_${Date.now()}`
     const preferenciaId = `mp_pref_mock_${Date.now()}`
+    // Mock mínimo: sin asientos → 1 entrada; con asientos → 1 entrada por asiento (sin control de ocupación).
+    const cantidad = seats.length || 1
 
     const compra = insertCompra({
       id: compraId,
@@ -70,41 +86,48 @@ export async function comprarEntrada({ idEvento, idSector, idReserva }, user, op
       clienteEmail: user.email,
       idEvento: evento.id,
       eventoNombre: evento.nombre,
-      montoTotal: Number(sector.precio) || 0,
+      montoTotal: (Number(sector.precio) || 0) * cantidad,
       fechaCompra: now,
       medioPago: 'MERCADO_PAGO_MOCK',
       idTransaccionPasarela: preferenciaId,
       estado: COMPRA_ESTADOS.APROBADA,
-      cantidadEntradas: 1,
+      cantidadEntradas: cantidad,
       idSector: sector.id,
       sectorNombre: sector.nombre,
     })
 
-    const entrada = insertEntrada(
-      toEntradaListItem({
-        id: entradaId,
-        codigoQR: `QR-${entradaId.toUpperCase()}`,
-        idCompra: compraId,
-        idCliente: user.id,
-        idEvento: evento.id,
-        eventoNombre: evento.nombre,
-        eventoFecha: evento.fechaInicio,
-        idSector: sector.id,
-        sectorNombre: sector.nombre,
-        fila: null,
-        asiento: null,
-        precio: Number(sector.precio) || 0,
-        estado: ENTRADA_ESTADOS.VENDIDA,
-        fechaEmision: now,
-        fechaIngreso: null,
-        lugarNombre: evento.lugar?.nombre || '',
-        lugarCiudad: evento.lugar?.ciudad || '',
-      })
-    )
+    const entradas = []
+    for (let i = 0; i < cantidad; i++) {
+      const entradaId = `ent_${Date.now()}_${i}`
+      entradas.push(
+        insertEntrada(
+          toEntradaListItem({
+            id: entradaId,
+            codigoQR: `QR-${entradaId.toUpperCase()}`,
+            idCompra: compraId,
+            idCliente: user.id,
+            idEvento: evento.id,
+            eventoNombre: evento.nombre,
+            eventoFecha: evento.fechaInicio,
+            idSector: sector.id,
+            sectorNombre: sector.nombre,
+            fila: seats[i]?.fila ?? null,
+            asiento: seats[i]?.numero ?? null,
+            precio: Number(sector.precio) || 0,
+            estado: ENTRADA_ESTADOS.VENDIDA,
+            fechaEmision: now,
+            fechaIngreso: null,
+            lugarNombre: evento.lugar?.nombre || '',
+            lugarCiudad: evento.lugar?.ciudad || '',
+          })
+        )
+      )
+    }
 
     return {
       compra,
-      entrada,
+      entrada: entradas[0],
+      entradas,
       mercadoPago: {
         preferenciaId,
         initPoint: `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${preferenciaId}`,
@@ -135,7 +158,18 @@ export async function comprarEntrada({ idEvento, idSector, idReserva }, user, op
     reserva = await crearReserva(
       {
         idEvento,
-        items: [{ idSector: String(idSector), cantidad: 1 }],
+        // numerado: asientos concretos (cantidad = asientos.length en el BE); general: cantidad 1
+        items: [
+          seats.length
+            ? {
+                idSector: String(idSector),
+                asientos: seats.map((a) => ({
+                  fila: String(a.fila),
+                  numero: Number(a.numero),
+                })),
+              }
+            : { idSector: String(idSector), cantidad: 1 },
+        ],
       },
       {
         token: opts.token,

@@ -12,6 +12,16 @@
   color: #b91c1c;
 }
 
+.checkout-page__aviso {
+  margin: 0.25rem 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
 .checkout-page__muted {
   margin: 0.25rem 0 0;
   color: var(--colors-textMuted, #7b7b7b);

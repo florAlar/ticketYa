@@ -1,6 +1,7 @@
 -- Limpia y reseedea demo amplia en ventas (cupos d001–d00e + compras seed).
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+DELETE FROM asiento_reservado;
 DELETE FROM pago;
 DELETE FROM compra;
 DELETE FROM detalle_reserva;

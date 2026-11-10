@@ -54,7 +54,7 @@ Cada request declara en su descripción el rol que usa y el status esperado.
 | 00 Auth | 9 | login de los 4 roles, registro, refresh, logout, 401 y 409 |
 | 01 Usuarios | 9 | perfil propio, listado, estado, roles; 403 y 404 |
 | 02 Eventos | 15 | catálogo con filtros, detalle, borrador → edición → precio → participantes → publicación → reprogramación, borrado |
-| 03 Lugares y participantes | 11 | CRUD de lugares, sectores, asientos y participantes |
+| 03 Lugares y participantes | 11 | CRUD de lugares, sectores (el numerado se crea con `filas` y `asientosPorFila`), asientos virtuales y participantes |
 | 04 Ventas | 21 | disponibilidad, cupos, reserva (idempotente, renovación, confirmación, cancelación), compra, pago APROBAR y RECHAZAR |
 | 05 Entradas | 4 | emisión idempotente, listado, detalle y QR |
 | 06 Devoluciones | 10 | solicitud, listado, aprobación, rechazo, reintegro por cancelación |
@@ -75,6 +75,7 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 
 1. **`POST /eventos/{id}/reintegro-cancelacion` no está ruteado en el gateway.** Por eso 06.09 y 06.10 llaman directo a `msvc-entradas` (`entradasDirectUrl`, puerto 8084) con los headers `X-User-*`, y 07.15 verifica el 404 que devuelve el gateway.
 2. **Un pago RECHAZADO no se puede reintentar.** Al rechazarse, la reserva se cancela y el cupo se libera, así que `POST /pagos/{id}/reintentos` responde 409. 07.13 deja constancia de esto.
+3. **Sin requests de asientos todavía** *(2026-11-10)*. Desde la incorporación de asientos virtuales, 03.05/03.06 crean y actualizan el sector numerado con `filas` + `asientosPorFila` y 03.07 espera asientos calculados (`id` nulo, primer código `A-1`). Faltan requests de reserva y compra con `asientos`, la verificación de `asientosOcupados` en disponibilidad y el 409 de asiento tomado. La última corrida verificada (104 requests / 307 assertions) es **anterior** a este cambio y no se re-ejecutó (Docker apagado): reejecutar la colección antes de darla por válida.
 
 ## Reiniciar los datos
 

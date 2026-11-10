@@ -147,7 +147,8 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 - PUT: /lugares/{id} — Modificar lugar (ORGANIZADOR/ADMIN)
 - POST: /lugares/{id}/sectores — Crear sector (ORGANIZADOR/ADMIN)
 - PUT: /sectores/{id} — Modificar sector (ORGANIZADOR/ADMIN)
-- GET: /lugares/{id}/sectores/{sectorId}/asientos — Config física filas/asientos de sector numerado (no disponibilidad comercial)
+- GET: /lugares/{id}/sectores/{sectorId}/asientos — Asientos **virtuales** del sector numerado, calculados desde su layout (fila + número; sin ids ni filas persistidas; vacío en sectores generales). No es disponibilidad comercial
+- Sectores numerados: `filas` (1..200) y `asientosPorFila` (1..500); la capacidad se deriva (`filas × asientosPorFila`)
 
 Disponibilidad comercial = msvc-ventas.
 
@@ -163,11 +164,11 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 
 ### Disponibilidad y reservas
 
-- GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos/asientos libres)
+- GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos por sector; en sectores numerados `asientosOcupados[{fila,numero,estado}]`, el resto del layout está libre)
 
 /EL RECURSO ES EVENTOS PERO LE PEGA A ESTE SERVICIO, HAY QUE RUTEARLO DESDE GATEWAY.
 
-- POST /reservas — Crear reserva temporal (TTL p.ej. 10 min; atómica; cliente desde identidad gateway)
+- POST /reservas — Crear reserva temporal (TTL p.ej. 10 min; atómica; cliente desde identidad gateway). Items `{idSector, cantidad}` (sector general) o `{idSector, asientos:[{fila,numero}]}` (sector numerado; 409 si algún asiento ya está tomado)
 - GET /reservas/{id} — Consultar reserva propia
 - POST /reservas/{id}/confirmacion — Confirmar intención de compra
 - POST /reservas/{id}/cancelacion — Cancelar reserva y liberar cupo/asientos

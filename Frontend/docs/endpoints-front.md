@@ -72,9 +72,12 @@ El front mapea `sort`→`orden`, `limit`→`size` al salir a red.
 | POST | `/api/compras` | JWT | checkout (`comprarEntrada`; mock 1 paso) |
 | GET | `/api/compras` | JWT | `listMisCompras` |
 | GET | `/api/compras/{id}` | JWT | `getCompra` |
-| POST | `/api/reservas` | JWT | `crearReserva` (listo; checkout mock aún no la usa) |
+| POST | `/api/reservas` | JWT | `crearReserva` (la usa `comprarEntrada` en modo gateway; en mock no) |
+| GET | `/api/eventos/{id}/disponibilidad` | JWT | checkout: cupo + `asientosOcupados` del sector numerado |
 
 Flujo back completo: reserva → compra (+ Idempotency-Key) → pagos. El simulacro mock sigue en un POST.
+
+**Sectores numerados (asientos virtuales):** el checkout muestra `SeatPicker` (elegir fila → asientos, hasta 6). `comprarEntrada({ idEvento, idSector, asientos })` envía `items: [{ idSector, asientos: [{ fila, numero }] }]`; en sector general sigue `{ idSector, cantidad: 1 }`. Un 409 por asiento tomado quita solo los asientos en conflicto de la selección. Las entradas traen `fila` y `asiento`. Los forms de gestión envían `filas` y `asientosPorFila` (la capacidad se deriva).
 
 **No en back (solo mock UI):** cola compuesta admin de cancelados/reintegros manuales.
 Admin pendientes reales: `GET /api/devoluciones`.
@@ -114,7 +117,7 @@ Sin facades ni pantallas todavía (home fijo; notifs vía broker).
 | `/` | GET `/api/eventos` (secciones home) |
 | `/eventos` | JWT · sidebar filtros · GET `/api/eventos` (+ batch disponibilidad) |
 | `/eventos/:id` | GET `/api/eventos/{id}` |
-| `/eventos/:id/comprar` | POST `/api/compras` (+ futuro reservas/disponibilidad) |
+| `/eventos/:id/comprar` | GET `/api/eventos/{id}/disponibilidad` → POST `/api/reservas` → POST `/api/compras` → POST `/api/compras/{id}/pagos` (sector numerado: selector de asientos) |
 | `/mis-entradas` | GET `/api/entradas` |
 | `/mis-entradas/:id` | GET `/api/entradas/{id}` |
 | `/soporte/devolucion` | POST `/api/entradas/{id}/devoluciones` |

@@ -11,6 +11,7 @@ import {
 } from '../../domain/evento'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import SectorCupoFields from '../../components/gestion/SectorCupoFields'
 import EventoParticipantesFields, {
   newTeloneroRow,
 } from '../../components/gestion/EventoParticipantesFields'
@@ -19,8 +20,8 @@ import './GestionPage.css'
 /** Presets solo al click (no prearmados en el form). */
 const PRESETS_ENTRADA = [
   { key: 'campo', nombre: 'Campo', precio: '15000', capacidad: '500', esNumerado: false },
-  { key: 'palco', nombre: 'Palco', precio: '45000', capacidad: '40', esNumerado: true },
-  { key: 'platea', nombre: 'Platea', precio: '25000', capacidad: '120', esNumerado: true },
+  { key: 'palco', nombre: 'Palco', precio: '45000', esNumerado: true, filas: '4', asientosPorFila: '10' },
+  { key: 'platea', nombre: 'Platea', precio: '25000', esNumerado: true, filas: '8', asientosPorFila: '15' },
   { key: 'general', nombre: 'General', precio: '10000', capacidad: '200', esNumerado: false },
   { key: 'vip', nombre: 'VIP', precio: '60000', capacidad: '30', esNumerado: false },
 ]
@@ -33,6 +34,9 @@ function newSectorRow(partial = {}) {
     precio: partial.precio != null ? String(partial.precio) : '',
     capacidad: partial.capacidad != null ? String(partial.capacidad) : '',
     esNumerado: Boolean(partial.esNumerado),
+    filas: partial.filas != null ? String(partial.filas) : '',
+    asientosPorFila:
+      partial.asientosPorFila != null ? String(partial.asientosPorFila) : '',
   }
 }
 
@@ -341,7 +345,9 @@ const GestionEventoNuevoPage = () => {
             <legend>Tipos de entrada {publishing ? '*' : '(opcionales en borrador)'}</legend>
             <p className="gestion-card__muted" style={{ marginBottom: '0.75rem' }}>
               Una fila vacía al inicio. Usá presets solo si querés. Cupo ≥ 1 al
-              publicar (siempre hay cupo). Numerado = asientos (mapa después).
+              publicar (siempre hay cupo). Numerado = filas × asientos por fila:
+              el cupo se calcula solo y el cliente elige su asiento al comprar.
+              En borrador podés dejar el layout incompleto.
             </p>
 
             <div className="gestion-presets">
@@ -410,21 +416,14 @@ const GestionEventoNuevoPage = () => {
                         placeholder="0"
                       />
                     </div>
-                    <div className="form-group">
-                      <label htmlFor={`sec-cap-${s.key}`}>Cupo</label>
-                      <input
-                        id={`sec-cap-${s.key}`}
-                        type="number"
-                        min="1"
-                        className="form-input"
-                        value={s.capacidad}
-                        onChange={(e) =>
-                          onSectorChange(s.key, 'capacidad', e.target.value)
-                        }
-                        disabled={loading}
-                        placeholder="ej. 500"
-                      />
-                    </div>
+                    <SectorCupoFields
+                      sector={s}
+                      idPrefix={`sec-${s.key}`}
+                      disabled={loading}
+                      onChange={(field, value) =>
+                        onSectorChange(s.key, field, value)
+                      }
+                    />
                   </div>
                   <div className="gestion-checks">
                     <label className="gestion-check">

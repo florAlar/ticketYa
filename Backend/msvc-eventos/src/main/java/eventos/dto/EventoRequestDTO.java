@@ -81,6 +81,13 @@ public class EventoRequestDTO {
         @Schema(description = "Sector numerado", example = "false")
         private Boolean esNumerado;
 
+        @Schema(description = "Filas del sector numerado (obligatorio al publicar si esNumerado; 1..200)", example = "20")
+        private Integer filas;
+
+        @Schema(description = "Asientos por fila del sector numerado (obligatorio al publicar si esNumerado; 1..500). "
+                + "Si hay layout, la capacidad se calcula como filas * asientosPorFila", example = "15")
+        private Integer asientosPorFila;
+
         @Schema(description = "Tipo de sector", example = "CAMPO")
         private String tipo;
     }

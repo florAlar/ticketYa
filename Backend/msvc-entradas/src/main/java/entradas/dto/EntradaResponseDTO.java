@@ -31,6 +31,14 @@ public class EntradaResponseDTO {
     @Schema(description = "UUID del sector", example = "c0000000-0000-4000-8000-000000000011")
     private String idSector;
 
+    @Schema(description = "Fila del asiento (solo sector numerado; null en sectores generales)", example = "C",
+            nullable = true)
+    private String fila;
+
+    @Schema(description = "Número de asiento dentro de la fila (solo sector numerado)", example = "14",
+            nullable = true)
+    private Integer asiento;
+
     @Schema(description = "Estado: VENDIDA | USADA | DEVUELTA | A_REINTEGRAR",
             allowableValues = {"VENDIDA", "USADA", "DEVUELTA", "A_REINTEGRAR"},
             example = "VENDIDA")

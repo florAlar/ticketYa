@@ -11,7 +11,7 @@ class JobsTest {
     @Test
     void emisionPendienteJob_seInstancia() {
         EmisionEntradasService service = new EmisionEntradasService(
-                null, null, null, null, 3, 0, 20);
+                null, null, null, null, null, 3, 0, 20);
         assertNotNull(new EmisionPendienteJob(service));
     }
 
@@ -25,7 +25,7 @@ class JobsTest {
     @Test
     void reservaExpirationJob_seInstancia() {
         VentaService ventaService = new VentaServiceImpl(
-                null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null,
                 10L, 6, 24L);
         assertNotNull(new ReservaExpirationJob(ventaService));
     }

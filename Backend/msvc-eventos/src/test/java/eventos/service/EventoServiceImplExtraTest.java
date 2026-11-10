@@ -37,7 +37,6 @@ import eventos.dto.LugarRequestDTO;
 import eventos.dto.ParticipanteRequestDTO;
 import eventos.dto.PrecioSectorRequestDTO;
 import eventos.dto.SectorRequestDTO;
-import eventos.entity.Asiento;
 import eventos.entity.Evento;
 import eventos.entity.EventoParticipante;
 import eventos.entity.Lugar;
@@ -48,7 +47,6 @@ import eventos.exception.BusinessConflictException;
 import eventos.exception.ForbiddenException;
 import eventos.exception.ResourceNotFoundException;
 import eventos.mapper.EventoMapper;
-import eventos.repository.AsientoRepository;
 import eventos.repository.EventoParticipanteRepository;
 import eventos.repository.EventoRepository;
 import eventos.repository.LugarRepository;
@@ -71,9 +69,6 @@ class EventoServiceImplExtraTest {
 
     @Mock
     private SectorRepository sectorRepository;
-
-    @Mock
-    private AsientoRepository asientoRepository;
 
     @Mock
     private ParticipanteRepository participanteRepository;

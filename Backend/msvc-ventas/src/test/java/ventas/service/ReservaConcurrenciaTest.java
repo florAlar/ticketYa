@@ -30,6 +30,7 @@ import ventas.entity.CupoSector;
 import ventas.exception.BusinessConflictException;
 import ventas.mapper.VentaMapper;
 import ventas.redis.StockCache;
+import ventas.repository.AsientoReservadoRepository;
 import ventas.repository.CompraRepository;
 import ventas.repository.CupoSectorRepository;
 import ventas.repository.DetalleReservaRepository;
@@ -87,7 +88,7 @@ class ReservaConcurrenciaTest {
         EmisionEntradasService emision = mock(EmisionEntradasService.class);
 
         VentaServiceImpl service = new VentaServiceImpl(
-                cupoRepo, reservaRepo, detalleRepo, compraRepo, pagoRepo,
+                cupoRepo, reservaRepo, detalleRepo, mock(AsientoReservadoRepository.class), compraRepo, pagoRepo,
                 eventosClient, stockCache, mapper, emision, 10L, 6, 24L);
 
         EventoDetalleFeignDTO evento = new EventoDetalleFeignDTO();

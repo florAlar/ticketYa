@@ -6,10 +6,12 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Schema(name = "Asiento", description = "Asiento de un sector numerado")
+@Schema(name = "Asiento",
+        description = "Asiento virtual de un sector numerado, calculado desde filas y asientosPorFila (no se persiste)")
 public class AsientoResponseDTO {
 
-    @Schema(description = "UUID del asiento", example = "a1000000-0000-4000-8000-000000000001")
+    @Schema(description = "Siempre null: los asientos son virtuales; se identifican por sector + fila + número",
+            nullable = true)
     private String id;
 
     @Schema(description = "UUID del sector", example = "a0000000-0000-4000-8000-000000000001")

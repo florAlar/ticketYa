@@ -19,6 +19,7 @@ import entradas.clients.EventosClient.EventoDetalleFeignDTO;
 import entradas.clients.EventosClient.LugarFeignDTO;
 import entradas.clients.EventosClient.SectorFeignDTO;
 import entradas.clients.VentasClient;
+import entradas.dto.AsientoRefDTO;
 import entradas.dto.DevolucionCreateRequestDTO;
 import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
@@ -89,6 +90,13 @@ public class EntradaServiceImpl implements EntradaService {
         List<Entrada> creadas = new ArrayList<>();
         for (EmitirEntradasRequestDTO.Item item : request.items()) {
             int n = item.cantidad() == null ? 0 : item.cantidad();
+            List<AsientoRefDTO> asientos = item.asientos();
+            boolean numerado = asientos != null && !asientos.isEmpty();
+            if (numerado && n != asientos.size()) {
+                throw new IllegalArgumentException(
+                        "cantidad (" + n + ") no coincide con los asientos (" + asientos.size()
+                                + ") del sector " + item.idSector());
+            }
             for (int i = 0; i < n; i++) {
                 Entrada e = new Entrada();
                 e.setIdEntrada(UUID.randomUUID().toString());
@@ -96,6 +104,11 @@ public class EntradaServiceImpl implements EntradaService {
                 e.setIdCliente(request.idCliente());
                 e.setIdEvento(request.idEvento());
                 e.setIdSector(item.idSector());
+                if (numerado) {
+                    // una entrada por asiento vendido
+                    e.setFila(asientos.get(i).fila());
+                    e.setNumero(asientos.get(i).numero());
+                }
                 e.setCodigoQr(buildQrCode());
                                 e.setEstado(EST_VENDIDA);
                                 e.setFechaEmision(now);
@@ -239,9 +252,13 @@ public class EntradaServiceImpl implements EntradaService {
                         "No se puede liberar cupo: entrada sin idEvento/idSector");
             }
             try {
-                ventasClient.liberarCupo(
-                        entrada.getIdEvento().trim(),
-                        new VentasClient.LiberarCupoBody(entrada.getIdSector().trim(), 1));
+                // entrada con asiento (sector numerado): ventas libera ese asiento concreto
+                VentasClient.LiberarCupoBody body = entrada.getFila() != null && entrada.getNumero() != null
+                        ? new VentasClient.LiberarCupoBody(
+                                entrada.getIdSector().trim(),
+                                List.of(new AsientoRefDTO(entrada.getFila(), entrada.getNumero())))
+                        : new VentasClient.LiberarCupoBody(entrada.getIdSector().trim(), 1);
+                ventasClient.liberarCupo(entrada.getIdEvento().trim(), body);
             } catch (FeignException ex) {
                 log.error(
                         "Feign ventas liberar cupo falló entrada={} evento={} sector={} status={}",

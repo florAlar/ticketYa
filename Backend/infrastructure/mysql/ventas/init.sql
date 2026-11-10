@@ -71,6 +71,22 @@ CREATE TABLE IF NOT EXISTS cupo_sector (
   UNIQUE KEY uk_cupo_evento_sector (id_evento, id_sector)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Asientos virtuales: solo existe una fila por asiento TOMADO (RESERVADO|VENDIDO); los libres no se persisten.
+-- La clave única es la segunda línea de defensa contra la doble venta de un mismo asiento.
+CREATE TABLE IF NOT EXISTS asiento_reservado (
+  id_asiento_reservado CHAR(36)    NOT NULL,
+  id_reserva           CHAR(36)    NOT NULL,
+  id_evento            CHAR(36)    NOT NULL COMMENT 'ref lógica eventos.evento',
+  id_sector            CHAR(36)    NOT NULL COMMENT 'ref lógica eventos.sector',
+  fila                 VARCHAR(8)  NOT NULL,
+  numero               INT         NOT NULL,
+  estado               VARCHAR(16) NOT NULL COMMENT 'RESERVADO|VENDIDO',
+  PRIMARY KEY (id_asiento_reservado),
+  UNIQUE KEY uk_asiento_evento_sector_fila_numero (id_evento, id_sector, fila, numero),
+  KEY ix_asiento_reserva (id_reserva),
+  CONSTRAINT fk_asiento_reserva FOREIGN KEY (id_reserva) REFERENCES reserva (id_reserva)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Cupos alineados a sectores seed de eventos (d001–d00e)
 -- IDs f001–f005 + f050–f065 (evitar choque con reserva/compra f011…)
 INSERT INTO cupo_sector (id_cupo, id_evento, id_sector, capacidad_total, cantidad_disponible, cantidad_reservada, cantidad_vendida) VALUES

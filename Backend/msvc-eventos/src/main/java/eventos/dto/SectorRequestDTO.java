@@ -20,4 +20,11 @@ public class SectorRequestDTO {
 
     @Schema(description = "Sector numerado", example = "true")
     private Boolean esNumerado;
+
+    @Schema(description = "Filas del sector numerado (obligatorio si esNumerado; 1..200)", example = "20")
+    private Integer filas;
+
+    @Schema(description = "Asientos por fila del sector numerado (obligatorio si esNumerado; 1..500). "
+            + "La capacidad del sector es filas * asientosPorFila", example = "15")
+    private Integer asientosPorFila;
 }

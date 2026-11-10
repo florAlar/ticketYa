@@ -16,7 +16,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | --- | --- | --- |
 | GET /eventos | **hecho** | Catálogo; default `estado=PUBLICADO`. Gestión admin: `estado=TODOS\|ALL` (todos los estados). |
 | GET /eventos/{id} | **hecho** | Detalle + sectores con precio activo |
-| POST /eventos | **hecho** | Crear BORRADOR (ORG/ADMIN). Body form FE: nombre, fechaInicio, lugar* o idLugar, sectores[{nombre,precio,capacidadTotal,sinCupo,esNumerado}]. Si `estado=PUBLICADO` publica al final. |
+| POST /eventos | **hecho** | Crear BORRADOR (ORG/ADMIN). Body form FE: nombre, fechaInicio, lugar* o idLugar, sectores[{nombre,precio,capacidadTotal,sinCupo,esNumerado,filas,asientosPorFila}] (sector numerado: filas y asientosPorFila obligatorios al publicar; capacidad = filas x asientosPorFila). Si `estado=PUBLICADO` publica al final. |
 | PUT /eventos/{id} | **hecho** | Editar config (dueño o ADMIN); no CANCELADO/FINALIZADO |
 | DELETE /eventos/{id} | **hecho** | Solo BORRADOR |
 | POST /eventos/{id}/publicacion | **hecho** | Valida nombre/fecha/lugar/≥1 precio sector activo |
@@ -25,7 +25,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | GET /organizadores/me/eventos | **hecho** | Listado del org (todos los estados) |
 | GET /eventos/{id}/sectores | **hecho** | Precios (activos e inactivos) |
 | PUT /eventos/{id}/sectores/{sectorId}/precio | **hecho** | Upsert precio |
-| GET/POST/PUT /lugares… | **hecho** | CRUD lugar + POST sectores + GET asientos físicos |
+| GET/POST/PUT /lugares… | **hecho** | CRUD lugar + POST sectores + GET asientos virtuales (calculados desde filas x asientosPorFila del sector, sin filas persistidas; vacío si el sector no es numerado) |
 | PUT /sectores/{id} | **hecho** | Modificar sector |
 | GET/POST/PUT /participantes | **hecho** | Artistas/bandas (E1-EVE-06). Sin authz msvc aún. |
 | GET/PUT /eventos/{id}/participantes | **hecho** | Listar / reemplazar set (ids o items con rol/orden) |

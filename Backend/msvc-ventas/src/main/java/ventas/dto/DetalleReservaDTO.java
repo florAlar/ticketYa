@@ -2,6 +2,8 @@ package ventas.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -21,4 +23,7 @@ public class DetalleReservaDTO {
 
     @Schema(description = "Precio unitario", example = "95000.00")
     private BigDecimal precioUnitario;
+
+    @Schema(description = "Asientos reservados (solo sectores numerados; vacío en sectores generales)")
+    private List<AsientoDTO> asientos = new ArrayList<>();
 }
