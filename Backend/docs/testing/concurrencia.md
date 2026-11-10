@@ -75,14 +75,35 @@ docker run --rm --network host \
 
 **Evidencia en el log SQL:** dos `select ... where id_evento=? and id_sector=? for update` y un único `update cupo_sector` (el de la transacción ganadora). La perdedora no llega a actualizar.
 
+### 3.3 Integración — `AsientoReservadoConcurrenciaIT` (SEAT-06, perfil `-Pit`)
+
+Mismo patrón que 3.2, aplicado al **mismo asiento** de un sector numerado y sobre el **esquema real**.
+
+| Aspecto | Detalle |
+|---------|---------|
+| Clases bajo prueba | `CupoSectorRepository.findByEventoAndSectorForUpdate` y `AsientoReservadoRepository` sobre MySQL real |
+| Contexto | `@DataJpaTest` con `mysql:8.4`; el contenedor carga `infrastructure/mysql/ventas/init.sql` y Hibernate solo valida (`ddl-auto=validate`). Así entra la clave única `uk_asiento_evento_sector_fila_numero`, que solo existe en `init.sql` |
+| Estado inicial | 1 cupo de sector (capacidad 200) y reservas sin asientos; se limpian los datos seed |
+
+| Caso | Qué verifica | Resultado esperado |
+|---|---|---|
+| `mismoAsiento_unaTransaccionGanaOtraEsperaVeAsientoTomadoYFalla` | 2 transacciones reales piden el asiento C-14: la primera retiene el lock 600 ms; la segunda espera, ve el asiento tomado y falla con `BusinessConflictException` | 1 éxito, 1 conflicto, espera ≥ 300 ms, 1 fila en `asiento_reservado`, cupo 199/1 |
+| `mismoAsiento_sinLockLaClaveUnicaDeMySqlRechazaElDuplicado` | 8 hilos insertan el mismo asiento **sin lock ni pre-chequeo**: solo actúa la base | 1 éxito, 7 `DataIntegrityViolationException`, 1 fila |
+| `conflictoDeClaveUnica_haceRollbackDeLosContadoresDelCupo` | una transacción descuenta el cupo y luego choca con la clave única | los contadores quedan como antes (disponible 199, reservada 1) |
+| `asientosDistintos_ambasReservasProsperan` | dos asientos distintos no generan falsos conflictos | 2 éxitos, cupo 198/2 |
+
+**Prueba de que no es vacuo:** quitando temporalmente la clave única de `init.sql`, fallan los dos casos que la ejercitan (se insertan 8 filas del mismo asiento y no hay rollback); los otros dos siguen verdes porque dependen del lock y del pre-chequeo.
+
 ## 4. Resultados
 
 | Escenario | Hilos / transacciones | Éxitos | Conflictos | Sobreventa | Contadores negativos |
 |-----------|----------------------|--------|------------|------------|----------------------|
 | Unitario (lock emulado) | 20 | 1 | 19 | no | no |
-| IT (MySQL 8.4 real) | 2 | 1 | 1 | no | no |
+| IT cupo (MySQL 8.4 real) | 2 | 1 | 1 | no | no |
+| IT mismo asiento, con lock (MySQL real) | 2 | 1 | 1 | no | no |
+| IT mismo asiento, solo clave única (MySQL real) | 8 | 1 | 7 | no | no |
 
-`mvn test` de msvc-ventas: **109 tests, 0 fallos**. `mvn verify -Pit`: **BUILD SUCCESS** (1 test de integración, 0 fallos; 1 min 10 s de build).
+`mvn test` de msvc-ventas: **109 tests, 0 fallos**. `mvn verify -Pit`: **BUILD SUCCESS** (1 test de integración del cupo + 4 del asiento, 0 fallos; corrida del 2026-11-10).
 
 ## 5. Métricas de latencia y throughput
 
@@ -98,9 +119,9 @@ docker run --rm --network host \
 
 1. **Contención baja en la base real.** El IT usa 2 transacciones, no decenas. Prueba que el lock de fila serializa y que el segundo ve el estado actualizado, pero no ejerce alta contención sobre MySQL.
 2. **El IT no pasa por `VentaServiceImpl`.** Ejercita el repositorio con la lógica de validación replicada en la prueba. La lógica real del servicio (`crearReserva`) se prueba bajo concurrencia solo en el unitario, con el lock emulado: ese fake no prueba el motor de base de datos.
-3. **Esquema generado por Hibernate**, no por el `init.sql` real de `infrastructure/mysql/ventas/`. Si el esquema real difiriera (índices, tipos), el IT no lo detectaría.
+3. **Esquema generado por Hibernate** en `CupoSectorConcurrenciaIT` (§3.2). El IT de asientos (§3.3) sí usa el `init.sql` real.
 4. **Solo reservas sobre un único sector.** No se prueba concurrencia entre compras sobre la misma reserva, ni pagos concurrentes, ni liberación de cupo en devoluciones.
-5. **Asiento numerado** *(actualizado 2026-11-10)*: los sectores numerados ya se venden por asiento concreto (asientos virtuales, tabla `asiento_reservado` con clave única por evento + sector + fila + número). La concurrencia por **un mismo asiento** se prueba con `ReservaAsientoConcurrenciaTest` (20 hilos sobre el mismo asiento: 1 éxito, 19 conflictos), pero **con el mismo tipo de emulación** que el punto 2: lock de cupo y tabla de asientos simulados, sin el motor MySQL. Siguen sin probarse contra MySQL real la clave única de `asiento_reservado` y el rollback de los contadores ante un conflicto (backlog SEAT-06). Además, en un sector numerado las reservas del mismo sector siguen serializadas por el lock de `cupo_sector`; la clave única es la segunda línea de defensa.
+5. **Asiento numerado** *(actualizado 2026-11-10)*: los sectores numerados se venden por asiento concreto (asientos virtuales, tabla `asiento_reservado` con clave única por evento + sector + fila + número). El mismo asiento se prueba de dos formas: unitario con lock emulado (`ReservaAsientoConcurrenciaTest`, 20 hilos: 1 éxito, 19 conflictos) y contra **MySQL real** (`AsientoReservadoConcurrenciaIT`, §3.3: lock de cupo, clave única y rollback de contadores). Igual que en el punto 2, el IT ejercita los repositorios con la lógica de reserva replicada, no `VentaServiceImpl.crearReserva`.
 
 ## 8. Diferencias con el plan original (§10 del spec)
 

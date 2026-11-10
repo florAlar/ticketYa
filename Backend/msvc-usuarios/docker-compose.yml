@@ -3,6 +3,7 @@ services:
   ms-usuarios:
     build: .
     container_name: ms-usuarios
+    restart: on-failure
     ports:
       - "8081:8081"
     environment:
@@ -28,7 +29,7 @@ services:
       - usuarios_data:/var/lib/mysql
       - ../infrastructure/mysql/usuarios:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
       timeout: 5s
       retries: 10

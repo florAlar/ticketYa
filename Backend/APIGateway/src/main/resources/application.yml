@@ -215,6 +215,9 @@ spring:
 
 # Orígenes FE (E1-GW-03). Override: TICKETYA_CORS_ORIGINS=http://a,http://b
 ticketya:
+  security:
+    # Entrega 1: false = identificación por headers X-User-*. Entrega 2: true (JWT + roles). Override: TICKETYA_JWT_ENABLED
+    jwt-enabled: ${TICKETYA_JWT_ENABLED:false}
   cors:
     allowed-origins: ${TICKETYA_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000}
 

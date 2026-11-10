@@ -51,13 +51,12 @@ docker compose down
 ## Smoke (apps arriba)
 
 ```bash
-curl -s http://localhost:8080/
-curl -s http://localhost:8082/
-curl -s http://localhost:8086/
-curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/      # frontend → 200
+curl -s http://localhost:8080/api/eventos                            # gateway → 200 con eventos
+curl -s -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
 ```
 
-Respuesta esperada hoy: texto tipo `api gateway ok!` / `microservicio … ok!` (sin API de negocio aún); FE HTTP 200.
+Gateway sin headers en rutas privadas → 401. Modo de auth (Entrega 1/2): flag `TICKETYA_JWT_ENABLED`, ver README raíz.
 
 ## Correr un msvc en local (sin imagen)
 

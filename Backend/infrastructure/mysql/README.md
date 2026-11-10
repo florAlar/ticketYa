@@ -44,24 +44,27 @@ Mongo preferencias: `../mongodb/preferencias/` (aparte). No hay loader por msvc 
 
 - FK **físicas** solo dentro de la misma DB.
 - Cross-msvc: columnas comentadas `ref lógica` (CHAR 36), sin FK.
-- Para re-aplicar: borrar volumen Docker del MySQL correspondiente, o script `eventos/03-reseed-clean-demo.sql` (+ ventas/entradas).
+- Para re-aplicar: borrar volumen Docker del MySQL correspondiente, o script `eventos/migrations/03-reseed-clean-demo.sql` (+ ventas/entradas).
 
-## Migraciones para volúmenes ya creados
+## Migraciones para volúmenes ya creados (`<db>/migrations/`)
+
+Los scripts `02-*`, `03-*` y `04-*` viven en `<db>/migrations/` y **no** corren solos: MySQL solo ejecuta los `.sql` de primer nivel de `docker-entrypoint-initdb.d`, y los ejecuta en orden alfabético (un `02-*` o `04-*` en el nivel superior correría antes que `init.sql` y abortaría la inicialización).
+
 
 `init.sql` solo corre en un volumen vacío. Si el volumen existe de antes, aplicar a mano (en este orden por servicio):
 
 | Script | Qué agrega |
 |---|---|
-| `eventos/02-add-participantes.sql` | `participante`, `evento_participante` |
-| `eventos/04-add-sector-layout.sql` | `sector.filas`, `sector.asientos_por_fila` (+ layout 250 por fila a los numerados existentes cuya capacidad es múltiplo de 250; revisar el resto) |
-| `ventas/02-add-compra-emision.sql` | `compra.emision_*` |
-| `ventas/04-add-asiento-reservado.sql` | tabla `asiento_reservado` |
-| `entradas/02-add-entrada-precio.sql` | `entrada.precio` |
-| `entradas/04-add-entrada-asiento.sql` | `entrada.fila`, `entrada.numero` |
+| `eventos/migrations/02-add-participantes.sql` | `participante`, `evento_participante` |
+| `eventos/migrations/04-add-sector-layout.sql` | `sector.filas`, `sector.asientos_por_fila` (+ layout 250 por fila a los numerados existentes cuya capacidad es múltiplo de 250; revisar el resto) |
+| `ventas/migrations/02-add-compra-emision.sql` | `compra.emision_*` |
+| `ventas/migrations/04-add-asiento-reservado.sql` | tabla `asiento_reservado` |
+| `entradas/migrations/02-add-entrada-precio.sql` | `entrada.precio` |
+| `entradas/migrations/04-add-entrada-asiento.sql` | `entrada.fila`, `entrada.numero` |
 
 ## Asientos virtuales (sectores numerados)
 
 - El sector numerado guarda `filas` y `asientos_por_fila`; su capacidad es el producto. No hay filas de asiento libres en ninguna tabla.
 - Solo `ventas.asiento_reservado` guarda asientos, y únicamente los **tomados** (RESERVADO | VENDIDO). Clave única: evento + sector + fila + número.
 - Seeds: los 3 sectores numerados (Platea `…012` 100×250, Cadeira `…014` 80×250, Club Wembley `…016` 72×250) mantienen su capacidad anterior (25.000 / 20.000 / 18.000). Las tablas `asiento` y `precio_asiento` de eventos ya no se usan.
-- `ventas/03-reseed-clean-demo.sql` también vacía `asiento_reservado`.
+- `ventas/migrations/03-reseed-clean-demo.sql` también vacía `asiento_reservado`.

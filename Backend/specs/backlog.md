@@ -88,8 +88,8 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
-| US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | pendiente | Artefacto de consigna §5.A. |
-| US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | pendiente | |
+| US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | hecho | Artefacto de consigna §5.A. Se mantiene en el tablero Trello del equipo (enlazado en el README raíz). |
+| US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | hecho | En el tablero Trello del equipo, junto a las historias. |
 | US-03 | Completar/actualizar CA de historias E2 y de las que cambien | E2 | pendiente | |
 
 ---
@@ -99,9 +99,9 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
 | ARQ-01 | Definir responsabilidades finales de cada msvc y APIs públicas (cierre de `microservicios.md` / `comunicacion.md`) | E1 | pendiente | Scaffold de nombres ya existe. |
-| ARQ-02 | Diagrama de módulos de la arquitectura | E1 | pendiente | Complementa diagrama Docker ya existente. |
-| ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | pendiente | Ya existe el flujo real a documentar (SEAT-01…05): elegir asientos → `POST /reservas` con `asientos` (lock de cupo + `asiento_reservado`) → compra → pago → emisión de una entrada por asiento. |
-| ARQ-04 | Misma secuencia: **pago rechazado** y **vencimiento de reserva** | E1 | pendiente | |
+| ARQ-02 | Diagrama de módulos de la arquitectura | E1 | hecho | `docs/arquitectura.md` (Mermaid, con las llamadas Feign reales entre servicios). Complementa el diagrama Docker (`diagramas/img.png`). |
+| ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | hecho | `diagramas/diagramas-secuencia.md` §1 (compra exitosa) y §5 (asiento concreto: `asiento_reservado`, `RESERVADO` → `VENDIDO`, errores 400/409, devolución). Flujo (SEAT-01…05): elegir asientos → `POST /reservas` con `asientos` (lock de cupo + `asiento_reservado`) → compra → pago → emisión de una entrada por asiento. |
+| ARQ-04 | Misma secuencia: **pago rechazado** y **vencimiento de reserva** | E1 | hecho | `diagramas/diagramas-secuencia.md` §2 (pago rechazado) y §3 (vencimiento por job y lazy). Quedan en diagramas separados; la consigna pide uno solo que contemple ambas variantes, pendiente de consolidar. |
 | ARQ-05 | Estrategias de consistencia entre servicios y compensaciones (saga / pasos de deshacer) | E2 | pendiente | |
 | ARQ-06 | Justificar tecnologías (Mongo, Redis, Gateway, etc.) y patrones usados | E2 | pendiente | |
 
@@ -201,9 +201,9 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 | SEAT-01 | eventos: `sector.filas` + `asientos_por_fila`; capacidad = filas x asientosPorFila; `GET .../asientos` calculado | hecho | `init.sql`, `03-reseed`, `04-add-sector-layout.sql`. Límites 1..200 filas, 1..500 por fila. Tests eventos 119 OK. |
 | SEAT-02 | ventas: tabla `asiento_reservado` (única por evento+sector+fila+número); reservar por asiento; liberar al cancelar/rechazar/expirar; VENDIDO al pagar; `asientosOcupados` en disponibilidad; liberar asiento en devolución | hecho | `04-add-asiento-reservado.sql`. Lock de cupo + pre-chequeo + clave única como 2ª defensa. Tests ventas 139 OK. |
 | SEAT-03 | entradas: `entrada.fila` + `numero`; emisión una entrada por asiento; devolución libera el asiento en ventas | hecho | `04-add-entrada-asiento.sql`. DTO expone `fila` y `asiento`. Tests entradas 54 OK. |
-| SEAT-04 | Gateway / OpenAPI / Postman | parcial | Gateway sin cambios (rutas existentes cubren todo). Postman: sector numerado ahora con filas/asientosPorFila; **faltan** requests de reserva/compra con asientos y recorrer 409 de asiento tomado. OpenAPI estático (`docs/openapi/`) sin regenerar. |
+| SEAT-04 | Gateway / OpenAPI / Postman | hecho | Gateway sin cambios (las rutas existentes cubren todo). OpenAPI regenerado el 2026-11-10 con los asientos. Postman: carpeta `09 Asientos numerados` (23 requests: reserva por asiento, 409/400, pago aprobado/rechazado, entrada con fila y número, devolución). Colección completa 127/376/0 con el flag en `false` y en `true`. |
 | SEAT-05 | Frontend: selector de asientos + enviar `filas`/`asientosPorFila` al crear sector numerado | hecho | Forms Nuevo/Editar (filas × asientos, cupo derivado de solo lectura, borrador laxo / publicación estricta); `SeatPicker` en dos pasos (fila → asientos, hasta 6); 409 quita solo los asientos en conflicto; detalle muestra layout; mock mínimo. Verificado: lint sin errores nuevos, build OK, 15 checks de dominio y render del picker. **No** probado contra el BE real (Docker apagado). |
-| SEAT-06 | IT con MySQL real del flujo de asientos (unique key, rollback de contadores) | pendiente | Requiere Docker. |
+| SEAT-06 | IT con MySQL real del flujo de asientos (unique key, rollback de contadores) | hecho | `AsientoReservadoConcurrenciaIT` (4 casos, perfil `-Pit`, carga el `init.sql` real). Verificado quitando la clave única: fallan los casos que la ejercitan. Ver `docs/testing/concurrencia.md` §3.3. |
 | SEAT-07 | Limpieza: eliminar `asiento`, `precio_asiento` (tablas, entidades, repos) | pendiente | Sin uso desde SEAT-01. Al hacerlo: quitarlas de `init.sql`, `03-reseed`, entidades/repos de eventos, `modelo.md` y `modelo-por-microservicio.md`. |
 | SEAT-08 | Documentación actualizada | hecho | `reglas-de-negocio.md` (reglas + pregunta 6 resuelta), `documentacion-y-validacion.md` (D-16/R-05, changelog 1.2), `endpoints.md`, `msvc-{eventos,ventas,entradas}/docs/endpoints.md`, `infrastructure/readme.md` + `mysql/README.md` (migraciones y asientos virtuales), `docs/testing/concurrencia.md`, `docs/postman/README.md`, `docs/openapi/README.md`, `Frontend/docs/endpoints-{back,front}.md`, diagramas (`modelo.md`, `modelo-por-microservicio.md`). `consigna.md` no se toca. |
 
@@ -358,8 +358,8 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
-| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
-| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…03** (asientos virtuales en sectores numerados) | SEAT-04 (Postman/OpenAPI) | E2-ACC; SEAT-06 (IT MySQL), SEAT-07 (limpieza `asiento`/`precio_asiento`) |
+| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
+| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC; SEAT-07 (limpieza `asiento`/`precio_asiento`) |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
 | Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
 

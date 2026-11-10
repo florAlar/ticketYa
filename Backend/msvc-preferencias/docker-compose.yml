@@ -3,6 +3,7 @@ services:
   ms-preferencias:
     build: .
     container_name: ms-preferencias
+    restart: on-failure
     ports:
       - "8085:8085"
     environment:
@@ -12,7 +13,7 @@ services:
         condition: service_healthy
 
   db-mongo-preferencias:
-    image: mongo:8
+    image: mongo:7.0
     container_name: db-mongo-preferencias
     restart: unless-stopped
     environment:

@@ -98,4 +98,31 @@ class JwtAuthenticationFilterTest {
 
         assertNotNull(filter);
     }
+
+    @Test
+    void jwtDeshabilitado_sinToken_pasaConHeadersDelCliente() throws Exception {
+        JwtAuthenticationFilter sinJwt = new JwtAuthenticationFilter(jwtUtil, false);
+        when(request.getRequestURI()).thenReturn("/api/entradas");
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("Authorization")).thenReturn(null);
+
+        sinJwt.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        verify(response, never()).setStatus(eq(401));
+    }
+
+    @Test
+    void jwtDeshabilitado_conTokenInvalido_sigueDevolviendo401() throws Exception {
+        JwtAuthenticationFilter sinJwt = new JwtAuthenticationFilter(jwtUtil, false);
+        when(request.getRequestURI()).thenReturn("/api/entradas");
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("Authorization")).thenReturn("Bearer token.invalido");
+        when(jwtUtil.validateToken("token.invalido")).thenReturn(false);
+
+        sinJwt.doFilterInternal(request, response, filterChain);
+
+        verify(response).setStatus(eq(401));
+        verify(filterChain, never()).doFilter(any(), any());
+    }
 }
