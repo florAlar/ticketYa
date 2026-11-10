@@ -88,8 +88,8 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
-| US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | pendiente | Artefacto de consigna §5.A. |
-| US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | pendiente | |
+| US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | parcial | Artefacto de consigna §5.A. E1 hecho: `docs/user-stories.md` (10 features, 24 historias). Las funcionalidades de E2 solo figuran como fuera de alcance. El tablero Trello (enlazado en el README) es el espacio de trabajo del equipo. |
+| US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | hecho | `docs/user-stories.md`, formato dado / cuando / entonces, con códigos HTTP y reglas verificadas contra el código. |
 | US-03 | Completar/actualizar CA de historias E2 y de las que cambien | E2 | pendiente | |
 
 ---
@@ -99,9 +99,9 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
 | ARQ-01 | Definir responsabilidades finales de cada msvc y APIs públicas (cierre de `microservicios.md` / `comunicacion.md`) | E1 | pendiente | Scaffold de nombres ya existe. |
-| ARQ-02 | Diagrama de módulos de la arquitectura | E1 | pendiente | Complementa diagrama Docker ya existente. |
-| ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | pendiente | Ya existe el flujo real a documentar (SEAT-01…05): elegir asientos → `POST /reservas` con `asientos` (lock de cupo + `asiento_reservado`) → compra → pago → emisión de una entrada por asiento. |
-| ARQ-04 | Misma secuencia: **pago rechazado** y **vencimiento de reserva** | E1 | pendiente | |
+| ARQ-02 | Diagrama de módulos de la arquitectura | E1 | hecho | `docs/arquitectura.md` (Mermaid, con las llamadas Feign reales entre servicios). Complementa el diagrama Docker (`diagramas/img.png`). |
+| ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | hecho | `diagramas/diagramas-secuencia.md` §1 (compra exitosa) y §5 (asiento concreto: `asiento_reservado`, `RESERVADO` → `VENDIDO`, errores 400/409, devolución). Flujo (SEAT-01…05): elegir asientos → `POST /reservas` con `asientos` (lock de cupo + `asiento_reservado`) → compra → pago → emisión de una entrada por asiento. |
+| ARQ-04 | Misma secuencia: **pago rechazado** y **vencimiento de reserva** | E1 | hecho | `diagramas/diagramas-secuencia.md` §2 (pago rechazado) y §3 (vencimiento por job y lazy). Quedan en diagramas separados; la consigna pide uno solo que contemple ambas variantes, pendiente de consolidar. |
 | ARQ-05 | Estrategias de consistencia entre servicios y compensaciones (saga / pasos de deshacer) | E2 | pendiente | |
 | ARQ-06 | Justificar tecnologías (Mongo, Redis, Gateway, etc.) y patrones usados | E2 | pendiente | |
 
@@ -358,8 +358,8 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
-| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
-| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…03** (asientos virtuales en sectores numerados) | SEAT-04 (Postman/OpenAPI) | E2-ACC; SEAT-06 (IT MySQL), SEAT-07 (limpieza `asiento`/`precio_asiento`) |
+| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-02; ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE; US-01 (E1 hecho, E2 pendiente) | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
+| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC; SEAT-07 (limpieza `asiento`/`precio_asiento`) |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
 | Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
 
