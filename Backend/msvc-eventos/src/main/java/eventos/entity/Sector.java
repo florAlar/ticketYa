@@ -35,4 +35,12 @@ public class Sector {
 
     @Column(name = "es_numerado", nullable = false)
     private Boolean esNumerado;
+
+    /** Solo sector numerado: cantidad de filas (A, B, ... AA). Los asientos son virtuales, no se persisten. */
+    @Column(name = "filas")
+    private Integer filas;
+
+    /** Solo sector numerado: asientos por fila. capacidad = filas * asientosPorFila. */
+    @Column(name = "asientos_por_fila")
+    private Integer asientosPorFila;
 }

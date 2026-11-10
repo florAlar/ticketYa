@@ -33,6 +33,9 @@ function seedFromCatalog() {
           id: 'c0000000-0000-4000-8000-000000000012',
           nombre: 'Platea',
           esNumerado: true,
+          // capacidad = filas × asientosPorFila (100 × 250)
+          filas: 100,
+          asientosPorFila: 250,
           capacidadTotal: 25000,
           precio: Math.round((e.precioDesde ?? 0) * 1.8),
         },

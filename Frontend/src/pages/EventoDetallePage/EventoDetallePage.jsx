@@ -7,6 +7,7 @@ import {
   formatPrecioDesde,
 } from '../../components/home/events/eventFormat'
 import EventoCupoBadge from '../../components/home/events/EventoCupoBadge'
+import { sectorTieneLayout } from '../../domain/asiento'
 import {
   EVENTO_ESTADOS,
   EVENTO_TIPO_LABELS,
@@ -213,7 +214,11 @@ const EventoDetallePage = () => {
                           )}
                         </h3>
                         <p className="evento-detalle-page__muted">
-                          {s.esNumerado ? 'Numerado' : 'No numerado'}
+                          {s.esNumerado
+                            ? sectorTieneLayout(s)
+                              ? `Numerado · ${s.filas} filas × ${s.asientosPorFila} asientos`
+                              : 'Numerado'
+                            : 'No numerado'}
                           {Number.isFinite(disp)
                             ? ` · ${disp} disponibles`
                             : cupo
@@ -237,7 +242,11 @@ const EventoDetallePage = () => {
                         }
                         onClick={() => canBuy && irComprar(s.id)}
                       >
-                        {sectorAgotado ? 'Agotado' : 'Comprar'}
+                        {sectorAgotado
+                          ? 'Agotado'
+                          : s.esNumerado
+                            ? 'Elegir asientos'
+                            : 'Comprar'}
                       </button>
                     </li>
                   )

@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS entrada (
   id_cliente        CHAR(36)       NOT NULL COMMENT 'ref lógica usuarios.usuario',
   id_evento         CHAR(36)       NOT NULL COMMENT 'ref lógica eventos.evento',
   id_sector         CHAR(36)       NOT NULL COMMENT 'ref lógica eventos.sector',
+  fila              VARCHAR(8)     NULL COMMENT 'asiento virtual (solo sector numerado): fila',
+  numero            INT            NULL COMMENT 'asiento virtual (solo sector numerado): número en la fila',
   precio            DECIMAL(12, 2) NOT NULL DEFAULT 0 COMMENT 'precio unitario al emitir (reintegro/DTO)',
   codigo_qr         VARCHAR(128)   NOT NULL,
   estado            VARCHAR(32)    NOT NULL,

@@ -11,6 +11,7 @@ import {
 } from '../../domain/evento'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import SectorCupoFields from '../../components/gestion/SectorCupoFields'
 import EventoParticipantesFields, {
   newTeloneroRow,
   splitParticipantesForm,
@@ -19,8 +20,8 @@ import './GestionPage.css'
 
 const PRESETS_ENTRADA = [
   { nombre: 'Campo', precio: '15000', capacidad: '500', esNumerado: false },
-  { nombre: 'Palco', precio: '45000', capacidad: '40', esNumerado: true },
-  { nombre: 'Platea', precio: '25000', capacidad: '120', esNumerado: true },
+  { nombre: 'Palco', precio: '45000', esNumerado: true, filas: '4', asientosPorFila: '10' },
+  { nombre: 'Platea', precio: '25000', esNumerado: true, filas: '8', asientosPorFila: '15' },
   { nombre: 'General', precio: '10000', capacidad: '200', esNumerado: false },
   { nombre: 'VIP', precio: '60000', capacidad: '30', esNumerado: false },
 ]
@@ -34,6 +35,9 @@ function newSectorRow(partial = {}) {
     precio: partial.precio != null ? String(partial.precio) : '',
     capacidad: partial.capacidad != null ? String(partial.capacidad) : '',
     esNumerado: Boolean(partial.esNumerado),
+    filas: partial.filas != null ? String(partial.filas) : '',
+    asientosPorFila:
+      partial.asientosPorFila != null ? String(partial.asientosPorFila) : '',
   }
 }
 
@@ -60,6 +64,8 @@ function formFromDetalle(ev) {
           precio: s.precio ?? s.precioUnitario ?? '',
           capacidad: s.capacidadTotal ?? s.capacidad ?? '',
           esNumerado: s.esNumerado,
+          filas: s.filas,
+          asientosPorFila: s.asientosPorFila,
         })
       )
     : [newSectorRow()]
@@ -476,19 +482,13 @@ const GestionEventoEditarPage = () => {
                   disabled={loading}
                 />
               </div>
-              <div className="form-group" style={{ flex: 0.7 }}>
-                <label>Cupo</label>
-                <input
-                  className="form-input"
-                  type="number"
-                  min="1"
-                  value={s.capacidad}
-                  disabled={loading}
-                  onChange={(e) =>
-                    onSectorChange(s.key, 'capacidad', e.target.value)
-                  }
-                />
-              </div>
+              <SectorCupoFields
+                sector={s}
+                idPrefix={`sec-${s.key}`}
+                disabled={loading}
+                groupStyle={{ flex: 0.7 }}
+                onChange={(field, value) => onSectorChange(s.key, field, value)}
+              />
               <label className="gestion-check" style={{ marginBottom: '0.85rem' }}>
                 <input
                   type="checkbox"

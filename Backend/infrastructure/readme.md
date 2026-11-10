@@ -1,9 +1,9 @@
 esta carpeta existe para centralizar la inicializacion de las DB y carga inicial de datos, de esta manera queda desacoplada la infraestructura de la funcionalidad de cada ms.
 Archivo	Responsabilidad
 mysql/usuarios/init.sql	Schema + seed mínimo usuarios (rol, usuario, usuario_rol).
-mysql/eventos/init.sql	Schema + seed mínimo eventos (lugar, sector, asiento, evento, precios).
-mysql/ventas/init.sql	Schema + seed mínimo ventas (reserva, detalle, compra, pago, cupo).
-mysql/entradas/init.sql	Schema + seed mínimo entradas (entrada, devolucion, validacion_acceso).
+mysql/eventos/init.sql	Schema + seed mínimo eventos (lugar, sector con layout filas×asientos_por_fila, asiento (sin uso), evento, precios).
+mysql/ventas/init.sql	Schema + seed mínimo ventas (reserva, detalle, compra, pago, cupo, asiento_reservado).
+mysql/entradas/init.sql	Schema + seed mínimo entradas (entrada con fila/numero, devolucion, validacion_acceso).
 mysql/notificaciones/init.sql	Schema + seed mínimo notificaciones (plantilla; tablas notif/intento).
 mysql/README.md	Mapa de UUIDs seed y notas de montaje.
 mongodb/preferencias/init.js	Colecciones + índices + seed mínimo preferencias (según modelo-mongodb.md).

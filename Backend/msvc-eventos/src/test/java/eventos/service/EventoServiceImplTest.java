@@ -2,6 +2,7 @@ package eventos.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,7 +47,6 @@ import eventos.dto.ParticipanteResponseDTO;
 import eventos.dto.PrecioSectorRequestDTO;
 import eventos.dto.SectorEventoDTO;
 import eventos.dto.SectorRequestDTO;
-import eventos.entity.Asiento;
 import eventos.entity.Evento;
 import eventos.entity.EventoParticipante;
 import eventos.entity.Lugar;
@@ -57,7 +57,6 @@ import eventos.exception.BusinessConflictException;
 import eventos.exception.ForbiddenException;
 import eventos.exception.ResourceNotFoundException;
 import eventos.mapper.EventoMapper;
-import eventos.repository.AsientoRepository;
 import eventos.repository.EventoParticipanteRepository;
 import eventos.repository.EventoRepository;
 import eventos.repository.LugarRepository;
@@ -80,9 +79,6 @@ class EventoServiceImplTest {
 
     @Mock
     private SectorRepository sectorRepository;
-
-    @Mock
-    private AsientoRepository asientoRepository;
 
     @Mock
     private ParticipanteRepository participanteRepository;
@@ -110,7 +106,7 @@ class EventoServiceImplTest {
     @BeforeEach
     void setUp() {
         reset(eventoRepository, precioSectorRepository, lugarRepository, sectorRepository,
-                asientoRepository, participanteRepository, eventoParticipanteRepository,
+                participanteRepository, eventoParticipanteRepository,
                 eventoMapper, entradasClient, ventasClient);
         when(eventoRepository.findByIdWithLugar(any())).thenReturn(Optional.empty());
         when(eventoRepository.buscar(any(), any(), any(), any(),
@@ -137,7 +133,6 @@ class EventoServiceImplTest {
         when(participanteRepository.findById(any())).thenReturn(Optional.empty());
         when(participanteRepository.buscar(any(), any())).thenReturn(List.of());
         when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
-        when(asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(any())).thenReturn(List.of());
         when(eventoMapper.toSectorFromEntity(any(Sector.class), any(), any()))
                 .thenReturn(new SectorEventoDTO());
         when(eventoMapper.toDetalle(any(), any(), anyList(), anyList()))
@@ -873,16 +868,185 @@ class EventoServiceImplTest {
 
         SectorRequestDTO body = new SectorRequestDTO();
         body.setNombre("Platea");
-        body.setCapacidad(300);
+        body.setCapacidad(999); // se ignora: en un sector numerado la capacidad se deriva del layout
         body.setTipo("PLATEA");
         body.setEsNumerado(true);
+        body.setFilas(10);
+        body.setAsientosPorFila(30);
 
         service.actualizarSector(SECTOR_ID, body);
 
         assertEquals("Platea", s.getNombre());
         assertEquals(Integer.valueOf(300), s.getCapacidad());
+        assertEquals(Integer.valueOf(10), s.getFilas());
+        assertEquals(Integer.valueOf(30), s.getAsientosPorFila());
         assertEquals("PLATEA", s.getTipo());
         assertEquals(true, s.getEsNumerado());
+    }
+
+    @Test
+    void actualizarSector_numeradoSinLayout_throws() {
+        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "Campo", 500, false);
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(s));
+        SectorRequestDTO body = new SectorRequestDTO();
+        body.setEsNumerado(true);
+
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarSector(SECTOR_ID, body));
+    }
+
+    @Test
+    void actualizarSector_numeradoConLayoutExistente_mantieneLayout() {
+        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "Platea", 300, true);
+        s.setFilas(10);
+        s.setAsientosPorFila(30);
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(s));
+        SectorRequestDTO body = new SectorRequestDTO();
+        body.setFilas(20);
+
+        service.actualizarSector(SECTOR_ID, body);
+
+        assertEquals(Integer.valueOf(20), s.getFilas());
+        assertEquals(Integer.valueOf(30), s.getAsientosPorFila());
+        assertEquals(Integer.valueOf(600), s.getCapacidad());
+    }
+
+    @Test
+    void actualizarSector_aGeneral_limpiaLayout() {
+        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "Platea", 300, true);
+        s.setFilas(10);
+        s.setAsientosPorFila(30);
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(s));
+        SectorRequestDTO body = new SectorRequestDTO();
+        body.setEsNumerado(false);
+        body.setCapacidad(400);
+
+        service.actualizarSector(SECTOR_ID, body);
+
+        assertEquals(false, s.getEsNumerado());
+        assertNull(s.getFilas());
+        assertNull(s.getAsientosPorFila());
+        assertEquals(Integer.valueOf(400), s.getCapacidad());
+    }
+
+    // ---------- crearSector numerado ----------
+
+    @Test
+    void crearSector_numeradoDerivaCapacidadDelLayout() {
+        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
+        SectorRequestDTO body = new SectorRequestDTO();
+        body.setNombre("Platea");
+        body.setEsNumerado(true);
+        body.setFilas(20);
+        body.setAsientosPorFila(15);
+
+        service.crearSector(LUGAR_ID, body);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Sector.class);
+        verify(sectorRepository).save(captor.capture());
+        assertEquals(Integer.valueOf(300), captor.getValue().getCapacidad());
+        assertEquals(Integer.valueOf(20), captor.getValue().getFilas());
+        assertEquals(Integer.valueOf(15), captor.getValue().getAsientosPorFila());
+    }
+
+    @Test
+    void crearSector_numeradoSinLayout_throws() {
+        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
+        SectorRequestDTO body = new SectorRequestDTO();
+        body.setNombre("Platea");
+        body.setEsNumerado(true);
+        body.setCapacidad(300);
+
+        assertThrows(IllegalArgumentException.class, () -> service.crearSector(LUGAR_ID, body));
+    }
+
+    @Test
+    void crearSector_numeradoLayoutFueraDeRango_throws() {
+        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
+        SectorRequestDTO body = new SectorRequestDTO();
+        body.setNombre("Platea");
+        body.setEsNumerado(true);
+        body.setFilas(201);
+        body.setAsientosPorFila(10);
+
+        assertThrows(IllegalArgumentException.class, () -> service.crearSector(LUGAR_ID, body));
+    }
+
+    // ---------- evento con sector numerado ----------
+
+    @Test
+    void crear_publicarSectorNumeradoSinLayout_throws() {
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Evento");
+        req.setEstado("PUBLICADO");
+        req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
+        req.setIdLugar(LUGAR_ID);
+        SectorInputDTO si = new SectorInputDTO();
+        si.setNombre("Platea");
+        si.setCapacidadTotal(300);
+        si.setEsNumerado(true);
+        si.setPrecio(BigDecimal.valueOf(25000));
+        req.setSectores(List.of(si));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+
+        assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID));
+    }
+
+    @Test
+    void crear_borradorSectorNumeradoSinLayout_ok() {
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Evento");
+        req.setIdLugar(LUGAR_ID);
+        SectorInputDTO si = new SectorInputDTO();
+        si.setNombre("Platea");
+        si.setCapacidadTotal(300);
+        si.setEsNumerado(true);
+        si.setPrecio(BigDecimal.valueOf(25000));
+        req.setSectores(List.of(si));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+
+        service.crear(req, ORG_ID);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Sector.class);
+        verify(sectorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+        Sector guardado = captor.getValue();
+        assertEquals(true, guardado.getEsNumerado());
+        assertNull(guardado.getFilas());
+        assertEquals(Integer.valueOf(300), guardado.getCapacidad());
+    }
+
+    @Test
+    void crear_publicarSectorNumeradoConLayout_derivaCapacidad() {
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Evento");
+        req.setEstado("PUBLICADO");
+        req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
+        req.setIdLugar(LUGAR_ID);
+        SectorInputDTO si = new SectorInputDTO();
+        si.setNombre("Platea");
+        si.setCapacidadTotal(1); // se ignora
+        si.setEsNumerado(true);
+        si.setFilas(10);
+        si.setAsientosPorFila(20);
+        si.setPrecio(BigDecimal.valueOf(25000));
+        req.setSectores(List.of(si));
+        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
+        Sector sector = sector(SECTOR_ID, lugar, "Platea", 200, true);
+        when(precioSectorRepository.findActivosByEventoId(any()))
+                .thenReturn(List.of(precioSector(sector, BigDecimal.valueOf(25000))));
+        when(eventoMapper.toDetalle(any(), any(), anyList(), anyList())).thenReturn(detalle(new Evento()));
+
+        service.crear(req, ORG_ID);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Sector.class);
+        verify(sectorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+        Sector guardado = captor.getValue();
+        assertEquals(Integer.valueOf(200), guardado.getCapacidad());
+        assertEquals(Integer.valueOf(10), guardado.getFilas());
+        assertEquals(Integer.valueOf(20), guardado.getAsientosPorFila());
     }
 
     // ---------- listarAsientos ----------
@@ -897,22 +1061,35 @@ class EventoServiceImplTest {
     }
 
     @Test
-    void listarAsientos_ok() {
-        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "X", 100, false);
-        Asiento a = new Asiento();
-        a.setId("a-1");
-        a.setSector(s);
-        a.setFila("A");
-        a.setNumero(1);
-        a.setCodigo("A-1");
+    void listarAsientos_sectorNumerado_generaAsientosVirtuales() {
+        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "Platea", 6, true);
+        s.setFilas(2);
+        s.setAsientosPorFila(3);
         when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(s));
-        when(asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(SECTOR_ID))
-                .thenReturn(List.of(a));
 
         var res = service.listarAsientos(LUGAR_ID, SECTOR_ID);
 
-        assertEquals(1, res.size());
+        assertEquals(6, res.size());
         assertEquals("A-1", res.get(0).getCodigo());
+        assertEquals("B-3", res.get(5).getCodigo());
+        assertEquals(SECTOR_ID, res.get(0).getIdSector());
+        assertNull(res.get(0).getId());
+    }
+
+    @Test
+    void listarAsientos_sectorGeneral_vacio() {
+        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "Campo", 500, false);
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(s));
+
+        assertEquals(0, service.listarAsientos(LUGAR_ID, SECTOR_ID).size());
+    }
+
+    @Test
+    void listarAsientos_numeradoSinLayout_vacio() {
+        Sector s = sector(SECTOR_ID, lugar(LUGAR_ID, "Estadio", "CABA"), "Platea", 300, true);
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(s));
+
+        assertEquals(0, service.listarAsientos(LUGAR_ID, SECTOR_ID).size());
     }
 
     // ---------- participantes ----------

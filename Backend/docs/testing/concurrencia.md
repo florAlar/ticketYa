@@ -100,7 +100,7 @@ docker run --rm --network host \
 2. **El IT no pasa por `VentaServiceImpl`.** Ejercita el repositorio con la lógica de validación replicada en la prueba. La lógica real del servicio (`crearReserva`) se prueba bajo concurrencia solo en el unitario, con el lock emulado: ese fake no prueba el motor de base de datos.
 3. **Esquema generado por Hibernate**, no por el `init.sql` real de `infrastructure/mysql/ventas/`. Si el esquema real difiriera (índices, tipos), el IT no lo detectaría.
 4. **Solo reservas sobre un único sector.** No se prueba concurrencia entre compras sobre la misma reserva, ni pagos concurrentes, ni liberación de cupo en devoluciones.
-5. **Asiento numerado:** la concurrencia real del sistema es por cupo de sector, no por asiento individual (R-05, aceptado en D-16). Queda como deuda de E2.
+5. **Asiento numerado** *(actualizado 2026-11-10)*: los sectores numerados ya se venden por asiento concreto (asientos virtuales, tabla `asiento_reservado` con clave única por evento + sector + fila + número). La concurrencia por **un mismo asiento** se prueba con `ReservaAsientoConcurrenciaTest` (20 hilos sobre el mismo asiento: 1 éxito, 19 conflictos), pero **con el mismo tipo de emulación** que el punto 2: lock de cupo y tabla de asientos simulados, sin el motor MySQL. Siguen sin probarse contra MySQL real la clave única de `asiento_reservado` y el rollback de los contadores ante un conflicto (backlog SEAT-06). Además, en un sector numerado las reservas del mismo sector siguen serializadas por el lock de `cupo_sector`; la clave única es la segunda línea de defensa.
 
 ## 8. Diferencias con el plan original (§10 del spec)
 

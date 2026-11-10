@@ -12,6 +12,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones (11 ops / 11 paths) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 4 specs bajo la clave `specs` |
 
+> **Desactualizado (2026-11-10):** los JSON de esta carpeta son **anteriores** a los asientos virtuales. Faltan en los contratos: `filas`/`asientosPorFila` en sectores (eventos), `asientos` en `POST /reservas` y `POST /eventos/{id}/cupos/liberacion` y `asientosOcupados` en disponibilidad (ventas), `asientos` en `POST /entradas/emision` y `fila`/`asiento` en la entrada (entradas). Las anotaciones OpenAPI del código ya están al día; hay que **regenerar** los specs y el bundle (sección siguiente) con los servicios levantados (backlog SEAT-04).
+
 ## Regeneración (tras cambios en anotaciones)
 
 Cada microservicio expone su spec en runtime. Desde `Backend/`:

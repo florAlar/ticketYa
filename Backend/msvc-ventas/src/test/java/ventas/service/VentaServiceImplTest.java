@@ -52,6 +52,7 @@ import ventas.redis.StockCache;
 import ventas.repository.CompraRepository;
 import ventas.repository.CupoSectorRepository;
 import ventas.repository.DetalleReservaRepository;
+import ventas.repository.AsientoReservadoRepository;
 import ventas.repository.PagoRepository;
 import ventas.repository.ReservaRepository;
 
@@ -60,6 +61,7 @@ class VentaServiceImplTest {
     private CupoSectorRepository cupoSectorRepository;
     private ReservaRepository reservaRepository;
     private DetalleReservaRepository detalleReservaRepository;
+    private AsientoReservadoRepository asientoReservadoRepository;
     private CompraRepository compraRepository;
     private PagoRepository pagoRepository;
     private EventosClient eventosClient;
@@ -80,6 +82,7 @@ class VentaServiceImplTest {
         cupoSectorRepository = mock(CupoSectorRepository.class);
         reservaRepository = mock(ReservaRepository.class);
         detalleReservaRepository = mock(DetalleReservaRepository.class);
+        asientoReservadoRepository = mock(AsientoReservadoRepository.class);
         compraRepository = mock(CompraRepository.class);
         pagoRepository = mock(PagoRepository.class);
         eventosClient = mock(EventosClient.class);
@@ -89,11 +92,13 @@ class VentaServiceImplTest {
 
         service = new VentaServiceImpl(
                 cupoSectorRepository, reservaRepository, detalleReservaRepository,
+                asientoReservadoRepository,
                 compraRepository, pagoRepository, eventosClient, stockCache,
                 ventaMapper, emisionEntradasService,
                 10L, 6, 24L);
 
         reset(cupoSectorRepository, reservaRepository, detalleReservaRepository,
+                asientoReservadoRepository,
                 compraRepository, pagoRepository, eventosClient, stockCache,
                 ventaMapper, emisionEntradasService);
 

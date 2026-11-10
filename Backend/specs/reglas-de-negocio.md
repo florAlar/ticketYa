@@ -129,8 +129,14 @@ Orden del circuito:
 ### Reglas de negocio ya fijadas en el núcleo
 
 - Límite: **como máximo 6 entradas** por cliente y por evento.  
-- Anti doble venta: el stock se maneja por **cupo del sector** (no se vende de más aunque haya muchos a la vez).  
-- Disponibilidad comercial ≠ plano de asientos del lugar: el lugar puede tener asientos físicos en el modelo de eventos; **la venta actual opera por cupo de sector**, no por “elegí butaca 12 fila B” en el flujo de compra implementado.
+- Anti doble venta: el stock se maneja por **cupo del sector** (no se vende de más aunque haya muchos a la vez). En sectores numerados, además, **un mismo asiento no se puede tomar dos veces**.  
+- **Sectores generales vs numerados** (2026-11-10):
+  - **General:** se vende por cantidad (cupo); el cliente no elige ubicación. Una entrada por compra desde la UI.
+  - **Numerado:** el cliente elige **asientos concretos** (fila + número), hasta 6 por compra. El sector define `filas` × `asientos por fila` y su **capacidad se deriva siempre** de ese producto (nunca se carga aparte). Se admiten filas 1..200 y 1..500 asientos por fila.
+  - Los asientos son **virtuales**: no se guardan asientos libres. Solo existe un registro por asiento **tomado** (reservado o vendido), con clave única por evento + sector + fila + número. Las filas se rotulan A..Z, AA, AB, ...
+  - El asiento reservado se libera si la reserva se cancela, vence o el pago se rechaza; pasa a vendido al aprobarse el pago; vuelve a libre si se aprueba la devolución de esa entrada. Si el evento se cancela, los asientos vendidos quedan tomados (no se revenden).
+  - El precio es **por sector** (no hay precio por asiento). Un sector numerado no se puede publicar sin layout; en borrador puede quedar incompleto.
+  - Cada asiento vendido genera **una entrada** con su fila y número.
 
 ### Niveles de cupo (para la UI)
 
@@ -231,7 +237,7 @@ Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por s
 
 ### Eventos y stock
 
-6. Venta por **butaca numerada** (elegir asiento concreto) vs **solo cupo por sector** como ahora. La consigna menciona asientos; el núcleo implementado vende por cupo. ¿Se deja justificado así o hay que ampliar?  
+6. ~~Venta por butaca numerada vs solo cupo por sector.~~ **Resuelto (2026-11-10):** modelo híbrido — sector numerado por asiento concreto (asientos virtuales), sector general por cupo. Ver «Reglas de negocio ya fijadas en el núcleo».  
 7. ¿Quién puede **cancelar**: solo admin (como ahora) o también el organizador dueño?  
 8. Estado **AGOTADO**: ¿lo pone solo el stock en cero de forma automática / derivada, o es un estado que alguien setea a mano? (hoy conviven estado de evento y nivel de cupo en ventas.)  
 9. **FINALIZADO**: ¿regla automática por fecha o acción manual?

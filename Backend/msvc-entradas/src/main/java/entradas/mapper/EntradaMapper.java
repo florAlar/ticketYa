@@ -19,6 +19,8 @@ public class EntradaMapper {
         dto.setIdCliente(e.getIdCliente());
         dto.setIdEvento(e.getIdEvento());
         dto.setIdSector(e.getIdSector());
+        dto.setFila(e.getFila());
+        dto.setAsiento(e.getNumero());
         dto.setEstado(e.getEstado());
         dto.setFechaEmision(e.getFechaEmision());
         dto.setFechaIngreso(e.getFechaValidacion());

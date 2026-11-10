@@ -145,9 +145,9 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 - GET: /lugares/{id} — Consultar lugar y sectores
 - POST: /lugares — Crear lugar (ORGANIZADOR/ADMIN)
 - PUT: /lugares/{id} — Modificar lugar (ORGANIZADOR/ADMIN)
-- POST: /lugares/{id}/sectores — Crear sector (ORGANIZADOR/ADMIN)
-- PUT: /sectores/{id} — Modificar sector (ORGANIZADOR/ADMIN)
-- GET: /lugares/{id}/sectores/{sectorId}/asientos — Config física filas/asientos de sector numerado (no disponibilidad comercial)
+- POST: /lugares/{id}/sectores — Crear sector (ORGANIZADOR/ADMIN). Sector numerado: `filas` (1..200) y `asientosPorFila` (1..500) obligatorios; la capacidad se deriva (`filas × asientosPorFila`)
+- PUT: /sectores/{id} — Modificar sector (ORGANIZADOR/ADMIN). Mismas reglas de layout
+- GET: /lugares/{id}/sectores/{sectorId}/asientos — Asientos **virtuales** del sector numerado, calculados desde su layout (fila + número; sin ids ni filas persistidas; lista vacía en sectores generales). No es disponibilidad comercial
 
 Disponibilidad comercial = msvc-ventas.
 
@@ -166,12 +166,12 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 ### Disponibilidad y reservas
 
 - GET /eventos/disponibilidad?ids= — Batch disponibilidad comercial (catálogo; máx 50; público)
-- GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos/asientos libres; DTO con disponibleTotal + nivelCupo)
+- GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos por sector; DTO con disponibleTotal + nivelCupo; en sectores numerados `asientosOcupados[{fila,numero,estado}]`, el resto del layout está libre)
 - POST /eventos/{id}/cupos — Abrir/asegurar cupo comercial al publicar (body sectores[{idSector,capacidadTotal}]; idempotente; Feign msvc-eventos)
 
 /EL RECURSO ES EVENTOS PERO LE PEGA A ESTE SERVICIO, HAY QUE RUTEARLO DESDE GATEWAY.
 
-- POST /reservas — Crear reserva temporal (TTL p.ej. 10 min; atómica; cliente desde identidad gateway)
+- POST /reservas — Crear reserva temporal (TTL p.ej. 10 min; atómica; cliente desde identidad gateway). Items `{idSector, cantidad}` en sectores generales; `{idSector, asientos:[{fila,numero}]}` en sectores numerados (409 si algún asiento ya está tomado)
 - GET /reservas/{id} — Consultar reserva propia
 - POST /reservas/{id}/confirmacion — Confirmar intención de compra
 - POST /reservas/{id}/cancelacion — Cancelar reserva y liberar cupo/asientos

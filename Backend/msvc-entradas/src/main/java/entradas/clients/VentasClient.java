@@ -1,5 +1,7 @@
 package entradas.clients;
 
+import entradas.dto.AsientoRefDTO;
+import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +27,23 @@ public interface VentasClient {
         public LiberarCupoBody(String idSector, Integer cantidad) {
             this.idSector = idSector;
             this.cantidad = cantidad;
+        }
+
+        /** Sector numerado: la entrada devuelta libera su asiento concreto (reemplaza a cantidad). */
+        public LiberarCupoBody(String idSector, List<AsientoRefDTO> asientos) {
+            this.idSector = idSector;
+            this.cantidad = asientos != null ? asientos.size() : 1;
+            this.asientos = asientos;
+        }
+
+        private List<AsientoRefDTO> asientos;
+
+        public List<AsientoRefDTO> getAsientos() {
+            return asientos;
+        }
+
+        public void setAsientos(List<AsientoRefDTO> asientos) {
+            this.asientos = asientos;
         }
 
         public String getIdSector() {

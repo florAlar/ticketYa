@@ -3,7 +3,10 @@ package ventas.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import ventas.clients.EntradasClient;
+import ventas.dto.AsientoRefDTO;
+import ventas.entity.AsientoReservado;
 import ventas.entity.Compra;
 import ventas.entity.DetalleReserva;
 import ventas.entity.Reserva;
+import ventas.repository.AsientoReservadoRepository;
 import ventas.repository.CompraRepository;
 import ventas.repository.DetalleReservaRepository;
 
@@ -36,6 +42,7 @@ public class EmisionEntradasService {
 
     private final CompraRepository compraRepository;
     private final DetalleReservaRepository detalleReservaRepository;
+    private final AsientoReservadoRepository asientoReservadoRepository;
     private final EntradasClient entradasClient;
     /** Self-proxy para @Transactional(REQUIRES_NEW) en reintentos. */
     private final EmisionEntradasService self;
@@ -47,6 +54,7 @@ public class EmisionEntradasService {
     public EmisionEntradasService(
             CompraRepository compraRepository,
             DetalleReservaRepository detalleReservaRepository,
+            AsientoReservadoRepository asientoReservadoRepository,
             EntradasClient entradasClient,
             @Lazy EmisionEntradasService self,
             @Value("${ticketya.ventas.emision-intentos-inmediatos:3}") int intentosInmediatos,
@@ -54,6 +62,7 @@ public class EmisionEntradasService {
             @Value("${ticketya.ventas.emision-max-intentos:20}") int maxIntentos) {
         this.compraRepository = compraRepository;
         this.detalleReservaRepository = detalleReservaRepository;
+        this.asientoReservadoRepository = asientoReservadoRepository;
         this.entradasClient = entradasClient;
         this.self = self;
         this.intentosInmediatos = Math.max(1, intentosInmediatos);
@@ -130,11 +139,23 @@ public class EmisionEntradasService {
         }
 
         try {
+            // sector numerado: se emite una entrada por asiento vendido de la reserva
+            Map<String, List<AsientoRefDTO>> asientosPorSector = new HashMap<>();
+            List<AsientoReservado> vendidos =
+                    asientoReservadoRepository.findByReservaIdReserva(reserva.getIdReserva());
+            if (vendidos != null) {
+                for (AsientoReservado a : vendidos) {
+                    asientosPorSector
+                            .computeIfAbsent(a.getIdSector(), k -> new ArrayList<>())
+                            .add(new AsientoRefDTO(a.getFila(), a.getNumero()));
+                }
+            }
             List<EntradasClient.EmitirRequest.Item> items = detalles.stream()
                     .map(d -> new EntradasClient.EmitirRequest.Item(
                             d.getIdSector(),
                             d.getCantidad(),
-                            d.getPrecioUnitario() != null ? d.getPrecioUnitario() : BigDecimal.ZERO))
+                            d.getPrecioUnitario() != null ? d.getPrecioUnitario() : BigDecimal.ZERO,
+                            asientosPorSector.get(d.getIdSector())))
                     .toList();
             entradasClient.emitir(new EntradasClient.EmitirRequest(
                     compra.getIdCompra(),

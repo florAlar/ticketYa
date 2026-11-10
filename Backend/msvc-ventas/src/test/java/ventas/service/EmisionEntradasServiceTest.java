@@ -29,6 +29,7 @@ import ventas.clients.EntradasClient;
 import ventas.entity.Compra;
 import ventas.entity.DetalleReserva;
 import ventas.entity.Reserva;
+import ventas.repository.AsientoReservadoRepository;
 import ventas.repository.CompraRepository;
 import ventas.repository.DetalleReservaRepository;
 
@@ -40,6 +41,9 @@ class EmisionEntradasServiceTest {
 
     @Mock
     private DetalleReservaRepository detalleReservaRepository;
+
+    @Mock
+    private AsientoReservadoRepository asientoReservadoRepository;
 
     @Mock
     private EntradasClient entradasClient;
@@ -56,7 +60,7 @@ class EmisionEntradasServiceTest {
     void setUp() throws Exception {
         reset(compraRepository, detalleReservaRepository, entradasClient);
         service = new EmisionEntradasService(
-                compraRepository, detalleReservaRepository, entradasClient, null,
+                compraRepository, detalleReservaRepository, asientoReservadoRepository, entradasClient, null,
                 3, 0, 20);
         // Inyectar self (auto-referencia @Lazy) mediante reflexión
         Field selfField = EmisionEntradasService.class.getDeclaredField("self");
@@ -179,6 +183,52 @@ class EmisionEntradasServiceTest {
         assertEquals(Integer.valueOf(1), compra.getEmisionIntentos());
         verify(entradasClient).emitir(any());
         verify(compraRepository).save(compra);
+    }
+
+    @Test
+    void intentarUnaVez_sectorNumerado_enviaLosAsientosVendidos() {
+        Compra compra = compraAprobada();
+        when(compraRepository.findById(ID_COMPRA)).thenReturn(Optional.of(compra));
+        when(detalleReservaRepository.findByReservaIdReserva(ID_RESERVA))
+                .thenReturn(List.of(detalle()));
+        ventas.entity.AsientoReservado a1 = new ventas.entity.AsientoReservado();
+        a1.setIdSector(ID_SECTOR);
+        a1.setFila("C");
+        a1.setNumero(14);
+        ventas.entity.AsientoReservado a2 = new ventas.entity.AsientoReservado();
+        a2.setIdSector(ID_SECTOR);
+        a2.setFila("C");
+        a2.setNumero(15);
+        when(asientoReservadoRepository.findByReservaIdReserva(ID_RESERVA)).thenReturn(List.of(a1, a2));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(i -> i.getArgument(0));
+        when(entradasClient.emitir(any())).thenReturn(new ArrayList<>());
+
+        assertTrue(service.intentarUnaVez(ID_COMPRA));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(EntradasClient.EmitirRequest.class);
+        verify(entradasClient).emitir(captor.capture());
+        var item = captor.getValue().items().get(0);
+        assertEquals(2, item.cantidad());
+        assertEquals(2, item.asientos().size());
+        assertEquals("C", item.asientos().get(0).fila());
+        assertEquals(14, item.asientos().get(0).numero());
+        assertEquals(15, item.asientos().get(1).numero());
+    }
+
+    @Test
+    void intentarUnaVez_sectorGeneral_enviaSinAsientos() {
+        Compra compra = compraAprobada();
+        when(compraRepository.findById(ID_COMPRA)).thenReturn(Optional.of(compra));
+        when(detalleReservaRepository.findByReservaIdReserva(ID_RESERVA))
+                .thenReturn(List.of(detalle()));
+        when(compraRepository.save(any(Compra.class))).thenAnswer(i -> i.getArgument(0));
+        when(entradasClient.emitir(any())).thenReturn(new ArrayList<>());
+
+        assertTrue(service.intentarUnaVez(ID_COMPRA));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(EntradasClient.EmitirRequest.class);
+        verify(entradasClient).emitir(captor.capture());
+        assertNull(captor.getValue().items().get(0).asientos());
     }
 
     @Test

@@ -11,7 +11,7 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 
 | Endpoint | Estado | Notas |
 | --- | --- | --- |
-| POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario}]}`. Idempotente por idCompra. Persiste `entrada.precio`. Llamado por msvc-ventas Feign post-pago. |
+| POST /entradas/emision | **hecho** | Body `{idCompra,idCliente,idEvento,items[{idSector,cantidad,precioUnitario,asientos?}]}`. Sector numerado: `asientos:[{fila,numero}]` (una entrada por asiento; `cantidad` debe coincidir, si no 400); las entradas devuelven `fila` y `asiento`. Idempotente por idCompra. Persiste `entrada.precio`, `fila`, `numero`. Llamado por msvc-ventas Feign post-pago. |
 | GET /entradas | **hecho** | Propias (`X-User-Id`). Enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos (best-effort). |
 | GET /entradas/{id} | **hecho** | Dueño **o ADMIN** (mismo método). Cliente: solo propias; ADMIN: cualquier id. |
 | GET /entradas/{id}/qr | **hecho** | Dueño; **solo VENDIDA** y evento no CANCELADO. USADA/DEVUELTA/A_REINTEGRAR → 409. |

@@ -5,6 +5,13 @@ import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
 import { comprarEntrada } from '../../api/ventasCliente'
 import { USE_MOCK_COMPRAS } from '../../api/config'
 import {
+  MAX_ASIENTOS_POR_COMPRA,
+  asientosDeMensajeConflicto,
+  codigoAsiento,
+  sectorTieneLayout,
+} from '../../domain/asiento'
+import SeatPicker from '../../components/seats/SeatPicker'
+import {
   formatEventoFecha,
   formatPrecioDesde,
 } from '../../components/home/events/eventFormat'
@@ -12,7 +19,9 @@ import './CheckoutPage.css'
 
 /**
  * Compra 1 tipo de entrada (sector) — sin carrito.
- * Mock: Mercado Pago ficticio + entrada local.
+ * Sector general: 1 entrada por compra (flujo de siempre).
+ * Sector numerado: el cliente elige hasta MAX_ASIENTOS_POR_COMPRA asientos (fila → asientos).
+ * Mock: Mercado Pago ficticio + entrada(s) local(es).
  * Real: reserva → compra → pago mock BE.
  * Sin cupo comercial (disponibilidad) no se habilita el pago.
  */
@@ -31,6 +40,10 @@ const CheckoutPage = () => {
   const [paying, setPaying] = useState(false)
   const [mpPreview, setMpPreview] = useState(null)
   const [success, setSuccess] = useState(null)
+  /** Asientos elegidos (solo sector numerado): [{fila, numero}] */
+  const [seleccion, setSeleccion] = useState([])
+  /** Aviso informativo (p. ej. asientos quitados por conflicto); no es un error fatal. */
+  const [aviso, setAviso] = useState('')
 
   const load = useCallback(async () => {
     setStatus('loading')
@@ -82,26 +95,84 @@ const CheckoutPage = () => {
     return disponibilidad.sectores.find((c) => c.idSector === sector.id) || null
   }, [disponibilidad, sector])
 
+  // Sector numerado con layout → selector de asientos. Sin layout: en gateway no se puede vender
+  // (el BE lo rechaza); en mock (datos viejos en LS) se cae al flujo general.
+  const esNumerado = Boolean(sector?.esNumerado)
+  const tieneLayout = sectorTieneLayout(sector)
+  const usaPicker = esNumerado && tieneLayout
+  const numeradoSinLayout = esNumerado && !tieneLayout && !USE_MOCK_COMPRAS
+  const ocupados = cupoSector?.asientosOcupados || []
+  const cantidad = usaPicker ? seleccion.length : 1
+
   const canPay = useMemo(() => {
     if (!isAuthenticated || !sector || paying) return false
+    if (numeradoSinLayout) return false
+    if (usaPicker && (cantidad < 1 || cantidad > MAX_ASIENTOS_POR_COMPRA)) {
+      return false
+    }
     if (USE_MOCK_COMPRAS) return true
     if (dispError || !disponibilidad) return false
     if (!cupoSector) return false
     const disp = Number(cupoSector.cantidadDisponible)
-    return Number.isFinite(disp) && disp >= 1
+    return Number.isFinite(disp) && disp >= cantidad
   }, [
     isAuthenticated,
     sector,
     paying,
+    numeradoSinLayout,
+    usaPicker,
+    cantidad,
     dispError,
     disponibilidad,
     cupoSector,
   ])
 
+  /**
+   * Recarga la ocupación y quita de la selección SOLO los asientos que dejaron de estar libres
+   * (los que ya figuran tomados y/o los que el BE informó en un 409); el resto se conserva.
+   * @returns {string[]} códigos de los asientos quitados
+   */
+  const reconciliarSeleccion = async (codigosConflicto = []) => {
+    let ocupadosFrescos = ocupados
+    try {
+      const disp = await getDisponibilidadEvento(eventoId, { token })
+      setDisponibilidad(disp)
+      setDispError('')
+      const cupo = disp?.sectores?.find((c) => c.idSector === sector.id)
+      ocupadosFrescos = cupo?.asientosOcupados || []
+    } catch {
+      /* sin refresco: nos quedamos con lo que informó el BE en el conflicto */
+    }
+    const tomados = new Set([
+      ...ocupadosFrescos.map((a) => codigoAsiento(a.fila, a.numero)),
+      ...codigosConflicto,
+    ])
+    const quitados = seleccion.filter((a) =>
+      tomados.has(codigoAsiento(a.fila, a.numero))
+    )
+    if (quitados.length) {
+      setSeleccion((prev) =>
+        prev.filter((a) => !tomados.has(codigoAsiento(a.fila, a.numero)))
+      )
+    }
+    return quitados.map((a) => codigoAsiento(a.fila, a.numero))
+  }
+
+  const onActualizarAsientos = async () => {
+    setError('')
+    const quitados = await reconciliarSeleccion()
+    setAviso(
+      quitados.length
+        ? `Ya no estaban disponibles y se quitaron de tu selección: ${quitados.join(', ')}.`
+        : 'Disponibilidad actualizada.'
+    )
+  }
+
   const onPagar = async () => {
     if (!canPay || !sector) return
     setPaying(true)
     setError('')
+    setAviso('')
     setMpPreview(null)
     setSuccess(null)
     try {
@@ -112,17 +183,24 @@ const CheckoutPage = () => {
       }
 
       const result = await comprarEntrada(
-        { idEvento: eventoId, idSector: sector.id },
+        {
+          idEvento: eventoId,
+          idSector: sector.id,
+          asientos: usaPicker ? seleccion : undefined,
+        },
         user,
         { token, resultadoPago: 'APROBAR' }
       )
 
       if (result.entrada?.id) {
         setMpPreview(result.mercadoPago || mpPreview)
-        navigate(`/mis-entradas/${result.entrada.id}`, {
-          replace: true,
-          state: { bought: true },
-        })
+        // varias entradas (asientos) → listado; una sola → su detalle
+        navigate(
+          result.entradas?.length > 1
+            ? '/mis-entradas'
+            : `/mis-entradas/${result.entrada.id}`,
+          { replace: true, state: { bought: true } }
+        )
         return
       }
 
@@ -140,6 +218,20 @@ const CheckoutPage = () => {
         /* ignore */
       }
     } catch (err) {
+      // 409 por asiento tomado: quitar solo los conflictivos y conservar el resto de la selección
+      if (usaPicker && err.status === 409 && /asiento/i.test(err.message || '')) {
+        const informados = asientosDeMensajeConflicto(err.message).map((a) =>
+          codigoAsiento(a.fila, a.numero)
+        )
+        const quitados = await reconciliarSeleccion(informados)
+        if (quitados.length) {
+          setAviso(
+            `Estos asientos ya no están disponibles y se quitaron de tu selección: ${quitados.join(', ')}. ` +
+              'Revisá el resto y volvé a confirmar.'
+          )
+          return
+        }
+      }
       setError(err.message || 'No se pudo completar la compra')
     } finally {
       setPaying(false)
@@ -201,7 +293,8 @@ const CheckoutPage = () => {
               <strong>Tipo:</strong> {sector.nombre}
             </p>
             <p>
-              <strong>Precio:</strong> {formatPrecioDesde(sector.precio)}
+              <strong>Precio{usaPicker ? ' por asiento' : ''}:</strong>{' '}
+              {formatPrecioDesde(sector.precio)}
             </p>
             {!USE_MOCK_COMPRAS && dispError && (
               <p className="checkout-page__error">{dispError}</p>
@@ -227,9 +320,54 @@ const CheckoutPage = () => {
               Number(cupoSector.cantidadDisponible) < 1 && (
                 <p className="checkout-page__error">Sin stock disponible.</p>
               )}
-            <p className="checkout-page__muted">
-              Sin carrito: una entrada por compra.
-            </p>
+            {numeradoSinLayout && (
+              <p className="checkout-page__error">
+                Este sector es numerado pero todavía no tiene layout de
+                asientos configurado.
+              </p>
+            )}
+            {usaPicker ? (
+              <>
+                <p className="checkout-page__muted">
+                  Elegí hasta {MAX_ASIENTOS_POR_COMPRA} asientos: primero la
+                  fila y después los asientos.
+                </p>
+                <SeatPicker
+                  filas={Number(sector.filas)}
+                  asientosPorFila={Number(sector.asientosPorFila)}
+                  ocupados={ocupados}
+                  seleccion={seleccion}
+                  onChange={(sel) => {
+                    setAviso('')
+                    setSeleccion(sel)
+                  }}
+                  max={MAX_ASIENTOS_POR_COMPRA}
+                  disabled={paying}
+                />
+                {!USE_MOCK_COMPRAS && (
+                  <button
+                    type="button"
+                    className="btn"
+                    onClick={onActualizarAsientos}
+                    disabled={paying}
+                  >
+                    Actualizar asientos
+                  </button>
+                )}
+                <p>
+                  <strong>Total:</strong>{' '}
+                  {formatPrecioDesde(Number(sector.precio) * seleccion.length)}
+                  {seleccion.length
+                    ? ` (${seleccion.length} × ${formatPrecioDesde(sector.precio)})`
+                    : ''}
+                </p>
+              </>
+            ) : (
+              <p className="checkout-page__muted">
+                Sin carrito: una entrada por compra.
+              </p>
+            )}
+            {aviso && <p className="checkout-page__aviso">{aviso}</p>}
           </div>
 
           <div className="checkout-mp">

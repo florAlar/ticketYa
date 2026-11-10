@@ -68,5 +68,9 @@ public class DisponibilidadResponseDTO {
 
         @Schema(description = "Etiqueta para UI del sector", example = "Menos de 100")
         private String nivelCupoLabel;
+
+        @Schema(description = "Asientos ya tomados (reservados o vendidos) del sector numerado; los demás "
+                + "asientos del layout están libres. Vacío en sectores generales.")
+        private List<AsientoDTO> asientosOcupados = new ArrayList<>();
     }
 }

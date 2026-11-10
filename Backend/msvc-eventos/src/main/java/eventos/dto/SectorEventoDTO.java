@@ -26,6 +26,12 @@ public class SectorEventoDTO {
     @Schema(description = "Sector numerado", example = "false")
     private Boolean esNumerado;
 
+    @Schema(description = "Filas (solo sector numerado; null en sectores generales)", example = "20")
+    private Integer filas;
+
+    @Schema(description = "Asientos por fila (solo sector numerado; null en sectores generales)", example = "15")
+    private Integer asientosPorFila;
+
     @Schema(description = "Precio vigente", example = "25000.00")
     private BigDecimal precio;
 

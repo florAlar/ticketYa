@@ -38,7 +38,7 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 | INF-14 | `docs/diagramas/modelo.md` — ER Mermaid **solo MySQL** (preferencias fuera) | E1 | hecho | Preferencias/historial sacados del ER; FKs explícitas en atributos + relaciones. Mongo → `modelo-mongodb.md`. |
 | INF-15 | Seeds / init de datos de prueba por contexto | E1 | hecho | Via `infrastructure/mysql/*/init.sql` (no DataLoader Java). UUIDs fijos cross-msvc documentados en `mysql/README.md`. Passwords BCrypt demo. |
 | INF-16 | README raíz / Backend con instrucciones de ejecución verificables | E1 | hecho | `Backend/README.md` + README monorepo (light): compose, puertos, smoke curl, link a docs. |
-| INF-17 | Colección Postman (o similar) de endpoints | E1 | pendiente | Actualizar en E2. |
+| INF-17 | Colección Postman (o similar) de endpoints | E1 | hecho | `docs/postman/` (colección v2.1 E1 + environment local). Actualizar en E2. Sin ejecutar en verificación 2026-11-10 (Docker apagado). |
 | INF-18 | Higiene compose preferencias: URI Mongo con `${MONGO_PASSWORD:-…}` (sin literal frágil) | Transversal | hecho | `msvc-preferencias/docker-compose.yml` usa `${MONGO_PASSWORD:-mongo_dev}`. |
 | INF-19 | Alinear docs (`arquitectura`, `bases-de-datos`) con `msvc-notificaciones` y conteo real de servicios | Transversal | pendiente | |
 | INF-20 | Ingreso SPA cliente en `Frontend/`: React 19 + Vite + Router, `src/` (api/auth/pages/routes/domain/…), `package.json`, `.env.example` (`VITE_API_BASE_URL`, `VITE_USE_MOCK`) | Transversal | hecho | Copia del simulacro; `node_modules`/`dist` locales presentes. |
@@ -76,8 +76,8 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
 | MOD-01 | ER global MySQL en `docs/diagramas/modelo.md` (Mermaid) | E1 | hecho | Sin preferencias/historial (Mongo). FKs explícitas. Link a `modelo-mongodb.md`. |
-| MOD-02 | Partir / complementar el modelo en **un DER (o vista) por microservicio** con claves y ownership de datos | E1 | parcial | Ownership implícito en `init.sql` por carpeta msvc; falta diagrama/doc por contexto (opcional si el init + ER global bastan). |
-| MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | parcial | UUIDs seed fijos en `infrastructure/mysql/README.md` + comentarios `ref lógica` en init. Completar párrafo formal en docs si hace falta. |
+| MOD-02 | Partir / complementar el modelo en **un DER (o vista) por microservicio** con claves y ownership de datos | E1 | hecho | `specs/diagramas/modelo.md` reescrito (2026-11-10): `classDiagram` global con un `namespace` por msvc (5 MySQL + Mongo), columnas reales verificadas contra `init.sql` y entidades JPA. + `modelo-por-microservicio.md`: 5 `erDiagram` (uno por msvc MySQL; Mongo en `modelo-mongodb.md`) con refs lógicas a entidades externas. Sintaxis Mermaid validada; render visual a revisar en el visor. |
+| MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | hecho | Las 19 referencias lógicas entre msvc quedan dibujadas como líneas punteadas (columnas `REF`) en el diagrama de `modelo.md` (incluye `asiento_reservado`). |
 | MOD-04 | **Modelo de preferencias en MongoDB** (`docs/diagramas/modelo-mongodb.md`) | E2 | hecho | Doc + init.js INF-28. Código Spring Data / recs = E2-PRE-*. |
 | MOD-05 | Modelo local notificaciones (MySQL) alineado a ER + `notificaciones/init.sql` | E2 | hecho | Init + JPA (Plantilla/Notificacion/IntentoEnvio) en INF-27. Specs DOC-MS siguen pendientes. |
 | MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | pendiente | |
@@ -100,7 +100,7 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | --- | --- | --- | --- | --- |
 | ARQ-01 | Definir responsabilidades finales de cada msvc y APIs públicas (cierre de `microservicios.md` / `comunicacion.md`) | E1 | pendiente | Scaffold de nombres ya existe. |
 | ARQ-02 | Diagrama de módulos de la arquitectura | E1 | pendiente | Complementa diagrama Docker ya existente. |
-| ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | pendiente | |
+| ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | pendiente | Ya existe el flujo real a documentar (SEAT-01…05): elegir asientos → `POST /reservas` con `asientos` (lock de cupo + `asiento_reservado`) → compra → pago → emisión de una entrada por asiento. |
 | ARQ-04 | Misma secuencia: **pago rechazado** y **vencimiento de reserva** | E1 | pendiente | |
 | ARQ-05 | Estrategias de consistencia entre servicios y compensaciones (saga / pasos de deshacer) | E2 | pendiente | |
 | ARQ-06 | Justificar tecnologías (Mongo, Redis, Gateway, etc.) y patrones usados | E2 | pendiente | |
@@ -130,8 +130,8 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-EVE-00 | Datasource + JPA validate contra `eventos/init.sql` (parte de INF-27) | hecho | EMF OK; JDBC `db-mysql-eventos`. |
-| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). |
-| E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | hecho | GET/POST/PUT lugares; POST `/lugares/{id}/sectores`; PUT `/sectores/{id}`; GET asientos físicos (seed). Alta embebida también desde POST evento. |
+| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). `Sector` suma `filas`/`asientosPorFila` (SEAT-01); `Asiento` y `PrecioAsiento` quedan sin uso (SEAT-07). |
+| E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | hecho | GET/POST/PUT lugares; POST `/lugares/{id}/sectores`; PUT `/sectores/{id}`; GET asientos **virtuales** calculados desde el layout del sector (SEAT-01; antes: asientos físicos del seed). Sector numerado exige `filas` + `asientosPorFila` y deriva la capacidad. Alta embebida también desde POST evento. |
 | E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion. **2026-11-07:** borrador laxo (nombre; sin límite fecha); publicar exige lugar real + ≥1 sector precio + **capacidad ≥ 1** (no cupo ilimitado). Al publicar: Feign ventas `POST /eventos/{id}/cupos` **fail-hard**. Body alineado form FE. |
 | E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. + filtro `participante=` (id artista). Doc: `msvc-eventos/docs/endpoints.md`. |
 | E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | hecho | PATCH estado/fecha; GET `/organizadores/me/eventos`. CANCELADO → Feign reintegro entradas best-effort. ORG: SUSPENDIDO propios; resto ADMIN. |
@@ -142,14 +142,14 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-VEN-00 | Datasource + JPA validate contra `ventas/init.sql` (INF-27) | hecho | EMF OK; Redis host compose ok. |
-| E1-VEN-01 | Modelo: CupoSector, Reserva, DetalleReserva, Compra, Pago (+ asientos reservados si numerado) | hecho | 5 entidades + repos. Sin tabla asiento_reservado en init → no inventada. |
+| E1-VEN-01 | Modelo: CupoSector, Reserva, DetalleReserva, Compra, Pago (+ asientos reservados si numerado) | hecho | 5 entidades + repos. `AsientoReservado` + tabla `asiento_reservado` agregadas en SEAT-02 (asientos virtuales; solo los tomados). |
 | E1-VEN-02 | Disponibilidad comercial por evento | hecho | `GET /eventos/{id}/disponibilidad` → cupo_sector. Doc msvc. |
 | E1-VEN-02b | Apertura de cupo comercial al publicar evento | hecho | `POST /eventos/{id}/cupos` body `{sectores:[{idSector,capacidadTotal≥1}]}` idempotente. Feign desde msvc-eventos en `doPublicar`. GW: excepción `Path=/api/eventos/*/cupos` Method=POST → ventas. |
 | E1-VEN-03 | Reserva temporal (TTL p.ej. 10 min), confirmación, cancelación, renovación | hecho | PENDIENTE/CONFIRMADA; job expire 30s + lazy; Redis hold. |
 | E1-VEN-04 | Compra desde reserva + **Idempotency-Key**; límite de entradas por cliente/evento | hecho | Key obligatoria (Redis 24h); max 6/cliente/evento. |
 | E1-VEN-05 | Pasarela de pagos **mock** (aprueba/rechaza) | hecho | `POST /compras/{id}/pagos` body resultado APROBAR\|RECHAZAR. |
 | E1-VEN-06 | Mecanismo **anti doble venta** (restricciones unicidad, locking/versionado y/o Redis) usable con varias instancias | hecho | PESSIMISTIC_WRITE cupo + UK evento/sector; Redis hold auxiliar. |
-| E1-VEN-07 | Liberación de cupo/asiento si pago rechazado o reserva vencida | hecho | Reject/cancel/expire liberan reservada→disponible. |
+| E1-VEN-07 | Liberación de cupo/asiento si pago rechazado o reserva vencida | hecho | Reject/cancel/expire liberan reservada→disponible y borran los `asiento_reservado` de la reserva (SEAT-02). Pago aprobado → asientos VENDIDO. |
 | E1-VEN-08 | Cableado Redis según decisión de diseño (stock/TTL); hoy clases vacías | hecho | `StringRedisTemplate` + `StockCache` (hold + idempotency). starter data-redis. |
 
 ### 6.3 msvc-entradas
@@ -177,9 +177,35 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
-| E1-TST-01 | Unitarias: compra, devoluciones, búsqueda | pendiente | |
-| E1-TST-02 | Prueba de concurrencia: mismo asiento / último cupo → una sola venta exitosa | pendiente | |
-| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | pendiente | Datos base = init.sql (INF-15); Postman = INF-17. |
+| E1-TST-01 | Unitarias: compra, devoluciones, búsqueda | hecho | JUnit5+Mockito por msvc. Verificado 2026-11-10: gateway 23, usuarios 51, eventos 101, entradas 48 OK. Ventas 109 OK (re-verificado, ver HIG-04). Preferencias/notificaciones sin unitarias reales (E2, HIG-01/03). |
+| E1-TST-02 | Prueba de concurrencia: mismo asiento / último cupo → una sola venta exitosa | hecho | Unitario + IT Testcontainers MySQL (`CupoSectorConcurrenciaIT`) + informe `docs/testing/concurrencia.md`. IT no re-ejecutado 2026-11-10 (requiere Docker). **Por asiento:** `ReservaAsientoConcurrenciaTest` (20 hilos, mismo asiento → 1 éxito; lock emulado); IT con MySQL real pendiente (SEAT-06). |
+| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | parcial | Datos = init.sql (INF-15) hecho; Postman = INF-17 hecho; README ejecución existe pero desactualizado (dice "sin API de negocio aún"). |
+
+### 6.6 Higiene detectada en verificación 2026-11-10
+
+| ID | Tarea | Estado | Notas |
+| --- | --- | --- | --- |
+| HIG-01 | `msvc-notificaciones`: `contextLoads` falla sin MySQL (único test del módulo) | pendiente | Hacerlo independiente de DB (slice/H2/mock) o reemplazar por unitarias reales. |
+| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. |
+| HIG-03 | `msvc-preferencias`: sin tests | pendiente | Hacerlo junto con E2-PRE-*. |
+| HIG-04 | Entorno local: `~/.m2/.../org.jacoco.build-0.8.8.pom` truncado → `mvn test` en ventas no resolvía jacoco | hecho | Causa: la corrida en paralelo de 7 `mvn` (2026-11-10) escribió a la vez el mismo archivo del repo local. Re-ejecutado en solitario: ventas 109 tests OK. Evitar correr varios `mvn` en paralelo sobre el mismo `~/.m2`. |
+| HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | pendiente | Ver E1-REL-01. |
+| HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | pendiente | Docker Desktop apagado en la sesión. Cubre también E2-DEP-01. |
+
+### 6.7 Asientos virtuales (sectores numerados)
+
+Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector general sigue por cupo. Los asientos son **virtuales**: el sector guarda `filas` x `asientos_por_fila` y solo se persiste el asiento **tomado** (`asiento_reservado`), nunca los libres. `asiento` / `precio_asiento` quedan sin uso (limpieza a decidir); el precio es por sector.
+
+| ID | Tarea | Estado | Notas |
+| --- | --- | --- | --- |
+| SEAT-01 | eventos: `sector.filas` + `asientos_por_fila`; capacidad = filas x asientosPorFila; `GET .../asientos` calculado | hecho | `init.sql`, `03-reseed`, `04-add-sector-layout.sql`. Límites 1..200 filas, 1..500 por fila. Tests eventos 119 OK. |
+| SEAT-02 | ventas: tabla `asiento_reservado` (única por evento+sector+fila+número); reservar por asiento; liberar al cancelar/rechazar/expirar; VENDIDO al pagar; `asientosOcupados` en disponibilidad; liberar asiento en devolución | hecho | `04-add-asiento-reservado.sql`. Lock de cupo + pre-chequeo + clave única como 2ª defensa. Tests ventas 139 OK. |
+| SEAT-03 | entradas: `entrada.fila` + `numero`; emisión una entrada por asiento; devolución libera el asiento en ventas | hecho | `04-add-entrada-asiento.sql`. DTO expone `fila` y `asiento`. Tests entradas 54 OK. |
+| SEAT-04 | Gateway / OpenAPI / Postman | parcial | Gateway sin cambios (rutas existentes cubren todo). Postman: sector numerado ahora con filas/asientosPorFila; **faltan** requests de reserva/compra con asientos y recorrer 409 de asiento tomado. OpenAPI estático (`docs/openapi/`) sin regenerar. |
+| SEAT-05 | Frontend: selector de asientos + enviar `filas`/`asientosPorFila` al crear sector numerado | hecho | Forms Nuevo/Editar (filas × asientos, cupo derivado de solo lectura, borrador laxo / publicación estricta); `SeatPicker` en dos pasos (fila → asientos, hasta 6); 409 quita solo los asientos en conflicto; detalle muestra layout; mock mínimo. Verificado: lint sin errores nuevos, build OK, 15 checks de dominio y render del picker. **No** probado contra el BE real (Docker apagado). |
+| SEAT-06 | IT con MySQL real del flujo de asientos (unique key, rollback de contadores) | pendiente | Requiere Docker. |
+| SEAT-07 | Limpieza: eliminar `asiento`, `precio_asiento` (tablas, entidades, repos) | pendiente | Sin uso desde SEAT-01. Al hacerlo: quitarlas de `init.sql`, `03-reseed`, entidades/repos de eventos, `modelo.md` y `modelo-por-microservicio.md`. |
+| SEAT-08 | Documentación actualizada | hecho | `reglas-de-negocio.md` (reglas + pregunta 6 resuelta), `documentacion-y-validacion.md` (D-16/R-05, changelog 1.2), `endpoints.md`, `msvc-{eventos,ventas,entradas}/docs/endpoints.md`, `infrastructure/readme.md` + `mysql/README.md` (migraciones y asientos virtuales), `docs/testing/concurrencia.md`, `docs/postman/README.md`, `docs/openapi/README.md`, `Frontend/docs/endpoints-{back,front}.md`, diagramas (`modelo.md`, `modelo-por-microservicio.md`). `consigna.md` no se toca. |
 
 ---
 
@@ -211,7 +237,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | E2-TST-01 | Pruebas de integración entre msvcs (Testcontainers o compose) | pendiente | |
 | E2-TST-02 | Pruebas de autorización por rol | pendiente | |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
-| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. Falta: mock residual cero + E2-ACC. |
+| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6; probado solo sin BE real). Falta: mock residual cero + E2-ACC. |
 | E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS (`.env` actual). Alta/publicar/cupo/checkout OK. Catálogo default BE: PUBLICADO+AGOTADO. **Siguiente FE:** demock **admin usuarios selectivo** (list/get + PATCH estado + PUT roles → BE; alta PERSONAL_ACCESO / eventosAsignados / DELETE siguen OFF/501; ideal flag `VITE_USE_MOCK_USUARIOS` + `FEATURE.adminUsuarios` solo lo cableable). Residual E2: scan ACC, transferencia, prefs, X-ORG-01. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
@@ -313,7 +339,7 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
 11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
 12. **FE residual (próxima sesión):** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
-13. E1-TST + E1-REL + INF-17 (Postman) — gap formal cuando haga falta entrega.  
+13. E1-TST + INF-17 (Postman) — **hecho** (equipo, rama feature/tests); E1-REL parcial (README). Higiene HIG-01…06 abierta.  
 14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.
 
 Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` **parcial**.
@@ -325,7 +351,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-01…05**, **X-QR-01/02**, **X-UI-06** | E2-UI-01/02 demock AUTH/EVE/COM/ENT + cupo/AGOTADO | **admin usuarios demock selectivo** (próx.); E2-ACC; X-ORG-01; transferencia/prefs |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-01…05**, **X-QR-01/02**, **X-UI-06**, **SEAT-05** (selector de asientos + forms con layout) | E2-UI-01/02 demock AUTH/EVE/COM/ENT + cupo/AGOTADO | **admin usuarios demock selectivo** (próx.); E2-ACC; X-ORG-01; transferencia/prefs |
 | Docs por msvc (specs) | — | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/GW/PRE/NOT/SYNC plantilla formal |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
@@ -333,9 +359,9 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios | endpoints listado + contratos FE | OpenAPI vivo, US-01/02, ARQ-01…04 |
-| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05 | — | E2-ACC |
+| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…03** (asientos virtuales en sectores numerados) | SEAT-04 (Postman/OpenAPI) | E2-ACC; SEAT-06 (IT MySQL), SEAT-07 (limpieza `asiento`/`precio_asiento`) |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
-| Testing / Postman / README | README raíz + Backend + FE | — | INF-17, E1-TST, E1-REL |
+| Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
 
 **Lectura (2026-11-07, cierre sesión — seed amplio + catálogo AGOTADO):**  
 - **Hecho E1 core:** eventos GET+write; ventas (+ cupo al publicar); entradas QR/devo; JWT; FE demock AUTH/EVENTOS/COMPRAS/ENTRADAS.  
@@ -344,5 +370,12 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - **Catálogo BE default:** PUBLICADO + **AGOTADO** (home/list sin `estado=`); jar `ms-eventos` redeployed.  
 - **Ops:** `init.sql` solo en volumen nuevo; live → reseed `03-*.sql` o borrar volumen; jars `docker cp` si stale.  
 - **Demock residual:** admin usuarios aún con `VITE_USE_MOCK=true` / gate OFF; E2-ACC/transfer/prefs/X-ORG-01 = BE o gated.  
-- **Gap E1 formal:** E1-TST / INF-17 Postman / E1-REL.  
+- **Gap E1 formal:** cerrado salvo E1-REL (README). Ver actualización 2026-11-10.  
 - **Próxima sesión (acordado):** demock **admin usuarios selectivo** (list/estado/roles reales; alta acceso + eventosAsignados + DELETE OFF).  
+
+**Verificación real 2026-11-10 (tests locales, Docker apagado):**  
+- Unitarias OK: gateway 23, usuarios 51, eventos 119, entradas 54, ventas 139 (HIG-04 resuelto; eventos/ventas/entradas incluyen los tests de asientos virtuales). Preferencias sin tests; notificaciones `contextLoads` falla sin MySQL.  
+- FE: `build` OK, `lint` 12 errores preexistentes (HIG-02; los cambios de SEAT-05 no agregaron ninguno). Sin test runner de UI: lógica de dominio y render del `SeatPicker` verificados con scripts descartables.  
+- Sin verificar: stack compose, smoke, IT Testcontainers, Postman (HIG-06). **Asientos virtuales (SEAT-01…05) sin probar contra MySQL/Redis/gateway reales**: scripts `04-*.sql` sin ejecutar, flujo reserva→pago→emisión→devolución con asientos solo cubierto por unitarios y mocks.  
+- **Decisión 2026-11-10 (resuelve la pregunta 6 de `reglas-de-negocio.md`):** modelo híbrido — sector numerado por asiento concreto (virtual, solo se guarda el tomado), sector general por cupo; precio por sector.  
+- E2 sin código de negocio: ACC, FILA, PRE (solo docs Mongo + repos), NOT (solo entidades/service stub), REP, NFR-01/02/03.  

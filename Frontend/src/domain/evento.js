@@ -5,6 +5,14 @@
  * msvc-eventos = MySQL (confirmado). Notificaciones = msvc propio futuro (no mockeamos aún).
  */
 
+import {
+  MAX_ASIENTOS_POR_FILA,
+  MAX_FILAS,
+  capacidadDeLayout,
+  layoutValido,
+  parseEntero,
+} from './asiento'
+
 export const EVENTO_TIPOS = {
   RECITAL: 'RECITAL',
   TEATRO: 'TEATRO',
@@ -108,15 +116,26 @@ export function cleanSectoresFromForm(sectores) {
       const precioRaw = s?.precio
       const precio =
         precioRaw === '' || precioRaw == null ? null : Number(precioRaw)
-      const capRaw = s?.capacidad ?? s?.capacidadTotal
-      const capacidadTotal =
-        capRaw === '' || capRaw == null ? null : Number(capRaw)
+      const esNumerado = Boolean(s?.esNumerado)
+      // Sector numerado: la capacidad SIEMPRE se deriva de filas * asientosPorFila (se ignora el cupo suelto).
+      const filas = esNumerado ? parseEntero(s?.filas) : undefined
+      const asientosPorFila = esNumerado ? parseEntero(s?.asientosPorFila) : undefined
+      let capacidadTotal
+      if (esNumerado) {
+        capacidadTotal = capacidadDeLayout(filas, asientosPorFila)
+      } else {
+        const capRaw = s?.capacidad ?? s?.capacidadTotal
+        const cap = capRaw === '' || capRaw == null ? null : Number(capRaw)
+        capacidadTotal = Number.isFinite(cap) ? cap : null
+      }
       return {
         id: s?.id || undefined,
         nombre,
         precio: Number.isFinite(precio) ? precio : null,
-        capacidadTotal: Number.isFinite(capacidadTotal) ? capacidadTotal : null,
-        esNumerado: Boolean(s?.esNumerado),
+        capacidadTotal,
+        esNumerado,
+        filas,
+        asientosPorFila,
         sinCupo: false,
       }
     })
@@ -180,6 +199,18 @@ export function validateEventoGestionForm(form, sectoresRows, mode = 'borrador')
           sectores,
         }
       }
+      // Numerado en borrador: puede quedar sin layout, pero si se cargó algo debe ser válido.
+      if (
+        s.esNumerado &&
+        (s.filas != null || s.asientosPorFila != null) &&
+        !layoutValido(s.filas, s.asientosPorFila)
+      ) {
+        return {
+          ok: false,
+          error: `Layout inválido en «${s.nombre}»: filas (1 a ${MAX_FILAS}) y asientos por fila (1 a ${MAX_ASIENTOS_POR_FILA}), números enteros`,
+          sectores,
+        }
+      }
       if (
         s.capacidadTotal != null &&
         (!Number.isFinite(s.capacidadTotal) || s.capacidadTotal < 0)
@@ -228,6 +259,13 @@ export function validateEventoGestionForm(form, sectoresRows, mode = 'borrador')
       return {
         ok: false,
         error: `Para publicar, «${s.nombre}» necesita precio ≥ 0`,
+        sectores,
+      }
+    }
+    if (s.esNumerado && !layoutValido(s.filas, s.asientosPorFila)) {
+      return {
+        ok: false,
+        error: `Para publicar, el sector numerado «${s.nombre}» necesita filas (1 a ${MAX_FILAS}) y asientos por fila (1 a ${MAX_ASIENTOS_POR_FILA})`,
         sectores,
       }
     }
@@ -478,6 +516,14 @@ export function normalizeDisponibilidadDto(raw) {
           cantidadDisponible: d,
           cantidadReservada: s.cantidadReservada,
           cantidadVendida: s.cantidadVendida,
+          // asientos tomados (RESERVADO|VENDIDO) de sectores numerados; el resto del layout está libre
+          asientosOcupados: Array.isArray(s.asientosOcupados)
+            ? s.asientosOcupados.map((a) => ({
+                fila: String(a.fila),
+                numero: Number(a.numero),
+                estado: a.estado,
+              }))
+            : [],
           agotado: s.agotado != null ? Boolean(s.agotado) : cls.agotado,
           nivelCupo: s.nivelCupo || cls.nivelCupo,
           nivelCupoLabel:

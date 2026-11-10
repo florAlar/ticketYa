@@ -144,7 +144,7 @@ ACEPTACIÓN: ...
 | D-13 | Estilo OpenAPI (A-01b) | **O2 — anotaciones aditivas** en controladores/DTOs (solo agrega líneas, no cambia lógica) |
 | D-14 | Alcance de cobertura (§9.2) | **Ratificado**: 90 % LINE sobre lógica (`service`, `redis`, `queue`, `mapper`, `util`, `filter`); excluye `dto`, `entity`, `config`, `exception`, `clients`, `*Application` |
 | D-15 | Toolchain Maven (A-04) | **M1**: builds con `docker run … maven:3.9-eclipse-temurin-17`; sin cambios en el repo |
-| D-16 | Concurrencia (R-05) | Se valida el **último cupo de sector** (comportamiento real del negocio); asiento numerado queda como deuda E2 |
+| D-16 | Concurrencia (R-05) | Se valida el **último cupo de sector** (comportamiento real del negocio); asiento numerado queda como deuda E2. **Actualizado 2026-11-10:** el asiento numerado ya está implementado (asientos virtuales, ver backlog §6.7); la concurrencia de un mismo asiento se prueba con `ReservaAsientoConcurrenciaTest` (unitario, lock emulado). Sigue pendiente su IT con MySQL real (SEAT-06). |
 
 ---
 
@@ -873,7 +873,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 | R-02 | Maven 3.8.7 < 3.9 requerido | Build/tests pueden fallar | A-04 (Docker Maven 3.9) |
 | R-03 | 90 % de cobertura sobre módulo completo es inviable | Gate en rojo permanente | Ratificar alcance/exclusiones §9.2 |
 | R-04 | Código sin `Clock` inyectado | Tests de TTL dependen de fechas relativas | Fechas con margen amplio + stubs; no se modifica código |
-| R-05 | Concurrencia real no es por asiento (solo cupo de sector) | La consigna menciona "mismo asiento" | **Aceptado (D-16)**: se prueba "último cupo de sector"; el asiento numerado queda como deuda E2 documentada |
+| R-05 | Concurrencia real no es por asiento (solo cupo de sector) | La consigna menciona "mismo asiento" | **Aceptado (D-16)**: se prueba "último cupo de sector"; el asiento numerado queda como deuda E2 documentada. **Mitigado 2026-11-10:** asiento numerado implementado + test de concurrencia por asiento (unitario); falta IT con MySQL real |
 | R-06 | IT Testcontainers requiere Docker + red | P4.2 puede no correr en otro entorno | Perfil `-Pit` separado; `mvn test` nunca depende de Docker |
 | R-07 | Auto-login Postman depende de seeds intactos | Colección frágil tras reseeds | `README` indica reseed y variables por environment |
 | R-08 | Documentar 62 endpoints a mano puede desincronizarse | Spec obsoleta | Bundle regenerable por script + verificación de conteo en P2.2 |
@@ -885,7 +885,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 1. **A-01b**: O2 — anotaciones aditivas en controladores/DTOs (aprobación por lote de archivos).
 2. **§9.2**: 90 % LINE sobre paquetes de lógica con las exclusiones de la tabla.
 3. **A-04**: M1 — Docker Maven 3.9+ sin cambios en el repo.
-4. **R-05**: la concurrencia valida el "último cupo de sector"; asiento numerado = deuda E2.
+4. **R-05**: la concurrencia valida el "último cupo de sector"; asiento numerado = deuda E2 *(superado el 2026-11-10: ver changelog 1.2)*.
 
 **Pendiente real para arrancar:** aprobación de las modificaciones de `pom.xml`
 (A-01 springdoc, A-02 JaCoCo, A-03 Testcontainers) y salir de Plan mode para ejecutar P0.1.
@@ -898,6 +898,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 |---|---|---|
 | 1.0 | 2026-11-08 | Versión inicial con decisiones cerradas, fases, matrices de test y aprobaciones |
 | 1.1 | 2026-11-08 | Ratificados D-13 (O2), D-14 (alcance cobertura), D-15 (M1) y D-16 (concurrencia por cupo de sector) |
+| 1.2 | 2026-11-10 | D-16/R-05 actualizados: asientos virtuales en sectores numerados implementados (eventos, ventas, entradas, frontend). Cambia el contrato de `POST /reservas` (`asientos`), `GET /eventos/{id}/disponibilidad` (`asientosOcupados`), `POST /entradas/emision` (`asientos`), `POST /eventos/{id}/cupos/liberacion` (`asientos`) y los sectores (`filas`, `asientosPorFila`). El bundle OpenAPI y la colección Postman requieren regeneración/ampliación (SEAT-04) |
 
 ---
 

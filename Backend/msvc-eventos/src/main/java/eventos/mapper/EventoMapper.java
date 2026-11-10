@@ -112,6 +112,8 @@ public class EventoMapper {
             dto.setTipo(s.getTipo());
             dto.setCapacidad(s.getCapacidad());
             dto.setEsNumerado(s.getEsNumerado());
+            dto.setFilas(s.getFilas());
+            dto.setAsientosPorFila(s.getAsientosPorFila());
         }
         dto.setPrecio(precio);
         dto.setMoneda(moneda);
@@ -154,6 +156,8 @@ public class EventoMapper {
                 dto.setTipo(s.getTipo());
                 dto.setCapacidad(s.getCapacidad());
                 dto.setEsNumerado(s.getEsNumerado());
+                dto.setFilas(s.getFilas());
+                dto.setAsientosPorFila(s.getAsientosPorFila());
             }
             dto.setPrecio(ps.getPrecio());
             dto.setMoneda(ps.getMoneda());

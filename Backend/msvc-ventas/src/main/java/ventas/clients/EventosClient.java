@@ -33,5 +33,9 @@ public interface EventosClient {
         private String nombre;
         private BigDecimal precio;
         private String moneda;
+        /** Sector numerado: se vende por asiento concreto (fila + número). */
+        private Boolean esNumerado;
+        private Integer filas;
+        private Integer asientosPorFila;
     }
 }

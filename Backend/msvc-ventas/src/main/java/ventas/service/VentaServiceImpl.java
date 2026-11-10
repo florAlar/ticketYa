@@ -12,17 +12,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ventas.clients.EventosClient;
 import ventas.clients.EventosClient.EventoDetalleFeignDTO;
 import ventas.clients.EventosClient.SectorFeignDTO;
 import ventas.dto.AbrirCuposRequestDTO;
+import ventas.dto.AsientoDTO;
+import ventas.dto.AsientoRefDTO;
+import ventas.dto.DetalleReservaDTO;
 import ventas.dto.LiberarCupoRequestDTO;
 import ventas.dto.CompraCreateRequestDTO;
 import ventas.dto.CompraResponseDTO;
@@ -32,6 +37,7 @@ import ventas.dto.PagoCreateRequestDTO;
 import ventas.dto.PagoResponseDTO;
 import ventas.dto.ReservaCreateRequestDTO;
 import ventas.dto.ReservaResponseDTO;
+import ventas.entity.AsientoReservado;
 import ventas.entity.Compra;
 import ventas.entity.CupoSector;
 import ventas.entity.DetalleReserva;
@@ -41,11 +47,13 @@ import ventas.exception.BusinessConflictException;
 import ventas.exception.ResourceNotFoundException;
 import ventas.mapper.VentaMapper;
 import ventas.redis.StockCache;
+import ventas.repository.AsientoReservadoRepository;
 import ventas.repository.CompraRepository;
 import ventas.repository.CupoSectorRepository;
 import ventas.repository.DetalleReservaRepository;
 import ventas.repository.PagoRepository;
 import ventas.repository.ReservaRepository;
+import ventas.util.AsientoLayout;
 
 @Service
 public class VentaServiceImpl implements VentaService {
@@ -65,6 +73,9 @@ public class VentaServiceImpl implements VentaService {
     public static final String EST_PAGO_APROBADO = "APROBADO";
     public static final String EST_PAGO_RECHAZADO = "RECHAZADO";
 
+    public static final String EST_ASIENTO_RESERVADO = "RESERVADO";
+    public static final String EST_ASIENTO_VENDIDO = "VENDIDO";
+
     private static final List<String> RESERVAS_ACTIVAS = List.of(EST_RES_PENDIENTE, EST_RES_CONFIRMADA);
     private static final List<String> COMPRAS_QUE_CUENTAN =
             List.of(EST_COMPRA_APROBADA, EST_COMPRA_PENDIENTE);
@@ -72,6 +83,7 @@ public class VentaServiceImpl implements VentaService {
     private final CupoSectorRepository cupoSectorRepository;
     private final ReservaRepository reservaRepository;
     private final DetalleReservaRepository detalleReservaRepository;
+    private final AsientoReservadoRepository asientoReservadoRepository;
     private final CompraRepository compraRepository;
     private final PagoRepository pagoRepository;
     private final EventosClient eventosClient;
@@ -87,6 +99,7 @@ public class VentaServiceImpl implements VentaService {
             CupoSectorRepository cupoSectorRepository,
             ReservaRepository reservaRepository,
             DetalleReservaRepository detalleReservaRepository,
+            AsientoReservadoRepository asientoReservadoRepository,
             CompraRepository compraRepository,
             PagoRepository pagoRepository,
             EventosClient eventosClient,
@@ -99,6 +112,7 @@ public class VentaServiceImpl implements VentaService {
         this.cupoSectorRepository = cupoSectorRepository;
         this.reservaRepository = reservaRepository;
         this.detalleReservaRepository = detalleReservaRepository;
+        this.asientoReservadoRepository = asientoReservadoRepository;
         this.compraRepository = compraRepository;
         this.pagoRepository = pagoRepository;
         this.eventosClient = eventosClient;
@@ -117,7 +131,9 @@ public class VentaServiceImpl implements VentaService {
             if (cupos.isEmpty()) {
                 throw new ResourceNotFoundException("Sin cupos comerciales para evento: " + idEvento);
             }
-            return ventaMapper.toDisponibilidad(idEvento, cupos);
+            DisponibilidadResponseDTO dto = ventaMapper.toDisponibilidad(idEvento, cupos);
+            adjuntarAsientosOcupados(dto, idEvento);
+            return dto;
         }
 
         @Override
@@ -211,7 +227,10 @@ public class VentaServiceImpl implements VentaService {
                     if (request == null || request.getIdSector() == null || request.getIdSector().isBlank()) {
                         throw new IllegalArgumentException("idSector es obligatorio");
                     }
-                    int q = request.getCantidad() == null ? 1 : request.getCantidad();
+                    // sector numerado: se liberan los asientos indicados (cantidad = asientos.size())
+                    List<AsientoRefDTO> asientos = request.getAsientos();
+                    boolean conAsientos = asientos != null && !asientos.isEmpty();
+                    int q = conAsientos ? asientos.size() : (request.getCantidad() == null ? 1 : request.getCantidad());
                     if (q < 1) {
                         throw new IllegalArgumentException("cantidad debe ser ≥ 1");
                     }
@@ -224,6 +243,10 @@ public class VentaServiceImpl implements VentaService {
                                     () ->
                                             new ResourceNotFoundException(
                                                     "Sin cupo comercial evento=" + eventoId + " sector=" + idSector));
+
+                    if (conAsientos) {
+                        liberarAsientosVendidos(eventoId, idSector, asientos);
+                    }
 
                     int vendida = cupo.getCantidadVendida() != null ? cupo.getCantidadVendida() : 0;
                     int disponible = cupo.getCantidadDisponible() != null ? cupo.getCantidadDisponible() : 0;
@@ -276,9 +299,9 @@ public class VentaServiceImpl implements VentaService {
         }
 
         Map<String, BigDecimal> precios = preciosPorSector(evento);
-        Map<String, Integer> qtyBySector = mergeItems(request.items());
+        Map<String, SectorPedido> pedidos = armarPedidos(request.items(), evento);
 
-        int nuevas = qtyBySector.values().stream().mapToInt(Integer::intValue).sum();
+        int nuevas = pedidos.values().stream().mapToInt(SectorPedido::cantidad).sum();
         assertLimiteEntradas(idCliente, request.idEvento(), nuevas);
 
         LocalDateTime now = nowUtc();
@@ -293,9 +316,10 @@ public class VentaServiceImpl implements VentaService {
         BigDecimal total = BigDecimal.ZERO;
         List<DetalleReserva> detalles = new java.util.ArrayList<>();
 
-        for (Map.Entry<String, Integer> e : qtyBySector.entrySet()) {
+        List<AsientoReservado> asientosTomados = new ArrayList<>();
+        for (Map.Entry<String, SectorPedido> e : pedidos.entrySet()) {
             String idSector = e.getKey();
-            int cantidad = e.getValue();
+            int cantidad = e.getValue().cantidad();
             BigDecimal precio = precios.get(idSector);
             if (precio == null) {
                 throw new IllegalArgumentException("Sin precio activo para sector " + idSector);
@@ -310,6 +334,7 @@ public class VentaServiceImpl implements VentaService {
             cupo.setCantidadDisponible(cupo.getCantidadDisponible() - cantidad);
             cupo.setCantidadReservada(cupo.getCantidadReservada() + cantidad);
             cupoSectorRepository.save(cupo);
+            asientosTomados.addAll(tomarAsientos(reserva, request.idEvento(), idSector, e.getValue().asientos()));
 
             DetalleReserva det = new DetalleReserva();
             det.setIdDetalle(UUID.randomUUID().toString());
@@ -325,13 +350,14 @@ public class VentaServiceImpl implements VentaService {
         reserva.setTotal(total);
         reservaRepository.save(reserva);
         detalleReservaRepository.saveAll(detalles);
+        guardarAsientos(asientosTomados);
 
         stockCache.putReservaHold(reserva.getIdReserva(), idCliente, reservaTtl);
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             stockCache.putIdempotentCompraId("reserva:" + idempotencyKey, reserva.getIdReserva(), idempotencyTtl);
         }
 
-        return ventaMapper.toReserva(reserva, detalles);
+        return reservaDto(reserva, detalles, asientosTomados);
     }
 
     @Override
@@ -339,7 +365,7 @@ public class VentaServiceImpl implements VentaService {
     public ReservaResponseDTO obtenerReserva(String idCliente, String idReserva) {
         Reserva reserva = requireReservaPropia(idCliente, idReserva);
         maybeExpire(reserva);
-        return ventaMapper.toReserva(reserva, detalleReservaRepository.findByReservaIdReserva(idReserva));
+        return reservaDto(reserva);
     }
 
     @Override
@@ -348,14 +374,14 @@ public class VentaServiceImpl implements VentaService {
         Reserva reserva = requireReservaPropia(idCliente, idReserva);
         ensureActiva(reserva);
         if (EST_RES_CONFIRMADA.equals(reserva.getEstado())) {
-            return ventaMapper.toReserva(reserva, detalleReservaRepository.findByReservaIdReserva(idReserva));
+            return reservaDto(reserva);
         }
         if (!EST_RES_PENDIENTE.equals(reserva.getEstado())) {
             throw new BusinessConflictException("No se puede confirmar reserva en estado " + reserva.getEstado());
         }
         reserva.setEstado(EST_RES_CONFIRMADA);
         reservaRepository.save(reserva);
-        return ventaMapper.toReserva(reserva, detalleReservaRepository.findByReservaIdReserva(idReserva));
+        return reservaDto(reserva);
     }
 
     @Override
@@ -365,7 +391,7 @@ public class VentaServiceImpl implements VentaService {
         if (EST_RES_CANCELADA.equals(reserva.getEstado())
                 || EST_RES_EXPIRADA.equals(reserva.getEstado())
                 || EST_RES_COMPRADA.equals(reserva.getEstado())) {
-            return ventaMapper.toReserva(reserva, detalleReservaRepository.findByReservaIdReserva(idReserva));
+            return reservaDto(reserva);
         }
         if (compraRepository.findByReservaIdReserva(idReserva).filter(c -> EST_COMPRA_PENDIENTE.equals(c.getEstado())
                         || EST_COMPRA_APROBADA.equals(c.getEstado()))
@@ -376,7 +402,7 @@ public class VentaServiceImpl implements VentaService {
         reserva.setEstado(EST_RES_CANCELADA);
         reservaRepository.save(reserva);
         stockCache.releaseReservaHold(idReserva);
-        return ventaMapper.toReserva(reserva, detalleReservaRepository.findByReservaIdReserva(idReserva));
+        return reservaDto(reserva);
     }
 
     @Override
@@ -388,7 +414,7 @@ public class VentaServiceImpl implements VentaService {
         reserva.setFechaExpiracion(now.plus(reservaTtl));
         reservaRepository.save(reserva);
         stockCache.renewReservaHold(idReserva, reservaTtl);
-        return ventaMapper.toReserva(reserva, detalleReservaRepository.findByReservaIdReserva(idReserva));
+        return reservaDto(reserva);
     }
 
     @Override
@@ -563,6 +589,7 @@ public class VentaServiceImpl implements VentaService {
             cupo.setCantidadVendida(cupo.getCantidadVendida() + q);
             cupoSectorRepository.save(cupo);
         }
+        asientoReservadoRepository.marcarVendidos(reserva.getIdReserva());
         reserva.setEstado(EST_RES_COMPRADA);
         reservaRepository.save(reserva);
         compra.setEstado(EST_COMPRA_APROBADA);
@@ -595,6 +622,8 @@ public class VentaServiceImpl implements VentaService {
             cupo.setCantidadDisponible(cupo.getCantidadDisponible() + liberar);
             cupoSectorRepository.save(cupo);
         }
+        // asientos virtuales: al liberar la reserva dejan de estar tomados
+        asientoReservadoRepository.eliminarPorReserva(reserva.getIdReserva());
     }
 
     private void maybeExpire(Reserva reserva) {
@@ -708,12 +737,194 @@ public class VentaServiceImpl implements VentaService {
         return map;
     }
 
-    private static Map<String, Integer> mergeItems(List<ReservaCreateRequestDTO.Item> items) {
-        Map<String, Integer> map = new HashMap<>();
-        for (ReservaCreateRequestDTO.Item item : items) {
-            map.merge(item.idSector(), item.cantidad(), Integer::sum);
+    /** Lo pedido de un sector: cantidad total y, si es numerado, los asientos concretos. */
+    private record SectorPedido(int cantidad, List<AsientoRefDTO> asientos) {}
+
+    /**
+     * Agrupa y valida los items. Sector general: solo cantidad. Sector numerado: asientos concretos
+     * (fila + número) validados contra el layout; cantidad = cantidad de asientos.
+     * El orden por idSector es determinístico para bloquear los cupos siempre en el mismo orden.
+     */
+    private static Map<String, SectorPedido> armarPedidos(
+            List<ReservaCreateRequestDTO.Item> items, EventoDetalleFeignDTO evento) {
+        Map<String, SectorFeignDTO> sectores = new HashMap<>();
+        if (evento.getSectores() != null) {
+            for (SectorFeignDTO s : evento.getSectores()) {
+                if (s.getId() != null) {
+                    sectores.put(s.getId(), s);
+                }
+            }
         }
-        return map;
+        Map<String, Integer> generales = new TreeMap<>();
+        Map<String, List<AsientoRefDTO>> numerados = new TreeMap<>();
+        for (ReservaCreateRequestDTO.Item item : items) {
+            SectorFeignDTO sector = sectores.get(item.idSector());
+            List<AsientoRefDTO> pedidos = item.asientos();
+            boolean conAsientos = pedidos != null && !pedidos.isEmpty();
+            String nombre = sector != null && sector.getNombre() != null ? sector.getNombre() : item.idSector();
+            if (sector != null && Boolean.TRUE.equals(sector.getEsNumerado())) {
+                if (!conAsientos) {
+                    throw new IllegalArgumentException(
+                            "El sector «" + nombre + "» es numerado: indicá los asientos (fila y número)");
+                }
+                if (item.cantidad() != null && item.cantidad() != pedidos.size()) {
+                    throw new IllegalArgumentException(
+                            "cantidad (" + item.cantidad() + ") no coincide con los asientos pedidos ("
+                                    + pedidos.size() + ") en «" + nombre + "»");
+                }
+                if (sector.getFilas() == null || sector.getAsientosPorFila() == null) {
+                    throw new BusinessConflictException(
+                            "El sector numerado «" + nombre + "» no tiene layout configurado");
+                }
+                List<AsientoRefDTO> destino = numerados.computeIfAbsent(item.idSector(), k -> new ArrayList<>());
+                for (AsientoRefDTO a : pedidos) {
+                    String fila = AsientoLayout.normalizarFila(a.fila());
+                    if (!AsientoLayout.existe(fila, a.numero(), sector.getFilas(), sector.getAsientosPorFila())) {
+                        throw new IllegalArgumentException(
+                                "El asiento " + a.fila() + "-" + a.numero() + " no existe en «" + nombre + "»");
+                    }
+                    AsientoRefDTO normalizado = new AsientoRefDTO(fila, a.numero());
+                    if (destino.contains(normalizado)) {
+                        throw new IllegalArgumentException(
+                                "Asiento repetido en el pedido: " + AsientoLayout.codigo(fila, a.numero()));
+                    }
+                    destino.add(normalizado);
+                }
+            } else {
+                if (conAsientos) {
+                    throw new IllegalArgumentException(
+                            "El sector «" + nombre + "» no es numerado: no admite asientos");
+                }
+                if (item.cantidad() == null) {
+                    throw new IllegalArgumentException(
+                            "cantidad es obligatoria en sectores generales (sector=" + nombre + ")");
+                }
+                generales.merge(item.idSector(), item.cantidad(), Integer::sum);
+            }
+        }
+        Map<String, SectorPedido> out = new TreeMap<>();
+        generales.forEach((id, qty) -> out.put(id, new SectorPedido(qty, List.of())));
+        numerados.forEach((id, lista) -> out.put(id, new SectorPedido(lista.size(), lista)));
+        return out;
+    }
+
+    /**
+     * Arma las filas de asiento tomadas para un sector. Verifica antes que ninguno esté ocupado
+     * (mensaje claro); la clave única de la tabla cubre la carrera residual al guardar.
+     */
+    private List<AsientoReservado> tomarAsientos(
+            Reserva reserva, String idEvento, String idSector, List<AsientoRefDTO> asientos) {
+        List<AsientoReservado> out = new ArrayList<>();
+        if (asientos == null || asientos.isEmpty()) {
+            return out;
+        }
+        List<String> ocupados = new ArrayList<>();
+        for (AsientoRefDTO a : asientos) {
+            if (asientoReservadoRepository.existsByIdEventoAndIdSectorAndFilaAndNumero(
+                    idEvento, idSector, a.fila(), a.numero())) {
+                ocupados.add(AsientoLayout.codigo(a.fila(), a.numero()));
+            }
+        }
+        if (!ocupados.isEmpty()) {
+            throw new BusinessConflictException(
+                    "Asiento(s) no disponible(s) en sector " + idSector + ": " + String.join(", ", ocupados));
+        }
+        for (AsientoRefDTO a : asientos) {
+            AsientoReservado row = new AsientoReservado();
+            row.setIdAsientoReservado(UUID.randomUUID().toString());
+            row.setReserva(reserva);
+            row.setIdEvento(idEvento);
+            row.setIdSector(idSector);
+            row.setFila(a.fila());
+            row.setNumero(a.numero());
+            row.setEstado(EST_ASIENTO_RESERVADO);
+            out.add(row);
+        }
+        return out;
+    }
+
+    private void guardarAsientos(List<AsientoReservado> asientos) {
+        if (asientos == null || asientos.isEmpty()) {
+            return;
+        }
+        try {
+            asientoReservadoRepository.saveAll(asientos);
+            asientoReservadoRepository.flush();
+        } catch (DataIntegrityViolationException e) {
+            // otro cliente tomó el asiento entre la verificación y el guardado (clave única)
+            throw new BusinessConflictException("Un asiento ya fue tomado por otro cliente; elegí otro");
+        }
+    }
+
+    /** Devuelve a libre los asientos vendidos de una devolución; falla si alguno no figura vendido. */
+    private void liberarAsientosVendidos(String idEvento, String idSector, List<AsientoRefDTO> asientos) {
+        for (AsientoRefDTO a : asientos) {
+            String fila = AsientoLayout.normalizarFila(a.fila());
+            AsientoReservado row = asientoReservadoRepository
+                    .findByIdEventoAndIdSectorAndFilaAndNumero(idEvento, idSector, fila, a.numero())
+                    .orElseThrow(() -> new BusinessConflictException(
+                            "El asiento " + AsientoLayout.codigo(fila, a.numero()) + " no figura vendido"));
+            if (!EST_ASIENTO_VENDIDO.equals(row.getEstado())) {
+                throw new BusinessConflictException(
+                        "El asiento " + AsientoLayout.codigo(fila, a.numero()) + " no está vendido (estado="
+                                + row.getEstado() + ")");
+            }
+            asientoReservadoRepository.delete(row);
+        }
+    }
+
+    private ReservaResponseDTO reservaDto(Reserva reserva) {
+        return reservaDto(
+                reserva,
+                detalleReservaRepository.findByReservaIdReserva(reserva.getIdReserva()),
+                asientoReservadoRepository.findByReservaIdReserva(reserva.getIdReserva()));
+    }
+
+    private ReservaResponseDTO reservaDto(
+            Reserva reserva, List<DetalleReserva> detalles, List<AsientoReservado> asientos) {
+        ReservaResponseDTO dto = ventaMapper.toReserva(reserva, detalles);
+        if (dto == null || asientos == null || asientos.isEmpty()) {
+            return dto;
+        }
+        Map<String, List<AsientoDTO>> porSector = agruparAsientos(asientos);
+        for (DetalleReservaDTO d : dto.getDetalles()) {
+            List<AsientoDTO> lista = porSector.get(d.getIdSector());
+            if (lista != null) {
+                d.setAsientos(lista);
+            }
+        }
+        return dto;
+    }
+
+    private void adjuntarAsientosOcupados(DisponibilidadResponseDTO dto, String idEvento) {
+        if (dto == null) {
+            return;
+        }
+        List<AsientoReservado> ocupados = asientoReservadoRepository.findByIdEvento(idEvento);
+        if (ocupados == null || ocupados.isEmpty()) {
+            return;
+        }
+        Map<String, List<AsientoDTO>> porSector = agruparAsientos(ocupados);
+        for (DisponibilidadResponseDTO.CupoSectorDTO s : dto.getSectores()) {
+            List<AsientoDTO> lista = porSector.get(s.getIdSector());
+            if (lista != null) {
+                s.setAsientosOcupados(lista);
+            }
+        }
+    }
+
+    /** Agrupa por sector y ordena por fila (A, B, ... AA) y número. */
+    private static Map<String, List<AsientoDTO>> agruparAsientos(List<AsientoReservado> asientos) {
+        Map<String, List<AsientoDTO>> porSector = new HashMap<>();
+        for (AsientoReservado a : asientos) {
+            porSector
+                    .computeIfAbsent(a.getIdSector(), k -> new ArrayList<>())
+                    .add(new AsientoDTO(a.getFila(), a.getNumero(), a.getEstado()));
+        }
+        porSector.values().forEach(l -> l.sort(
+                java.util.Comparator.comparingInt((AsientoDTO x) -> AsientoLayout.indiceFila(x.getFila()))
+                        .thenComparing(AsientoDTO::getNumero)));
+        return porSector;
     }
 
     private static LocalDateTime nowUtc() {

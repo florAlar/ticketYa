@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS sector (
   capacidad   INT          NOT NULL DEFAULT 0,
   tipo        VARCHAR(64)  NULL,
   es_numerado TINYINT(1)   NOT NULL DEFAULT 0,
+  filas             INT    NULL COMMENT 'solo sector numerado: cantidad de filas (A, B, ... AA)',
+  asientos_por_fila INT    NULL COMMENT 'solo sector numerado: asientos por fila; capacidad = filas * asientos_por_fila',
   PRIMARY KEY (id),
   CONSTRAINT fk_sector_lugar FOREIGN KEY (id_lugar) REFERENCES lugar (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -107,14 +109,15 @@ INSERT INTO lugar (id, nombre, direccion, ciudad, capacidad_total) VALUES
   ('c0000000-0000-4000-8000-000000000003', 'Wembley Stadium', 'Wembley', 'London', 90000)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), direccion = VALUES(direccion), ciudad = VALUES(ciudad), capacidad_total = VALUES(capacidad_total);
 
-INSERT INTO sector (id, id_lugar, nombre, capacidad, tipo, es_numerado) VALUES
-  ('c0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000001', 'Campo', 60000, 'GENERAL', 0),
-  ('c0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000001', 'Platea', 25000, 'PLATEA', 1),
-  ('c0000000-0000-4000-8000-000000000013', 'c0000000-0000-4000-8000-000000000002', 'Arquibancada', 55000, 'GENERAL', 0),
-  ('c0000000-0000-4000-8000-000000000014', 'c0000000-0000-4000-8000-000000000002', 'Cadeira', 20000, 'PLATEA', 1),
-  ('c0000000-0000-4000-8000-000000000015', 'c0000000-0000-4000-8000-000000000003', 'General Admission', 65000, 'GENERAL', 0),
-  ('c0000000-0000-4000-8000-000000000016', 'c0000000-0000-4000-8000-000000000003', 'Club Wembley', 18000, 'PLATEA', 1)
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), capacidad = VALUES(capacidad), tipo = VALUES(tipo);
+INSERT INTO sector (id, id_lugar, nombre, capacidad, tipo, es_numerado, filas, asientos_por_fila) VALUES
+  ('c0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000001', 'Campo', 60000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000001', 'Platea', 25000, 'PLATEA', 1, 100, 250),
+  ('c0000000-0000-4000-8000-000000000013', 'c0000000-0000-4000-8000-000000000002', 'Arquibancada', 55000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-000000000014', 'c0000000-0000-4000-8000-000000000002', 'Cadeira', 20000, 'PLATEA', 1, 80, 250),
+  ('c0000000-0000-4000-8000-000000000015', 'c0000000-0000-4000-8000-000000000003', 'General Admission', 65000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-000000000016', 'c0000000-0000-4000-8000-000000000003', 'Club Wembley', 18000, 'PLATEA', 1, 72, 250)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), capacidad = VALUES(capacidad), tipo = VALUES(tipo),
+  filas = VALUES(filas), asientos_por_fila = VALUES(asientos_por_fila);
 
 INSERT INTO asiento (id, id_sector, fila, numero, codigo) VALUES
   ('c0000000-0000-4000-8000-000000000021', 'c0000000-0000-4000-8000-000000000012', 'A', 1, 'A-1'),

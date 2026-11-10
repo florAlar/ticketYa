@@ -19,7 +19,6 @@ import eventos.dto.ParticipanteResponseDTO;
 import eventos.dto.PrecioSectorRequestDTO;
 import eventos.dto.SectorEventoDTO;
 import eventos.dto.SectorRequestDTO;
-import eventos.entity.Asiento;
 import eventos.entity.Evento;
 import eventos.entity.EventoParticipante;
 import eventos.entity.Lugar;
@@ -30,13 +29,13 @@ import eventos.exception.BusinessConflictException;
 import eventos.exception.ForbiddenException;
 import eventos.exception.ResourceNotFoundException;
 import eventos.mapper.EventoMapper;
-import eventos.repository.AsientoRepository;
 import eventos.repository.EventoParticipanteRepository;
 import eventos.repository.EventoRepository;
 import eventos.repository.LugarRepository;
 import eventos.repository.ParticipanteRepository;
 import eventos.repository.PrecioSectorRepository;
 import eventos.repository.SectorRepository;
+import eventos.util.SectorLayout;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -80,7 +79,6 @@ public class EventoServiceImpl implements EventoService {
         private final PrecioSectorRepository precioSectorRepository;
         private final LugarRepository lugarRepository;
         private final SectorRepository sectorRepository;
-        private final AsientoRepository asientoRepository;
         private final ParticipanteRepository participanteRepository;
         private final EventoParticipanteRepository eventoParticipanteRepository;
         private final EventoMapper eventoMapper;
@@ -92,7 +90,6 @@ public class EventoServiceImpl implements EventoService {
                 PrecioSectorRepository precioSectorRepository,
                 LugarRepository lugarRepository,
                 SectorRepository sectorRepository,
-                AsientoRepository asientoRepository,
                 ParticipanteRepository participanteRepository,
                 EventoParticipanteRepository eventoParticipanteRepository,
                 EventoMapper eventoMapper,
@@ -102,7 +99,6 @@ public class EventoServiceImpl implements EventoService {
             this.precioSectorRepository = precioSectorRepository;
             this.lugarRepository = lugarRepository;
             this.sectorRepository = sectorRepository;
-            this.asientoRepository = asientoRepository;
             this.participanteRepository = participanteRepository;
             this.eventoParticipanteRepository = eventoParticipanteRepository;
             this.eventoMapper = eventoMapper;
@@ -505,9 +501,19 @@ public class EventoServiceImpl implements EventoService {
         s.setId(UUID.randomUUID().toString());
         s.setLugar(lugar);
         s.setNombre(body.getNombre().trim());
-        s.setCapacidad(body.getCapacidad() != null ? Math.max(0, body.getCapacidad()) : 0);
         s.setTipo(blankToNull(body.getTipo()));
-        s.setEsNumerado(Boolean.TRUE.equals(body.getEsNumerado()));
+        boolean numerado = Boolean.TRUE.equals(body.getEsNumerado());
+        s.setEsNumerado(numerado);
+        if (numerado) {
+            SectorLayout.validar(body.getFilas(), body.getAsientosPorFila(), s.getNombre());
+            s.setFilas(body.getFilas());
+            s.setAsientosPorFila(body.getAsientosPorFila());
+            s.setCapacidad(SectorLayout.capacidad(body.getFilas(), body.getAsientosPorFila()));
+        } else {
+            s.setFilas(null);
+            s.setAsientosPorFila(null);
+            s.setCapacidad(body.getCapacidad() != null ? Math.max(0, body.getCapacidad()) : 0);
+        }
         sectorRepository.save(s);
         recalcularCapacidadLugar(lugar);
         return eventoMapper.toSectorFromEntity(s, null, null);
@@ -525,14 +531,27 @@ public class EventoServiceImpl implements EventoService {
         if (blankToNull(body.getNombre()) != null) {
             s.setNombre(body.getNombre().trim());
         }
-        if (body.getCapacidad() != null) {
-            s.setCapacidad(Math.max(0, body.getCapacidad()));
-        }
         if (body.getTipo() != null) {
             s.setTipo(blankToNull(body.getTipo()));
         }
-        if (body.getEsNumerado() != null) {
-            s.setEsNumerado(body.getEsNumerado());
+        boolean numerado = body.getEsNumerado() != null
+                ? body.getEsNumerado()
+                : Boolean.TRUE.equals(s.getEsNumerado());
+        s.setEsNumerado(numerado);
+        if (numerado) {
+            // la capacidad de un sector numerado se deriva del layout (se ignora body.capacidad)
+            Integer filas = body.getFilas() != null ? body.getFilas() : s.getFilas();
+            Integer porFila = body.getAsientosPorFila() != null ? body.getAsientosPorFila() : s.getAsientosPorFila();
+            SectorLayout.validar(filas, porFila, s.getNombre());
+            s.setFilas(filas);
+            s.setAsientosPorFila(porFila);
+            s.setCapacidad(SectorLayout.capacidad(filas, porFila));
+        } else {
+            s.setFilas(null);
+            s.setAsientosPorFila(null);
+            if (body.getCapacidad() != null) {
+                s.setCapacidad(Math.max(0, body.getCapacidad()));
+            }
         }
         sectorRepository.save(s);
         recalcularCapacidadLugar(s.getLugar());
@@ -548,9 +567,11 @@ public class EventoServiceImpl implements EventoService {
         if (!s.getLugar().getId().equals(idLugar)) {
             throw new ResourceNotFoundException("Sector no pertenece al lugar");
         }
-        return asientoRepository.findBySectorIdOrderByFilaAscNumeroAsc(idSector).stream()
-                        .map(this::toAsiento)
-                        .toList();
+        if (!Boolean.TRUE.equals(s.getEsNumerado()) || s.getFilas() == null || s.getAsientosPorFila() == null) {
+            return List.of();
+        }
+        // asientos virtuales: se calculan desde el layout, no hay filas persistidas
+        return SectorLayout.generar(s.getId(), s.getFilas(), s.getAsientosPorFila());
             }
 
             @Override
@@ -826,12 +847,26 @@ public class EventoServiceImpl implements EventoService {
             // sinCupo del payload se ignora (no hay cupo ilimitado)
             Integer cap = in.getCapacidadTotal() != null ? in.getCapacidadTotal() : in.getCapacidad();
             int capacidad = cap != null ? Math.max(0, cap) : 0;
+            boolean numerado = Boolean.TRUE.equals(in.getEsNumerado());
+            Integer filas = null;
+            Integer porFila = null;
+            if (numerado) {
+                filas = in.getFilas() != null ? in.getFilas() : s.getFilas();
+                porFila = in.getAsientosPorFila() != null ? in.getAsientosPorFila() : s.getAsientosPorFila();
+                // borrador laxo: se admite sin layout; al publicar o si se informa alguno, deben estar ambos
+                if (strictCupo || filas != null || porFila != null) {
+                    SectorLayout.validar(filas, porFila, s.getNombre());
+                    capacidad = SectorLayout.capacidad(filas, porFila);
+                }
+            }
             if (strictCupo && capacidad < 1) {
                 throw new IllegalArgumentException(
                         "sectores[].capacidadTotal debe ser ≥ 1 para «" + s.getNombre() + "» (no hay cupo ilimitado)");
             }
             s.setCapacidad(capacidad);
-            s.setEsNumerado(Boolean.TRUE.equals(in.getEsNumerado()));
+            s.setEsNumerado(numerado);
+            s.setFilas(filas);
+            s.setAsientosPorFila(porFila);
             String tipo = blankToNull(in.getTipo());
             if (tipo == null) {
                 tipo = s.getNombre().toUpperCase().replace(' ', '_');
@@ -885,16 +920,6 @@ public class EventoServiceImpl implements EventoService {
                 .map(s -> eventoMapper.toSectorFromEntity(s, null, null))
                 .toList();
         dto.setSectores(sectores);
-        return dto;
-    }
-
-    private AsientoResponseDTO toAsiento(Asiento a) {
-        AsientoResponseDTO dto = new AsientoResponseDTO();
-        dto.setId(a.getId());
-        dto.setIdSector(a.getSector() != null ? a.getSector().getId() : null);
-        dto.setFila(a.getFila());
-        dto.setNumero(a.getNumero());
-        dto.setCodigo(a.getCodigo());
         return dto;
     }
 

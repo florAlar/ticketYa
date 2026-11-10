@@ -35,6 +35,14 @@ public class Entrada {
     @Column(name = "id_sector", length = 36, nullable = false)
     private String idSector;
 
+    /** Asiento virtual (solo sector numerado): fila. Null en sectores generales. */
+    @Column(name = "fila", length = 8)
+    private String fila;
+
+    /** Asiento virtual (solo sector numerado): número dentro de la fila. */
+    @Column(name = "numero")
+    private Integer numero;
+
     /** Precio unitario al emitir (DTO + monto devolución/reintegro). */
     @Column(name = "precio", precision = 12, scale = 2, nullable = false)
     private BigDecimal precio;

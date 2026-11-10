@@ -1839,7 +1839,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"Platea Postman\",\"capacidad\":150,\"tipo\":\"PLATEA\",\"esNumerado\":true}",
+              "raw": "{\"nombre\":\"Platea Postman\",\"tipo\":\"PLATEA\",\"esNumerado\":true,\"filas\":10,\"asientosPorFila\":15}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1895,7 +1895,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"Platea Postman v2\",\"capacidad\":150,\"tipo\":\"PLATEA\",\"esNumerado\":true}",
+              "raw": "{\"nombre\":\"Platea Postman v2\",\"tipo\":\"PLATEA\",\"esNumerado\":true,\"filas\":10,\"asientosPorFila\":15}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1932,7 +1932,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/lugares/{{lugarSeedId}}/sectores/{{sectorNumeradoSeedId}}/asientos",
-            "description": "Rol: ORGANIZADOR · Esperado: 200 · Asientos seed A-1/A-2.",
+            "description": "Rol: ORGANIZADOR · Esperado: 200 · Asientos virtuales calculados desde filas x asientosPorFila del sector (sin filas persistidas).",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1954,11 +1954,12 @@
                   "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
                   "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
                   "const b = pm.response.json();",
-                  "pm.test('Asientos seed', function () {",
+                  "pm.test('Asientos virtuales calculados desde el layout', function () {",
                   "  pm.expect(b).to.be.an('array').with.lengthOf.at.least(1);",
                   "  pm.expect(b[0]).to.have.property('codigo');",
-                  "});",
-                  "pm.environment.set('asientoId', b[0].id);"
+                  "  pm.expect(b[0].id).to.eql(null);",
+                  "  pm.expect(b[0].codigo).to.eql('A-1');",
+                  "});"
                 ]
               }
             }

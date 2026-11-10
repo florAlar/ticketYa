@@ -12,9 +12,9 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 | Endpoint | Estado | Notas |
 | --- | --- | --- |
 | GET /eventos/disponibilidad?ids= | **hecho** | Batch catálogo (máx 50 ids). 1 query `cupo_sector`. Sin filas → ítem agotado total 0 |
-| GET /eventos/{id}/disponibilidad | **hecho** | Cupos `cupo_sector`; 404 si no hay filas. DTO: disponibleTotal + nivelCupo |
+| GET /eventos/{id}/disponibilidad | **hecho** | Cupos `cupo_sector`; 404 si no hay filas. DTO: disponibleTotal + nivelCupo + por sector `asientosOcupados[{fila,numero,estado}]` (solo sectores numerados; el resto del layout está libre) |
 | POST /eventos/{id}/cupos | **hecho** | Abre stock al publicar (body `{sectores:[{idSector,capacidadTotal≥1}]}`). Idempotente. Feign desde msvc-eventos; GW `/api/eventos/{id}/cupos` |
-| POST /eventos/{id}/cupos/liberacion | **hecho** | Devuelve stock por devolución aprobada. Body `{idSector, cantidad≥1}`. Lock pesimista; `-vendida` `+disponible`. Feign msvc-entradas; GW order 9 |
+| POST /eventos/{id}/cupos/liberacion | **hecho** | Devuelve stock por devolución aprobada. Body `{idSector, cantidad≥1}` o, en sector numerado, `{idSector, asientos:[{fila,numero}]}` (deben figurar VENDIDO; `cantidad` se ignora). Lock pesimista; `-vendida` `+disponible`. Feign msvc-entradas; GW order 9 |
 | POST /reservas | **hecho** | TTL 10 min; lock pesimista cupo; precio vía Feign msvc-eventos; `X-User-Id`; opcional `Idempotency-Key` |
 | GET /reservas/{id} | **hecho** | Solo dueño; expira lazy si TTL vencido |
 | POST /reservas/{id}/confirmacion | **hecho** | PENDIENTE → CONFIRMADA |
@@ -94,6 +94,11 @@ Umbrales: 0→AGOTADO; &lt;20→ULTIMOS_LUGARES; &lt;50→MENOS_DE_50; &lt;100�
 ```json
 { "idEvento": "d000…001", "items": [{ "idSector": "c000…011", "cantidad": 1 }] }
 ```
+Sector **numerado** (asientos virtuales; no se persisten asientos libres): se piden asientos concretos y `cantidad` se ignora (vale `asientos.length`).
+```json
+{ "idEvento": "d000…001", "items": [{ "idSector": "c000…012", "asientos": [{ "fila": "C", "numero": 14 }, { "fila": "C", "numero": 15 }] }] }
+```
+Errores: 400 si el sector numerado no trae asientos, un asiento no existe en el layout (`filas` x `asientosPorFila`), hay repetidos, o un sector general trae asientos; 409 si algún asiento ya está tomado (RESERVADO/VENDIDO).
 
 **POST /compras** + header `Idempotency-Key: <uuid>`
 ```json
