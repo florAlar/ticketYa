@@ -12,7 +12,7 @@ Backend/specs/
 
 | Artefacto | Estado | Dónde |
 | --- | --- | --- |
-| Features y user stories (+ criterios de aceptación) | listo | [`user-stories.md`](./user-stories.md) |
+| Features y user stories (+ criterios de aceptación) | listo | Tablero Trello del equipo: [US TPE](https://trello.com/b/HhT3lZdK/us-tpe) |
 | Arquitectura (módulos, responsabilidades, APIs, comunicación) | listo | [`arquitectura.md`](./arquitectura.md) |
 | Diagramas de secuencia de compra | listo | [`diagramas-secuencia.md`](../specs/diagramas/diagramas-secuencia.md) — éxito, pago rechazado, reserva vencida, devolución y entrada numerada |
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |

@@ -86,11 +86,10 @@ Más detalle: [`Frontend/README.md`](Frontend/README.md) y [`Backend/README.md`]
 ## Users Stories
 
 - Tablero: [Acceder User Stories](https://trello.com/b/HhT3lZdK/us-tpe)
-- Versión en el repo, con criterios de aceptación: [`Backend/docs/user-stories.md`](Backend/docs/user-stories.md)
 
 ## Documentación de diseño
 
-Features y user stories, arquitectura, diagramas de secuencia y modelo de datos: [`Backend/docs/`](Backend/docs/README.md).
+Arquitectura, diagramas de secuencia, modelo de datos y demás artefactos: [`Backend/docs/`](Backend/docs/README.md).
 
 ## Notas
 

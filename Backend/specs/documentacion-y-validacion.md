@@ -43,7 +43,7 @@ la verificación del responsable del repositorio y su **commit manual**.
 | 3 | Tests unitarios de lógica de negocio | `src/test/java/**` + JaCoCo ≥ 90 % (alcance §9.2) | 3 |
 | 4 | Prueba de no doble venta | Unitaria (build normal) + integración MySQL (`-Pit`) | 4 |
 | 5 | Colección de requests | `Backend/docs/postman/*.postman_collection.json` + environment | 5 |
-| 6 | Features y user stories E1 con criterios de aceptación | `Backend/docs/user-stories.md` | 6 |
+| 6 | Features y user stories E1 con criterios de aceptación | Tablero Trello del equipo | 6 |
 
 **Cobertura de endpoints E1 a documentar: 62** (usuarios 11, eventos 24, ventas 17, entradas 10),
 más el gateway documentado como capa de ruteo/RBAC, más 6 endpoints smoke `GET /` fuera de contrato.
@@ -830,7 +830,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 ## 13. Fase 7 — Cierre de entrega
 
 1. Verificación integral: `mvn verify` en los 5 módulos + `mvn verify -Pit` en ventas.
-2. Chequeo de artefactos: `Backend/docs/openapi/`, `postman/`, `user-stories.md`, `testing/`,
+2. Chequeo de artefactos: `Backend/docs/openapi/`, `postman/`, `testing/`,
    `api/gateway.md`.
 3. Diff propuesto de `Backend/docs/README.md` (A-05) con estados finales.
 4. Tabla propuesta de actualización de `Backend/specs/backlog.md` (A-06) para aplicar manualmente.

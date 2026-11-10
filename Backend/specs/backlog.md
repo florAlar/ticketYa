@@ -88,8 +88,8 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
-| US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | parcial | Artefacto de consigna §5.A. E1 hecho: `docs/user-stories.md` (10 features, 24 historias). Las funcionalidades de E2 solo figuran como fuera de alcance. El tablero Trello (enlazado en el README) es el espacio de trabajo del equipo. |
-| US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | hecho | `docs/user-stories.md`, formato dado / cuando / entonces, con códigos HTTP y reglas verificadas contra el código. |
+| US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | hecho | Artefacto de consigna §5.A. Se mantiene en el tablero Trello del equipo (enlazado en el README raíz). |
+| US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | hecho | En el tablero Trello del equipo, junto a las historias. |
 | US-03 | Completar/actualizar CA de historias E2 y de las que cambien | E2 | pendiente | |
 
 ---
@@ -358,7 +358,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
-| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-02; ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE; US-01 (E1 hecho, E2 pendiente) | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
+| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
 | Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC; SEAT-07 (limpieza `asiento`/`precio_asiento`) |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
 | Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
