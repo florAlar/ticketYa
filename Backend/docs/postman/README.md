@@ -4,10 +4,10 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 104 requests en 9 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 127 requests en 10 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
 
-**Última corrida verificada:** 104 requests, 307 assertions, 0 fallos (stack local completo, datos seed limpios).
+**Última corrida verificada (2026-11-10):** 127 requests, 376 assertions, 0 fallos (stack local completo, datos seed limpios; dos corridas seguidas sin reiniciar datos).
 
 ## Requisitos
 
@@ -47,7 +47,7 @@ No hace falta loguearse a mano. Un script *pre-request* de la colección hace lo
 
 Cada request declara en su descripción el rol que usa y el status esperado.
 
-**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección pasa completa (104 requests, 307 assertions, 0 fallos) con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles). Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
+**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección pasa completa (127 requests, 376 assertions, 0 fallos) con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles). Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
 
 ```bash
 curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
@@ -66,6 +66,7 @@ curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIEN
 | 06 Devoluciones | 10 | solicitud, listado, aprobación, rechazo, reintegro por cancelación |
 | 07 Negativos | 17 | 401, 403, 400, 404 y 409 |
 | 08 Gateway | 8 | health, rutas públicas sin token y preflight CORS |
+| 09 Asientos numerados | 23 | reserva de un asiento concreto (Platea numerada del evento seed), `asientosOcupados` en disponibilidad (RESERVADO → VENDIDO), errores 409/400, entrada con fila y número, devolución que libera el asiento y pago rechazado que libera el asiento |
 
 ## Flujo de negocio que recorre
 
@@ -81,7 +82,10 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 
 1. **`POST /eventos/{id}/reintegro-cancelacion` no está ruteado en el gateway.** Por eso 06.09 y 06.10 llaman directo a `msvc-entradas` (`entradasDirectUrl`, puerto 8084) con los headers `X-User-*`, y 07.15 verifica el 404 que devuelve el gateway.
 2. **Un pago RECHAZADO no se puede reintentar.** Al rechazarse, la reserva se cancela y el cupo se libera, así que `POST /pagos/{id}/reintentos` responde 409. 07.13 deja constancia de esto.
-3. **Sin requests de asientos todavía** *(2026-11-10)*. Desde la incorporación de asientos virtuales, 03.05/03.06 crean y actualizan el sector numerado con `filas` + `asientosPorFila` y 03.07 espera asientos calculados (`id` nulo, primer código `A-1`). Faltan requests de reserva y compra con `asientos`, la verificación de `asientosOcupados` en disponibilidad y el 409 de asiento tomado. La última corrida verificada (104 requests / 307 assertions) es **anterior** a este cambio y no se re-ejecutó (Docker apagado): reejecutar la colección antes de darla por válida.
+
+## Carpeta 09 — asientos numerados
+
+Se puede correr varias veces sin reiniciar los datos: registra un **cliente nuevo por corrida** (evita el límite de 6 entradas por cliente y evento) y elige asientos libres al azar en la Platea del evento seed (100 filas × 250). Variables que usa: `sectorNumeradoSeedId`, `sectorGeneralSeedId` (Campo, general) y `token_asientos`; el resto las captura sola (`asientoNum`, `asientoNum2`, `asientoNum3`, `asientoReservaId`, `asientoCompraId`, `asientoEntradaId`, `asientoDevolucionId`...). Va al final de la colección para no alterar el orden de las carpetas anteriores.
 
 ## Reiniciar los datos
 

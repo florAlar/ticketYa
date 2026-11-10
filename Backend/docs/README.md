@@ -18,7 +18,7 @@ Backend/specs/
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
 | Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
-| Colección Postman | listo | [`postman/`](./postman/) (104 requests, 0 fallos) |
+| Colección Postman | listo | [`postman/`](./postman/) (127 requests, 0 fallos, incluye asientos) |
 | Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
 | README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
 | Datos de prueba | listo | seeds en `Backend/infrastructure/` (ver `infrastructure/mysql/README.md`) |

@@ -1,13 +1,12 @@
 {
-  "generatedAt": "2026-11-08",
+  "generatedAt": "2026-11-10",
   "generator": "springdoc-openapi-starter-webmvc-ui 3.2.0",
   "openapi": "3.1.0",
-  "description": "Bundle consolidado de contratos OpenAPI de TicketYa (E1). Cada clave es el artifactId del microservicio.",
   "microservices": {
     "msvc-entradas": {
       "paths": 11,
       "operations": 11,
-      "schemas": 6
+      "schemas": 7
     },
     "msvc-eventos": {
       "paths": 17,
@@ -22,7 +21,7 @@
     "msvc-ventas": {
       "paths": 14,
       "operations": 16,
-      "schemas": 14
+      "schemas": 16
     }
   },
   "specs": {
@@ -824,6 +823,29 @@
               }
             }
           },
+          "AsientoRef": {
+            "type": "object",
+            "description": "Asiento de un sector numerado (fila + número)",
+            "properties": {
+              "fila": {
+                "type": "string",
+                "description": "Fila (A..Z, AA..)",
+                "example": "C",
+                "minLength": 1
+              },
+              "numero": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Número dentro de la fila (desde 1)",
+                "example": 14,
+                "minimum": 1
+              }
+            },
+            "required": [
+              "fila",
+              "numero"
+            ]
+          },
           "EmitirEntradaItem": {
             "type": "object",
             "description": "Entradas a emitir en un sector",
@@ -837,7 +859,7 @@
               "cantidad": {
                 "type": "integer",
                 "format": "int32",
-                "description": "Cantidad de entradas (mín. 1)",
+                "description": "Cantidad de entradas (mín. 1). Si hay asientos debe coincidir con su cantidad",
                 "example": 2,
                 "minimum": 1
               },
@@ -845,6 +867,16 @@
                 "type": "number",
                 "description": "Precio unitario pagado",
                 "example": 95000.0
+              },
+              "asientos": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "description": "Asientos vendidos (sector numerado): se emite una entrada por asiento. Null o vacío en sectores generales.",
+                "items": {
+                  "$ref": "#/components/schemas/AsientoRef"
+                }
               }
             },
             "required": [
@@ -923,6 +955,23 @@
                 "type": "string",
                 "description": "UUID del sector",
                 "example": "c0000000-0000-4000-8000-000000000011"
+              },
+              "fila": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Fila del asiento (solo sector numerado; null en sectores generales)",
+                "example": "C"
+              },
+              "asiento": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "format": "int32",
+                "description": "Número de asiento dentro de la fila (solo sector numerado)",
+                "example": 14
               },
               "estado": {
                 "type": "string",
@@ -2814,6 +2863,18 @@
                 "type": "boolean",
                 "description": "Sector numerado",
                 "example": true
+              },
+              "filas": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Filas del sector numerado (obligatorio si esNumerado; 1..200)",
+                "example": 20
+              },
+              "asientosPorFila": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Asientos por fila del sector numerado (obligatorio si esNumerado; 1..500). La capacidad del sector es filas * asientosPorFila",
+                "example": 15
               }
             }
           },
@@ -2846,6 +2907,18 @@
                 "type": "boolean",
                 "description": "Sector numerado",
                 "example": false
+              },
+              "filas": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Filas (solo sector numerado; null en sectores generales)",
+                "example": 20
+              },
+              "asientosPorFila": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Asientos por fila (solo sector numerado; null en sectores generales)",
+                "example": 15
               },
               "precio": {
                 "type": "number",
@@ -3093,6 +3166,18 @@
                 "type": "boolean",
                 "description": "Sector numerado",
                 "example": false
+              },
+              "filas": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Filas del sector numerado (obligatorio al publicar si esNumerado; 1..200)",
+                "example": 20
+              },
+              "asientosPorFila": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Asientos por fila del sector numerado (obligatorio al publicar si esNumerado; 1..500). Si hay layout, la capacidad se calcula como filas * asientosPorFila",
+                "example": 15
               },
               "tipo": {
                 "type": "string",
@@ -3400,12 +3485,14 @@
           },
           "Asiento": {
             "type": "object",
-            "description": "Asiento de un sector numerado",
+            "description": "Asiento virtual de un sector numerado, calculado desde filas y asientosPorFila (no se persiste)",
             "properties": {
               "id": {
-                "type": "string",
-                "description": "UUID del asiento",
-                "example": "a1000000-0000-4000-8000-000000000001"
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Siempre null: los asientos son virtuales; se identifican por sector + fila + número"
               },
               "idSector": {
                 "type": "string",
@@ -5444,6 +5531,29 @@
       },
       "components": {
         "schemas": {
+          "AsientoRef": {
+            "type": "object",
+            "description": "Asiento de un sector numerado (fila + número)",
+            "properties": {
+              "fila": {
+                "type": "string",
+                "description": "Fila (A..Z, AA..)",
+                "example": "C",
+                "minLength": 1
+              },
+              "numero": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Número de asiento dentro de la fila (desde 1)",
+                "example": 14,
+                "minimum": 1
+              }
+            },
+            "required": [
+              "fila",
+              "numero"
+            ]
+          },
           "ReservaCreateRequest": {
             "type": "object",
             "description": "Reserva temporal de cupos por sector",
@@ -5470,7 +5580,7 @@
           },
           "ReservaItem": {
             "type": "object",
-            "description": "Cantidad a reservar en un sector",
+            "description": "Sector a reservar: sector general = cantidad; sector numerado = asientos concretos",
             "properties": {
               "idSector": {
                 "type": "string",
@@ -5481,15 +5591,50 @@
               "cantidad": {
                 "type": "integer",
                 "format": "int32",
-                "description": "Cantidad de entradas (mín. 1; máx. por cliente aplica en servidor)",
+                "description": "Cantidad de entradas. Obligatoria en sectores generales (mín. 1; máx. por cliente aplica en servidor). En sectores numerados se ignora (vale la cantidad de asientos); si se envía debe coincidir.",
                 "example": 2,
                 "minimum": 1
+              },
+              "asientos": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "description": "Asientos pedidos (fila + número). Obligatorio en sectores numerados y no admitido en sectores generales.",
+                "items": {
+                  "$ref": "#/components/schemas/AsientoRef"
+                }
               }
             },
             "required": [
-              "cantidad",
               "idSector"
             ]
+          },
+          "Asiento": {
+            "type": "object",
+            "description": "Asiento tomado de un sector numerado",
+            "properties": {
+              "fila": {
+                "type": "string",
+                "description": "Fila",
+                "example": "C"
+              },
+              "numero": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Número dentro de la fila",
+                "example": 14
+              },
+              "estado": {
+                "type": "string",
+                "description": "RESERVADO (con TTL) o VENDIDO",
+                "enum": [
+                  "RESERVADO",
+                  "VENDIDO"
+                ],
+                "example": "RESERVADO"
+              }
+            }
           },
           "DetalleReserva": {
             "type": "object",
@@ -5515,6 +5660,13 @@
                 "type": "number",
                 "description": "Precio unitario",
                 "example": 95000.0
+              },
+              "asientos": {
+                "type": "array",
+                "description": "Asientos reservados (solo sectores numerados; vacío en sectores generales)",
+                "items": {
+                  "$ref": "#/components/schemas/Asiento"
+                }
               }
             }
           },
@@ -5720,6 +5872,13 @@
                 "type": "string",
                 "description": "Etiqueta para UI del sector",
                 "example": "Menos de 100"
+              },
+              "asientosOcupados": {
+                "type": "array",
+                "description": "Asientos ya tomados (reservados o vendidos) del sector numerado; los demás asientos del layout están libres. Vacío en sectores generales.",
+                "items": {
+                  "$ref": "#/components/schemas/Asiento"
+                }
               }
             }
           },
@@ -5785,6 +5944,16 @@
                 "description": "Unidades a devolver",
                 "example": 1,
                 "minimum": 1
+              },
+              "asientos": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "description": "Asientos vendidos a liberar (sector numerado). Si se envía, se ignora cantidad",
+                "items": {
+                  "$ref": "#/components/schemas/AsientoRef"
+                }
               }
             },
             "required": [

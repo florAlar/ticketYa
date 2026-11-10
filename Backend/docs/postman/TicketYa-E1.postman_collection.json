@@ -4840,6 +4840,1129 @@
           ]
         }
       ]
+    },
+    {
+      "name": "09 Asientos numerados",
+      "description": "Flujo de asientos concretos en un sector numerado (Platea del evento seed): reserva por asiento, errores 400/409, pago aprobado → VENDIDO, entrada con fila y número, devolución que libera el asiento y pago rechazado que libera el asiento. Usa un cliente nuevo por corrida y elige asientos libres al azar, por lo que puede repetirse sin reiniciar los datos.",
+      "item": [
+        {
+          "name": "09.01 Registrar cliente de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Rol: público · Esperado: 200 · Cliente nuevo por corrida (evita el límite de 6 entradas por cliente y evento). Guarda {{token_asientos}}.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Asientos\",\"apellido\":\"QA\",\"email\":\"asientos+{{$guid}}@example.com\",\"password\":\"secreto123\",\"ciudad\":\"Córdoba\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Cliente nuevo con sesión', function () { pm.expect(b.user.rol).to.eql('CLIENTE'); pm.expect(b.token).to.be.a('string'); });",
+                  "pm.environment.set('token_asientos', b.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.02 Disponibilidad inicial y elección de asientos libres",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/disponibilidad",
+            "description": "Rol: público · Esperado: 200 · Platea del evento seed es numerada (100 filas × 250). Elige asientos libres al azar y los guarda en {{asientoNum}} (fila A), {{asientoNum2}} (fila C) y {{asientoNum3}} (fila B).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const sec = (b.sectores || []).find(function (s) { return s.idSector === pm.environment.get('sectorNumeradoSeedId'); });",
+                  "pm.test('Sector numerado informa asientosOcupados', function () { pm.expect(sec, 'sector numerado').to.be.an('object'); pm.expect(sec.asientosOcupados).to.be.an('array'); });",
+                  "function libre(fila) {",
+                  "  const ocupados = (sec.asientosOcupados || []).filter(function (a) { return a.fila === fila; }).map(function (a) { return a.numero; });",
+                  "  let n; do { n = Math.floor(Math.random() * 250) + 1; } while (ocupados.indexOf(n) !== -1);",
+                  "  return n;",
+                  "}",
+                  "pm.environment.set('asientoNum', libre('A'));",
+                  "pm.environment.set('asientoNum2', libre('C'));",
+                  "pm.environment.set('asientoNum3', libre('B'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.03 Reservar un asiento concreto (A)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 201 · Reserva el asiento A-{{asientoNum}} de la Platea. Guarda {{asientoReservaId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorNumeradoSeedId}}\",\"asientos\":[{\"fila\":\"A\",\"numero\":{{asientoNum}}}]}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Reserva PENDIENTE con el asiento RESERVADO', function () {",
+                  "  pm.expect(b.estado).to.eql('PENDIENTE');",
+                  "  pm.expect(b.detalles).to.be.an('array').with.lengthOf(1);",
+                  "  const a = b.detalles[0].asientos;",
+                  "  pm.expect(a).to.be.an('array').with.lengthOf(1);",
+                  "  pm.expect(a[0].fila).to.eql('A');",
+                  "  pm.expect(a[0].numero).to.eql(Number(pm.environment.get('asientoNum')));",
+                  "  pm.expect(a[0].estado).to.eql('RESERVADO');",
+                  "  pm.expect(b.detalles[0].cantidad).to.eql(1);",
+                  "});",
+                  "pm.environment.set('asientoReservaId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.04 Disponibilidad muestra el asiento RESERVADO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/disponibilidad",
+            "description": "Rol: público · Esperado: 200 · El asiento reservado figura en asientosOcupados con estado RESERVADO.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const sec = (b.sectores || []).find(function (s) { return s.idSector === pm.environment.get('sectorNumeradoSeedId'); });",
+                  "const a = (sec.asientosOcupados || []).find(function (a) { return a.fila === 'A' && a.numero === Number(pm.environment.get('asientoNum')); });",
+                  "pm.test('A-asientoNum figura RESERVADO', function () { pm.expect(a, 'asiento ocupado').to.be.an('object'); pm.expect(a.estado).to.eql('RESERVADO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.05 Mismo asiento ya tomado → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 409 · Pedir un asiento RESERVADO/VENDIDO se rechaza.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorNumeradoSeedId}}\",\"asientos\":[{\"fila\":\"A\",\"numero\":{{asientoNum}}}]}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Asiento no disponible', function () { pm.expect(b.status).to.eql(409); pm.expect(b.message).to.include('A-' + pm.environment.get('asientoNum')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.06 Asiento inexistente en el layout → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 400 · La fila/número no existe en 100 × 250.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorNumeradoSeedId}}\",\"asientos\":[{\"fila\":\"ZZZ\",\"numero\":9999}]}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Asiento inexistente', function () { pm.expect(b.status).to.eql(400); pm.expect(b.message).to.include('no existe'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.07 Sector numerado sin asientos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 400 · En un sector numerado hay que indicar los asientos, no la cantidad.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorNumeradoSeedId}}\",\"cantidad\":1}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Exige indicar asientos', function () { pm.expect(b.status).to.eql(400); pm.expect(b.message).to.include('numerado'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.08 Sector general con asientos → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 400 · Campo es un sector general: no admite asientos.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorGeneralSeedId}}\",\"asientos\":[{\"fila\":\"A\",\"numero\":1}]}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Sector general no admite asientos', function () { pm.expect(b.status).to.eql(400); pm.expect(b.message).to.include('no es numerado'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.09 Asientos repetidos en el pedido → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 400 · El mismo asiento dos veces en una reserva.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorNumeradoSeedId}}\",\"asientos\":[{\"fila\":\"B\",\"numero\":{{asientoNum3}}},{\"fila\":\"B\",\"numero\":{{asientoNum3}}}]}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Asiento repetido', function () { pm.expect(b.status).to.eql(400); pm.expect(b.message).to.include('repetido'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.10 Confirmar la reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas/{{asientoReservaId}}/confirmacion",
+            "description": "Rol: CLIENTE · Esperado: 200 · PENDIENTE → CONFIRMADA.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Reserva CONFIRMADA', function () { pm.expect(b.estado).to.eql('CONFIRMADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.11 Crear compra",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/compras",
+            "description": "Rol: CLIENTE · Esperado: 201 · Guarda {{asientoCompraId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idReserva\":\"{{asientoReservaId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Compra PENDIENTE_PAGO', function () { pm.expect(b.estado).to.eql('PENDIENTE_PAGO'); pm.expect(b.total).to.be.above(0); });",
+                  "pm.environment.set('asientoCompraId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.12 Pagar (APROBAR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/compras/{{asientoCompraId}}/pagos",
+            "description": "Rol: CLIENTE · Esperado: 201 · Pago mock aprobado: el asiento pasa a VENDIDO y se emite la entrada.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"resultado\":\"APROBAR\",\"proveedor\":\"MOCK_PASARELA\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Pago APROBADO', function () { pm.expect(b.estado).to.eql('APROBADO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.13 Disponibilidad muestra el asiento VENDIDO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/disponibilidad",
+            "description": "Rol: público · Esperado: 200 · El asiento figura ahora como VENDIDO.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const sec = (b.sectores || []).find(function (s) { return s.idSector === pm.environment.get('sectorNumeradoSeedId'); });",
+                  "const a = (sec.asientosOcupados || []).find(function (a) { return a.fila === 'A' && a.numero === Number(pm.environment.get('asientoNum')); });",
+                  "pm.test('A-asientoNum figura VENDIDO', function () { pm.expect(a, 'asiento ocupado').to.be.an('object'); pm.expect(a.estado).to.eql('VENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.14 Mis entradas: una entrada por asiento, con fila y número",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/entradas",
+            "description": "Rol: CLIENTE · Esperado: 200 · La entrada emitida trae fila y asiento, y un QR único. Guarda {{asientoEntradaId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Una entrada VENDIDA con fila y asiento', function () {",
+                  "  pm.expect(b).to.be.an('array').with.lengthOf(1);",
+                  "  pm.expect(b[0].estado).to.eql('VENDIDA');",
+                  "  pm.expect(b[0].fila).to.eql('A');",
+                  "  pm.expect(b[0].asiento).to.eql(Number(pm.environment.get('asientoNum')));",
+                  "  pm.expect(b[0].codigoQR).to.be.a('string');",
+                  "});",
+                  "pm.environment.set('asientoEntradaId', b[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.15 Solicitar devolución de la entrada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/entradas/{{asientoEntradaId}}/devoluciones",
+            "description": "Rol: CLIENTE · Esperado: 201 · Guarda {{asientoDevolucionId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"motivo\":\"No puedo asistir (Postman asientos)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Devolución PENDIENTE', function () { pm.expect(b.estado).to.eql('PENDIENTE'); pm.expect(b.idEntrada).to.eql(pm.environment.get('asientoEntradaId')); });",
+                  "pm.environment.set('asientoDevolucionId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.16 Aprobar devolución (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/devoluciones/{{asientoDevolucionId}}/aprobacion",
+            "description": "Rol: ADMIN · Esperado: 200 · Invalida el QR y libera el asiento en ventas.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Devolución APROBADA', function () { pm.expect(b.estado).to.eql('APROBADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.17 La entrada queda DEVUELTA y sin QR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/entradas/{{asientoEntradaId}}",
+            "description": "Rol: CLIENTE · Esperado: 200 · Estado DEVUELTA; el QR deja de ser usable (null).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Entrada DEVUELTA sin QR', function () { pm.expect(b.estado).to.eql('DEVUELTA'); pm.expect(b.codigoQR).to.be.oneOf([null, undefined]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.18 El asiento devuelto vuelve a estar libre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/disponibilidad",
+            "description": "Rol: público · Esperado: 200 · A-{{asientoNum}} ya no figura en asientosOcupados.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const sec = (b.sectores || []).find(function (s) { return s.idSector === pm.environment.get('sectorNumeradoSeedId'); });",
+                  "pm.test('A-asientoNum liberado', function () { pm.expect((sec.asientosOcupados || []).find(function (a) { return a.fila === 'A' && a.numero === Number(pm.environment.get('asientoNum')); })).to.be.oneOf([undefined, null]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.19 Reservar otro asiento (C) para el pago rechazado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 201 · Guarda {{asientoReservaRechazoId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorNumeradoSeedId}}\",\"asientos\":[{\"fila\":\"C\",\"numero\":{{asientoNum2}}}]}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Reserva PENDIENTE del asiento C', function () { pm.expect(b.estado).to.eql('PENDIENTE'); pm.expect(b.detalles[0].asientos[0].fila).to.eql('C'); });",
+                  "pm.environment.set('asientoReservaRechazoId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.20 Confirmar la reserva (rechazo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas/{{asientoReservaRechazoId}}/confirmacion",
+            "description": "Rol: CLIENTE · Esperado: 200.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Reserva CONFIRMADA', function () { pm.expect(b.estado).to.eql('CONFIRMADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.21 Crear compra (rechazo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/compras",
+            "description": "Rol: CLIENTE · Esperado: 201 · Guarda {{asientoCompraRechazoId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idReserva\":\"{{asientoReservaRechazoId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Compra PENDIENTE_PAGO', function () { pm.expect(b.estado).to.eql('PENDIENTE_PAGO'); });",
+                  "pm.environment.set('asientoCompraRechazoId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.22 Pagar (RECHAZAR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/compras/{{asientoCompraRechazoId}}/pagos",
+            "description": "Rol: CLIENTE · Esperado: 201 · Pago rechazado: se cancela la reserva y el asiento queda libre.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_asientos}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"resultado\":\"RECHAZAR\",\"proveedor\":\"MOCK_PASARELA\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Pago RECHAZADO', function () { pm.expect(b.estado).to.eql('RECHAZADO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "09.23 El asiento del pago rechazado queda libre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/disponibilidad",
+            "description": "Rol: público · Esperado: 200 · C-{{asientoNum2}} no figura en asientosOcupados.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const sec = (b.sectores || []).find(function (s) { return s.idSector === pm.environment.get('sectorNumeradoSeedId'); });",
+                  "pm.test('C-asientoNum2 liberado', function () { pm.expect((sec.asientosOcupados || []).find(function (a) { return a.fila === 'C' && a.numero === Number(pm.environment.get('asientoNum2')); })).to.be.oneOf([undefined, null]); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

@@ -8,11 +8,11 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 |---------|-----------|
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
 | `msvc-eventos.json` | Contrato de eventos/lugares/participantes (25 ops / 17 paths) |
-| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos (16 ops / 14 paths) |
-| `msvc-entradas.json` | Contrato de entradas/QR/devoluciones (11 ops / 11 paths) |
+| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos (16 ops / 14 paths, 16 schemas) |
+| `msvc-entradas.json` | Contrato de entradas/QR/devoluciones (11 ops / 11 paths, 7 schemas) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 4 specs bajo la clave `specs` |
 
-> **Desactualizado (2026-11-10):** los JSON de esta carpeta son **anteriores** a los asientos virtuales. Faltan en los contratos: `filas`/`asientosPorFila` en sectores (eventos), `asientos` en `POST /reservas` y `POST /eventos/{id}/cupos/liberacion` y `asientosOcupados` en disponibilidad (ventas), `asientos` en `POST /entradas/emision` y `fila`/`asiento` en la entrada (entradas). Las anotaciones OpenAPI del código ya están al día; hay que **regenerar** los specs y el bundle (sección siguiente) con los servicios levantados (backlog SEAT-04).
+> **Actualizado 2026-11-10:** los specs incluyen los asientos virtuales (`filas`/`asientosPorFila` en sectores; `asientos` en `POST /reservas`, `POST /eventos/{id}/cupos/liberacion` y `POST /entradas/emision`; `asientosOcupados` en disponibilidad; `fila`/`asiento` en la entrada).
 
 ## Regeneración (tras cambios en anotaciones)
 
@@ -38,7 +38,7 @@ for f in sorted(glob.glob(d+'/msvc-*.json')):
     name=os.path.basename(f).replace('.json','')
     specs[name]=json.load(open(f))
 bundle={
-    "generatedAt":"2026-11-08",
+    "generatedAt":"2026-11-10",
     "generator":"springdoc-openapi-starter-webmvc-ui 3.2.0",
     "openapi":"3.1.0",
     "microservices":{k:{"paths":len(v.get('paths',{})),"operations":sum(len(p) for p in v.get('paths',{}).values()),"schemas":len(v.get('components',{}).get('schemas',{}))} for k,v in specs.items()},
