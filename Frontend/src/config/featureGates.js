@@ -45,6 +45,9 @@ export const FEATURE = {
   /** Panel de lugares y sectores (LUG-01): ABM de lugares con latitud/longitud; baja solo si no tienen eventos. ADMIN. */
   lugares: !USE_MOCK,
 
+  /** Panel de participantes (PAR-01): catálogo de bandas/artistas; editar y eliminar solo ADMIN. */
+  participantes: !USE_MOCK,
+
   /**
    * Admin usuarios: alta de personal de acceso, eliminar y asignar eventos.
    * No existen en el BE → OFF siempre.

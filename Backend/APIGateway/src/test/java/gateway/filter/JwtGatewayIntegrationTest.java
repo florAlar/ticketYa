@@ -208,6 +208,31 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
+    void participantes_elOrganizadorSoloDaDeAlta_editarYEliminarEsDeAdmin() throws Exception {
+        String org = tokenComoUsuarios(SECRET, "ORGANIZADOR", 60_000);
+        String admin = tokenComoUsuarios(SECRET, "ADMIN", 60_000);
+        String id = "/api/participantes/p0000000-0000-4000-8000-000000000001";
+        for (String[] e : new String[][] {{"PUT", id}, {"DELETE", id}}) {
+            MockHttpServletRequest comoOrg = new MockHttpServletRequest(e[0], e[1]);
+            comoOrg.addHeader("Authorization", "Bearer " + org);
+            Resultado r = ejecutar(true, comoOrg);
+            assertEquals(403, r.response.getStatus(), "organizador " + e[0]);
+
+            MockHttpServletRequest comoAdmin = new MockHttpServletRequest(e[0], e[1]);
+            comoAdmin.addHeader("Authorization", "Bearer " + admin);
+            assertTrue(ejecutar(true, comoAdmin).paso(), "admin " + e[0]);
+        }
+        // el alta sigue abierta al organizador (para no bloquear la creación del evento)
+        MockHttpServletRequest alta = new MockHttpServletRequest("POST", "/api/participantes");
+        alta.addHeader("Authorization", "Bearer " + org);
+        assertTrue(ejecutar(true, alta).paso());
+        // y asociar participantes a su evento también
+        MockHttpServletRequest asociar = new MockHttpServletRequest("PUT", "/api/eventos/d0000000-0000-4000-8000-000000000001/participantes");
+        asociar.addHeader("Authorization", "Bearer " + org);
+        assertTrue(ejecutar(true, asociar).paso());
+    }
+
+    @Test
     void jwtHabilitado_sinToken_devuelve401() throws Exception {
         Resultado r = ejecutar(true, get("/api/entradas", null));
 

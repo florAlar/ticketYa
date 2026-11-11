@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -92,7 +93,7 @@ public class ParticipanteController {
 
     @Operation(
             summary = "Editar participante",
-            description = "Actualiza un artista/banda/elenco. Requiere ORGANIZADOR o ADMIN.",
+            description = "Actualiza un participante del catálogo (nombre, tipo, descripción). Solo ADMIN: el cambio se ve en todos los eventos que lo usan. 409 si el nombre ya existe.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Participante actualizado",
@@ -110,8 +111,31 @@ public class ParticipanteController {
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Parameter(description = "UUID del participante", required = true) @PathVariable String id,
             @RequestBody ParticipanteRequestDTO body) {
-        requireOrgOrAdmin(role);
+        requireAdmin(role);
         return eventoService.actualizarParticipante(id, body);
+    }
+
+    @Operation(
+            summary = "Eliminar participante",
+            description = "Elimina un participante del catálogo. Solo ADMIN. Si participa en algún evento responde 409: en ese caso solo se edita.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Participante eliminado"),
+            @ApiResponse(responseCode = "403", description = "Se requiere rol ADMIN",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "404", description = "Participante inexistente",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "409", description = "El participante participa en eventos",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class)))
+    })
+    @DeleteMapping("/participantes/{id}")
+    public ResponseEntity<Void> eliminar(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Parameter(description = "UUID del participante", required = true) @PathVariable String id) {
+        requireAdmin(role);
+        eventoService.eliminarParticipante(id);
+        return ResponseEntity.noContent().build();
     }
 
     @Operation(
@@ -165,6 +189,12 @@ public class ParticipanteController {
             throw new UnauthorizedException("Falta identidad (X-User-Id). ¿Pasó por el gateway con JWT?");
         }
         return userId.trim();
+    }
+
+    private static void requireAdmin(String role) {
+        if (role == null || !"ADMIN".equals(role.trim().toUpperCase())) {
+            throw new ForbiddenException("Se requiere rol ADMIN");
+        }
     }
 
     private static void requireOrgOrAdmin(String role) {

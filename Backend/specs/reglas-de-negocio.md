@@ -107,6 +107,11 @@ Al publicar, el sistema **abre el stock de venta** (cupos por sector). Si eso fa
 - Son **artistas / bandas / equipos**, no los compradores.  
 - Se asocian al evento (principal, telonero, etc.).  
 - Sirven para buscar por artista.
+- **Tipos:** ARTISTA, BANDA, ELENCO, EQUIPO, PILOTO (obligatorio al crear).
+- **Sin duplicados:** no puede haber dos participantes con el mismo nombre (sin importar mayúsculas): se elige el del catálogo.
+- **Quién:** el organizador puede dar de alta (para no bloquear la creación del evento); **editar y eliminar es solo ADMIN** (el cambio se ve en todos los eventos que lo usan).
+- **Baja:** solo si no participa en ningún evento (409 si participa: solo se edita).
+- "Banda principal" no es un atributo del participante: es el rol PRINCIPAL/TELONERO por evento.
 
 ### Suspender vs cancelar
 

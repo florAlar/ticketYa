@@ -156,8 +156,9 @@ Disponibilidad comercial = msvc-ventas.
 
 - GET: /participantes — Buscar artistas/bandas principales/teloneros
 - GET: /participantes/{id} — Consultar participante
-- POST: /participantes — Crear participante (ORGANIZADOR/ADMIN)
-- PUT: /participantes/{id} — Actualizar participante
+- POST: /participantes — Crear participante (ORGANIZADOR/ADMIN; `tipo` obligatorio; 409 si el nombre ya existe)
+- PUT: /participantes/{id} — Actualizar participante (solo ADMIN; 409 si el nombre lo tiene otro)
+- DELETE: /participantes/{id} — Eliminar participante (solo ADMIN; 409 si participa en algún evento)
 - GET: /eventos/{id}/participantes — Listar artistas del evento
 
 ## ventas — disponibilidad, reservas, compras, pagos, reportes, fila

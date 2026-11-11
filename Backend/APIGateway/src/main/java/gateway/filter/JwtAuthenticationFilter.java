@@ -221,6 +221,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/reportes") && "DELETE".equals(method)) {
             return true;
         }
+        // PAR-01: editar y eliminar participantes es solo ADMIN (el organizador puede darlos de alta: POST)
+        if (path.matches("/api/participantes/[^/]+")
+                && ("PUT".equals(method) || "PATCH".equals(method) || "DELETE".equals(method))) {
+            return true;
+        }
         // LUG-01/LUG-04: alta, edición y baja de lugares y sectores son solo ADMIN (el organizador solo los consulta)
         if ((path.startsWith("/api/lugares") || path.startsWith("/api/sectores")) && !"GET".equals(method)) {
             return true;

@@ -1584,6 +1584,126 @@ class EventoServiceImplTest {
         assertEquals("Nuevo", p.getNombre());
     }
 
+    // ---------- PAR-01: tipo válido, sin duplicados, baja con guarda ----------
+
+    private ParticipanteRequestDTO participante(String nombre, String tipo) {
+        ParticipanteRequestDTO b = new ParticipanteRequestDTO();
+        b.setNombre(nombre);
+        b.setTipo(tipo);
+        return b;
+    }
+
+    @Test
+    void crearParticipante_sinTipoOTipoInvalido_throws_yNoSeGuarda() {
+        for (String tipo : new String[] {null, "", "  ", "COSA", "musico"}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> service.crearParticipante(participante("Banda X", tipo)), "tipo=" + tipo);
+        }
+        verify(participanteRepository, times(0)).save(any(Participante.class));
+    }
+
+    @Test
+    void crearParticipante_tipoEnMinusculas_seNormaliza() {
+        when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
+        when(eventoMapper.toParticipante(any(Participante.class))).thenReturn(new ParticipanteResponseDTO());
+
+        service.crearParticipante(participante("Banda X", "banda"));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Participante.class);
+        verify(participanteRepository).save(captor.capture());
+        assertEquals("BANDA", captor.getValue().getTipo());
+    }
+
+    @Test
+    void crearParticipante_aceptaTodosLosTiposDelCatalogo() {
+        when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
+        when(eventoMapper.toParticipante(any(Participante.class))).thenReturn(new ParticipanteResponseDTO());
+
+        for (String tipo : new String[] {"ARTISTA", "BANDA", "ELENCO", "EQUIPO", "PILOTO"}) {
+            service.crearParticipante(participante("Nombre " + tipo, tipo));
+        }
+
+        verify(participanteRepository, times(5)).save(any(Participante.class));
+    }
+
+    @Test
+    void crearParticipante_nombreDuplicado_409_yNoSeGuarda() {
+        when(participanteRepository.existsByNombreIgnoreCase("Metallica")).thenReturn(true);
+
+        BusinessConflictException e = assertThrows(BusinessConflictException.class,
+                () -> service.crearParticipante(participante("Metallica", "BANDA")));
+
+        assertTrue(e.getMessage().contains("Ya existe"));
+        verify(participanteRepository, times(0)).save(any(Participante.class));
+    }
+
+    @Test
+    void actualizarParticipante_nombreDeOtro_409_peroElPropioNoEsDuplicado() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("Viejo");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+        when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
+        when(eventoMapper.toParticipante(any(Participante.class))).thenReturn(new ParticipanteResponseDTO());
+        when(participanteRepository.existsByNombreIgnoreCaseAndIdNot("Metallica", "d-1")).thenReturn(true);
+
+        assertThrows(BusinessConflictException.class,
+                () -> service.actualizarParticipante("d-1", participante("Metallica", null)));
+        assertEquals("Viejo", p.getNombre());
+
+        // cambiar solo mayúsculas del propio nombre no es un duplicado
+        service.actualizarParticipante("d-1", participante("VIEJO", null));
+        assertEquals("VIEJO", p.getNombre());
+    }
+
+    @Test
+    void actualizarParticipante_tipoInvalidoOVacio_throws() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("X");
+        p.setTipo("BANDA");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarParticipante("d-1", participante(null, "COSA")));
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarParticipante("d-1", participante(null, "")));
+        assertEquals("BANDA", p.getTipo());
+    }
+
+    @Test
+    void eliminarParticipante_sinEventos_loBorra() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("Banda de prueba");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+        when(eventoParticipanteRepository.existsByParticipanteId("d-1")).thenReturn(false);
+
+        service.eliminarParticipante("d-1");
+
+        verify(participanteRepository).delete(p);
+    }
+
+    @Test
+    void eliminarParticipante_conEventos_409_yNoSeBorra() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("Metallica");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+        when(eventoParticipanteRepository.existsByParticipanteId("d-1")).thenReturn(true);
+
+        BusinessConflictException e =
+                assertThrows(BusinessConflictException.class, () -> service.eliminarParticipante("d-1"));
+
+        assertTrue(e.getMessage().contains("participa en eventos"));
+        verify(participanteRepository, times(0)).delete(any(Participante.class));
+    }
+
+    @Test
+    void eliminarParticipante_inexistente_404() {
+        when(participanteRepository.findById("nope")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.eliminarParticipante("nope"));
+    }
+
     @Test
     void listarParticipantesDeEvento_ok() {
         when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento()));

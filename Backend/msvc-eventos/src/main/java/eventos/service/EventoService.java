@@ -77,6 +77,9 @@ public interface EventoService {
 
     ParticipanteResponseDTO actualizarParticipante(String id, ParticipanteRequestDTO body);
 
+    /** Elimina un participante del catálogo; 409 si participa en algún evento. */
+    void eliminarParticipante(String id);
+
     List<ParticipanteResponseDTO> listarParticipantesDeEvento(String idEvento);
 
     List<ParticipanteResponseDTO> asociarParticipantes(

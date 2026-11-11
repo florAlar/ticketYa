@@ -127,7 +127,13 @@ export default function ArtistaAutocomplete({
       )
       select(created)
     } catch (err) {
-      setError(err.message || 'No se pudo crear el artista')
+      if (err.status === 409) {
+        // PAR-01: ya existe (sin importar mayúsculas): se elige del catálogo
+        setError('Ya existe en el catálogo: elegilo de la lista.')
+        search(n)
+      } else {
+        setError(err.message || 'No se pudo crear el artista')
+      }
     } finally {
       setCreating(false)
     }

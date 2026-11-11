@@ -100,6 +100,23 @@ const GestionPage = () => {
           </article>
         )}
 
+        {canManageStaff && (
+          <article className="gestion-card gestion-card--ops">
+            <h2>Participantes</h2>
+            <p>
+              Catálogo de bandas, artistas, elencos, equipos y pilotos. Editá nombres y tipos o
+              eliminá los que no se usan; el principal y los teloneros se eligen por evento.
+            </p>
+            <GateLink
+              enabled={FEATURE.participantes}
+              className="btn btn-primary"
+              to="/gestion/participantes"
+            >
+              Administrar participantes
+            </GateLink>
+          </article>
+        )}
+
         {canManageSalesOps && (
           <article className="gestion-card gestion-card--ops">
             <h2>Ventas / transacciones</h2>

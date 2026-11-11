@@ -18,6 +18,7 @@ import GestionEventoReportesPage from '../pages/GestionPage/GestionEventoReporte
 import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
 import GestionLugaresPage from '../pages/GestionPage/GestionLugaresPage'
 import GestionLugarFormPage from '../pages/GestionPage/GestionLugarFormPage'
+import GestionParticipantesPage from '../pages/GestionPage/GestionParticipantesPage'
 import OrganizerAccountPage from '../pages/CuentaRolesPage/OrganizerAccountPage'
 import PerfilPage from '../pages/PerfilPage/PerfilPage'
 import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
@@ -161,6 +162,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={[ROLES.ADMIN]}>
             <GestionLugarFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/participantes"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <GestionParticipantesPage />
           </ProtectedRoute>
         }
       />

@@ -74,7 +74,7 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | Rol | Paths permitidos | Nota |
 |-----|------------------|------|
 | `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila GET, `/api/preferencias/**`, `/api/clientes/**`, `GET /api/eventos/**` | El msvc filtra recursos por `X-User-Id` |
-| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `/api/participantes/**`, `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
+| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
 | `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), compras propias (self-service) | Validación de ingreso en evento |
 | `ADMIN` | Todo | Short-circuit en `hasPermission` |
 

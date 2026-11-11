@@ -585,10 +585,15 @@ public class EventoServiceImpl implements EventoService {
                     throw new IllegalArgumentException("Body requerido");
                 }
                 String nombre = requireText(body.getNombre(), "nombre");
+                String tipo = tipoParticipanteValido(body.getTipo(), true);
+                if (participanteRepository.existsByNombreIgnoreCase(nombre)) {
+                    throw new BusinessConflictException(
+                            "Ya existe un participante con el nombre «" + nombre + "»: elegilo del catálogo");
+                }
                 Participante p = new Participante();
                 p.setId(UUID.randomUUID().toString());
                 p.setNombre(nombre);
-                p.setTipo(blankToNull(body.getTipo()) != null ? body.getTipo().trim().toUpperCase() : null);
+                p.setTipo(tipo);
                 p.setDescripcion(blankToNull(body.getDescripcion()));
                 return eventoMapper.toParticipante(participanteRepository.save(p));
             }
@@ -601,15 +606,54 @@ public class EventoServiceImpl implements EventoService {
                     throw new IllegalArgumentException("Body requerido");
                 }
                 if (blankToNull(body.getNombre()) != null) {
-                    p.setNombre(body.getNombre().trim());
+                    String nombre = body.getNombre().trim();
+                    if (participanteRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
+                        throw new BusinessConflictException(
+                                "Ya existe otro participante con el nombre «" + nombre + "»");
+                    }
+                    p.setNombre(nombre);
                 }
                 if (body.getTipo() != null) {
-                    p.setTipo(blankToNull(body.getTipo()) != null ? body.getTipo().trim().toUpperCase() : null);
+                    p.setTipo(tipoParticipanteValido(body.getTipo(), true));
                 }
                 if (body.getDescripcion() != null) {
                     p.setDescripcion(blankToNull(body.getDescripcion()));
                 }
+                Bitacora.registrar("PARTICIPANTE_ACTUALIZADO", null, id, "nombre=" + p.getNombre());
                 return eventoMapper.toParticipante(participanteRepository.save(p));
+            }
+
+            @Override
+            @Transactional
+            public void eliminarParticipante(String id) {
+                Participante p = requireParticipante(id);
+                if (eventoParticipanteRepository.existsByParticipanteId(id)) {
+                    throw new BusinessConflictException("«" + p.getNombre()
+                            + "» participa en eventos: no se puede eliminar (solo editar)");
+                }
+                participanteRepository.delete(p);
+                Bitacora.registrar("PARTICIPANTE_ELIMINADO", null, id, "nombre=" + p.getNombre());
+            }
+
+            /** Tipos del catálogo de participantes (PAR-01). */
+            static final java.util.Set<String> TIPOS_PARTICIPANTE =
+                    java.util.Set.of("ARTISTA", "BANDA", "ELENCO", "EQUIPO", "PILOTO");
+
+            private static String tipoParticipanteValido(String tipo, boolean requerido) {
+                String t = blankToNull(tipo);
+                if (t == null) {
+                    if (requerido) {
+                        throw new IllegalArgumentException(
+                                "tipo es obligatorio (ARTISTA, BANDA, ELENCO, EQUIPO o PILOTO)");
+                    }
+                    return null;
+                }
+                t = t.toUpperCase();
+                if (!TIPOS_PARTICIPANTE.contains(t)) {
+                    throw new IllegalArgumentException(
+                            "tipo inválido «" + tipo.trim() + "»: ARTISTA, BANDA, ELENCO, EQUIPO o PILOTO");
+                }
+                return t;
             }
 
             @Override

@@ -7,7 +7,7 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | Archivo | Contenido |
 |---------|-----------|
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
-| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (25 ops / 17 paths) |
+| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (27 ops / 17 paths) |
 | `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador (21 ops / 19 paths, 23 schemas) |
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 4 specs bajo la clave `specs` |
@@ -22,6 +22,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
 >
+> **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
+
 > **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.
 
 ## Regeneración (tras cambios en anotaciones)

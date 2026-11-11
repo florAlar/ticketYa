@@ -27,7 +27,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | PUT /eventos/{id}/sectores/{sectorId}/precio | **hecho** | Upsert precio |
 | GET/POST/PUT /lugares… | **hecho** | CRUD lugar + POST sectores + GET asientos virtuales (calculados desde filas x asientosPorFila del sector, sin filas persistidas; vacío si el sector no es numerado) |
 | PUT /sectores/{id} | **hecho** | Modificar sector |
-| GET/POST/PUT /participantes | **hecho** | Artistas/bandas (E1-EVE-06). Sin authz msvc aún. |
+| GET/POST/PUT/DELETE /participantes | **hecho** | Artistas/bandas (E1-EVE-06). PAR-01: alta ORG/ADMIN con control de duplicados y tipo válido; editar y eliminar solo ADMIN. |
 | GET/PUT /eventos/{id}/participantes | **hecho** | Listar / reemplazar set (ids o items con rol/orden) |
 | GET /eventos?participante= | **hecho** | Filtro por id de artista |
 
@@ -59,8 +59,9 @@ Detalle: + `descripcion`, `fechaFin`, `fechaPublicacion`, `lugar{id,nombre,direc
 ```http
 GET  /participantes?q=&tipo=
 GET  /participantes/{id}
-POST /participantes          body { nombre, tipo?, descripcion? }
-PUT  /participantes/{id}
+POST /participantes          body { nombre, tipo, descripcion? }   tipo: ARTISTA|BANDA|ELENCO|EQUIPO|PILOTO · 409 si el nombre ya existe (sin importar mayúsculas)
+PUT  /participantes/{id}     (ADMIN) 409 si el nombre lo tiene otro
+DELETE /participantes/{id}   (ADMIN) 204 · 409 si participa en algún evento
 GET  /eventos/{id}/participantes
 PUT  /eventos/{id}/participantes
 ```
@@ -82,7 +83,7 @@ o con rol/orden:
 }
 ```
 
-Authz: lectura abierta (GET). Escritura POST/PUT `/participantes` y PUT asociación: **ORG|ADMIN**; asociar además **dueño del evento o ADMIN**.
+Authz: lectura abierta (GET). Alta `POST /participantes` y PUT asociación: **ORG|ADMIN** (asociar además **dueño del evento o ADMIN**); `PUT`/`DELETE /participantes/{id}`: solo **ADMIN** (PAR-01).
 
 ---
 
@@ -131,7 +132,7 @@ Estados: `BORRADOR` | `PUBLICADO` | `AGOTADO` | `SUSPENDIDO` | `CANCELADO` | `FI
 | Cancelación → reintegro entradas | Feign **best-effort** (header interno ADMIN); si entradas cae, evento igual queda CANCELADO |
 | Cupo ventas al publicar | **hecho** — `doPublicar` Feign `POST msvc-ventas /eventos/{id}/cupos` fail-hard si ventas cae |
 | imagenUrl / destacado | Sin columnas en init → siempre null/false |
-| Authz participantes | **hecho** — writes ORG/ADMIN; asociar dueño/ADMIN; GET público |
+| Authz participantes | **hecho** — alta ORG/ADMIN; editar/eliminar solo ADMIN; asociar dueño/ADMIN; GET público |
 | Notifs al cancelar/cambiar fecha | E2-NOT |
 
 ---

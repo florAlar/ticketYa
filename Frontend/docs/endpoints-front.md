@@ -132,6 +132,7 @@ Sin facades ni pantallas todavía (home fijo; notifs vía broker).
 | `/gestion/eventos/nuevo` | POST `/api/eventos` |
 | publicar / estado | POST `.../publicacion` · PATCH `.../estado` |
 | `/gestion/usuarios` | GET `/api/usuarios` · PATCH `.../estado` · PUT `.../roles` |
+| `/gestion/participantes` | GET/POST `/api/participantes` · PUT/DELETE `/api/participantes/{id}` (ADMIN; 409 si el nombre existe / si participa en eventos) — gate `FEATURE.participantes` |
 | `/gestion/lugares`, `/gestion/lugares/nuevo`, `/gestion/lugares/:id` | GET/POST `/api/lugares` · GET/PUT/DELETE `/api/lugares/{id}` · POST `.../sectores` · PUT `/api/sectores/{id}` |
 | `/gestion/ventas` | GET `/api/devoluciones` · POST `.../aprobacion|rechazo` |
 | `/acceso/scan` | POST `/api/eventos/{idEvento}/validaciones` |

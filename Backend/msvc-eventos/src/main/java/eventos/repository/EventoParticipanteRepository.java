@@ -20,6 +20,9 @@ public interface EventoParticipanteRepository extends JpaRepository<EventoPartic
             """)
     List<EventoParticipante> findByEventoIdOrdered(@Param("idEvento") String idEvento);
 
+    /** PAR-01: un participante asociado a algún evento no se puede eliminar. */
+    boolean existsByParticipanteId(String idParticipante);
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from EventoParticipante ep where ep.evento.id = :idEvento")
     void deleteByEventoId(@Param("idEvento") String idEvento);

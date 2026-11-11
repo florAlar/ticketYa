@@ -10,7 +10,7 @@
     },
     "msvc-eventos": {
       "paths": 17,
-      "operations": 26,
+      "operations": 27,
       "schemas": 19
     },
     "msvc-usuarios": {
@@ -1572,7 +1572,7 @@
               "Participantes"
             ],
             "summary": "Editar participante",
-            "description": "Actualiza un artista/banda/elenco. Requiere ORGANIZADOR o ADMIN.",
+            "description": "Actualiza un participante del catálogo (nombre, tipo, descripción). Solo ADMIN: el cambio se ve en todos los eventos que lo usan. 409 si el nombre ya existe.",
             "operationId": "actualizar",
             "parameters": [
               {
@@ -1628,6 +1628,65 @@
               },
               "404": {
                 "description": "Participante inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "delete": {
+            "tags": [
+              "Participantes"
+            ],
+            "summary": "Eliminar participante",
+            "description": "Elimina un participante del catálogo. Solo ADMIN. Si participa en algún evento responde 409: en ese caso solo se edita.",
+            "operationId": "eliminar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del participante",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "204": {
+                "description": "Participante eliminado"
+              },
+              "403": {
+                "description": "Se requiere rol ADMIN",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Participante inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "El participante participa en eventos",
                 "content": {
                   "*/*": {
                     "schema": {
@@ -1773,7 +1832,7 @@
             ],
             "summary": "Eliminar lugar",
             "description": "Elimina un lugar y sus sectores. Solo ADMIN. Si el lugar tiene eventos asociados (de cualquier estado) responde 409: en ese caso solo se puede editar.",
-            "operationId": "eliminar",
+            "operationId": "eliminar_1",
             "parameters": [
               {
                 "name": "id",
@@ -1972,7 +2031,7 @@
             ],
             "summary": "Eliminar evento en borrador",
             "description": "Solo se puede eliminar un evento en estado BORRADOR. Dueño o ADMIN.",
-            "operationId": "eliminar_1",
+            "operationId": "eliminar_2",
             "parameters": [
               {
                 "name": "id",
