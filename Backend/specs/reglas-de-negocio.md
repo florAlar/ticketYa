@@ -28,7 +28,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera |
 | Cancelar evento | **ADMIN** (dispara reintegro de entradas vendidas) |
 | Cambiar fecha del evento | Dueño ORGANIZADOR o ADMIN |
-| Alta de lugares / sectores / artistas | ORGANIZADOR o ADMIN |
+| Alta de lugares / sectores / artistas | ORGANIZADOR o ADMIN (los lugares pasan a ser solo ADMIN en LUG-04) |
 | Asociar artistas a un evento | Dueño del evento o ADMIN |
 | Reservar / comprar / pagar | CLIENTE (y en la práctica quien el gateway autorice a compras; organizador también puede tener “mis entradas”) |
 | Ver mis entradas y QR usable | Dueño de la entrada |

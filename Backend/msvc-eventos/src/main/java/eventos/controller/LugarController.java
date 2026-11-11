@@ -19,6 +19,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -113,6 +114,30 @@ public class LugarController {
     }
 
     @Operation(
+            summary = "Eliminar lugar",
+            description = "Elimina un lugar y sus sectores. Solo ADMIN. Si el lugar tiene eventos asociados "
+                    + "(de cualquier estado) responde 409: en ese caso solo se puede editar.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Lugar eliminado"),
+            @ApiResponse(responseCode = "403", description = "Se requiere rol ADMIN",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "404", description = "Lugar inexistente",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "409", description = "El lugar tiene eventos asociados",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class)))
+    })
+    @DeleteMapping("/lugares/{id}")
+    public ResponseEntity<Void> eliminar(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Parameter(description = "UUID del lugar", required = true) @PathVariable String id) {
+        requireAdmin(role);
+        eventoService.eliminarLugar(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(
             summary = "Crear sector en un lugar",
             description = "Alta de sector (nombre, capacidad, tipo, numerado). Requiere ORGANIZADOR o ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth"))
@@ -175,6 +200,12 @@ public class LugarController {
             @Parameter(description = "UUID del lugar", required = true) @PathVariable String id,
             @Parameter(description = "UUID del sector", required = true) @PathVariable String sectorId) {
         return eventoService.listarAsientos(id, sectorId);
+    }
+
+    private static void requireAdmin(String role) {
+        if (role == null || !"ADMIN".equals(role.trim().toUpperCase())) {
+            throw new ForbiddenException("Se requiere rol ADMIN");
+        }
     }
 
     private static void requireOrgOrAdmin(String role) {

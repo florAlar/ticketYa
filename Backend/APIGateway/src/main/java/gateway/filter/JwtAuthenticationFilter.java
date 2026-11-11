@@ -221,6 +221,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/reportes") && "DELETE".equals(method)) {
             return true;
         }
+        // LUG-01: la baja de lugares es solo ADMIN (alta/edición de lugares: ver LUG-04)
+        if (path.startsWith("/api/lugares") && "DELETE".equals(method)) {
+            return true;
+        }
         return false;
     }
 

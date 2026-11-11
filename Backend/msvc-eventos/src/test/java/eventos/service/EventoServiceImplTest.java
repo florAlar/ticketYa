@@ -910,6 +910,41 @@ class EventoServiceImplTest {
         assertNull(l.getLongitud());
     }
 
+    // ---------- eliminarLugar (LUG-01) ----------
+
+    @Test
+    void eliminarLugar_sinEventos_borraSectoresYLugar() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        Sector s1 = sector(SECTOR_ID, l, "Campo", 100, false);
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(eventoRepository.existsByLugarId(LUGAR_ID)).thenReturn(false);
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(LUGAR_ID)).thenReturn(List.of(s1));
+
+        service.eliminarLugar(LUGAR_ID);
+
+        verify(sectorRepository).deleteAll(List.of(s1));
+        verify(lugarRepository).delete(l);
+    }
+
+    @Test
+    void eliminarLugar_conEventos_es409_yNoBorraNada() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(eventoRepository.existsByLugarId(LUGAR_ID)).thenReturn(true);
+
+        assertThrows(BusinessConflictException.class, () -> service.eliminarLugar(LUGAR_ID));
+
+        verify(lugarRepository, times(0)).delete(any(Lugar.class));
+        verify(sectorRepository, times(0)).deleteAll(any());
+    }
+
+    @Test
+    void eliminarLugar_inexistente_es404() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.eliminarLugar(LUGAR_ID));
+    }
+
     // ---------- crearSector ----------
 
     @Test

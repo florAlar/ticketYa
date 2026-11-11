@@ -145,6 +145,7 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 - GET: /lugares/{id} — Consultar lugar y sectores
 - POST: /lugares — Crear lugar (ORGANIZADOR/ADMIN)
 - PUT: /lugares/{id} — Modificar lugar (ORGANIZADOR/ADMIN)
+- DELETE: /lugares/{id} — Eliminar lugar y sus sectores (**solo ADMIN**; 409 si el lugar tiene eventos asociados, de cualquier estado: en ese caso solo se edita). Latitud/longitud opcionales en alta y edición (`quitarCoordenadas` las borra).
 - POST: /lugares/{id}/sectores — Crear sector (ORGANIZADOR/ADMIN). Sector numerado: `filas` (1..200) y `asientosPorFila` (1..500) obligatorios; la capacidad se deriva (`filas × asientosPorFila`)
 - PUT: /sectores/{id} — Modificar sector (ORGANIZADOR/ADMIN). Mismas reglas de layout
 - GET: /lugares/{id}/sectores/{sectorId}/asientos — Asientos **virtuales** del sector numerado, calculados desde su layout (fila + número; sin ids ni filas persistidas; lista vacía en sectores generales). No es disponibilidad comercial

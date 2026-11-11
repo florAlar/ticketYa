@@ -19,6 +19,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-11 (reportes):** `msvc-ventas.json` suma los reportes del organizador (`GET /reportes/eventos/{idEvento}` y `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`; schemas `Reporte*`). `msvc-entradas.json` suma el resumen interno `GET /eventos/{idEvento}/entradas/resumen` (marcado `x-internal`: lo consume ventas por Feign y el gateway no lo expone).
 >
 > **Actualizado 2026-11-11 (lugares):** `msvc-eventos.json`: el lugar suma `latitud` y `longitud` opcionales (`LugarRequest`, `Lugar`, `LugarDetalle`) y `quitarCoordenadas` en el pedido. `openapi-bundle.json` regenerado.
+>
+> **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
 
 ## Regeneración (tras cambios en anotaciones)
 

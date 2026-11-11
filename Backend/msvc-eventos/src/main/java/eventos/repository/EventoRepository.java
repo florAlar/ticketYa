@@ -13,6 +13,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface EventoRepository extends JpaRepository<Evento, String> {
 
+    /** LUG-01: un lugar con eventos (de cualquier estado) no se puede eliminar. */
+    boolean existsByLugarId(String idLugar);
+
     @EntityGraph(attributePaths = "lugar")
     @Query(
             value = """

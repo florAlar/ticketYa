@@ -164,6 +164,20 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
+    void bajaDeLugares_esSoloAdmin() throws Exception {
+        MockHttpServletRequest comoOrg = new MockHttpServletRequest("DELETE", "/api/lugares/c0000000-0000-4000-8000-000000000001");
+        comoOrg.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, "ORGANIZADOR", 60_000));
+        Resultado r1 = ejecutar(true, comoOrg);
+        assertEquals(403, r1.response.getStatus());
+        assertEquals(false, r1.paso());
+
+        MockHttpServletRequest comoAdmin = new MockHttpServletRequest("DELETE", "/api/lugares/c0000000-0000-4000-8000-000000000001");
+        comoAdmin.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, "ADMIN", 60_000));
+        Resultado r2 = ejecutar(true, comoAdmin);
+        assertTrue(r2.paso());
+    }
+
+    @Test
     void jwtHabilitado_sinToken_devuelve401() throws Exception {
         Resultado r = ejecutar(true, get("/api/entradas", null));
 

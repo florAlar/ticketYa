@@ -35,6 +35,10 @@ El front acepta alias legado `ACCESO` y lo normaliza a `PERSONAL_ACCESO` (`src/a
 | Método | Path | Auth | Front |
 |---|---|---|---|
 | GET | `/api/usuarios` | ADMIN | `/gestion/usuarios` |
+| GET/POST | `/api/lugares` | ADMIN (GET: cualquiera con JWT) | `/gestion/lugares`, `/gestion/lugares/nuevo` — gate `FEATURE.lugares` |
+| GET/PUT | `/api/lugares/{id}` | ADMIN | `/gestion/lugares/:id` (formulario + sectores) |
+| DELETE | `/api/lugares/{id}` | ADMIN | `/gestion/lugares` — 409 si el lugar tiene eventos |
+| POST | `/api/lugares/{id}/sectores` · PUT `/api/sectores/{id}` | ADMIN | `/gestion/lugares/:id` |
 | GET | `/api/usuarios/{id}` | ADMIN | `getUsuario` |
 | PATCH | `/api/usuarios/{id}/estado` | ADMIN | activo on/off |
 | GET | `/api/usuarios/{id}/roles` | ADMIN | `getUsuarioRoles` |
@@ -127,6 +131,7 @@ Sin facades ni pantallas todavía (home fijo; notifs vía broker).
 | `/gestion/eventos/nuevo` | POST `/api/eventos` |
 | publicar / estado | POST `.../publicacion` · PATCH `.../estado` |
 | `/gestion/usuarios` | GET `/api/usuarios` · PATCH `.../estado` · PUT `.../roles` |
+| `/gestion/lugares`, `/gestion/lugares/nuevo`, `/gestion/lugares/:id` | GET/POST `/api/lugares` · GET/PUT/DELETE `/api/lugares/{id}` · POST `.../sectores` · PUT `/api/sectores/{id}` |
 | `/gestion/ventas` | GET `/api/devoluciones` · POST `.../aprobacion|rechazo` |
 | `/acceso/scan` | POST `/api/eventos/{idEvento}/validaciones` |
 

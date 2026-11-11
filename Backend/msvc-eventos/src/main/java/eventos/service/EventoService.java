@@ -60,6 +60,9 @@ public interface EventoService {
 
     LugarResponseDTO actualizarLugar(String id, LugarRequestDTO body);
 
+    /** Elimina un lugar y sus sectores; 409 si tiene eventos asociados. */
+    void eliminarLugar(String id);
+
     SectorEventoDTO crearSector(String idLugar, SectorRequestDTO body);
 
     SectorEventoDTO actualizarSector(String idSector, SectorRequestDTO body);

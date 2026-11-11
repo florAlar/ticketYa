@@ -495,6 +495,19 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional
+    public void eliminarLugar(String id) {
+        Lugar lugar = requireLugar(id);
+        if (eventoRepository.existsByLugarId(id)) {
+            throw new BusinessConflictException(
+                    "El lugar tiene eventos asociados; no se puede eliminar (solo editar)");
+        }
+        sectorRepository.deleteAll(sectorRepository.findByLugarIdOrderByNombreAsc(id));
+        lugarRepository.delete(lugar);
+        Bitacora.registrar("LUGAR_ELIMINADO", null, id, "nombre=" + lugar.getNombre());
+    }
+
+    @Override
+    @Transactional
     public SectorEventoDTO crearSector(String idLugar, SectorRequestDTO body) {
         Lugar lugar = requireLugar(idLugar);
         if (body == null || blankToNull(body.getNombre()) == null) {

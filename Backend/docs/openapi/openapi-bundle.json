@@ -10,7 +10,7 @@
     },
     "msvc-eventos": {
       "paths": 17,
-      "operations": 25,
+      "operations": 26,
       "schemas": 19
     },
     "msvc-usuarios": {
@@ -1766,6 +1766,65 @@
                 "bearerAuth": []
               }
             ]
+          },
+          "delete": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Eliminar lugar",
+            "description": "Elimina un lugar y sus sectores. Solo ADMIN. Si el lugar tiene eventos asociados (de cualquier estado) responde 409: en ese caso solo se puede editar.",
+            "operationId": "eliminar",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "description": "UUID del lugar",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "204": {
+                "description": "Lugar eliminado"
+              },
+              "403": {
+                "description": "Se requiere rol ADMIN",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Lugar inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "409": {
+                "description": "El lugar tiene eventos asociados",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
           }
         },
         "/eventos/{id}": {
@@ -1913,7 +1972,7 @@
             ],
             "summary": "Eliminar evento en borrador",
             "description": "Solo se puede eliminar un evento en estado BORRADOR. Dueño o ADMIN.",
-            "operationId": "eliminar",
+            "operationId": "eliminar_1",
             "parameters": [
               {
                 "name": "id",

@@ -83,6 +83,23 @@ const GestionPage = () => {
           </article>
         )}
 
+        {canManageStaff && (
+          <article className="gestion-card gestion-card--ops">
+            <h2>Lugares</h2>
+            <p>
+              Estadios, teatros y salas con sus sectores y su ubicación (dirección, latitud y
+              longitud). Los organizadores eligen uno al crear un evento.
+            </p>
+            <GateLink
+              enabled={FEATURE.lugares}
+              className="btn btn-primary"
+              to="/gestion/lugares"
+            >
+              Administrar lugares
+            </GateLink>
+          </article>
+        )}
+
         {canManageSalesOps && (
           <article className="gestion-card gestion-card--ops">
             <h2>Ventas / transacciones</h2>

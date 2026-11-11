@@ -4,10 +4,10 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 161 requests en 12 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 167 requests en 12 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
 
-**Última corrida verificada (2026-11-11):** 161 requests, 466 assertions, 0 fallos (stack local completo con el gateway en `TICKETYA_JWT_ENABLED=false`; las carpetas 10 y 11 corren sin reiniciar datos).
+**Última corrida verificada (2026-11-11):** 167 requests, 478 assertions, 0 fallos (stack local completo con el gateway en `TICKETYA_JWT_ENABLED=false`; las carpetas 10 y 11 corren sin reiniciar datos).
 
 ## Requisitos
 
@@ -60,7 +60,7 @@ curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIEN
 | 00 Auth | 9 | login de los 4 roles, registro, refresh, logout, 401 y 409 |
 | 01 Usuarios | 9 | perfil propio, listado, estado, roles; 403 y 404 |
 | 02 Eventos | 15 | catálogo con filtros, detalle, borrador → edición → precio → participantes → publicación → reprogramación, borrado |
-| 03 Lugares y participantes | 17 | CRUD de lugares, sectores (el numerado se crea con `filas` y `asientosPorFila`), asientos virtuales y participantes, coordenadas opcionales del lugar (latitud/longitud: alta, 400 si falta una o está fuera de rango, edición, `quitarCoordenadas` y detalle de evento) |
+| 03 Lugares y participantes | 23 | CRUD de lugares, sectores (el numerado se crea con `filas` y `asientosPorFila`), asientos virtuales y participantes, coordenadas opcionales del lugar (latitud/longitud: alta, 400 si falta una o está fuera de rango, edición, `quitarCoordenadas` y detalle de evento), y baja de lugares (solo ADMIN: 409 si tiene eventos, 403 para organizador, 204 y luego 404) |
 | 04 Ventas | 21 | disponibilidad, cupos, reserva (idempotente, renovación, confirmación, cancelación), compra, pago APROBAR y RECHAZAR |
 | 05 Entradas | 4 | emisión idempotente, listado, detalle y QR |
 | 06 Devoluciones | 10 | solicitud, listado, aprobación, rechazo, reintegro por cancelación |

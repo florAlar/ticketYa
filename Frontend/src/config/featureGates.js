@@ -42,6 +42,9 @@ export const FEATURE = {
   /** Admin usuarios: listar, activar/desactivar y cambiar rol (GET /usuarios, PATCH …/estado, PUT …/roles). */
   adminUsuariosListado: !USE_MOCK,
 
+  /** Panel de lugares y sectores (LUG-01): ABM de lugares con latitud/longitud; baja solo si no tienen eventos. ADMIN. */
+  lugares: !USE_MOCK,
+
   /**
    * Admin usuarios: alta de personal de acceso, eliminar y asignar eventos.
    * No existen en el BE → OFF siempre.
