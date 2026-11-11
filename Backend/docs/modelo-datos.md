@@ -53,11 +53,8 @@ Roles: `CLIENTE`, `ORGANIZADOR`, `ADMIN`, `PERSONAL_ACCESO`. Un usuario puede te
 erDiagram
     LUGAR ||--o{ SECTOR : contiene
     LUGAR ||--o{ EVENTO : alberga
-    SECTOR ||--o{ ASIENTO : tiene
     EVENTO ||--o{ PRECIO_SECTOR : define
     SECTOR ||--o{ PRECIO_SECTOR : tarifado
-    EVENTO ||--o{ PRECIO_ASIENTO : define
-    ASIENTO ||--o{ PRECIO_ASIENTO : tarifado
     EVENTO ||--o{ EVENTO_PARTICIPANTE : tiene
     PARTICIPANTE ||--o{ EVENTO_PARTICIPANTE : participa
 
@@ -77,13 +74,6 @@ erDiagram
         TINYINT es_numerado
         INT filas "solo numerado"
         INT asientos_por_fila "solo numerado"
-    }
-    ASIENTO {
-        CHAR36 id PK
-        CHAR36 id_sector FK
-        VARCHAR fila
-        INT numero
-        VARCHAR codigo
     }
     EVENTO {
         CHAR36 id PK
@@ -106,14 +96,6 @@ erDiagram
         CHAR3 moneda
         TINYINT activo
     }
-    PRECIO_ASIENTO {
-        CHAR36 id PK
-        CHAR36 id_evento FK
-        CHAR36 id_asiento FK
-        DECIMAL precio
-        CHAR3 moneda
-        TINYINT activo
-    }
     PARTICIPANTE {
         CHAR36 id PK
         VARCHAR nombre
@@ -128,9 +110,9 @@ erDiagram
     }
 ```
 
-Únicos: `(id_evento, id_sector)` en `precio_sector`, `(id_evento, id_asiento)` en `precio_asiento`.
+Único: `(id_evento, id_sector)` en `precio_sector`.
 
-**Asientos virtuales:** un sector numerado guarda `filas` y `asientos_por_fila` (capacidad = filas × asientos por fila); los asientos se calculan y no se persisten. Las tablas `asiento` y `precio_asiento` siguen en el esquema pero **no se usan** desde que existe el layout virtual (limpieza pendiente, SEAT-07 en `specs/backlog.md`). Estados del evento: `BORRADOR`, `PUBLICADO`, `AGOTADO`, `SUSPENDIDO`, `CANCELADO`, `FINALIZADO`.
+**Asientos virtuales:** un sector numerado guarda `filas` y `asientos_por_fila` (capacidad = filas × asientos por fila); los asientos se calculan y no se persisten. Las tablas `asiento` y `precio_asiento` se eliminaron (SEAT-07): el precio se define solo por sector (`precio_sector`). Estados del evento: `BORRADOR`, `PUBLICADO`, `AGOTADO`, `SUSPENDIDO`, `CANCELADO`, `FINALIZADO`.
 
 ## 3. msvc-ventas (MySQL `ventas`; Redis para holds e idempotencia)
 
