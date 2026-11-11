@@ -54,8 +54,8 @@ export const FEATURE = {
   /** Transferencia de entradas — shell sin API */
   transferencia: false,
 
-  /** Reportes organizador — E2-REP sin API */
-  reportes: false,
+  /** Reportes del organizador: GET /api/reportes/eventos/{id} (ORGANIZADOR dueño o ADMIN) — E2-REP-01 */
+  reportes: !USE_MOCK,
 
   /** Preferencias / recs cliente — E2-PRE dominio incompleto */
   preferencias: false,

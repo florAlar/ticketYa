@@ -36,3 +36,8 @@ ticketya:
     emision-delay-ms: ${TICKETYA_EMISION_DELAY_MS:250}
     emision-max-intentos: ${TICKETYA_EMISION_MAX_INTENTOS:20}
     emision-job-ms: ${TICKETYA_EMISION_JOB_MS:30000}
+
+# E2-NFR-03: correlation id en cada línea de log
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:app},%X{correlationId:-}]"

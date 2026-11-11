@@ -358,3 +358,58 @@
 .acceso-scan input {
   width: 100%;
 }
+
+/* Reportes del organizador */
+.reporte-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.reporte-metrica {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.reporte-metrica__valor {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.reporte-metrica__etiqueta {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.reporte-metrica__nota {
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+.reporte-tabla-wrap {
+  overflow-x: auto;
+}
+
+.reporte-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.reporte-tabla th,
+.reporte-tabla td {
+  padding: 0.45rem 0.6rem;
+  text-align: right;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+}
+
+.reporte-tabla th:first-child,
+.reporte-tabla td:first-child {
+  text-align: left;
+}
+
+.reporte-tabla tfoot th {
+  border-top: 2px solid rgba(128, 128, 128, 0.5);
+}

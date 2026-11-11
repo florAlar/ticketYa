@@ -7,3 +7,8 @@ spring:
   data:
     mongodb:
       uri: ${SPRING_DATA_MONGODB_URI:mongodb://ticketya:mongo_dev@localhost:27018/preferencias?authSource=admin}
+
+# E2-NFR-03: correlation id en cada línea de log
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:app},%X{correlationId:-}]"

@@ -56,7 +56,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional;
+import eventos.observability.Bitacora;
 
 @Service
 public class EventoServiceImpl implements EventoService {
@@ -260,6 +261,7 @@ public class EventoServiceImpl implements EventoService {
                 upsertPrecio(evento, sector, precioOf(in), "ARS", true);
             }
 
+            Bitacora.registrar("EVENTO_CREADO", idOrganizador, evento.getId(), "publicarAlFinal=" + publicarAlFinal);
             if (publicarAlFinal) {
                 return doPublicar(evento);
             }
@@ -394,6 +396,7 @@ public class EventoServiceImpl implements EventoService {
 
         evento.setEstado(next);
         eventoRepository.save(evento);
+        Bitacora.registrar("EVENTO_ESTADO_" + next, userId, evento.getId(), "rol=" + role);
 
         if (CANCELADO.equals(next)) {
             notifyReintegroBestEffort(evento.getId());
@@ -755,6 +758,7 @@ public class EventoServiceImpl implements EventoService {
                                 evento.setFechaPublicacion(LocalDateTime.now(ZoneOffset.UTC));
                             }
                             eventoRepository.save(evento);
+                            Bitacora.registrar("EVENTO_PUBLICADO", null, evento.getId(), "nombre=" + evento.getNombre());
                             return toDetalle(evento);
                         }
 

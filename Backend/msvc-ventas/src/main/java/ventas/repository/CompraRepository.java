@@ -29,5 +29,28 @@ public interface CompraRepository extends JpaRepository<Compra, String> {
             @Param("idEvento") String idEvento,
             @Param("estados") Collection<String> estados);
 
+    /** Reportes: [idSector, unidades, importe] de las compras en ese estado del evento, por sector. */
+    @Query(
+            """
+            SELECT d.idSector, SUM(d.cantidad), SUM(d.cantidad * d.precioUnitario)
+            FROM Compra c
+              JOIN c.reserva r
+              JOIN DetalleReserva d ON d.reserva = r
+            WHERE r.idEvento = :idEvento
+              AND c.estado = :estado
+            GROUP BY d.idSector
+            """)
+    List<Object[]> ventasPorSector(@Param("idEvento") String idEvento, @Param("estado") String estado);
+
+    @Query(
+            """
+            SELECT COUNT(c)
+            FROM Compra c
+              JOIN c.reserva r
+            WHERE r.idEvento = :idEvento
+              AND c.estado = :estado
+            """)
+    long contarPorEventoYEstado(@Param("idEvento") String idEvento, @Param("estado") String estado);
+
     List<Compra> findByEstadoAndEmisionEstadoOrderByFechaCompraAsc(String estado, String emisionEstado);
 }

@@ -240,6 +240,41 @@ sequenceDiagram
 - **Si `msvc-eventos` no responde** no se bloquea la puerta: se confía en el estado de la entrada (una entrada de un evento cancelado ya está `A_REINTEGRAR`).
 - **Simplificación:** cualquier `PERSONAL_ACCESO` puede validar cualquier evento; no se modela la asignación de eventos por persona.
 
+## 7. Reportes del organizador
+
+El organizador (o un ADMIN) consulta cómo viene su evento. `msvc-ventas` arma el reporte: lo que se vendió sale de su propia base y lo que ocurrió después (devoluciones, ingresos) se pide a `msvc-entradas`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as Organizador / Admin
+    participant GW as API Gateway
+    participant V as msvc-ventas
+    participant E as msvc-eventos
+    participant N as msvc-entradas
+
+    O->>GW: GET /api/reportes/eventos/{idEvento}
+    GW->>GW: valida JWT y rol (ORGANIZADOR o ADMIN)
+    GW->>V: GET /reportes/eventos/{idEvento} (X-User-Id, X-User-Role)
+    V->>E: GET /eventos/{idEvento} (sectores y dueño)
+    alt evento inexistente
+        V-->>O: 404
+    else ORGANIZADOR que no es el dueño
+        V-->>O: 403
+    else permitido
+        V->>V: compras APROBADAS y capacidad por sector (SQL)
+        V->>N: GET /eventos/{idEvento}/entradas/resumen (devueltas, usadas, a reintegrar, montos)
+        alt eventos o entradas no responden
+            V-->>O: 503 (no se entrega un reporte parcial)
+        else
+            V-->>O: 200 totales + detalle por sector
+        end
+    end
+```
+
+- **Definiciones:** vigentes = vendidas − devueltas − a reintegrar; ocupación = vigentes / capacidad; recaudación neta = bruta − devuelta − a reintegrar.
+- **Por qué dos servicios:** las ventas y los cupos viven en `msvc-ventas`; las devoluciones y los ingresos, en `msvc-entradas`. Cada servicio tiene su base y no se comparten tablas.
+
 ## Garantía de no doble venta
 
 Hay dos defensas combinadas:

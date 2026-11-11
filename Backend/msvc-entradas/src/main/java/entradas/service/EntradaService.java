@@ -6,6 +6,7 @@ import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
 import entradas.dto.EntradaResponseDTO;
 import entradas.dto.QrResponseDTO;
+import entradas.dto.ResumenSectorDTO;
 import entradas.dto.ValidacionRegistroDTO;
 import entradas.dto.ValidacionRequestDTO;
 import entradas.dto.ValidacionResponseDTO;
@@ -46,6 +47,9 @@ public interface EntradaService {
      * registrado en validacion_acceso (también los rechazados). Atómico por QR (bloqueo pesimista).
      */
     ValidacionResponseDTO validarIngreso(String idEvento, String idPersonalAcceso, ValidacionRequestDTO body);
+
+    /** Reportes (consumo interno de ventas): entradas del evento por sector y estado, con montos. */
+    List<ResumenSectorDTO> resumenPorEvento(String idEvento);
 
     /** Intentos de validación de un evento (ADMIN: cualquiera; ORGANIZADOR: solo el suyo). */
     List<ValidacionRegistroDTO> listarValidaciones(String idEvento, String idUsuario, boolean admin);

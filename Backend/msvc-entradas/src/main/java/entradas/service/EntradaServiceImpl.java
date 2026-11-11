@@ -25,6 +25,7 @@ import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
 import entradas.dto.EntradaResponseDTO;
 import entradas.dto.QrResponseDTO;
+import entradas.dto.ResumenSectorDTO;
 import entradas.dto.ValidacionRegistroDTO;
 import entradas.dto.ValidacionRequestDTO;
 import entradas.dto.ValidacionResponseDTO;
@@ -38,6 +39,7 @@ import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
 import entradas.repository.EntradaRepository;
 import entradas.repository.ValidacionAccesoRepository;
+import entradas.observability.Bitacora;
 
 @Service
 public class EntradaServiceImpl implements EntradaService {
@@ -138,6 +140,8 @@ public class EntradaServiceImpl implements EntradaService {
             throw new IllegalArgumentException("items vacíos o cantidad 0");
         }
         entradaRepository.saveAll(creadas);
+        Bitacora.registrar("ENTRADAS_EMITIDAS", request.idCliente(), request.idCompra(),
+                "evento=" + request.idEvento() + " cantidad=" + creadas.size());
         return mapEnriquecidas(creadas);
     }
 
@@ -206,6 +210,8 @@ public class EntradaServiceImpl implements EntradaService {
         d.setFechaSolicitud(nowUtc());
         d.setEstado(DEV_PENDIENTE);
         devolucionRepository.save(d);
+        Bitacora.registrar("DEVOLUCION_SOLICITADA", idCliente, d.getIdDevolucion(),
+                "entrada=" + idEntrada + " monto=" + monto);
         return entradaMapper.toDevolucion(d);
     }
 
@@ -251,6 +257,8 @@ public class EntradaServiceImpl implements EntradaService {
                 devolucionRepository.save(d);
                 // Reabrir cupo en ventas; si Feign falla → excepción → rollback de approve
                 liberarCupoVentasFailHard(entrada);
+                Bitacora.registrar("DEVOLUCION_APROBADA", null, d.getIdDevolucion(),
+                        "entrada=" + entrada.getIdEntrada() + " monto=" + d.getMonto());
                 return entradaMapper.toDevolucion(d);
             }
 
@@ -305,6 +313,8 @@ public class EntradaServiceImpl implements EntradaService {
         Devolucion d = requireDevPendiente(idDevolucion);
         d.setEstado(DEV_RECHAZADA);
         devolucionRepository.save(d);
+        Bitacora.registrar("DEVOLUCION_RECHAZADA", null, d.getIdDevolucion(),
+                "entrada=" + (d.getEntrada() != null ? d.getEntrada().getIdEntrada() : "-"));
         return entradaMapper.toDevolucion(d);
     }
 
@@ -336,6 +346,7 @@ public class EntradaServiceImpl implements EntradaService {
                 }
             }
             entradaRepository.saveAll(list);
+            Bitacora.registrar("REINTEGRO_CANCELACION", null, idEvento, "entradas=" + list.size());
             return list.size();
         }
 
@@ -401,6 +412,8 @@ public class EntradaServiceImpl implements EntradaService {
                 ? body.dispositivo().trim()
                 : null);
         validacionAccesoRepository.save(v);
+        Bitacora.registrar(RES_VALIDA.equals(resultado) ? "INGRESO_VALIDADO" : "INGRESO_RECHAZADO",
+                idPersonalAcceso, e.getIdEntrada(), "evento=" + idEvento + " resultado=" + resultado);
 
         // De otro evento: no se devuelven datos de una entrada que no pertenece a esta puerta.
         EntradaResponseDTO dto = null;
@@ -417,6 +430,40 @@ public class EntradaServiceImpl implements EntradaService {
         out.setIdValidacion(v.getIdValidacion());
         out.setFechaValidacion(now);
         out.setEntrada(dto);
+        return out;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ResumenSectorDTO> resumenPorEvento(String idEvento) {
+        class Acum {
+            long vendidas, usadas, devueltas, aReintegrar;
+            BigDecimal montoDevuelto = BigDecimal.ZERO, montoAReintegrar = BigDecimal.ZERO;
+        }
+        Map<String, Acum> porSector = new java.util.LinkedHashMap<>();
+        for (Object[] fila : entradaRepository.resumenPorSectorYEstado(idEvento)) {
+            String sector = (String) fila[0];
+            String estado = (String) fila[1];
+            long cantidad = ((Number) fila[2]).longValue();
+            BigDecimal suma = fila[3] instanceof BigDecimal b ? b : BigDecimal.valueOf(((Number) fila[3]).doubleValue());
+            Acum a = porSector.computeIfAbsent(sector, k -> new Acum());
+            switch (estado) {
+                case EST_VENDIDA -> a.vendidas += cantidad;
+                case EST_USADA -> a.usadas += cantidad;
+                case EST_DEVUELTA -> {
+                    a.devueltas += cantidad;
+                    a.montoDevuelto = a.montoDevuelto.add(suma);
+                }
+                case EST_A_REINTEGRAR -> {
+                    a.aReintegrar += cantidad;
+                    a.montoAReintegrar = a.montoAReintegrar.add(suma);
+                }
+                default -> { }
+            }
+        }
+        List<ResumenSectorDTO> out = new ArrayList<>();
+        porSector.forEach((sector, a) -> out.add(new ResumenSectorDTO(
+                sector, a.vendidas, a.usadas, a.devueltas, a.aReintegrar, a.montoDevuelto, a.montoAReintegrar)));
         return out;
     }
 

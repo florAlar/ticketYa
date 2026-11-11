@@ -28,4 +28,16 @@ public interface EntradaRepository extends JpaRepository<Entrada, String> {
     List<Entrada> findByIdEventoAndEstado(String idEvento, String estado);
 
     long countByIdCompra(String idCompra);
+
+    /**
+     * Reportes: cantidad y suma de precios de las entradas de un evento por sector y estado
+     * (fila = [idSector, estado, cantidad, sumaPrecios]).
+     */
+    @Query("""
+            SELECT e.idSector, e.estado, COUNT(e), COALESCE(SUM(e.precio), 0)
+            FROM Entrada e
+            WHERE e.idEvento = :idEvento
+            GROUP BY e.idSector, e.estado
+            """)
+    List<Object[]> resumenPorSectorYEstado(@Param("idEvento") String idEvento);
 }

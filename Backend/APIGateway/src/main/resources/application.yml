@@ -225,3 +225,8 @@ ticketya:
 # Mín. 32 chars (HS256). Override: JWT_SECRET
 jwt:
   secret: ${JWT_SECRET:ticketya-dev-jwt-secret-change-me-32b}
+
+# E2-NFR-03: correlation id en cada línea de log
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:app},%X{correlationId:-}]"

@@ -26,7 +26,8 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 | POST /compras/{id}/pagos | **hecho** | Mock: body `{ "resultado": "APROBAR"\|"RECHAZAR" }` (default APROBAR). Tras APROBAR: compra APROBADA + emisión QR con reintentos + estado `emisionEstado` |
 | GET /compras/{id}/pagos | **hecho** | |
 | POST /pagos/{id}/reintentos | **hecho** | Solo si pago RECHAZADO y se puede reabrir; tras rechazo con liberación de cupo suele exigir nueva reserva |
-| Reportes / fila virtual | pendiente | E2 |
+| Reportes del organizador | **hecho** | E2-REP-01. `GET /reportes/eventos/{id}` (+ `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`). ORGANIZADOR dueño o ADMIN (403 otro rol; dueño verificado por Feign a eventos). Ventas y capacidad de la base de ventas; devueltas, usadas y a reintegrar por Feign a entradas (`GET /eventos/{id}/entradas/resumen`); si eventos o entradas fallan → 503. |
+| Fila virtual | pendiente | E2 |
 
 ### Estados
 

@@ -4,9 +4,9 @@
   "openapi": "3.1.0",
   "microservices": {
     "msvc-entradas": {
-      "paths": 12,
-      "operations": 13,
-      "schemas": 10
+      "paths": 13,
+      "operations": 14,
+      "schemas": 11
     },
     "msvc-eventos": {
       "paths": 17,
@@ -19,9 +19,9 @@
       "schemas": 8
     },
     "msvc-ventas": {
-      "paths": 14,
-      "operations": 16,
-      "schemas": 16
+      "paths": 19,
+      "operations": 21,
+      "schemas": 23
     }
   },
   "specs": {
@@ -605,6 +605,46 @@
                 "bearerAuth": []
               }
             ]
+          }
+        },
+        "/eventos/{idEvento}/entradas/resumen": {
+          "get": {
+            "tags": [
+              "Interno",
+              "Entradas"
+            ],
+            "summary": "Resumen de entradas de un evento por sector (interno)",
+            "description": "Cantidad de entradas del evento por sector y estado (vendidas, usadas, devueltas, a reintegrar)\ncon montos de devoluciones. Uso interno de msvc-ventas para los reportes del organizador; el\nAPI Gateway no expone esta ruta.\n",
+            "operationId": "resumenEvento",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Resumen por sector (vacío si el evento no tiene entradas)",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ResumenSector"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
           }
         },
         "/entradas": {
@@ -1287,6 +1327,51 @@
                 "format": "int32",
                 "description": "Número de asiento (sector numerado)",
                 "example": 14
+              }
+            }
+          },
+          "ResumenSector": {
+            "type": "object",
+            "description": "Entradas de un sector de un evento agrupadas por estado (consumo interno de msvc-ventas para reportes)",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector",
+                "example": "c0000000-0000-4000-8000-000000000012"
+              },
+              "vendidas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas VENDIDA (vigentes, aún sin usar)",
+                "example": 40
+              },
+              "usadas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas USADA (ya ingresaron)",
+                "example": 12
+              },
+              "devueltas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas DEVUELTA (devolución aprobada)",
+                "example": 3
+              },
+              "aReintegrar": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas A_REINTEGRAR (evento cancelado, reintegro pendiente)",
+                "example": 0
+              },
+              "montoDevuelto": {
+                "type": "number",
+                "description": "Suma de precios de las entradas DEVUELTA",
+                "example": 540000
+              },
+              "montoAReintegrar": {
+                "type": "number",
+                "description": "Suma de precios de las entradas A_REINTEGRAR",
+                "example": 0
               }
             }
           },
@@ -4775,6 +4860,10 @@
         {
           "name": "Ventas",
           "description": "Disponibilidad, reservas, compras, pagos y cupos comerciales."
+        },
+        {
+          "name": "Reportes",
+          "description": "Reportes del organizador sobre sus eventos: ventas, devoluciones, ocupación y recaudación."
         }
       ],
       "paths": {
@@ -5615,6 +5704,325 @@
             ]
           }
         },
+        "/reportes/eventos/{idEvento}": {
+          "get": {
+            "tags": [
+              "Reportes"
+            ],
+            "summary": "Reporte completo del evento",
+            "description": "Totales y detalle por sector (ventas, devoluciones, ocupación y recaudación). ORGANIZADOR dueño del evento o ADMIN. Importes y conteos según las definiciones de ReporteEvento.",
+            "operationId": "reporte",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Reporte",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteEvento"
+                    }
+                  }
+                }
+              },
+              "401": {
+                "description": "Falta X-User-Id",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteEvento"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es ADMIN ni el organizador del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteEvento"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteEvento"
+                    }
+                  }
+                }
+              },
+              "503": {
+                "description": "No se pudo consultar eventos o entradas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteEvento"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reportes/eventos/{idEvento}/ventas": {
+          "get": {
+            "tags": [
+              "Reportes"
+            ],
+            "summary": "Ventas del evento",
+            "description": "Compras aprobadas y entradas vendidas, devueltas, vigentes e ingresadas. ORGANIZADOR dueño del evento o ADMIN. Importes y conteos según las definiciones de ReporteEvento.",
+            "operationId": "ventas",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Ventas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteVentas"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es ADMIN ni el organizador del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteVentas"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteVentas"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reportes/eventos/{idEvento}/sectores": {
+          "get": {
+            "tags": [
+              "Reportes"
+            ],
+            "summary": "Ventas y devoluciones por sector",
+            "description": "Una fila por sector con vendidas, devueltas, ocupación y recaudación. ORGANIZADOR dueño del evento o ADMIN. Importes y conteos según las definiciones de ReporteEvento.",
+            "operationId": "sectores",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Sectores",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ReporteSector"
+                      }
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es ADMIN ni el organizador del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ReporteSector"
+                      }
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ReporteSector"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reportes/eventos/{idEvento}/recaudacion": {
+          "get": {
+            "tags": [
+              "Reportes"
+            ],
+            "summary": "Recaudación del evento",
+            "description": "Recaudación bruta, devuelta, pendiente de reintegro y neta, total y por sector. ORGANIZADOR dueño del evento o ADMIN. Importes y conteos según las definiciones de ReporteEvento.",
+            "operationId": "recaudacion",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Recaudación",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteRecaudacion"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es ADMIN ni el organizador del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteRecaudacion"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteRecaudacion"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/reportes/eventos/{idEvento}/ocupacion": {
+          "get": {
+            "tags": [
+              "Reportes"
+            ],
+            "summary": "Porcentaje de ocupación",
+            "description": "Ocupación total y por sector (entradas vigentes / capacidad). ORGANIZADOR dueño del evento o ADMIN. Importes y conteos según las definiciones de ReporteEvento.",
+            "operationId": "ocupacion",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Ocupación",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteOcupacion"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "No es ADMIN ni el organizador del evento",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteOcupacion"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ReporteOcupacion"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
         "/eventos/{id}/disponibilidad": {
           "get": {
             "tags": [
@@ -6287,6 +6695,290 @@
                 "format": "int32",
                 "description": "Intentos de emisión de entradas",
                 "example": 0
+              }
+            }
+          },
+          "ReporteEvento": {
+            "type": "object",
+            "description": "Reporte completo del evento: totales y detalle por sector",
+            "properties": {
+              "idEvento": {
+                "type": "string",
+                "description": "UUID del evento"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del evento",
+                "example": "Metallica - M72 World Tour"
+              },
+              "estado": {
+                "type": "string",
+                "description": "Estado del evento",
+                "example": "PUBLICADO"
+              },
+              "moneda": {
+                "type": "string",
+                "description": "Moneda de los importes",
+                "example": "ARS"
+              },
+              "generadoEn": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Momento de generación (UTC)"
+              },
+              "compras": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Compras aprobadas del evento",
+                "example": 57
+              },
+              "total": {
+                "$ref": "#/components/schemas/ReporteSector",
+                "description": "Totales de todos los sectores"
+              },
+              "sectores": {
+                "type": "array",
+                "description": "Detalle por sector",
+                "items": {
+                  "$ref": "#/components/schemas/ReporteSector"
+                }
+              }
+            }
+          },
+          "ReporteSector": {
+            "type": "object",
+            "description": "Ventas, devoluciones, ocupación y recaudación de un sector",
+            "properties": {
+              "idSector": {
+                "type": "string",
+                "description": "UUID del sector (null en la fila de totales)"
+              },
+              "nombre": {
+                "type": "string",
+                "description": "Nombre del sector",
+                "example": "Platea"
+              },
+              "capacidad": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad comercial del sector",
+                "example": 25000
+              },
+              "vendidas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas vendidas (compras aprobadas, bruto)",
+                "example": 120
+              },
+              "devueltas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas devueltas",
+                "example": 6
+              },
+              "aReintegrar": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas pendientes de reintegro por cancelación del evento",
+                "example": 0
+              },
+              "vigentes": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas vigentes = vendidas - devueltas - aReintegrar",
+                "example": 114
+              },
+              "ingresaron": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas que ya ingresaron (validadas en la puerta)",
+                "example": 30
+              },
+              "ocupacionPct": {
+                "type": "number",
+                "format": "double",
+                "description": "Porcentaje de ocupación = vigentes / capacidad * 100",
+                "example": 0.46
+              },
+              "recaudacionBruta": {
+                "type": "number",
+                "description": "Recaudación bruta (compras aprobadas)",
+                "example": 21600000
+              },
+              "recaudacionDevuelta": {
+                "type": "number",
+                "description": "Monto de entradas devueltas",
+                "example": 1080000
+              },
+              "recaudacionAReintegrar": {
+                "type": "number",
+                "description": "Monto pendiente de reintegro por cancelación",
+                "example": 0
+              },
+              "recaudacionNeta": {
+                "type": "number",
+                "description": "Recaudación neta = bruta - devuelta - aReintegrar",
+                "example": 20520000
+              }
+            }
+          },
+          "ReporteVentas": {
+            "type": "object",
+            "description": "Entradas vendidas y devueltas del evento",
+            "properties": {
+              "idEvento": {
+                "type": "string"
+              },
+              "compras": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Compras aprobadas",
+                "example": 57
+              },
+              "entradasVendidas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas vendidas (bruto)",
+                "example": 120
+              },
+              "entradasDevueltas": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas devueltas",
+                "example": 6
+              },
+              "entradasAReintegrar": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas pendientes de reintegro",
+                "example": 0
+              },
+              "entradasVigentes": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas vigentes",
+                "example": 114
+              },
+              "ingresaron": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas que ya ingresaron",
+                "example": 30
+              }
+            }
+          },
+          "ReporteRecaudacion": {
+            "type": "object",
+            "description": "Recaudación del evento: bruta, devuelta, a reintegrar y neta",
+            "properties": {
+              "idEvento": {
+                "type": "string"
+              },
+              "moneda": {
+                "type": "string",
+                "example": "ARS"
+              },
+              "bruta": {
+                "type": "number"
+              },
+              "devuelta": {
+                "type": "number"
+              },
+              "aReintegrar": {
+                "type": "number"
+              },
+              "neta": {
+                "type": "number"
+              },
+              "sectores": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReporteRecaudacionSector"
+                }
+              }
+            }
+          },
+          "ReporteRecaudacionSector": {
+            "type": "object",
+            "description": "Recaudación de un sector",
+            "properties": {
+              "idSector": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              },
+              "bruta": {
+                "type": "number"
+              },
+              "devuelta": {
+                "type": "number"
+              },
+              "aReintegrar": {
+                "type": "number"
+              },
+              "neta": {
+                "type": "number"
+              }
+            }
+          },
+          "ReporteOcupacion": {
+            "type": "object",
+            "description": "Porcentaje de ocupación del evento y por sector",
+            "properties": {
+              "idEvento": {
+                "type": "string"
+              },
+              "capacidadTotal": {
+                "type": "integer",
+                "format": "int32",
+                "description": "Capacidad total del evento",
+                "example": 85000
+              },
+              "vigentes": {
+                "type": "integer",
+                "format": "int64",
+                "description": "Entradas vigentes",
+                "example": 114
+              },
+              "ocupacionPct": {
+                "type": "number",
+                "format": "double",
+                "description": "Ocupación total en %",
+                "example": 0.13
+              },
+              "sectores": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReporteOcupacionSector"
+                }
+              }
+            }
+          },
+          "ReporteOcupacionSector": {
+            "type": "object",
+            "description": "Ocupación de un sector",
+            "properties": {
+              "idSector": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              },
+              "capacidad": {
+                "type": "integer",
+                "format": "int32",
+                "example": 25000
+              },
+              "vigentes": {
+                "type": "integer",
+                "format": "int64",
+                "example": 114
+              },
+              "ocupacionPct": {
+                "type": "number",
+                "format": "double",
+                "example": 0.46
               }
             }
           },

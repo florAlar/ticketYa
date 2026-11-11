@@ -37,7 +37,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Aprobar / rechazar devolución | ADMIN |
 | Listar usuarios / cambiar estado / asignar roles | ADMIN |
 | Validar ingreso con QR en puerta | PERSONAL_ACCESO (y ADMIN) — hecho (E2-ACC-01) |
-| Reportes de ventas del evento | ORGANIZADOR dueño — **pendiente E2** |
+| Reportes de ventas, ocupación y recaudación del evento | ORGANIZADOR dueño (y ADMIN) — hecho (E2-REP-01) |
 | Fila virtual alta demanda | — **pendiente E2** |
 | Preferencias y recomendaciones | CLIENTE — **pendiente E2** |
 | Notificaciones | — **pendiente E2** |

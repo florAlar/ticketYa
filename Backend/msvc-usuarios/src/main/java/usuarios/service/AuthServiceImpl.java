@@ -18,6 +18,7 @@ import usuarios.mapper.UsuarioMapper;
 import usuarios.repository.RolRepository;
 import usuarios.repository.UsuarioRepository;
 import usuarios.util.JwtUtil;
+import usuarios.observability.Bitacora;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -49,14 +50,20 @@ public class AuthServiceImpl implements AuthService {
         String email = request.email().trim().toLowerCase();
         Usuario usuario = usuarioRepository
                 .findByEmail(email)
-                .orElseThrow(() -> new UnauthorizedException("Credenciales inválidas"));
+                .orElseThrow(() -> {
+                    Bitacora.registrar("LOGIN_FALLIDO", null, email, "motivo=credenciales");
+                    return new UnauthorizedException("Credenciales inválidas");
+                });
 
         if (!Boolean.TRUE.equals(usuario.getActivo())) {
+            Bitacora.registrar("LOGIN_FALLIDO", usuario.getIdUsuario(), email, "motivo=cuenta_desactivada");
             throw new UnauthorizedException("Cuenta desactivada. Contactá soporte.");
         }
         if (!passwordEncoder.matches(request.password(), usuario.getPasswordHash())) {
+            Bitacora.registrar("LOGIN_FALLIDO", usuario.getIdUsuario(), email, "motivo=credenciales");
             throw new UnauthorizedException("Credenciales inválidas");
         }
+        Bitacora.registrar("LOGIN_OK", usuario.getIdUsuario(), email, "-");
         return issue(usuario);
     }
 
@@ -88,6 +95,7 @@ public class AuthServiceImpl implements AuthService {
         u = usuarioRepository.save(u);
         // recargar con roles
         u = usuarioRepository.findWithRolesByIdUsuario(u.getIdUsuario()).orElse(u);
+        Bitacora.registrar("REGISTRO_OK", u.getIdUsuario(), email, "rol=" + ROL_CLIENTE);
         return issue(u);
     }
 

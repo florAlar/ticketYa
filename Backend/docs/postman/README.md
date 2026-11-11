@@ -4,10 +4,10 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 146 requests en 11 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 155 requests en 12 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
 
-**Última corrida verificada (2026-11-11):** 146 requests, 424 assertions, 0 fallos (stack local completo con el gateway en `TICKETYA_JWT_ENABLED=false`; la carpeta 10 corre sin reiniciar datos).
+**Última corrida verificada (2026-11-11):** 155 requests, 448 assertions, 0 fallos (stack local completo con el gateway en `TICKETYA_JWT_ENABLED=false`; las carpetas 10 y 11 corren sin reiniciar datos).
 
 ## Requisitos
 
@@ -21,7 +21,7 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 1. Importar los dos archivos `.json`.
 2. Elegir el environment **TicketYa local**.
-3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 10**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
+3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 11**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
 
 ### Por consola (sin instalar nada)
 
@@ -68,6 +68,7 @@ curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIEN
 | 08 Gateway | 8 | health, rutas públicas sin token y preflight CORS |
 | 09 Asientos numerados | 23 | reserva de un asiento concreto (Platea numerada del evento seed), `asientosOcupados` en disponibilidad (RESERVADO → VENDIDO), errores 409/400, entrada con fila y número, devolución que libera el asiento y pago rechazado que libera el asiento |
 | 10 Control de acceso QR | 19 | cliente compra una entrada y el personal de acceso la valida: ingreso aceptado, QR repetido (YA_USADA), QR de otro evento, QR inexistente, roles y auditoría de intentos |
+| 11 Reportes del organizador | 9 | reporte completo, ventas, sectores, ocupación y recaudación como organizador dueño y ADMIN (con las identidades aritméticas: vigentes y neta), 403 para cliente y personal de acceso, 401 sin token y 404 |
 
 ## Flujo de negocio que recorre
 

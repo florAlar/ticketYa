@@ -169,6 +169,15 @@ const GestionEventosPage = () => {
                 </p>
               </div>
               <div className="gestion-event-row__actions">
+                {e.estado !== EVENTO_ESTADOS.BORRADOR && (
+                  <GateLink
+                    enabled={FEATURE.reportes}
+                    className="btn"
+                    to={`/gestion/eventos/${e.id}/reportes`}
+                  >
+                    Reportes
+                  </GateLink>
+                )}
                 {e.estado === EVENTO_ESTADOS.BORRADOR && (
                   <GateLink
                     enabled={FEATURE.eventosGestion}

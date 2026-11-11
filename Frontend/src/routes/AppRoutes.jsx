@@ -14,6 +14,7 @@ import GestionPage from '../pages/GestionPage/GestionPage'
 import GestionEventosPage from '../pages/GestionPage/GestionEventosPage'
 import GestionEventoNuevoPage from '../pages/GestionPage/GestionEventoNuevoPage'
 import GestionEventoEditarPage from '../pages/GestionPage/GestionEventoEditarPage'
+import GestionEventoReportesPage from '../pages/GestionPage/GestionEventoReportesPage'
 import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
 import OrganizerAccountPage from '../pages/CuentaRolesPage/OrganizerAccountPage'
 import PerfilPage from '../pages/PerfilPage/PerfilPage'
@@ -126,6 +127,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
             <GestionEventoEditarPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/eventos/:eventoId/reportes"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
+            <GestionEventoReportesPage />
           </ProtectedRoute>
         }
       />

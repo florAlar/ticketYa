@@ -189,10 +189,15 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 
 ### Reportes
 
-- GET /reportes/eventos/{id}/ventas — Ventas por evento (ORGANIZADOR dueño)
-- GET /reportes/eventos/{id}/sectores — Ventas/devoluciones por sector (ORGANIZADOR)
-- GET /reportes/eventos/{id}/ocupacion — Porcentaje de ocupación (ORGANIZADOR)
-- GET /reportes/eventos/{id}/recaudacion — Recaudación del evento (ORGANIZADOR)
+Solo ORGANIZADOR dueño del evento o ADMIN (otro rol → 403; evento inexistente → 404; si eventos o entradas no responden → 503, no se entrega un reporte parcial).
+
+- GET /reportes/eventos/{id} — Reporte completo: totales y detalle por sector
+- GET /reportes/eventos/{id}/ventas — Compras aprobadas y entradas vendidas, devueltas, vigentes e ingresadas
+- GET /reportes/eventos/{id}/sectores — Ventas/devoluciones por sector
+- GET /reportes/eventos/{id}/ocupacion — Porcentaje de ocupación (total y por sector)
+- GET /reportes/eventos/{id}/recaudacion — Recaudación bruta, devuelta, a reintegrar y neta
+
+Definiciones: **vendidas** = unidades de compras APROBADAS; **vigentes** = vendidas − devueltas − a reintegrar; **ocupación** = vigentes / capacidad; **recaudación neta** = bruta − devuelta − a reintegrar. Las devoluciones y los ingresos salen de msvc-entradas (`GET /eventos/{id}/entradas/resumen`, interno, no ruteado por el gateway).
 
 ### Fila virtual
 

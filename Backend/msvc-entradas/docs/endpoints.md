@@ -22,6 +22,7 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 | POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05; VENDIDA→A_REINTEGRAR + invalida QR + crea `devolucion` **EN_CURSO** (motivo cancelación; visible al cliente, no cola admin) |
 | POST /eventos/{id}/validaciones | **hecho** | E2-ACC-01. Body `{codigoQR, dispositivo?}`. PERSONAL_ACCESO o ADMIN. 200 `VALIDA` (entrada → USADA); 409 con `resultado` = `YA_USADA` \| `OTRO_EVENTO` \| `NO_VALIDA` \| `EVENTO_CANCELADO`; 404 QR inexistente; 400 QR vacío; 403 otro rol. Atómico por QR (`SELECT … FOR UPDATE`). Cada intento sobre una entrada existente se registra en `validacion_acceso`, también los rechazados. |
 | GET /eventos/{id}/validaciones | **hecho** | Intentos del evento (el más reciente primero). ADMIN: cualquiera; ORGANIZADOR: solo el dueño del evento (Feign a eventos; si no responde → 403). |
+| GET /eventos/{id}/entradas/resumen | **hecho** | Interno (reportes, E2-REP-01): entradas del evento por sector y estado (vendidas, usadas, devueltas, a reintegrar) con montos de devoluciones. Lo consume msvc-ventas por Feign; el gateway no lo rutea. |
 
 ### Limitaciones conocidas (deuda natural E1 — documentada, no “olvidada”)
 

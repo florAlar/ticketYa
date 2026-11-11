@@ -27,6 +27,7 @@ import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
 import entradas.dto.EntradaResponseDTO;
 import entradas.dto.QrResponseDTO;
+import entradas.dto.ResumenSectorDTO;
 import entradas.dto.ValidacionRegistroDTO;
 import entradas.dto.ValidacionRequestDTO;
 import entradas.dto.ValidacionResponseDTO;
@@ -410,6 +411,25 @@ public class EntradaController {
             throw new ForbiddenException("Se requiere rol ADMIN u ORGANIZADOR");
         }
         return entradaService.listarValidaciones(idEvento, usuario, admin);
+    }
+
+    /** Resumen interno para reportes (lo consume msvc-ventas por Feign; el gateway no lo rutea). */
+    @Operation(
+            summary = "Resumen de entradas de un evento por sector (interno)",
+            description = """
+                    Cantidad de entradas del evento por sector y estado (vendidas, usadas, devueltas, a reintegrar)
+                    con montos de devoluciones. Uso interno de msvc-ventas para los reportes del organizador; el
+                    API Gateway no expone esta ruta.
+                    """,
+            tags = "Interno",
+            extensions = @Extension(name = "x-internal",
+                    properties = @ExtensionProperty(name = "value", value = "true")))
+    @ApiResponse(responseCode = "200", description = "Resumen por sector (vacío si el evento no tiene entradas)",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = ResumenSectorDTO.class))))
+    @GetMapping("/eventos/{idEvento}/entradas/resumen")
+    public List<ResumenSectorDTO> resumenEvento(
+            @Parameter(description = "UUID del evento") @PathVariable String idEvento) {
+        return entradaService.resumenPorEvento(idEvento);
     }
 
     private static String requireUser(String userId) {

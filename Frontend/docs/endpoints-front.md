@@ -93,6 +93,7 @@ Admin pendientes reales: `GET /api/devoluciones`.
 | GET | `/api/entradas/{id}/qr` | JWT | `getEntradaQr` — solo VENDIDA + evento ≠ CANCELADO |
 | POST | `/api/eventos/{idEvento}/validaciones` | PERSONAL_ACCESO | `/acceso/scan` |
 | GET | `/api/eventos/{idEvento}/validaciones` | ORG\|ADMIN | `listValidacionesEvento` |
+| GET | `/api/reportes/eventos/{idEvento}` | ORG (dueño) \| ADMIN | `/gestion/eventos/:id/reportes` (`getReporteEvento`; gate `FEATURE.reportes`) |
 | POST | `/api/entradas/{id}/devoluciones` | CLIENTE | soporte / detalle entrada |
 | GET | `/api/devoluciones` | CLIENTE filtrado / ADMIN pendientes | mis solicitudes + cola admin |
 | GET | `/api/devoluciones/{id}` | JWT | `getDevolucion` |
