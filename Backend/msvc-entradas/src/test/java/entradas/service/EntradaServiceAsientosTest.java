@@ -19,6 +19,7 @@ import entradas.entity.Entrada;
 import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
 import entradas.repository.EntradaRepository;
+import entradas.repository.ValidacionAccesoRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ class EntradaServiceAsientosTest {
         ventasClient = mock(VentasClient.class);
         service = new EntradaServiceImpl(
                 entradaRepository, devolucionRepository, new EntradaMapper(),
-                mock(EventosClient.class), ventasClient, 72L);
+                mock(EventosClient.class), ventasClient, mock(ValidacionAccesoRepository.class), 72L);
         when(entradaRepository.findByIdCompra(ID_COMPRA)).thenReturn(new ArrayList<>());
         when(entradaRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
     }

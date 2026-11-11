@@ -5963,6 +5963,897 @@
           ]
         }
       ]
+    },
+    {
+      "name": "10 Control de acceso QR",
+      "description": "Control de acceso por QR en la puerta (E2-ACC-01): el cliente compra una entrada y el personal de acceso la valida. Cubre ingreso aceptado, QR repetido, QR de otro evento, QR inexistente, roles y la auditoría de intentos. Autónoma: crea su propio cliente y su compra.",
+      "item": [
+        {
+          "name": "10.01 Registrar cliente de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Rol: público · Esperado: 200 · Cliente nuevo por corrida (la entrada a validar es suya). Guarda {{token_puerta}}.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Puerta\",\"apellido\":\"QA\",\"email\":\"puerta+{{$guid}}@example.com\",\"password\":\"secreto123\",\"ciudad\":\"Córdoba\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Cliente nuevo con sesión', function () { pm.expect(b.user.rol).to.eql('CLIENTE'); pm.expect(b.token).to.be.a('string'); });",
+                  "pm.environment.set('token_puerta', b.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.02 Reservar 1 entrada (sector general)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas",
+            "description": "Rol: CLIENTE · Esperado: 201 · Campo del evento seed, por cantidad. Guarda {{puertaReservaId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idEvento\":\"{{eventoSeedId}}\",\"items\":[{\"idSector\":\"{{sectorGeneralSeedId}}\",\"cantidad\":1}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Reserva PENDIENTE', function () { pm.expect(b.estado).to.eql('PENDIENTE'); });",
+                  "pm.environment.set('puertaReservaId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.03 Confirmar la reserva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservas/{{puertaReservaId}}/confirmacion",
+            "description": "Rol: CLIENTE · Esperado: 200 · PENDIENTE → CONFIRMADA.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Reserva CONFIRMADA', function () { pm.expect(pm.response.json().estado).to.eql('CONFIRMADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.04 Crear compra",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/compras",
+            "description": "Rol: CLIENTE · Esperado: 201 · Guarda {{puertaCompraId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idReserva\":\"{{puertaReservaId}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Compra PENDIENTE_PAGO', function () { pm.expect(b.estado).to.eql('PENDIENTE_PAGO'); });",
+                  "pm.environment.set('puertaCompraId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.05 Pagar (APROBAR)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/compras/{{puertaCompraId}}/pagos",
+            "description": "Rol: CLIENTE · Esperado: 201 · Pago mock aprobado: se emite la entrada con su QR.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"resultado\":\"APROBAR\",\"proveedor\":\"MOCK_PASARELA\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Pago APROBADO', function () { pm.expect(pm.response.json().estado).to.eql('APROBADO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.06 Mi entrada VENDIDA y su QR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/entradas",
+            "description": "Rol: CLIENTE · Esperado: 200 · Guarda {{puertaEntradaId}} y {{puertaQr}} (el código que lee el personal en la puerta).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Una entrada VENDIDA con QR', function () { pm.expect(b).to.be.an('array').with.lengthOf(1); pm.expect(b[0].estado).to.eql('VENDIDA'); pm.expect(b[0].codigoQR).to.be.a('string'); });",
+                  "pm.environment.set('puertaEntradaId', b[0].id);",
+                  "pm.environment.set('puertaQr', b[0].codigoQR);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.07 Un CLIENTE no puede validar → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: CLIENTE · Esperado: 403 · Solo PERSONAL_ACCESO o ADMIN validan ingresos (lo corta el gateway).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"{{puertaQr}}\",\"dispositivo\":\"postman-puerta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.08 Un ORGANIZADOR no puede validar → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: ORGANIZADOR · Esperado: 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"{{puertaQr}}\",\"dispositivo\":\"postman-puerta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.09 QR inexistente → 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: PERSONAL_ACCESO · Esperado: 404.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_acceso}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"QR-NO-EXISTE-0000\",\"dispositivo\":\"postman-puerta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.10 QR vacío → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: PERSONAL_ACCESO · Esperado: 400.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_acceso}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"  \"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.11 Puerta de OTRO evento → 409 OTRO_EVENTO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoCanceladoSeedId}}/validaciones",
+            "description": "Rol: PERSONAL_ACCESO · Esperado: 409 · El QR es del evento seed y se escanea en la puerta de otro evento. La entrada NO se consume y no se devuelven sus datos.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_acceso}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"{{puertaQr}}\",\"dispositivo\":\"postman-puerta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('OTRO_EVENTO, sin datos de la entrada', function () { pm.expect(b.ok).to.eql(false); pm.expect(b.resultado).to.eql('OTRO_EVENTO'); pm.expect(b.entrada).to.be.oneOf([null, undefined]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.12 Validar ingreso → 200 VALIDA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: PERSONAL_ACCESO · Esperado: 200 · La entrada pasa a USADA y queda registrada. Devuelve evento, sector y fecha para el personal.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_acceso}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"{{puertaQr}}\",\"dispositivo\":\"postman-puerta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Ingreso VALIDO', function () { pm.expect(b.ok).to.eql(true); pm.expect(b.resultado).to.eql('VALIDA'); pm.expect(b.idValidacion).to.be.a('string'); });",
+                  "pm.test('Entrada USADA con datos del evento', function () { pm.expect(b.entrada.estado).to.eql('USADA'); pm.expect(b.entrada.fechaIngreso).to.be.a('string'); pm.expect(b.entrada.eventoNombre).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.13 Mismo QR otra vez → 409 YA_USADA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: PERSONAL_ACCESO · Esperado: 409 · Un QR no puede ingresar dos veces. El intento rechazado también queda registrado.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_acceso}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"codigoQR\":\"{{puertaQr}}\",\"dispositivo\":\"postman-puerta\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('YA_USADA', function () { pm.expect(b.ok).to.eql(false); pm.expect(b.resultado).to.eql('YA_USADA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.14 La entrada del cliente queda USADA y sin QR",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/entradas/{{puertaEntradaId}}",
+            "description": "Rol: CLIENTE · Esperado: 200 · Estado USADA; el QR deja de exhibirse.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('USADA sin QR', function () { pm.expect(b.estado).to.eql('USADA'); pm.expect(b.codigoQR).to.be.oneOf([null, undefined]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.15 Una entrada USADA no se puede devolver → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/entradas/{{puertaEntradaId}}/devoluciones",
+            "description": "Rol: CLIENTE · Esperado: 409.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"motivo\":\"Ya ingresé\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.16 Listar validaciones como ORGANIZADOR dueño → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: ORGANIZADOR (dueño del evento seed) · Esperado: 200 · Los tres intentos sobre la entrada (OTRO_EVENTO, VALIDA, YA_USADA).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const mias = b.filter(function (v) { return v.idEntrada === pm.environment.get('puertaEntradaId'); });",
+                  "pm.test('Auditados los 3 intentos de la entrada', function () { const r = mias.map(function (v) { return v.resultado; }); pm.expect(r).to.have.members(['OTRO_EVENTO', 'VALIDA', 'YA_USADA']); });",
+                  "pm.test('Quedan el dispositivo y quién escaneó', function () { pm.expect(mias[0].dispositivo).to.eql('postman-puerta'); pm.expect(mias[0].idPersonalAcceso).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.17 Listar validaciones como ADMIN → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: ADMIN · Esperado: 200.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Es un listado', function () { pm.expect(pm.response.json()).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.18 Listar validaciones como CLIENTE → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: CLIENTE · Esperado: 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_puerta}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.19 Listar validaciones como PERSONAL_ACCESO → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/validaciones",
+            "description": "Rol: PERSONAL_ACCESO · Esperado: 403 · El personal valida pero no consulta el historial del evento.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_acceso}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

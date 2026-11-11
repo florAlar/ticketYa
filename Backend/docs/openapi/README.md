@@ -9,10 +9,12 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
 | `msvc-eventos.json` | Contrato de eventos/lugares/participantes (25 ops / 17 paths) |
 | `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos (16 ops / 14 paths, 16 schemas) |
-| `msvc-entradas.json` | Contrato de entradas/QR/devoluciones (11 ops / 11 paths, 7 schemas) |
+| `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (13 ops / 12 paths, 10 schemas) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 4 specs bajo la clave `specs` |
 
 > **Actualizado 2026-11-10:** los specs incluyen los asientos virtuales (`filas`/`asientosPorFila` en sectores; `asientos` en `POST /reservas`, `POST /eventos/{id}/cupos/liberacion` y `POST /entradas/emision`; `asientosOcupados` en disponibilidad; `fila`/`asiento` en la entrada).
+>
+> **Actualizado 2026-11-11:** `msvc-entradas.json` suma el control de acceso QR (`POST` y `GET /eventos/{idEvento}/validaciones`, schemas `ValidacionRequest`, `ValidacionResponse` y `ValidacionRegistro`). `openapi-bundle.json` regenerado (los otros tres specs sin cambios).
 
 ## Regeneración (tras cambios en anotaciones)
 

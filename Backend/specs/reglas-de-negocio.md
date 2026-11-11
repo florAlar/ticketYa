@@ -11,7 +11,7 @@ Roles definidos en la plataforma:
 | **CLIENTE** | Busca eventos, reserva, compra, ve sus entradas/QR, pide devolución, edita su perfil. |
 | **ORGANIZADOR** | Crea y configura **sus** eventos, publica, edita borradores, puede suspender los propios, ve listado propio; también puede comprar como cualquier persona (mis entradas). |
 | **ADMIN** | Opera la plataforma: usuarios (listar, activar/desactivar, roles), cualquier evento (incl. cancelar), cola de devoluciones, consulta de entradas ajenas si hace falta. |
-| **PERSONAL_ACCESO** | En la **segunda entrega**: validar QR en la puerta. Hoy el rol existe en seeds/demo; el escaneo aún no está implementado. |
+| **PERSONAL_ACCESO** | Valida el QR en la puerta (E2-ACC-01): el sistema verifica que la entrada exista, sea del evento y no esté usada, y la marca como utilizada. Puede validar **cualquier** evento (no hay asignación de eventos por persona: simplificación). |
 
 Registro público: **solo CLIENTE**.  
 Organizador, admin y personal de acceso **no** se auto-registran por la web abierta.
@@ -36,7 +36,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Pedir devolución | CLIENTE dueño, con reglas de plazo y estado |
 | Aprobar / rechazar devolución | ADMIN |
 | Listar usuarios / cambiar estado / asignar roles | ADMIN |
-| Validar ingreso con QR en puerta | PERSONAL_ACCESO — **pendiente E2** |
+| Validar ingreso con QR en puerta | PERSONAL_ACCESO (y ADMIN) — hecho (E2-ACC-01) |
 | Reportes de ventas del evento | ORGANIZADOR dueño — **pendiente E2** |
 | Fila virtual alta demanda | — **pendiente E2** |
 | Preferencias y recomendaciones | CLIENTE — **pendiente E2** |

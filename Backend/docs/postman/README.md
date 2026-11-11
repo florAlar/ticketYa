@@ -4,10 +4,10 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 127 requests en 10 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 146 requests en 11 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
 
-**Última corrida verificada (2026-11-10):** 127 requests, 376 assertions, 0 fallos (stack local completo, datos seed limpios; dos corridas seguidas sin reiniciar datos).
+**Última corrida verificada (2026-11-11):** 146 requests, 424 assertions, 0 fallos (stack local completo con el gateway en `TICKETYA_JWT_ENABLED=false`; la carpeta 10 corre sin reiniciar datos).
 
 ## Requisitos
 
@@ -21,7 +21,7 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 1. Importar los dos archivos `.json`.
 2. Elegir el environment **TicketYa local**.
-3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 08**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
+3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 10**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
 
 ### Por consola (sin instalar nada)
 
@@ -47,7 +47,7 @@ No hace falta loguearse a mano. Un script *pre-request* de la colección hace lo
 
 Cada request declara en su descripción el rol que usa y el status esperado.
 
-**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección pasa completa (127 requests, 376 assertions, 0 fallos) con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles). Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
+**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección (hasta la carpeta 09: 127 requests, 376 assertions, 0 fallos) pasó con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles); la carpeta 10 se verificó solo con `false`. Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
 
 ```bash
 curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
@@ -67,6 +67,7 @@ curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIEN
 | 07 Negativos | 17 | 401, 403, 400, 404 y 409 |
 | 08 Gateway | 8 | health, rutas públicas sin token y preflight CORS |
 | 09 Asientos numerados | 23 | reserva de un asiento concreto (Platea numerada del evento seed), `asientosOcupados` en disponibilidad (RESERVADO → VENDIDO), errores 409/400, entrada con fila y número, devolución que libera el asiento y pago rechazado que libera el asiento |
+| 10 Control de acceso QR | 19 | cliente compra una entrada y el personal de acceso la valida: ingreso aceptado, QR repetido (YA_USADA), QR de otro evento, QR inexistente, roles y auditoría de intentos |
 
 ## Flujo de negocio que recorre
 
@@ -86,6 +87,10 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 ## Carpeta 09 — asientos numerados
 
 Se puede correr varias veces sin reiniciar los datos: registra un **cliente nuevo por corrida** (evita el límite de 6 entradas por cliente y evento) y elige asientos libres al azar en la Platea del evento seed (100 filas × 250). Variables que usa: `sectorNumeradoSeedId`, `sectorGeneralSeedId` (Campo, general) y `token_asientos`; el resto las captura sola (`asientoNum`, `asientoNum2`, `asientoNum3`, `asientoReservaId`, `asientoCompraId`, `asientoEntradaId`, `asientoDevolucionId`...). Va al final de la colección para no alterar el orden de las carpetas anteriores.
+
+## Carpeta 10 — control de acceso QR (E2-ACC-01)
+
+Autónoma y repetible: registra un **cliente nuevo por corrida**, compra una entrada en el Campo del evento seed y la escanea como `PERSONAL_ACCESO`. Verifica `POST /eventos/{id}/validaciones` (200 `VALIDA`; 409 con `resultado` = `YA_USADA` / `OTRO_EVENTO`; 404 y 400), que la entrada del cliente queda `USADA` y sin QR, y que `GET /eventos/{id}/validaciones` (ADMIN u ORGANIZADOR dueño) lista los tres intentos. Cliente y organizador no pueden validar (403).
 
 ## Reiniciar los datos
 

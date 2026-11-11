@@ -211,8 +211,8 @@ Servicio: msvc-entradas | Prefijos: /entradas, /devoluciones + /eventos/{idEvent
 - GET /entradas — Listar entradas propias (CLIENTE)
 - GET /entradas/{id} — Consultar entrada propia
 - GET /entradas/{id}/qr — Obtener QR de la entrada
-- POST /eventos/{idEvento}/validaciones — Validar QR en ingreso (PERSONAL_ACCESO; atómica)
-- GET /eventos/{idEvento}/validaciones — Consultar validaciones del evento (ORGANIZADOR/ADMIN)
+- POST /eventos/{idEvento}/validaciones — Validar QR en ingreso (PERSONAL_ACCESO o ADMIN; atómica). Body `{codigoQR, dispositivo?}`. 200 `VALIDA` | 409 `YA_USADA` / `OTRO_EVENTO` / `NO_VALIDA` / `EVENTO_CANCELADO` | 404 | 400 | 403
+- GET /eventos/{idEvento}/validaciones — Consultar validaciones del evento (ADMIN; ORGANIZADOR solo el dueño)
 
 ### Devoluciones
 

@@ -48,8 +48,8 @@ export const FEATURE = {
    */
   adminUsuarios: false,
 
-  /** Scan QR puerta — E2-ACC sin API */
-  accesoScan: false,
+  /** Validar QR en la puerta: POST …/validaciones (PERSONAL_ACCESO / ADMIN) — E2-ACC-01 */
+  accesoScan: !USE_MOCK,
 
   /** Transferencia de entradas — shell sin API */
   transferencia: false,

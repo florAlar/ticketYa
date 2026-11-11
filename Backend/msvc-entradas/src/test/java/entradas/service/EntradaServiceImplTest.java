@@ -46,6 +46,7 @@ import entradas.exception.ResourceNotFoundException;
 import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
 import entradas.repository.EntradaRepository;
+import entradas.repository.ValidacionAccesoRepository;
 import feign.FeignException;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,7 +83,7 @@ class EntradaServiceImplTest {
         reset(entradaRepository, devolucionRepository, entradaMapper, eventosClient, ventasClient);
         service = new EntradaServiceImpl(
                 entradaRepository, devolucionRepository, entradaMapper,
-                eventosClient, ventasClient, 72L);
+                eventosClient, ventasClient, mock(ValidacionAccesoRepository.class), 72L);
     }
 
     private Entrada entradaVendida() {

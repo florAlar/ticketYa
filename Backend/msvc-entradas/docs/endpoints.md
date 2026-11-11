@@ -20,8 +20,8 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 | GET /devoluciones/{id} | **hecho** | |
 | POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) + Feign ventas `POST …/cupos/liberacion` fail-hard (1 unidad del sector) |
 | POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05; VENDIDA→A_REINTEGRAR + invalida QR + crea `devolucion` **EN_CURSO** (motivo cancelación; visible al cliente, no cola admin) |
-| POST /eventos/{id}/validaciones | pendiente | E2-ACC — entity `ValidacionAcceso` existe, sin service/controller |
-| GET /eventos/{id}/validaciones | pendiente | E2 |
+| POST /eventos/{id}/validaciones | **hecho** | E2-ACC-01. Body `{codigoQR, dispositivo?}`. PERSONAL_ACCESO o ADMIN. 200 `VALIDA` (entrada → USADA); 409 con `resultado` = `YA_USADA` \| `OTRO_EVENTO` \| `NO_VALIDA` \| `EVENTO_CANCELADO`; 404 QR inexistente; 400 QR vacío; 403 otro rol. Atómico por QR (`SELECT … FOR UPDATE`). Cada intento sobre una entrada existente se registra en `validacion_acceso`, también los rechazados. |
+| GET /eventos/{id}/validaciones | **hecho** | Intentos del evento (el más reciente primero). ADMIN: cualquiera; ORGANIZADOR: solo el dueño del evento (Feign a eventos; si no responde → 403). |
 
 ### Limitaciones conocidas (deuda natural E1 — documentada, no “olvidada”)
 
@@ -32,7 +32,7 @@ Estas deudas **existen a propósito** en el estado actual del monorepo (bounded 
 | Emisión Feign ventas→entradas | **Cerrado TP 2026-11-08** | Ventas: reintentos inmediatos + `compra.emision_estado` + job; idempotente por idCompra. Outbox opcional. |
 | **~~Precio en RAM~~** | **Cerrado 2026-11-07** | Columna `entrada.precio`; emisión persiste; DTO/devo/reintegro leen DB. Volúmenes viejos: recrear el volumen (ver `infrastructure/mysql/README.md`) |
 | ~~Approve devolución no reabre cupo~~ | **Cerrado 2026-11-07** | Feign `POST /eventos/{id}/cupos/liberacion` fail-hard al approve |
-| `ValidacionAcceso` sin endpoints | Entity lista; API = E2 | **E2-ACC-01** |
+| ~~`ValidacionAcceso` sin endpoints~~ | **Cerrado 2026-11-11** | E2-ACC-01. Simplificación: cualquier PERSONAL_ACCESO valida cualquier evento (sin asignación de eventos por persona; ver backlog X-ACC-01). |
 
 ### Cerrado (higiene E1-ENT-03)
 GET emisión/listado/detalle: Feign `GET /eventos/{id}` → `eventoNombre`, `lugarNombre`, `lugarCiudad`, `sectorNombre`.
@@ -49,7 +49,7 @@ GET emisión/listado/detalle: Feign `GET /eventos/{id}` → `eventoNombre`, `lug
 - Si no aplica → campo `null` (el secreto no viaja al cliente).
 - `GET …/qr` misma regla; si no → conflicto de negocio.
 - Al aprobar devolución o reintegro por cancelación: se **rota** `codigo_qr` a `INV-*` (pantallazo previo deja de coincidir con DB).
-- Validación de puerta (aceptar/rechazar ingreso) = **E2-ACC** (sigue pendiente); esta política es exposición + invalidación de secreto.
+- Validación de puerta (aceptar/rechazar ingreso) = **E2-ACC-01** (hecha, ver arriba). Una entrada `USADA` deja de exponer su QR.
 
 ### Emisión
 QR: `QR-` + 16 hex. UK `codigo_qr`.

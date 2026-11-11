@@ -63,7 +63,7 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | DOC-MS-GW | Specs + diseño de `APIGateway/docs/` (rutas, filtros, correlación, qué no hace el gateway) | E1 | pendiente | |
 | DOC-MS-EVE | Specs + diseño de `msvc-eventos/docs/` | E1 | parcial | `endpoints.md` msvc vivo (alta/publicación/cupo Feign). Falta plantilla DOC-MS-00 completa + OpenAPI. |
 | DOC-MS-VEN | Specs + diseño de `msvc-ventas/docs/` | E1 (+ fila E2) | parcial | `endpoints.md` msvc vivo (+ POST cupos). Falta plantilla completa + fila E2. |
-| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | `endpoints.md` msvc con emisión/QR/devo. E2-ACC API pendiente. |
+| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | `endpoints.md` msvc con emisión/QR/devo y validación de acceso (E2-ACC-01). |
 | DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | parcial | `endpoints.md` auth JWT. Falta plantilla DOC-MS-00 completa. |
 | DOC-MS-PRE | Specs + diseño de `msvc-preferencias/docs/` (documentos Mongo, recs) | E2 | pendiente | Incluir justificación NoSQL. Modelo doc: MOD-04. |
 | DOC-MS-NOT | Specs + diseño de `msvc-notificaciones/docs/` | E2 | pendiente | Canales, plantillas, disparos async. |
@@ -157,7 +157,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-ENT-00 | Datasource + JPA validate contra `entradas/init.sql` (INF-27) | hecho | EMF OK. |
-| E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. **ValidacionAcceso sin API** (E2-ACC-01). Seed intacto. |
+| E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. ValidacionAcceso con API desde E2-ACC-01. Seed intacto. |
 | E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago con **reintentos + emision_estado PENDIENTE/EMITIDA/FALLIDA + job** (ya no fire-and-forget). Idempotente por idCompra. **`entrada.precio` persistido**. |
 | E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. DTO enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos. **GET /{id}: dueño o ADMIN** (un método). FE admin: `/gestion/entradas/:id` (no mis-entradas). |
 | E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde **emisión**; ADMIN→DEVUELTA + **Feign ventas libera 1 cupo** fail-hard. Monto desde `entrada.precio`. FE admin cola: `USE_MOCK_ENTRADAS`. |
@@ -217,7 +217,7 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E2-FILA-01 | Fila virtual (alta demanda): ingreso, posición, tandas, token de compra | pendiente | Simplificable con justificación. |
-| E2-ACC-01 | Control de acceso QR: validar existencia, evento, no reutilizada; marcar usada | pendiente | PERSONAL_ACCESO. |
+| E2-ACC-01 | Control de acceso QR: validar existencia, evento, no reutilizada; marcar usada | hecho | 2026-11-11. `POST /eventos/{id}/validaciones` (PERSONAL_ACCESO o ADMIN): 200 `VALIDA` (entrada → USADA) o 409 `YA_USADA` / `OTRO_EVENTO` / `NO_VALIDA` / `EVENTO_CANCELADO`; 404 QR inexistente; 400 QR vacío. Atómico por QR (`SELECT … FOR UPDATE`), probado con MySQL real (8 puertas, un solo ingreso; `ValidacionIngresoConcurrenciaIT`, `-Pit`). Todo intento sobre una entrada existente queda en `validacion_acceso`. `GET /eventos/{id}/validaciones` para ADMIN y ORGANIZADOR dueño. Tests entradas 74 OK; Postman carpeta `10 Control de acceso QR` (19 requests, sin fallos). FE: pantalla de escaneo con selector de evento (gate `accesoScan`). **Simplificación:** cualquier PERSONAL_ACCESO valida cualquier evento (ver X-ACC-01). |
 | E2-PRE-01 | Preferencias cliente en **Mongo** (categorías, ciudad, rango precio, artistas) | pendiente | Init INF-28 hecho; falta dominio Spring Data + API. |
 | E2-PRE-02 | Recomendaciones (propias y/o similares por evento); puede ser simplificado | pendiente | |
 | E2-PRE-03 | Historial de cliente / ingesta desde compras o eventos de dominio | pendiente | Colección `interacciones_eventos` en modelo Mongo. |
@@ -236,9 +236,9 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 | E2-NFR-03 | Trazabilidad HTTP + log centralizado de operaciones críticas con correlation id | pendiente | |
 | E2-DEP-01 | Verificar stack completo `docker compose up` (apps + DBs + gateway) con dominio real | parcial | 2026-11-11: el stack completo levanta desde cero y el flujo E1 funciona de punta a punta (ver HIG-06). Falta repetirlo cuando `msvc-preferencias` y `msvc-notificaciones` tengan dominio real (E2-PRE/NOT). |
 | E2-TST-01 | Pruebas de integración entre msvcs (Testcontainers o compose) | pendiente | |
-| E2-TST-02 | Pruebas de autorización por rol | parcial | 2026-11-11: `JwtGatewayIntegrationTest` (gateway, 10 casos con `JwtUtil` real y tokens armados como los emite usuarios): firma/expiración, 403 por rol, propagación de `X-User-*`, límite de la Entrega 1 y secreto igual en gateway y usuarios. Falta recorrer cada endpoint por rol. |
+| E2-TST-02 | Pruebas de autorización por rol | parcial | 2026-11-11: `JwtGatewayIntegrationTest` (gateway, 10 casos con `JwtUtil` real y tokens armados como los emite usuarios): firma/expiración, 403 por rol, propagación de `X-User-*`, límite de la Entrega 1 y secreto igual en gateway y usuarios. Falta recorrer cada endpoint por rol. Roles de validaciones de acceso: `EntradaControllerValidacionTest` + Postman carpeta 10. |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
-| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6). 2026-11-11: probado contra el BE real (reserva por asiento 201, doble reserva 409; compra desde el navegador OK). Mock residual cero con `VITE_USE_MOCK=false`. Falta: E2-ACC. |
+| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6). 2026-11-11: probado contra el BE real (reserva por asiento 201, doble reserva 409; compra desde el navegador OK). Mock residual cero con `VITE_USE_MOCK=false`. Pantalla de escaneo cableada (E2-ACC-01). |
 | E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | hecho | 2026-11-11: un solo flag `VITE_USE_MOCK` (false = todo contra el gateway; true = todo mock; sin mezcla) y `Frontend/.env` versionado. Admin usuarios: listar/estado/rol reales (gate `adminUsuariosListado`); alta de personal de acceso, eliminar y asignar eventos quedan OFF (no existen en BE). Lo que no tiene BE (scan ACC, transferencia, reportes, preferencias, X-ORG-01) queda deshabilitado por `featureGates`. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
@@ -258,6 +258,7 @@ Fuera del alcance formal del TP. Solo si sobra tiempo o se quiere UX de producto
 | X-UI-06 | SPA: badge cupo (Agotado / últimos / &lt;50 / &lt;100) en listado + detalle | hecho | BE: batch `GET /eventos/disponibilidad?ids=` + DTO `disponibleTotal`/`nivelCupo`. FE: EventList 1 batch; cards + detalle; Comprar por sector si disponible≥1. |
 | X-ORG-01 | Extensión cuenta CLIENTE → ORGANIZADOR (solicitud + auth admin) | pendiente | **No se implementa ahora.** Diseño §7.3.1. FE: CTA «Solicitar cuenta de organizador» en `/perfil` (solo CLIENTE) con `FEATURE.solicitudOrganizador=false` + guía `/cuenta/organizador`. Falta: API solicitudes, form, cola admin, approve→rol, refresh JWT. |
 | X-ORG-02 | Política de roles: cuenta base CLIENTE; privilegios los otorga ADMIN | pendiente | Doc/producto (no code). CLIENTE = register; ORG = extensión (X-ORG-01) o admin asigna rol; ADMIN/ACCESO = solo admin. Seeds demo siguen. Opcional: reflejar en US-01 cuando se escriba. |
+| X-ACC-01 | Asignar eventos a cada PERSONAL_ACCESO (solo puede validar los asignados) | descartado | Decisión 2026-11-11: no se modela (suma tabla de asignación, endpoints de alta/asignación, chequeo Feign en cada escaneo y pantalla de admin; la consigna no lo pide). Hoy cualquier PERSONAL_ACCESO valida cualquier evento; se documenta como simplificación. Si se retoma, el cambio se limita a un chequeo extra en la validación. |
 
 ### 7.3.1 Diseño acordado — extensión a organizador (X-ORG-01)
 
@@ -352,7 +353,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-02/03 (flag único de mock, 2026-11-11); **X-UI-01…05**, **X-QR-01/02**, **X-UI-06**, **SEAT-05** (selector de asientos + forms con layout) | E2-UI-01 (falta E2-ACC) | E2-ACC; X-ORG-01; transferencia/prefs |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-02/03 (flag único de mock, 2026-11-11); **X-UI-01…05**, **X-QR-01/02**, **X-UI-06**, **SEAT-05** (selector de asientos + forms con layout) | E2-UI-01 (scan E2-ACC-01 hecho) | X-ORG-01; transferencia/prefs |
 | Docs por msvc (specs) | — | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/GW/PRE/NOT/SYNC plantilla formal |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
@@ -360,7 +361,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino), **E2-TST-02** (`JwtGatewayIntegrationTest`; falta cada endpoint por rol) | — |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
-| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC |
+| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | —; **E2-ACC-01** (control de acceso QR) | E2-PRE-01…03; E2-NOT-01/02; E2-FILA-01; E2-REP-01 |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
 | Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | — | HIG-01…03 (notificaciones/preferencias sin tests, lint FE); E2-TST-01/03 |
 
@@ -370,7 +371,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - **Seed demo:** 14 eventos / 3 estadios (Oasis **AGOTADO** visible); cupos ventas + mocks FE; `init.sql` por base.  
 - **Catálogo BE default:** PUBLICADO + **AGOTADO** (home/list sin `estado=`); jar `ms-eventos` redeployed.  
 - **Ops:** `init.sql` solo en volumen nuevo; live → reseed `03-*.sql` o borrar volumen; jars `docker cp` si stale.  
-- **Demock residual:** admin usuarios aún con `VITE_USE_MOCK=true` / gate OFF; E2-ACC/transfer/prefs/X-ORG-01 = BE o gated.  
+- **Demock residual:** transfer/prefs/reportes/X-ORG-01 = sin BE, deshabilitados por gate (el scan de acceso ya está cableado).  
 - **Gap E1 formal:** cerrado salvo E1-REL (README). Ver actualización 2026-11-10.  
 - **Próxima sesión (acordado):** demock **admin usuarios selectivo** (list/estado/roles reales; alta acceso + eventosAsignados + DELETE OFF).  
 
@@ -384,4 +385,5 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 **Actualización 2026-11-11 (cierre de sesión):**  
 - **Hecho:** SEAT-07 (sin `asiento`/`precio_asiento`, 119 tests eventos OK); un único `init.sql` por base y sin `migrations/` (HIG-07); front con un solo flag de mock y `Frontend/.env` versionado (E2-UI-02); test de integración JWT en el gateway (E2-TST-02 parcial; gateway 35 tests OK); stack completo verificado desde cero (HIG-06, E2-DEP-01 parcial).  
 - **Verificado contra el BE real:** login JWT, reserva por asiento (201), doble reserva (409), cancelación; compra con asientos desde el navegador OK.  
-- **Queda para la Entrega 2 (sin código de negocio):** E2-ACC, E2-PRE-01/02/03 (Mongo), E2-NOT-01/02, E2-FILA-01, E2-REP-01; NFR: caché, resiliencia, correlation id/log (E2-NFR-01/02/03); tests: integración entre msvcs, autorización por endpoint y carga (E2-TST-01/02/03); docs: ARQ-05/06, API-04, MOD-06, US-03.  
+- **E2-ACC-01 hecho (control de acceso QR):** `POST/GET /eventos/{id}/validaciones` en `msvc-entradas` (atómico por QR, auditado, 74 tests + IT con MySQL real), scan cableado en el front, Postman carpeta 10 (colección completa: 146 requests, 424 assertions, 0 fallos), OpenAPI y diagrama de secuencia §6. Sin asignación de eventos por persona (X-ACC-01 descartado).  
+- **Queda para la Entrega 2 (sin código de negocio):** E2-PRE-01/02/03 (Mongo), E2-NOT-01/02, E2-FILA-01, E2-REP-01; NFR: caché, resiliencia, correlation id/log (E2-NFR-01/02/03); tests: integración entre msvcs, autorización por endpoint y carga (E2-TST-01/02/03); docs: ARQ-05/06, API-04, MOD-06, US-03.  

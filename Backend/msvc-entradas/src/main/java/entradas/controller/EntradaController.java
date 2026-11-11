@@ -27,6 +27,10 @@ import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
 import entradas.dto.EntradaResponseDTO;
 import entradas.dto.QrResponseDTO;
+import entradas.dto.ValidacionRegistroDTO;
+import entradas.dto.ValidacionRequestDTO;
+import entradas.dto.ValidacionResponseDTO;
+import entradas.exception.ForbiddenException;
 import entradas.exception.UnauthorizedException;
 import entradas.service.EntradaService;
 
@@ -334,6 +338,80 @@ public class EntradaController {
         return ResponseEntity.ok(java.util.Map.of("idEvento", idEvento, "entradasAfectadas", n));
     }
 
+    /** Control de acceso: el personal valida el QR en la puerta (E2-ACC-01). */
+    @Operation(
+            summary = "Validar entrada en la puerta",
+            description = """
+                    Valida el código QR de una entrada al ingresar al evento. Verifica que exista, corresponda
+                    al evento y no haya sido usada; si es válida la marca USADA (un QR no puede ingresar dos
+                    veces, ni siquiera con escaneos simultáneos). Cada intento sobre una entrada existente queda
+                    registrado, también los rechazados.
+
+                    Resultado en el body: VALIDA (200) | YA_USADA | OTRO_EVENTO | NO_VALIDA | EVENTO_CANCELADO (409).
+                    Roles: PERSONAL_ACCESO o ADMIN. Simplificación: no hay asignación de eventos por persona.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Ingreso aceptado (resultado VALIDA)",
+                    content = @Content(schema = @Schema(implementation = ValidacionResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "codigoQR vacío o inválido",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "401", description = "Falta X-User-Id",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "403", description = "Rol sin permiso (se requiere PERSONAL_ACCESO o ADMIN)",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "404", description = "No existe una entrada con ese QR",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "409", description = "Ingreso rechazado (YA_USADA, OTRO_EVENTO, NO_VALIDA, EVENTO_CANCELADO)",
+                    content = @Content(schema = @Schema(implementation = ValidacionResponseDTO.class)))
+    })
+    @PostMapping("/eventos/{idEvento}/validaciones")
+    public ResponseEntity<ValidacionResponseDTO> validarIngreso(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Parameter(description = "UUID del evento en cuya puerta se escanea") @PathVariable String idEvento,
+            @Valid @RequestBody ValidacionRequestDTO body) {
+        String personal = requireUser(userId);
+        if (!isAcceso(role) && !isAdmin(role)) {
+            throw new ForbiddenException("Se requiere rol PERSONAL_ACCESO o ADMIN");
+        }
+        ValidacionResponseDTO res = entradaService.validarIngreso(idEvento, personal, body);
+        return ResponseEntity.status(res.isOk() ? HttpStatus.OK : HttpStatus.CONFLICT).body(res);
+    }
+
+    /** Intentos de validación de un evento. */
+    @Operation(
+            summary = "Listar validaciones de un evento",
+            description = """
+                    Intentos de validación (aceptados y rechazados) de las entradas del evento, el más reciente
+                    primero. ADMIN: cualquier evento. ORGANIZADOR: solo los eventos que organiza.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Validaciones",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = ValidacionRegistroDTO.class)))),
+            @ApiResponse(responseCode = "401", description = "Falta X-User-Id",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "403", description = "No es ADMIN ni organizador del evento",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class)))
+    })
+    @GetMapping("/eventos/{idEvento}/validaciones")
+    public List<ValidacionRegistroDTO> validaciones(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Parameter(description = "UUID del evento") @PathVariable String idEvento) {
+        String usuario = requireUser(userId);
+        boolean admin = isAdmin(role);
+        if (!admin && !isOrganizador(role)) {
+            throw new ForbiddenException("Se requiere rol ADMIN u ORGANIZADOR");
+        }
+        return entradaService.listarValidaciones(idEvento, usuario, admin);
+    }
+
     private static String requireUser(String userId) {
         if (userId == null || userId.isBlank()) {
             throw new UnauthorizedException("Falta identidad (X-User-Id). ¿Pasó por el gateway con JWT?");
@@ -349,6 +427,14 @@ public class EntradaController {
 
     private static boolean isAdmin(String role) {
         return role != null && "ADMIN".equalsIgnoreCase(role.trim());
+    }
+
+    private static boolean isAcceso(String role) {
+        return role != null && "PERSONAL_ACCESO".equalsIgnoreCase(role.trim());
+    }
+
+    private static boolean isOrganizador(String role) {
+        return role != null && "ORGANIZADOR".equalsIgnoreCase(role.trim());
     }
 
     private static boolean isStaff(String role) {

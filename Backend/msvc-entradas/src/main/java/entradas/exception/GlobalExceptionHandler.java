@@ -24,6 +24,11 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> forbidden(ForbiddenException ex) {
+        return body(HttpStatus.FORBIDDEN, ex.getMessage());
+    }
+
     @ExceptionHandler(BusinessConflictException.class)
     public ResponseEntity<Map<String, Object>> conflict(BusinessConflictException ex) {
         return body(HttpStatus.CONFLICT, ex.getMessage());

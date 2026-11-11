@@ -28,8 +28,8 @@ const AccesoPage = () => {
         <article className="gestion-card">
           <h2>Escanear / validar QR</h2>
           <p>
-            En la puerta del evento: un solo ingreso por entrada. Requiere
-            API de validaciones (E2-ACC) en msvc-entradas.
+            En la puerta del evento: un solo ingreso por entrada. El sistema verifica
+            que el QR exista, sea del evento y no se haya usado.
           </p>
           <GateLink
             enabled={FEATURE.accesoScan}
