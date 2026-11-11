@@ -47,7 +47,7 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 - **No** revierte la compra ni el cupo vendido (política TP).
 - Outbox formal: **no** implementado (opcional; ver `specs/reglas-de-negocio.md`).
 - DTO compra: `emisionEstado`, `emisionIntentos`.
-- Volúmenes viejos: `infrastructure/mysql/ventas/migrations/02-add-compra-emision.sql`.
+- Volúmenes viejos: recrear el volumen (ver `infrastructure/mysql/README.md`).
 
 ### Anti doble venta
 

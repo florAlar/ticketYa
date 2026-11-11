@@ -130,12 +130,12 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-EVE-00 | Datasource + JPA validate contra `eventos/init.sql` (parte de INF-27) | hecho | EMF OK; JDBC `db-mysql-eventos`. |
-| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). `Sector` suma `filas`/`asientosPorFila` (SEAT-01); `Asiento` y `PrecioAsiento` quedan sin uso (SEAT-07). |
+| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). `Sector` suma `filas`/`asientosPorFila` (SEAT-01); `Asiento` y `PrecioAsiento` se eliminaron (SEAT-07). |
 | E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | hecho | GET/POST/PUT lugares; POST `/lugares/{id}/sectores`; PUT `/sectores/{id}`; GET asientos **virtuales** calculados desde el layout del sector (SEAT-01; antes: asientos físicos del seed). Sector numerado exige `filas` + `asientosPorFila` y deriva la capacidad. Alta embebida también desde POST evento. |
 | E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion. **2026-11-07:** borrador laxo (nombre; sin límite fecha); publicar exige lugar real + ≥1 sector precio + **capacidad ≥ 1** (no cupo ilimitado). Al publicar: Feign ventas `POST /eventos/{id}/cupos` **fail-hard**. Body alineado form FE. |
 | E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. + filtro `participante=` (id artista). Doc: `msvc-eventos/docs/endpoints.md`. |
 | E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | hecho | PATCH estado/fecha; GET `/organizadores/me/eventos`. CANCELADO → Feign reintegro entradas best-effort. ORG: SUSPENDIDO propios; resto ADMIN. |
-| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema `participante`+`evento_participante`; CRUD `/participantes`; GET/PUT `/eventos/{id}/participantes`; filtro `GET /eventos?participante=`. Authz: GET público; write ORG/ADMIN; asociar dueño/ADMIN. FE: autocomplete catálogo (guarda **id**) + CTA crear + principal obligatorio / teloneros +. Seed demo: Metallica/Gojira, UCL (equipos), Iron Maiden/Ghost. Migración `02-add-participantes.sql`; reseed live `03-reseed-clean-demo.sql`. |
+| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema `participante`+`evento_participante`; CRUD `/participantes`; GET/PUT `/eventos/{id}/participantes`; filtro `GET /eventos?participante=`. Authz: GET público; write ORG/ADMIN; asociar dueño/ADMIN. FE: autocomplete catálogo (guarda **id**) + CTA crear + principal obligatorio / teloneros +. Seed demo: Metallica/Gojira, UCL (equipos), Iron Maiden/Ghost. |
 
 ### 6.2 msvc-ventas
 
@@ -198,13 +198,13 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
-| SEAT-01 | eventos: `sector.filas` + `asientos_por_fila`; capacidad = filas x asientosPorFila; `GET .../asientos` calculado | hecho | `init.sql`, `03-reseed`, `04-add-sector-layout.sql`. Límites 1..200 filas, 1..500 por fila. Tests eventos 119 OK. |
-| SEAT-02 | ventas: tabla `asiento_reservado` (única por evento+sector+fila+número); reservar por asiento; liberar al cancelar/rechazar/expirar; VENDIDO al pagar; `asientosOcupados` en disponibilidad; liberar asiento en devolución | hecho | `04-add-asiento-reservado.sql`. Lock de cupo + pre-chequeo + clave única como 2ª defensa. Tests ventas 139 OK. |
-| SEAT-03 | entradas: `entrada.fila` + `numero`; emisión una entrada por asiento; devolución libera el asiento en ventas | hecho | `04-add-entrada-asiento.sql`. DTO expone `fila` y `asiento`. Tests entradas 54 OK. |
+| SEAT-01 | eventos: `sector.filas` + `asientos_por_fila`; capacidad = filas x asientosPorFila; `GET .../asientos` calculado | hecho | `eventos/init.sql`. Límites 1..200 filas, 1..500 por fila. Tests eventos 119 OK. |
+| SEAT-02 | ventas: tabla `asiento_reservado` (única por evento+sector+fila+número); reservar por asiento; liberar al cancelar/rechazar/expirar; VENDIDO al pagar; `asientosOcupados` en disponibilidad; liberar asiento en devolución | hecho | `ventas/init.sql`. Lock de cupo + pre-chequeo + clave única como 2ª defensa. Tests ventas 139 OK. |
+| SEAT-03 | entradas: `entrada.fila` + `numero`; emisión una entrada por asiento; devolución libera el asiento en ventas | hecho | `entradas/init.sql`. DTO expone `fila` y `asiento`. Tests entradas 54 OK. |
 | SEAT-04 | Gateway / OpenAPI / Postman | hecho | Gateway sin cambios (las rutas existentes cubren todo). OpenAPI regenerado el 2026-11-10 con los asientos. Postman: carpeta `09 Asientos numerados` (23 requests: reserva por asiento, 409/400, pago aprobado/rechazado, entrada con fila y número, devolución). Colección completa 127/376/0 con el flag en `false` y en `true`. |
 | SEAT-05 | Frontend: selector de asientos + enviar `filas`/`asientosPorFila` al crear sector numerado | hecho | Forms Nuevo/Editar (filas × asientos, cupo derivado de solo lectura, borrador laxo / publicación estricta); `SeatPicker` en dos pasos (fila → asientos, hasta 6); 409 quita solo los asientos en conflicto; detalle muestra layout; mock mínimo. Verificado: lint sin errores nuevos, build OK, 15 checks de dominio y render del picker. **No** probado contra el BE real (Docker apagado). |
 | SEAT-06 | IT con MySQL real del flujo de asientos (unique key, rollback de contadores) | hecho | `AsientoReservadoConcurrenciaIT` (4 casos, perfil `-Pit`, carga el `init.sql` real). Verificado quitando la clave única: fallan los casos que la ejercitan. Ver `docs/testing/concurrencia.md` §3.3. |
-| SEAT-07 | Limpieza: eliminar `asiento`, `precio_asiento` (tablas, entidades, repos) | pendiente | Sin uso desde SEAT-01. Al hacerlo: quitarlas de `init.sql`, `03-reseed`, entidades/repos de eventos, `modelo.md` y `modelo-por-microservicio.md`. |
+| SEAT-07 | Limpieza: eliminar `asiento`, `precio_asiento` (tablas, entidades, repos) | hecho | Quitadas de `init.sql`, entidades y repos de eventos, y de los 3 modelos (`modelo.md`, `modelo-por-microservicio.md`, `docs/modelo-datos.md`). El endpoint calculado `GET /lugares/{id}/sectores/{sectorId}/asientos` se mantiene. Tests eventos 119 OK. |
 | SEAT-08 | Documentación actualizada | hecho | `reglas-de-negocio.md` (reglas + pregunta 6 resuelta), `documentacion-y-validacion.md` (D-16/R-05, changelog 1.2), `endpoints.md`, `msvc-{eventos,ventas,entradas}/docs/endpoints.md`, `infrastructure/readme.md` + `mysql/README.md` (migraciones y asientos virtuales), `docs/testing/concurrencia.md`, `docs/postman/README.md`, `docs/openapi/README.md`, `Frontend/docs/endpoints-{back,front}.md`, diagramas (`modelo.md`, `modelo-por-microservicio.md`). `consigna.md` no se toca. |
 
 ---
@@ -366,7 +366,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 **Lectura (2026-11-07, cierre sesión — seed amplio + catálogo AGOTADO):**  
 - **Hecho E1 core:** eventos GET+write; ventas (+ cupo al publicar); entradas QR/devo; JWT; FE demock AUTH/EVENTOS/COMPRAS/ENTRADAS.  
 - **Hecho E1-EVE-06:** participantes=artistas; API+authz; FE autocomplete por id.  
-- **Seed demo:** 14 eventos / 3 estadios (Oasis **AGOTADO** visible); cupos ventas + mocks FE; `init.sql` + `03-reseed-clean-demo.sql`.  
+- **Seed demo:** 14 eventos / 3 estadios (Oasis **AGOTADO** visible); cupos ventas + mocks FE; `init.sql` por base.  
 - **Catálogo BE default:** PUBLICADO + **AGOTADO** (home/list sin `estado=`); jar `ms-eventos` redeployed.  
 - **Ops:** `init.sql` solo en volumen nuevo; live → reseed `03-*.sql` o borrar volumen; jars `docker cp` si stale.  
 - **Demock residual:** admin usuarios aún con `VITE_USE_MOCK=true` / gate OFF; E2-ACC/transfer/prefs/X-ORG-01 = BE o gated.  
