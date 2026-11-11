@@ -179,18 +179,19 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-TST-01 | Unitarias: compra, devoluciones, búsqueda | hecho | JUnit5+Mockito por msvc. Verificado 2026-11-10: gateway 23, usuarios 51, eventos 101, entradas 48 OK. Ventas 109 OK (re-verificado, ver HIG-04). Preferencias/notificaciones sin unitarias reales (E2, HIG-01/03). |
 | E1-TST-02 | Prueba de concurrencia: mismo asiento / último cupo → una sola venta exitosa | hecho | Unitario + IT Testcontainers MySQL (`CupoSectorConcurrenciaIT`) + informe `docs/testing/concurrencia.md`. IT no re-ejecutado 2026-11-10 (requiere Docker). **Por asiento:** `ReservaAsientoConcurrenciaTest` (20 hilos, mismo asiento → 1 éxito; lock emulado); IT con MySQL real pendiente (SEAT-06). |
-| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | parcial | Datos = init.sql (INF-15) hecho; Postman = INF-17 hecho; README ejecución existe pero desactualizado (dice "sin API de negocio aún"). |
+| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | hecho | Datos = un único `init.sql` por base (INF-15); Postman = INF-17; README raíz con arranque por Docker Compose y `npm run dev` (2026-11-11). |
 
 ### 6.6 Higiene detectada en verificación 2026-11-10
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | HIG-01 | `msvc-notificaciones`: `contextLoads` falla sin MySQL (único test del módulo) | pendiente | Hacerlo independiente de DB (slice/H2/mock) o reemplazar por unitarias reales. |
-| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. |
+| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. 2026-11-11: siguen los mismos 12 errores preexistentes; los cambios de esa fecha no agregaron ninguno. |
 | HIG-03 | `msvc-preferencias`: sin tests | pendiente | Hacerlo junto con E2-PRE-*. |
 | HIG-04 | Entorno local: `~/.m2/.../org.jacoco.build-0.8.8.pom` truncado → `mvn test` en ventas no resolvía jacoco | hecho | Causa: la corrida en paralelo de 7 `mvn` (2026-11-10) escribió a la vez el mismo archivo del repo local. Re-ejecutado en solitario: ventas 109 tests OK. Evitar correr varios `mvn` en paralelo sobre el mismo `~/.m2`. |
-| HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | pendiente | Ver E1-REL-01. |
-| HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | pendiente | Docker Desktop apagado en la sesión. Cubre también E2-DEP-01. |
+| HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | hecho | README raíz y de Frontend reescritos (2026-11-11); ya no dicen "sin API de negocio aún". |
+| HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | hecho | 2026-11-11: stack recreado desde cero (`down -v` + `up -d --build`): 15 contenedores Up, bases healthy, sin errores de arranque; login JWT real, reserva por asiento (201), misma reserva (409) y cancelación por el gateway; front en :3000 con proxy `/api`. No se re-ejecutaron los IT Testcontainers ni la colección Postman completa. |
+| HIG-07 | Un único `init.sql` por base; eliminar `migrations/` (02, 03, 04) | hecho | 2026-11-11: los `init.sql` ya incluían todo el esquema y el seed; los `03-reseed` eran idénticos al seed salvo las tablas de SEAT-07. Cambio de esquema = recrear volumen (`docker compose down -v`). README de mysql y docs actualizados. |
 
 ### 6.7 Asientos virtuales (sectores numerados)
 
@@ -233,12 +234,12 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 | E2-NFR-01 | Cache: qué, dónde, TTL, invalidación; qué no cachear (disponibilidad asientos) | pendiente | |
 | E2-NFR-02 | Resiliencia: timeouts, reintentos, fallback ante externos | pendiente | |
 | E2-NFR-03 | Trazabilidad HTTP + log centralizado de operaciones críticas con correlation id | pendiente | |
-| E2-DEP-01 | Verificar stack completo `docker compose up` (apps + DBs + gateway) con dominio real | pendiente | Estructura compose ya existe (INF-08). DBs con init = INF-10/15. |
+| E2-DEP-01 | Verificar stack completo `docker compose up` (apps + DBs + gateway) con dominio real | parcial | 2026-11-11: el stack completo levanta desde cero y el flujo E1 funciona de punta a punta (ver HIG-06). Falta repetirlo cuando `msvc-preferencias` y `msvc-notificaciones` tengan dominio real (E2-PRE/NOT). |
 | E2-TST-01 | Pruebas de integración entre msvcs (Testcontainers o compose) | pendiente | |
-| E2-TST-02 | Pruebas de autorización por rol | pendiente | |
+| E2-TST-02 | Pruebas de autorización por rol | parcial | 2026-11-11: `JwtGatewayIntegrationTest` (gateway, 10 casos con `JwtUtil` real y tokens armados como los emite usuarios): firma/expiración, 403 por rol, propagación de `X-User-*`, límite de la Entrega 1 y secreto igual en gateway y usuarios. Falta recorrer cada endpoint por rol. |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
-| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6; probado solo sin BE real). Falta: mock residual cero + E2-ACC. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS (`.env` actual). Alta/publicar/cupo/checkout OK. Catálogo default BE: PUBLICADO+AGOTADO. **Siguiente FE:** demock **admin usuarios selectivo** (list/get + PATCH estado + PUT roles → BE; alta PERSONAL_ACCESO / eventosAsignados / DELETE siguen OFF/501; ideal flag `VITE_USE_MOCK_USUARIOS` + `FEATURE.adminUsuarios` solo lo cableable). Residual E2: scan ACC, transferencia, prefs, X-ORG-01. |
+| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6). 2026-11-11: probado contra el BE real (reserva por asiento 201, doble reserva 409; compra desde el navegador OK). Mock residual cero con `VITE_USE_MOCK=false`. Falta: E2-ACC. |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | hecho | 2026-11-11: un solo flag `VITE_USE_MOCK` (false = todo contra el gateway; true = todo mock; sin mezcla) y `Frontend/.env` versionado. Admin usuarios: listar/estado/rol reales (gate `adminUsuariosListado`); alta de personal de acceso, eliminar y asignar eventos quedan OFF (no existen en BE). Lo que no tiene BE (scan ACC, transferencia, reportes, preferencias, X-ORG-01) queda deshabilitado por `featureGates`. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
 ### 7.3 Extra / nice-to-have (no consigna — baja prioridad)
@@ -338,7 +339,7 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 9. **E1-EVE write (02/03/05)** — **hecho** (lugares/sectores, borrador→publicar, patch estado/fecha, listado org).  
 10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
 11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
-12. **FE residual (próxima sesión):** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
+12. **FE residual — hecho 2026-11-11:** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
 13. E1-TST + INF-17 (Postman) — **hecho** (equipo, rama feature/tests); E1-REL parcial (README). Higiene HIG-01…06 abierta.  
 14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.
 
@@ -351,17 +352,17 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-01…05**, **X-QR-01/02**, **X-UI-06**, **SEAT-05** (selector de asientos + forms con layout) | E2-UI-01/02 demock AUTH/EVE/COM/ENT + cupo/AGOTADO | **admin usuarios demock selectivo** (próx.); E2-ACC; X-ORG-01; transferencia/prefs |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-02/03 (flag único de mock, 2026-11-11); **X-UI-01…05**, **X-QR-01/02**, **X-UI-06**, **SEAT-05** (selector de asientos + forms con layout) | E2-UI-01 (falta E2-ACC) | E2-ACC; X-ORG-01; transferencia/prefs |
 | Docs por msvc (specs) | — | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/GW/PRE/NOT/SYNC plantilla formal |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
-| Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
+| Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino), **E2-TST-02** (`JwtGatewayIntegrationTest`; falta cada endpoint por rol) | — |
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
-| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC; SEAT-07 (limpieza `asiento`/`precio_asiento`) |
+| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC |
 | Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
-| Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
+| Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | — | HIG-01…03 (notificaciones/preferencias sin tests, lint FE); E2-TST-01/03 |
 
 **Lectura (2026-11-07, cierre sesión — seed amplio + catálogo AGOTADO):**  
 - **Hecho E1 core:** eventos GET+write; ventas (+ cupo al publicar); entradas QR/devo; JWT; FE demock AUTH/EVENTOS/COMPRAS/ENTRADAS.  
@@ -379,3 +380,8 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - Sin verificar: stack compose, smoke, IT Testcontainers, Postman (HIG-06). **Asientos virtuales (SEAT-01…05) sin probar contra MySQL/Redis/gateway reales**: scripts `04-*.sql` sin ejecutar, flujo reserva→pago→emisión→devolución con asientos solo cubierto por unitarios y mocks.  
 - **Decisión 2026-11-10 (resuelve la pregunta 6 de `reglas-de-negocio.md`):** modelo híbrido — sector numerado por asiento concreto (virtual, solo se guarda el tomado), sector general por cupo; precio por sector.  
 - E2 sin código de negocio: ACC, FILA, PRE (solo docs Mongo + repos), NOT (solo entidades/service stub), REP, NFR-01/02/03.  
+
+**Actualización 2026-11-11 (cierre de sesión):**  
+- **Hecho:** SEAT-07 (sin `asiento`/`precio_asiento`, 119 tests eventos OK); un único `init.sql` por base y sin `migrations/` (HIG-07); front con un solo flag de mock y `Frontend/.env` versionado (E2-UI-02); test de integración JWT en el gateway (E2-TST-02 parcial; gateway 35 tests OK); stack completo verificado desde cero (HIG-06, E2-DEP-01 parcial).  
+- **Verificado contra el BE real:** login JWT, reserva por asiento (201), doble reserva (409), cancelación; compra con asientos desde el navegador OK.  
+- **Queda para la Entrega 2 (sin código de negocio):** E2-ACC, E2-PRE-01/02/03 (Mongo), E2-NOT-01/02, E2-FILA-01, E2-REP-01; NFR: caché, resiliencia, correlation id/log (E2-NFR-01/02/03); tests: integración entre msvcs, autorización por endpoint y carga (E2-TST-01/02/03); docs: ARQ-05/06, API-04, MOD-06, US-03.  
