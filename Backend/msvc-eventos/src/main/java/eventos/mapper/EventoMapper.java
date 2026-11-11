@@ -137,6 +137,8 @@ public class EventoMapper {
             dto.setNombre(lugar.getNombre());
             dto.setDireccion(lugar.getDireccion());
             dto.setCiudad(lugar.getCiudad());
+            dto.setLatitud(lugar.getLatitud());
+            dto.setLongitud(lugar.getLongitud());
         }
         dto.setSectores(sectores != null ? sectores : List.of());
         return dto;

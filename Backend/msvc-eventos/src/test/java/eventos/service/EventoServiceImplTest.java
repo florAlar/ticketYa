@@ -804,6 +804,112 @@ class EventoServiceImplTest {
         assertEquals("Nueva", l.getCiudad());
     }
 
+    // ---------- coordenadas del lugar (LUG-02) ----------
+
+    private static java.math.BigDecimal bd(String s) {
+        return new java.math.BigDecimal(s);
+    }
+
+    @Test
+    void crearLugar_conCoordenadas_laGuardaConSeisDecimales_yLaDevuelve() {
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(any())).thenReturn(List.of());
+        LugarRequestDTO body = new LugarRequestDTO();
+        body.setNombre("Estadio");
+        body.setCiudad("Buenos Aires");
+        body.setLatitud(bd("-34.5453"));
+        body.setLongitud(bd("-58.4497"));
+
+        var res = service.crearLugar(body);
+
+        assertEquals(0, bd("-34.545300").compareTo(res.getLatitud()));
+        assertEquals(0, bd("-58.449700").compareTo(res.getLongitud()));
+        assertEquals(6, res.getLatitud().scale());
+    }
+
+    @Test
+    void crearLugar_sinCoordenadas_quedanNulas() {
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(any())).thenReturn(List.of());
+        LugarRequestDTO body = new LugarRequestDTO();
+        body.setNombre("Estadio");
+        body.setCiudad("Rosario");
+
+        var res = service.crearLugar(body);
+
+        assertNull(res.getLatitud());
+        assertNull(res.getLongitud());
+    }
+
+    @Test
+    void crearLugar_coordenadasIncompletasOFueraDeRango_son400_yNoSeGuarda() {
+        LugarRequestDTO soloLat = new LugarRequestDTO();
+        soloLat.setNombre("X");
+        soloLat.setCiudad("Y");
+        soloLat.setLatitud(bd("10"));
+        assertThrows(IllegalArgumentException.class, () -> service.crearLugar(soloLat));
+
+        LugarRequestDTO soloLng = new LugarRequestDTO();
+        soloLng.setNombre("X");
+        soloLng.setCiudad("Y");
+        soloLng.setLongitud(bd("10"));
+        assertThrows(IllegalArgumentException.class, () -> service.crearLugar(soloLng));
+
+        LugarRequestDTO fuera = new LugarRequestDTO();
+        fuera.setNombre("X");
+        fuera.setCiudad("Y");
+        fuera.setLatitud(bd("91"));
+        fuera.setLongitud(bd("0"));
+        assertThrows(IllegalArgumentException.class, () -> service.crearLugar(fuera));
+
+        verify(lugarRepository, times(0)).save(any(Lugar.class));
+    }
+
+    @Test
+    void actualizarLugar_sinCoordenadasEnElPedido_conservaLasExistentes_yConCoordenadasLasCambia() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        l.setLatitud(bd("-34.545300"));
+        l.setLongitud(bd("-58.449700"));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(LUGAR_ID)).thenReturn(List.of());
+
+        LugarRequestDTO soloNombre = new LugarRequestDTO();
+        soloNombre.setNombre("Estadio Renombrado");
+        service.actualizarLugar(LUGAR_ID, soloNombre);
+        assertEquals(0, bd("-34.545300").compareTo(l.getLatitud()));
+
+        LugarRequestDTO nuevas = new LugarRequestDTO();
+        nuevas.setLatitud(bd("-31.4"));
+        nuevas.setLongitud(bd("-64.18"));
+        service.actualizarLugar(LUGAR_ID, nuevas);
+        assertEquals(0, bd("-31.400000").compareTo(l.getLatitud()));
+        assertEquals(0, bd("-64.180000").compareTo(l.getLongitud()));
+    }
+
+    @Test
+    void actualizarLugar_quitarCoordenadas_lasBorra_ySiSeCombinaConValores_es400() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        l.setLatitud(bd("-34.545300"));
+        l.setLongitud(bd("-58.449700"));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(LUGAR_ID)).thenReturn(List.of());
+
+        LugarRequestDTO combinado = new LugarRequestDTO();
+        combinado.setQuitarCoordenadas(true);
+        combinado.setLatitud(bd("1"));
+        combinado.setLongitud(bd("1"));
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarLugar(LUGAR_ID, combinado));
+
+        LugarRequestDTO quitar = new LugarRequestDTO();
+        quitar.setQuitarCoordenadas(true);
+        service.actualizarLugar(LUGAR_ID, quitar);
+
+        assertNull(l.getLatitud());
+        assertNull(l.getLongitud());
+    }
+
     // ---------- crearSector ----------
 
     @Test

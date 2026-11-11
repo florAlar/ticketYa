@@ -17,6 +17,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-11:** `msvc-entradas.json` suma el control de acceso QR (`POST` y `GET /eventos/{idEvento}/validaciones`, schemas `ValidacionRequest`, `ValidacionResponse` y `ValidacionRegistro`). `openapi-bundle.json` regenerado (los otros tres specs sin cambios).
 >
 > **Actualizado 2026-11-11 (reportes):** `msvc-ventas.json` suma los reportes del organizador (`GET /reportes/eventos/{idEvento}` y `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`; schemas `Reporte*`). `msvc-entradas.json` suma el resumen interno `GET /eventos/{idEvento}/entradas/resumen` (marcado `x-internal`: lo consume ventas por Feign y el gateway no lo expone).
+>
+> **Actualizado 2026-11-11 (lugares):** `msvc-eventos.json`: el lugar suma `latitud` y `longitud` opcionales (`LugarRequest`, `Lugar`, `LugarDetalle`) y `quitarCoordenadas` en el pedido. `openapi-bundle.json` regenerado.
 
 ## Regeneración (tras cambios en anotaciones)
 

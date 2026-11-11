@@ -157,6 +157,24 @@ class EventoMapperTest {
     }
 
     @Test
+    void toDetalle_exponeLasCoordenadasDelLugar_oNulasSiNoTiene() {
+        EventoMapper mapper = new EventoMapper();
+        Evento evento = eventoConLugar();
+        evento.getLugar().setLatitud(new BigDecimal("-34.545300"));
+        evento.getLugar().setLongitud(new BigDecimal("-58.449700"));
+
+        EventoDetalleResponseDTO conCoordenadas = mapper.toDetalle(evento, BigDecimal.TEN, List.of(), List.of());
+        assertEquals(0, new BigDecimal("-34.545300").compareTo(conCoordenadas.getLugar().getLatitud()));
+        assertEquals(0, new BigDecimal("-58.449700").compareTo(conCoordenadas.getLugar().getLongitud()));
+
+        evento.getLugar().setLatitud(null);
+        evento.getLugar().setLongitud(null);
+        EventoDetalleResponseDTO sin = mapper.toDetalle(evento, BigDecimal.TEN, List.of(), List.of());
+        org.junit.jupiter.api.Assertions.assertNull(sin.getLugar().getLatitud());
+        org.junit.jupiter.api.Assertions.assertNull(sin.getLugar().getLongitud());
+    }
+
+    @Test
     void toDetalle_preciosNulos_yParticipantesNulos() {
         EventoMapper mapper = new EventoMapper();
         EventoDetalleResponseDTO dto = mapper.toDetalle(eventoConLugar(), null, null, null);

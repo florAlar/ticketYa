@@ -36,6 +36,8 @@ erDiagram
         VARCHAR nombre
         VARCHAR direccion
         VARCHAR ciudad
+        DECIMAL latitud "opcional (-90..90)"
+        DECIMAL longitud "opcional (-180..180)"
         INT capacidad_total
     }
     SECTOR {

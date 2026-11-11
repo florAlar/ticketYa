@@ -2143,6 +2143,297 @@
               }
             }
           ]
+        },
+        {
+          "name": "03.12 Crear lugar con coordenadas (LUG-02)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares",
+            "description": "Rol: ADMIN · Esperado: 201 · Latitud y longitud opcionales, se guardan con 6 decimales. Guarda {{lugarCoordId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Lugar con coordenadas QA\",\"ciudad\":\"Cordoba\",\"direccion\":\"Av. Colon 1\",\"latitud\":-31.4201,\"longitud\":-64.1888,\"capacidadTotal\":100}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Coordenadas guardadas con 6 decimales', function () { pm.expect(Number(b.latitud)).to.eql(-31.4201); pm.expect(Number(b.longitud)).to.eql(-64.1888); });",
+                  "pm.environment.set('lugarCoordId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.13 Solo latitud, sin longitud → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares",
+            "description": "Rol: ADMIN · Esperado: 400 · Latitud y longitud deben venir juntas.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Lugar invalido\",\"ciudad\":\"Cordoba\",\"latitud\":10}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Mensaje claro', function () { pm.expect(pm.response.json().message).to.include('juntas'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.14 Coordenadas fuera de rango → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares",
+            "description": "Rol: ADMIN · Esperado: 400 · Latitud entre -90 y 90, longitud entre -180 y 180.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Lugar invalido\",\"ciudad\":\"Cordoba\",\"latitud\":95,\"longitud\":10}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Rango de latitud', function () { pm.expect(pm.response.json().message).to.include('latitud fuera de rango'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.15 Editar solo el nombre conserva las coordenadas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares/{{lugarCoordId}}",
+            "description": "Rol: ADMIN · Esperado: 200 · Sin latitud/longitud en el pedido no se tocan las existentes.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Lugar con coordenadas QA (renombrado)\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Renombrado y con las mismas coordenadas', function () { pm.expect(b.nombre).to.include('renombrado'); pm.expect(Number(b.latitud)).to.eql(-31.4201); pm.expect(Number(b.longitud)).to.eql(-64.1888); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.16 quitarCoordenadas borra latitud y longitud",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares/{{lugarCoordId}}",
+            "description": "Rol: ADMIN · Esperado: 200 · quitarCoordenadas=true deja el lugar solo con la dirección.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"quitarCoordenadas\":true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Sin coordenadas', function () { pm.expect(b.latitud).to.be.oneOf([null, undefined]); pm.expect(b.longitud).to.be.oneOf([null, undefined]); pm.expect(b.direccion).to.eql('Av. Colon 1'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.17 El detalle del evento seed trae las coordenadas del lugar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}",
+            "description": "Público · Esperado: 200 · El detalle de evento expone lugar.latitud / lugar.longitud (Estadio Más Monumental).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Coordenadas del estadio en rango', function () { pm.expect(Number(b.lugar.latitud)).to.be.within(-90, 90); pm.expect(Number(b.lugar.longitud)).to.be.within(-180, 180); pm.expect(Number(b.lugar.latitud)).to.be.below(0); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },

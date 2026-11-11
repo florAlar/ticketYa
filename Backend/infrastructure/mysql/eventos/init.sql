@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS lugar (
   nombre           VARCHAR(200) NOT NULL,
   direccion        VARCHAR(255) NULL,
   ciudad           VARCHAR(120) NOT NULL,
+  latitud          DECIMAL(9, 6) NULL COMMENT 'grados decimales (-90..90); opcional, va junto con longitud',
+  longitud         DECIMAL(9, 6) NULL COMMENT 'grados decimales (-180..180); opcional, va junto con latitud',
   capacidad_total  INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -80,11 +82,11 @@ CREATE TABLE IF NOT EXISTS evento_participante (
   CONSTRAINT fk_ep_participante FOREIGN KEY (id_participante) REFERENCES participante (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO lugar (id, nombre, direccion, ciudad, capacidad_total) VALUES
-  ('c0000000-0000-4000-8000-000000000001', 'Estadio Más Monumental', 'Av. Figueroa Alcorta 7597', 'Buenos Aires', 85000),
-  ('c0000000-0000-4000-8000-000000000002', 'Estádio do Maracanã', 'Av. Pres. Castelo Branco', 'Rio de Janeiro', 78838),
-  ('c0000000-0000-4000-8000-000000000003', 'Wembley Stadium', 'Wembley', 'London', 90000)
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), direccion = VALUES(direccion), ciudad = VALUES(ciudad), capacidad_total = VALUES(capacidad_total);
+INSERT INTO lugar (id, nombre, direccion, ciudad, latitud, longitud, capacidad_total) VALUES
+  ('c0000000-0000-4000-8000-000000000001', 'Estadio Más Monumental', 'Av. Figueroa Alcorta 7597', 'Buenos Aires', -34.545300, -58.449700, 85000),
+  ('c0000000-0000-4000-8000-000000000002', 'Estádio do Maracanã', 'Av. Pres. Castelo Branco', 'Rio de Janeiro', -22.912200, -43.230200, 78838),
+  ('c0000000-0000-4000-8000-000000000003', 'Wembley Stadium', 'Wembley', 'London', 51.556000, -0.279600, 90000)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), direccion = VALUES(direccion), ciudad = VALUES(ciudad), latitud = VALUES(latitud), longitud = VALUES(longitud), capacidad_total = VALUES(capacidad_total);
 
 INSERT INTO sector (id, id_lugar, nombre, capacidad, tipo, es_numerado, filas, asientos_por_fila) VALUES
   ('c0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000001', 'Campo', 60000, 'GENERAL', 0, NULL, NULL),

@@ -349,10 +349,30 @@ export function toEventoDetalleDto(evento) {
       nombre: evento.lugar?.nombre || '',
       direccion: evento.lugar?.direccion || '',
       ciudad: evento.lugar?.ciudad || '',
+      latitud: numeroOUndefined(evento.lugar?.latitud),
+      longitud: numeroOUndefined(evento.lugar?.longitud),
       sectores,
     },
     sectores,
   }
+}
+
+function numeroOUndefined(valor) {
+  if (valor === null || valor === undefined || valor === '') return undefined
+  const n = Number(valor)
+  return Number.isFinite(n) ? n : undefined
+}
+
+/**
+ * Enlace a OpenStreetMap con la ubicación del lugar (LUG-02). Solo si tiene latitud y longitud
+ * válidas; si no, null (el lugar puede existir solo con la dirección).
+ */
+export function urlMapaLugar(lugar) {
+  const lat = numeroOUndefined(lugar?.latitud)
+  const lng = numeroOUndefined(lugar?.longitud)
+  if (lat === undefined || lng === undefined) return null
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`
 }
 
 function splitList(value) {

@@ -3356,6 +3356,21 @@
                 "description": "Ciudad",
                 "example": "Buenos Aires"
               },
+              "latitud": {
+                "type": "number",
+                "description": "Latitud en grados decimales (-90 a 90). Opcional; va junto con la longitud",
+                "example": -34.5453
+              },
+              "longitud": {
+                "type": "number",
+                "description": "Longitud en grados decimales (-180 a 180). Opcional; va junto con la latitud",
+                "example": -58.4497
+              },
+              "quitarCoordenadas": {
+                "type": "boolean",
+                "description": "true borra las coordenadas del lugar (no se combina con latitud/longitud)",
+                "example": false
+              },
               "capacidadTotal": {
                 "type": "integer",
                 "format": "int32",
@@ -3387,6 +3402,16 @@
                 "type": "string",
                 "description": "Ciudad",
                 "example": "Buenos Aires"
+              },
+              "latitud": {
+                "type": "number",
+                "description": "Latitud en grados decimales (-90 a 90). Opcional; va junto con la longitud",
+                "example": -34.5453
+              },
+              "longitud": {
+                "type": "number",
+                "description": "Longitud en grados decimales (-180 a 180). Opcional; va junto con la latitud",
+                "example": -58.4497
               },
               "capacidadTotal": {
                 "type": "integer",
@@ -3648,6 +3673,16 @@
                 "type": "string",
                 "description": "Ciudad",
                 "example": "Buenos Aires"
+              },
+              "latitud": {
+                "type": "number",
+                "description": "Latitud en grados decimales (-90 a 90). Opcional; va junto con la longitud",
+                "example": -34.5453
+              },
+              "longitud": {
+                "type": "number",
+                "description": "Longitud en grados decimales (-180 a 180). Opcional; va junto con la latitud",
+                "example": -58.4497
               },
               "sectores": {
                 "type": "array",

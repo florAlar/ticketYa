@@ -31,6 +31,8 @@ namespace msvc_eventos {
         +VARCHAR nombre
         +VARCHAR direccion
         +VARCHAR ciudad
+        +DECIMAL latitud
+        +DECIMAL longitud
         +INT capacidad_total
     }
     class sector {

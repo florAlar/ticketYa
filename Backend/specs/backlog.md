@@ -327,6 +327,26 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 
 ---
 
+### 7.4 Lugares y recomendaciones en el front (propuestas 2026-11-11 — análisis, sin implementar)
+
+Origen: faltan el alta de lugares desde el panel de admin y la ubicación por latitud/longitud; además hay que definir cómo se muestran las recomendaciones en el front.
+
+| ID | Tarea | Estado | Notas |
+| --- | --- | --- | --- |
+| LUG-01 | Panel admin: alta/edición/baja de **lugares** (nombre, dirección, ciudad, latitud/longitud) y de los **sectores del lugar** (capacidad, numerado y layout filas × asientos) | propuesto | Hoy el API `POST/PUT /lugares` y `POST /lugares/{id}/sectores` existe y no hay pantalla. Página nueva `/gestion/lugares` (ADMIN) con gate propio. |
+| LUG-02 | Ubicación por **latitud/longitud** además de la dirección | hecho | 2026-11-11 (Paso 1). `lugar.latitud` / `lugar.longitud` DECIMAL(9,6) **opcionales** (van juntas, rango −90..90 / −180..180, 6 decimales); `quitarCoordenadas` las borra; editar sin coordenadas no las toca. Seed con los 3 estadios. API: `LugarRequest`/`Lugar`/`LugarDetalle`; el detalle de evento las expone. FE: enlace "Ver en el mapa" (OpenStreetMap) si hay coordenadas. Tests eventos 137; Postman carpeta 03 (+6 requests; colección 161 requests, 466 assertions, 0 fallos). |
+| LUG-03 | **Geocodificación** opcional (dirección → lat/lng) con API externa | propuesto (opcional) | Desde el backend (`msvc-eventos`), no desde el navegador: oculta el proveedor, permite caché/timeout y evita exponer claves. Best-effort: si falla, el lugar se guarda sin coordenadas y el admin las carga a mano. Candidatos: Nominatim/OSM (gratis, sin clave; máx. 1 req/s y User-Agent propio), Geoapify/Mapbox (clave, cuota gratis) o Google (clave y facturación). Tests con servidor simulado, sin llamadas reales. Se apoya en E2-NFR-01/02 (caché, timeout, circuit breaker). Fuera de la consigna: valorar al final. |
+| LUG-04 | **Solo ADMIN** crea y edita lugares; el **organizador selecciona** un lugar al crear el evento | propuesto | Cambios: gateway/backend (hoy ORGANIZADOR también puede `POST/PUT /lugares`), retirar el alta de lugar embebida en el evento (hoy cada evento crea su propio lugar con capacidad 0 → lugares duplicados), selector de lugar en `GestionEventoNuevoPage` / `Editar` con `GET /lugares` (filtro por ciudad). **Punto de diseño:** los sectores pertenecen al lugar y se comparten entre eventos; hoy un pedido de evento con `idLugar` + sector existente puede modificar ese sector. Con lugar elegido el organizador debería definir solo **precio y cupo por evento**, no capacidad, tipo ni layout. Esfuerzo medio (toca el formulario de eventos). |
+| E2-PRE-04 | **Recomendaciones en el front** (depende de E2-PRE-01/02/03) | propuesto | 1) Home: sección "Recomendados para vos" (usuario logueado) reutilizando `EventSection`/`EventList` en modo controlado y la card `compact`, ya reservada para recomendaciones. 2) Detalle de evento: "Eventos similares" (`GET /api/eventos/{id}/recomendaciones`, público). 3) Perfil: "Mis preferencias" (categorías, ciudades, rango de precio, artistas; reutiliza `ArtistaAutocomplete`) con `GET/PUT /api/preferencias/me`. Facade `api/preferencias.js`, gates `preferencias`/`recomendaciones`, fallback a "Destacados" si no hay datos. Backend: el servicio devuelve eventos ya armados (no solo ids) para no hacer N pedidos desde el front. |
+
+**Decisiones a tomar antes de implementar**
+- ¿Las coordenadas son obligatorias o quedan opcionales? (propuesta: opcionales).
+- ¿Se agrega mapa (Leaflet + tiles de OpenStreetMap) o alcanza con un enlace "Ver en el mapa"? (propuesta: enlace primero).
+- ¿Los lugares ya usados por eventos publicados se pueden editar/borrar? (propuesta: se pueden editar datos de ubicación; no borrar si tienen eventos).
+- Recomendaciones: ¿se registra solo la compra como interacción o también la vista de un evento? (propuesta: solo compras, es lo que pide la consigna; la vista queda como mejora).
+
+---
+
 ## 8. Orden sugerido de ataque (no es el backlog formal)
 
 1. **INF-27** — hecho (datasource + entidades = schema validate).  
@@ -387,4 +407,5 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - **Verificado contra el BE real:** login JWT, reserva por asiento (201), doble reserva (409), cancelación; compra con asientos desde el navegador OK.  
 - **E2-ACC-01 hecho (control de acceso QR):** `POST/GET /eventos/{id}/validaciones` en `msvc-entradas` (atómico por QR, auditado, 74 tests + IT con MySQL real), scan cableado en el front, Postman carpeta 10 (colección completa: 146 requests, 424 assertions, 0 fallos), OpenAPI y diagrama de secuencia §6. Sin asignación de eventos por persona (X-ACC-01 descartado).  
 - **E2-REP-01 y E2-NFR-03 hechos (2026-11-11):** reportes del organizador (API + pantalla) y correlation id + bitácora en los 7 servicios. Tests: gateway 40, usuarios 58, eventos 126, ventas 160, entradas 84. Postman: 155 requests, 448 assertions, 0 fallos.  
+- **LUG-02 hecho (2026-11-11, Paso 1 de lugares):** latitud/longitud opcionales en el lugar + enlace al mapa. Quedan LUG-01 (panel admin de lugares) y LUG-04 (solo ADMIN crea; el organizador elige).  
 - **Queda para la Entrega 2 (sin código de negocio):** E2-PRE-01/02/03 (Mongo), E2-NOT-01/02, E2-FILA-01; NFR: caché y resiliencia (E2-NFR-01/02); tests: integración entre msvcs, autorización por endpoint y carga (E2-TST-01/02/03); docs: ARQ-05/06, API-04, MOD-06, US-03.  

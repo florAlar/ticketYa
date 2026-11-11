@@ -841,6 +841,28 @@ public class EventoServiceImpl implements EventoService {
             } else if (lugar.getCapacidadTotal() == null) {
                 lugar.setCapacidadTotal(0);
             }
+            applyCoordenadas(lugar, body);
+        }
+
+        /**
+         * LUG-02: coordenadas opcionales. Sin latitud ni longitud en el pedido no se toca lo que hay;
+         * si viene una tiene que venir la otra y ambas dentro de rango; `quitarCoordenadas` las borra.
+         */
+        private void applyCoordenadas(Lugar lugar, LugarRequestDTO body) {
+            if (Boolean.TRUE.equals(body.getQuitarCoordenadas())) {
+                if (body.getLatitud() != null || body.getLongitud() != null) {
+                    throw new IllegalArgumentException("quitarCoordenadas no se combina con latitud/longitud");
+                }
+                lugar.setLatitud(null);
+                lugar.setLongitud(null);
+                return;
+            }
+            if (body.getLatitud() == null && body.getLongitud() == null) {
+                return;
+            }
+            eventos.util.Coordenadas.validar(body.getLatitud(), body.getLongitud());
+            lugar.setLatitud(eventos.util.Coordenadas.normalizar(body.getLatitud()));
+            lugar.setLongitud(eventos.util.Coordenadas.normalizar(body.getLongitud()));
         }
 
         /**
@@ -919,6 +941,8 @@ public class EventoServiceImpl implements EventoService {
         dto.setNombre(lugar.getNombre());
         dto.setDireccion(lugar.getDireccion());
         dto.setCiudad(lugar.getCiudad());
+        dto.setLatitud(lugar.getLatitud());
+        dto.setLongitud(lugar.getLongitud());
         dto.setCapacidadTotal(lugar.getCapacidadTotal());
         List<SectorEventoDTO> sectores = sectorRepository.findByLugarIdOrderByNombreAsc(lugar.getId()).stream()
                 .map(s -> eventoMapper.toSectorFromEntity(s, null, null))

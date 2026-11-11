@@ -16,6 +16,7 @@ import {
   isEventoAgotado,
   normalizeDisponibilidadDto,
   withCupoResumen,
+  urlMapaLugar,
 } from '../../domain/evento'
 import '../../components/home/events/events.css'
 import './EventoDetallePage.css'
@@ -146,6 +147,18 @@ const EventoDetallePage = () => {
               {formatEventoFecha(evento.fechaInicio)}
               {evento.lugar?.nombre ? ` · ${evento.lugar.nombre}` : ''}
               {evento.lugar?.ciudad ? ` · ${evento.lugar.ciudad}` : ''}
+              {urlMapaLugar(evento.lugar) && (
+                <>
+                  {' · '}
+                  <a
+                    href={urlMapaLugar(evento.lugar)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Ver en el mapa
+                  </a>
+                </>
+              )}
             </p>
             {formatParticipantesLine(evento.participantes) && (
               <p className="evento-detalle-page__artistas">

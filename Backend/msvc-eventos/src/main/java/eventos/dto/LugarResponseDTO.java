@@ -1,6 +1,7 @@
 package eventos.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -22,6 +23,12 @@ public class LugarResponseDTO {
 
     @Schema(description = "Ciudad", example = "Buenos Aires")
     private String ciudad;
+
+    @Schema(description = "Latitud en grados decimales (-90 a 90). Opcional; va junto con la longitud", example = "-34.545300")
+    private BigDecimal latitud;
+
+    @Schema(description = "Longitud en grados decimales (-180 a 180). Opcional; va junto con la latitud", example = "-58.449700")
+    private BigDecimal longitud;
 
     @Schema(description = "Capacidad total", example = "4500")
     private Integer capacidadTotal;
