@@ -9,7 +9,7 @@ Contrato UI ↔ backend: [`docs/endpoints-front.md`](docs/endpoints-front.md) (m
 - React 19 + Vite + React Router (`BrowserRouter`)
 - Auth/roles en Context; datos vía facades `src/api/*` con paths de `docs/endpoints-back.md`.
 - Roles JWT: `CLIENTE` | `ORGANIZADOR` | `ADMIN` | `PERSONAL_ACCESO`
-- Mock por defecto: `VITE_USE_MOCK` (ver `.env.example`)
+- Un solo interruptor de mock: `VITE_USE_MOCK` (ver `.env`); no se mezcla mock y backend
 
 ## Scripts
 
@@ -22,12 +22,15 @@ npm run lint
 
 ## Env
 
+`Frontend/.env` está versionado (sin secretos): no hay que copiar nada. Requiere el backend corriendo (`cd Backend && docker compose up -d --build`).
+
 ```env
 VITE_API_BASE_URL=http://localhost:8080
-VITE_USE_MOCK=true
+VITE_USE_MOCK=false
 ```
 
-`VITE_USE_MOCK=false` → las facades usan `src/api/http.js` contra el gateway.
+- `VITE_USE_MOCK=false` (default): **todo** contra el gateway real. Las funciones que el backend aún no implementa (transferencia, escaneo QR, reportes, preferencias, alta/baja de personal de acceso, solicitud de organizador, reintegro por entrada) aparecen deshabilitadas (`src/config/featureGates.js`).
+- `VITE_USE_MOCK=true`: **todo** en mock local (localStorage), sin backend; solo para demo offline.
 
 ## Docker (imagen Nginx)
 

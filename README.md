@@ -16,7 +16,7 @@ Documentación formal de entrega: `Backend/docs/`.
 ## Levantar el stack completo (Docker)
 
 Requisitos: Docker con Compose v2. Puertos libres: `3000`, `8080`–`8086`, `3307`–`3311`, `6380`, `27018`.
-No hace falta `.env` (los valores por defecto están en los compose); si se quiere cambiar algo, copiar `.env.example` a `.env`.
+No hace falta crear ni copiar ningún `.env` para el backend (los valores por defecto están en los compose); solo si se quiere cambiar algo, copiar la raíz `.env.example` a `.env`. El `.env` del frontend ya está versionado en `Frontend/.env`.
 
 ```bash
 cd Backend
@@ -35,7 +35,7 @@ curl -s http://localhost:8080/api/eventos                              # gateway
 
 - Frontend: http://localhost:3000 — Gateway: http://localhost:8080 (el browser habla solo con el gateway).
 - Bajar: `docker compose down`. Reiniciar desde cero (borra las bases): `docker compose down -v`.
-- Los scripts SQL de `Backend/infrastructure/mysql/*/init.sql` solo corren en el primer arranque de cada volumen.
+- Hay un único `Backend/infrastructure/mysql/*/init.sql` por base y solo corre en el primer arranque de cada volumen. Si cambia el esquema (por ejemplo al traer cambios nuevos del repo), recrear las bases con `docker compose down -v && docker compose up -d --build`.
 
 ### Usuarios demo
 
@@ -62,24 +62,30 @@ curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIEN
 
 Activar JWT: `TICKETYA_JWT_ENABLED=true docker compose up -d ms-gateway`.
 
-## Frontend (desarrollo local)
+> **Limitación conocida de la Entrega 1:** con `TICKETYA_JWT_ENABLED=false`, un request **sin** `Authorization` se acepta con los headers `X-User-Id` / `X-User-Role` que mande el cliente, sin verificarlos: cualquiera puede declararse ADMIN. Es una decisión de la entrega (identificación por encabezado), no una garantía de seguridad. Con un `Bearer` presente el token siempre se valida (firma, expiración, roles) y pisa los headers del cliente. Con `TICKETYA_JWT_ENABLED=true` (Entrega 2) el JWT es obligatorio.
+>
+> El login real (`POST /api/auth/login`) emite un JWT en ambos modos, así que el front funciona sin mock. Que gateway y `msvc-usuarios` compartan el mismo `JWT_SECRET` lo verifica `JwtGatewayIntegrationTest`.
+
+## Frontend (desarrollo local con `npm run dev`)
+
+Alternativa al frontend de Docker (`:3000`) para desarrollar con recarga en caliente (`:5173`). **Necesita el backend corriendo** (`docker compose up -d --build` en `Backend/`, ver arriba).
 
 ```bash
-cd Frontend
-cp .env.example .env   # si no existe .env
+cd Frontend          # npm run dev solo funciona dentro de Frontend/
 npm install
-npm run dev
+npm run dev          # http://localhost:5173
 ```
 
-Variables (`Frontend/.env.example`):
+`Frontend/.env` ya viene en el repo (sin secretos), no hay que copiar nada. Apunta al gateway real:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080
-VITE_USE_MOCK=true
+VITE_USE_MOCK=false
 ```
 
-- En la imagen Docker, auth, eventos, compras y entradas van contra el backend real (`VITE_USE_MOCK_*=false`); el resto de módulos usa mock mientras `VITE_USE_MOCK=true`.
-- `VITE_USE_MOCK=false`: todas las facades pegan al gateway (`VITE_API_BASE_URL`).
+- Es la misma configuración que usa la imagen Docker del frontend.
+- **No se mezcla mock y backend.** Con `VITE_USE_MOCK=false` todo va contra el gateway y las funciones que el backend aún no implementa (transferencia, escaneo QR, reportes, preferencias, alta de personal de acceso, etc.) aparecen deshabilitadas. Con `VITE_USE_MOCK=true` todo el front corre en mock local, sin backend (solo demo offline).
+- `Frontend/.env.example` es una copia de referencia del mismo contenido.
 
 Más detalle: [`Frontend/README.md`](Frontend/README.md) y [`Backend/README.md`](Backend/README.md) (gateway y msvc por separado).
 

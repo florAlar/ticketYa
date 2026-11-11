@@ -1,5 +1,5 @@
 import ImageCarousel from './ImageCarousel'
-import { HERO_SLIDES } from '../../../api/mock/eventos'
+import { HERO_SLIDES } from '../../../assets/img/banners'
 import './Hero.css'
 
 /** Hero Home: carrusel de imágenes (~30–40vh). */

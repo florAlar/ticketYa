@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK, USE_MOCK_ENTRADAS } from './config'
+import { USE_MOCK } from './config'
 import {
   listDevolucionesPendientes,
   patchDevolucionEstado,
@@ -41,7 +41,7 @@ function requireAdmin(user) {
 export async function listColaAdminVentas(user, opts = {}) {
   requireAdmin(user)
 
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay()
     const devoluciones = listDevolucionesPendientes()
     const cancelados = listEventosCancelados()
@@ -99,7 +99,7 @@ export async function resolverDevolucion(id, estado, user, opts = {}) {
     throw err
   }
 
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay()
     const d = patchDevolucionEstado(devId, next, user.id)
     if (!d) {
@@ -145,7 +145,7 @@ export async function resolverDevolucion(id, estado, user, opts = {}) {
  */
 export async function marcarReintegroEntradaCancelada(entradaId, user, opts = {}) {
   requireAdmin(user)
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay()
     const inv =
       'INV-' + Math.random().toString(16).slice(2, 10).toUpperCase()

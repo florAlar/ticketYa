@@ -5,11 +5,7 @@ services:
       context: .
       args:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
-        VITE_USE_MOCK: ${VITE_USE_MOCK:-true}
-        VITE_USE_MOCK_AUTH: ${VITE_USE_MOCK_AUTH:-false}
-        VITE_USE_MOCK_EVENTOS: ${VITE_USE_MOCK_EVENTOS:-false}
-        VITE_USE_MOCK_COMPRAS: ${VITE_USE_MOCK_COMPRAS:-false}
-        VITE_USE_MOCK_ENTRADAS: ${VITE_USE_MOCK_ENTRADAS:-false}
+        VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
     container_name: ms-frontend
     ports:
       - "3000:80"

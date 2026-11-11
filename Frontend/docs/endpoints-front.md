@@ -6,8 +6,8 @@ El browser solo habla con el API Gateway. Paths con prefijo `/api`.
 Auth: `Authorization: Bearer <JWT>` salvo rutas públicas.
 Headers opcionales de back: `Idempotency-Key`, `X-Correlation-Id` (el http client ya permite extras).
 
-Mock: `VITE_USE_MOCK !== 'false'` → LS local; **misma forma de llamada** en facades `src/api/*`.
-Real: `VITE_USE_MOCK=false` → `src/api/http.js` + `VITE_API_BASE_URL`.
+Mock: `VITE_USE_MOCK=true` → LS local (todo el front, sin backend); **misma forma de llamada** en facades `src/api/*`.
+Real (default): `VITE_USE_MOCK=false` → `src/api/http.js` + `VITE_API_BASE_URL`.
 
 Roles JWT (canónicos back):
 
