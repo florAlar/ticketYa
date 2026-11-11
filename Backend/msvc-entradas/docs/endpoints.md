@@ -30,7 +30,7 @@ Estas deudas **existen a propósito** en el estado actual del monorepo (bounded 
 | Deuda | Por qué es natural ahora | Cuándo cerrarla |
 | --- | --- | --- |
 | Emisión Feign ventas→entradas | **Cerrado TP 2026-11-08** | Ventas: reintentos inmediatos + `compra.emision_estado` + job; idempotente por idCompra. Outbox opcional. |
-| **~~Precio en RAM~~** | **Cerrado 2026-11-07** | Columna `entrada.precio`; emisión persiste; DTO/devo/reintegro leen DB. Volúmenes viejos: `migrations/02-add-entrada-precio.sql` |
+| **~~Precio en RAM~~** | **Cerrado 2026-11-07** | Columna `entrada.precio`; emisión persiste; DTO/devo/reintegro leen DB. Volúmenes viejos: recrear el volumen (ver `infrastructure/mysql/README.md`) |
 | ~~Approve devolución no reabre cupo~~ | **Cerrado 2026-11-07** | Feign `POST /eventos/{id}/cupos/liberacion` fail-hard al approve |
 | `ValidacionAcceso` sin endpoints | Entity lista; API = E2 | **E2-ACC-01** |
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DEMO_ACCOUNTS, ROLE_LABELS } from '../../auth/roles'
-import { USE_MOCK_AUTH } from '../../api/config'
+import { USE_MOCK } from '../../api/config'
 import './DemoAccountsToast.css'
 
 const DISMISS_KEY = 'ticketya_demo_toast_dismissed'
@@ -62,7 +62,7 @@ export default function DemoAccountsToast() {
 
   if (!visible || typeof document === 'undefined') return null
 
-  const modeHint = USE_MOCK_AUTH
+  const modeHint = USE_MOCK
     ? 'Mock local (sin gateway)'
     : 'Seed gateway / MySQL'
 

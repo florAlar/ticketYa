@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK_EVENTOS, USE_MOCK_COMPRAS } from './config'
+import { USE_MOCK } from './config'
 import {
   insertGestionEvento,
   listCatalogoPublico,
@@ -115,7 +115,7 @@ function unwrapEventosList(data) {
  * `q` y `esAltaDemanda` se aplican en cliente (BE listar aún no los expone).
  */
 export async function listEventos(filter = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay()
     let list = applyFilter(listCatalogoPublico(), filter)
     if (filter.incluirSuspendidos === true || filter.incluirSuspendidos === 'true') {
@@ -158,7 +158,7 @@ export async function listEventos(filter = {}) {
 
 /** GET /api/eventos/{id} */
 export async function getEvento(id, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay()
     const found = readGestionEventos().find((e) => e.id === String(id))
     if (!found) {
@@ -177,7 +177,7 @@ export async function getEvento(id, opts = {}) {
  * ADMIN: GET /api/eventos
  */
 export async function listEventosGestion(user, { isAdmin, token } = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay()
     if (!user) {
       const err = new Error('No autenticado')
@@ -195,7 +195,7 @@ export async function listEventosGestion(user, { isAdmin, token } = {}) {
 
 /** POST /api/eventos — crear borrador (ORGANIZADOR) */
 export async function createEvento(form, user, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay(400)
     if (!user?.id) {
       const err = new Error('No autenticado')
@@ -230,7 +230,7 @@ export async function createEvento(form, user, opts = {}) {
 export async function patchEventoEstado(id, estado, user, { isAdmin, token } = {}) {
   const nextEstado = String(estado || '').toUpperCase()
 
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay()
     const list = readGestionEventos()
     const cur = list.find((e) => e.id === String(id))
@@ -268,7 +268,7 @@ export async function patchEventoEstado(id, estado, user, { isAdmin, token } = {
 
 /** PUT /api/eventos/{id} */
 export async function updateEvento(id, body, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay()
     const built = buildEventoFromForm(body, {
       idOrganizador: opts.userId || body.idOrganizador,
@@ -291,7 +291,7 @@ export async function updateEvento(id, body, opts = {}) {
 
 /** DELETE /api/eventos/{id} */
 export async function deleteEvento(id, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     const err = new Error('deleteEvento mock no implementado')
     err.status = 501
     throw err
@@ -304,7 +304,7 @@ export async function deleteEvento(id, opts = {}) {
 
 /** GET /api/participantes?q&tipo */
 export async function listParticipantes(filter = {}, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay(80)
     return readMockParticipantes(filter)
   }
@@ -316,7 +316,7 @@ export async function listParticipantes(filter = {}, opts = {}) {
 
 /** POST /api/participantes */
 export async function createParticipante(body, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay(80)
     return insertMockParticipante(body)
   }
@@ -329,7 +329,7 @@ export async function createParticipante(body, opts = {}) {
 
 /** PUT /api/eventos/{id}/participantes — reemplaza set */
 export async function setEventoParticipantes(eventoId, body, opts = {}) {
-  if (USE_MOCK_EVENTOS) {
+  if (USE_MOCK) {
     await delay(80)
     const items = body?.participantes || (body?.ids || []).map((id) => ({ id }))
     const catalog = readMockParticipantes({})
@@ -471,7 +471,7 @@ function insertMockParticipante(body) {
 
 /** GET /api/eventos/{id}/disponibilidad — msvc-ventas */
 export async function getDisponibilidadEvento(id, opts = {}) {
-  if (USE_MOCK_COMPRAS) {
+  if (USE_MOCK) {
     await delay(120)
     return mockDisponibilidadItem(id)
   }
@@ -495,7 +495,7 @@ export async function getDisponibilidadBatch(ids, opts = {}) {
     return { items: [] }
   }
 
-  if (USE_MOCK_COMPRAS) {
+  if (USE_MOCK) {
     await delay(150)
     return { items: unique.map((id) => mockDisponibilidadItem(id)) }
   }

@@ -74,7 +74,7 @@ const GestionPage = () => {
               para quien tiene rol PERSONAL_ACCESO).
             </p>
             <GateLink
-              enabled={FEATURE.adminUsuarios}
+              enabled={FEATURE.adminUsuariosListado}
               className="btn btn-primary"
               to="/gestion/usuarios"
             >

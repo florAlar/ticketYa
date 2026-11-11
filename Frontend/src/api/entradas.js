@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK_ENTRADAS } from './config'
+import { USE_MOCK } from './config'
 import {
   getByIdForCliente,
   listByClienteId,
@@ -46,7 +46,7 @@ export async function listMisEntradas(user, opts = {}) {
     throw err
   }
 
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay()
     return listByClienteId(user.id)
   }
@@ -68,7 +68,7 @@ export async function getEntrada(entradaId, user, opts = {}) {
     throw err
   }
 
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay()
     const isAdmin = String(user.rol || '').toUpperCase() === 'ADMIN'
     const found = isAdmin
@@ -93,7 +93,7 @@ export async function getEntrada(entradaId, user, opts = {}) {
  * GET /api/entradas/{id}/qr
  */
 export async function getEntradaQr(entradaId, user, opts = {}) {
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay(100)
     const found = getByIdForCliente(entradaId, user?.id)
     if (!found) {
@@ -135,7 +135,7 @@ export async function validarIngreso(idEvento, payload, user, opts = {}) {
     payload?.idEntrada ||
     String(payload || '').trim()
 
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay(300)
     if (!codigo) {
       const err = new Error('Código de entrada requerido')
@@ -206,7 +206,7 @@ export async function validarIngreso(idEvento, payload, user, opts = {}) {
  * GET /api/eventos/{idEvento}/validaciones — org/admin
  */
 export async function listValidacionesEvento(idEvento, opts = {}) {
-  if (USE_MOCK_ENTRADAS) {
+  if (USE_MOCK) {
     await delay()
     return readEntradas().filter(
       (e) =>
