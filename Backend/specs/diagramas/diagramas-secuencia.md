@@ -275,6 +275,56 @@ sequenceDiagram
 - **Definiciones:** vigentes = vendidas − devueltas − a reintegrar; ocupación = vigentes / capacidad; recaudación neta = bruta − devuelta − a reintegrar.
 - **Por qué dos servicios:** las ventas y los cupos viven en `msvc-ventas`; las devoluciones y los ingresos, en `msvc-entradas`. Cada servicio tiene su base y no se comparten tablas.
 
+## 8. Alta de evento: el organizador elige un lugar y sus sectores
+
+Los lugares y sus sectores (con capacidad y layout de asientos) los carga el **ADMIN**. El organizador solo elige un lugar existente y, de sus sectores, cuáles se venden en el evento, con su precio y su cupo. Al publicar, `msvc-eventos` abre ese cupo en `msvc-ventas`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Administrador
+    actor O as Organizador
+    participant GW as API Gateway
+    participant E as msvc-eventos
+    participant V as msvc-ventas
+
+    A->>GW: POST /api/lugares {nombre, ciudad, direccion, latitud?, longitud?}
+    GW->>GW: escritura de lugares y sectores: solo ADMIN
+    GW->>E: POST /lugares
+    E-->>A: 201 lugar
+    A->>GW: POST /api/lugares/{id}/sectores {nombre, capacidad | filas × asientosPorFila}
+    GW->>E: POST /lugares/{id}/sectores
+    E-->>A: 201 sector
+
+    O->>GW: GET /api/lugares (elige uno)
+    GW->>E: GET /lugares
+    E-->>O: lugares con sus sectores (sin el lugar reservado "Por definir")
+
+    O->>GW: POST /api/eventos {idLugar, sectores[{id, precio, capacidadTotal?}]}
+    GW->>E: POST /eventos
+    alt algún sector no tiene id, no es del lugar, cambia nombre/tipo/layout o el cupo excede su capacidad
+        E-->>O: 400
+    else
+        E->>E: guarda evento BORRADOR y precio_sector (precio + cupo propio)
+        E-->>O: 201 borrador
+    end
+
+    O->>GW: POST /api/eventos/{id}/publicacion
+    GW->>E: POST /eventos/{id}/publicacion
+    E->>E: valida fecha, lugar real (no "Por definir") y ≥1 sector con precio
+    E->>V: POST /eventos/{id}/cupos {sectores[{idSector, capacidadTotal = cupo del evento}]}
+    alt ventas no responde
+        E-->>O: 409 (no se publica)
+    else
+        E->>E: estado PUBLICADO
+        E-->>O: 200 evento publicado
+    end
+```
+
+- **Cupo del evento:** `precio_sector.cupo` (de 1 a la capacidad del sector; vacío = todo). Los sectores numerados se venden completos: el cliente elige asiento (ver §5).
+- **Borrador:** puede quedar sin lugar (lugar reservado "Por definir") y se edita con `PUT`: `sectores` es la lista completa y cambiar de lugar descarta los sectores elegidos. Con el evento ya publicado solo cambia el precio de sectores que ya estaban.
+- **Baja de lugares:** `DELETE /lugares/{id}` solo ADMIN; responde 409 si el lugar tiene eventos.
+
 ## Garantía de no doble venta
 
 Hay dos defensas combinadas:

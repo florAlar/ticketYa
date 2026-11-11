@@ -35,8 +35,9 @@ El front acepta alias legado `ACCESO` y lo normaliza a `PERSONAL_ACCESO` (`src/a
 | Método | Path | Auth | Front |
 |---|---|---|---|
 | GET | `/api/usuarios` | ADMIN | `/gestion/usuarios` |
-| GET/POST | `/api/lugares` | ADMIN (GET: cualquiera con JWT) | `/gestion/lugares`, `/gestion/lugares/nuevo` — gate `FEATURE.lugares` |
-| GET/PUT | `/api/lugares/{id}` | ADMIN | `/gestion/lugares/:id` (formulario + sectores) |
+| GET | `/api/lugares`, `/api/lugares/{id}` | ORG \| ADMIN | selector de lugar y sectores al crear/editar un evento (`EventoLugarSectores`) |
+| POST | `/api/lugares` | ADMIN | `/gestion/lugares/nuevo` — gate `FEATURE.lugares` (el organizador no crea lugares) |
+| PUT | `/api/lugares/{id}` | ADMIN | `/gestion/lugares/:id` (formulario + sectores; el GET lo usa también el organizador) |
 | DELETE | `/api/lugares/{id}` | ADMIN | `/gestion/lugares` — 409 si el lugar tiene eventos |
 | POST | `/api/lugares/{id}/sectores` · PUT `/api/sectores/{id}` | ADMIN | `/gestion/lugares/:id` |
 | GET | `/api/usuarios/{id}` | ADMIN | `getUsuario` |

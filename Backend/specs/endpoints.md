@@ -128,8 +128,8 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 
 - GET: /eventos — Buscar eventos con filtros/paginación (endpoint principal) (ver ejemplo principal)
 - GET: /eventos/{id} — Detalle de evento
-- POST: /eventos — Crear evento en borrador (ORGANIZADOR)
-- PUT: /eventos/{id} — Actualizar configuración del evento (ORGANIZADOR)
+- POST: /eventos — Crear evento en borrador (ORGANIZADOR). **El evento elige un lugar existente** (`idLugar`; sin lugar queda en el lugar reservado "Por definir", que no se puede publicar) y, de los sectores de ese lugar, cuáles vende: `sectores[{id, precio, capacidadTotal?}]` (`capacidadTotal` = cupo del evento, de 1 a la capacidad del sector; vacío = todo el sector; los numerados se venden completos). No se crean lugares ni sectores desde el evento y nombre/tipo/layout los define el lugar (400 si el pedido los cambia)
+- PUT: /eventos/{id} — Actualizar configuración del evento (ORGANIZADOR). En BORRADOR se puede cambiar el lugar (se descartan los sectores elegidos) y `sectores` es la lista completa de sectores vendidos (los omitidos se quitan; si no viene no se tocan). Con el evento publicado solo cambia el precio de sectores que ya estaban: no se cambia el lugar, ni se agregan sectores, ni se cambia el cupo (409)
 - DELETE: /eventos/{id} — Eliminar borrador (ORGANIZADOR)
 - POST: /eventos/{id}/publicacion — Publicar evento (valida fecha/lugar/sectores/precios/capacidad)
 - PATCH: /eventos/{id}/estado — Suspender o cancelar evento (ADMIN); cancelación dispara reintegros/notifs
@@ -143,11 +143,11 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 
 - GET: /lugares — Buscar lugares
 - GET: /lugares/{id} — Consultar lugar y sectores
-- POST: /lugares — Crear lugar (ORGANIZADOR/ADMIN)
-- PUT: /lugares/{id} — Modificar lugar (ORGANIZADOR/ADMIN)
+- POST: /lugares — Crear lugar (**solo ADMIN**)
+- PUT: /lugares/{id} — Modificar lugar (**solo ADMIN**)
 - DELETE: /lugares/{id} — Eliminar lugar y sus sectores (**solo ADMIN**; 409 si el lugar tiene eventos asociados, de cualquier estado: en ese caso solo se edita). Latitud/longitud opcionales en alta y edición (`quitarCoordenadas` las borra).
-- POST: /lugares/{id}/sectores — Crear sector (ORGANIZADOR/ADMIN). Sector numerado: `filas` (1..200) y `asientosPorFila` (1..500) obligatorios; la capacidad se deriva (`filas × asientosPorFila`)
-- PUT: /sectores/{id} — Modificar sector (ORGANIZADOR/ADMIN). Mismas reglas de layout
+- POST: /lugares/{id}/sectores — Crear sector (**solo ADMIN**). Sector numerado: `filas` (1..200) y `asientosPorFila` (1..500) obligatorios; la capacidad se deriva (`filas × asientosPorFila`)
+- PUT: /sectores/{id} — Modificar sector (**solo ADMIN**). Mismas reglas de layout. El ORGANIZADOR solo consulta lugares y sectores (GET) para elegirlos al crear un evento
 - GET: /lugares/{id}/sectores/{sectorId}/asientos — Asientos **virtuales** del sector numerado, calculados desde su layout (fila + número; sin ids ni filas persistidas; lista vacía en sectores generales). No es disponibilidad comercial
 
 Disponibilidad comercial = msvc-ventas.

@@ -178,6 +178,36 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
+    void lugaresYSectores_elOrganizadorSoloLee_lasEscriturasSonDeAdmin() throws Exception {
+        String org = tokenComoUsuarios(SECRET, "ORGANIZADOR", 60_000);
+        String admin = tokenComoUsuarios(SECRET, "ADMIN", 60_000);
+        String[][] escrituras = {
+            {"POST", "/api/lugares"},
+            {"PUT", "/api/lugares/c0000000-0000-4000-8000-000000000001"},
+            {"POST", "/api/lugares/c0000000-0000-4000-8000-000000000001/sectores"},
+            {"PUT", "/api/sectores/c0000000-0000-4000-8000-000000000011"},
+            {"DELETE", "/api/lugares/c0000000-0000-4000-8000-000000000001"},
+        };
+        for (String[] e : escrituras) {
+            MockHttpServletRequest comoOrg = new MockHttpServletRequest(e[0], e[1]);
+            comoOrg.addHeader("Authorization", "Bearer " + org);
+            Resultado r = ejecutar(true, comoOrg);
+            assertEquals(403, r.response.getStatus(), "organizador " + e[0] + " " + e[1]);
+
+            MockHttpServletRequest comoAdmin = new MockHttpServletRequest(e[0], e[1]);
+            comoAdmin.addHeader("Authorization", "Bearer " + admin);
+            assertTrue(ejecutar(true, comoAdmin).paso(), "admin " + e[0] + " " + e[1]);
+        }
+        // lectura: el organizador elige lugar al crear un evento
+        MockHttpServletRequest lee = new MockHttpServletRequest("GET", "/api/lugares");
+        lee.addHeader("Authorization", "Bearer " + org);
+        assertTrue(ejecutar(true, lee).paso());
+        MockHttpServletRequest leeUno = new MockHttpServletRequest("GET", "/api/lugares/c0000000-0000-4000-8000-000000000001");
+        leeUno.addHeader("Authorization", "Bearer " + org);
+        assertTrue(ejecutar(true, leeUno).paso());
+    }
+
+    @Test
     void jwtHabilitado_sinToken_devuelve401() throws Exception {
         Resultado r = ejecutar(true, get("/api/entradas", null));
 

@@ -97,6 +97,7 @@ erDiagram
         DECIMAL precio
         CHAR3 moneda
         TINYINT activo
+        INT cupo "cupo del evento; NULL = toda la capacidad del sector"
     }
     PARTICIPANTE {
         CHAR36 id PK

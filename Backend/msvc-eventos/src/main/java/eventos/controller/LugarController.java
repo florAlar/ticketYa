@@ -85,13 +85,13 @@ public class LugarController {
             @Parameter(hidden = true)
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @RequestBody LugarRequestDTO body) {
-        requireOrgOrAdmin(role);
+        requireAdmin(role);
         return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.crearLugar(body));
     }
 
     @Operation(
             summary = "Editar lugar",
-            description = "Actualiza los datos del lugar. Requiere ORGANIZADOR o ADMIN.",
+            description = "Actualiza los datos del lugar. Solo ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Lugar actualizado",
@@ -109,7 +109,7 @@ public class LugarController {
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Parameter(description = "UUID del lugar", required = true) @PathVariable String id,
             @RequestBody LugarRequestDTO body) {
-        requireOrgOrAdmin(role);
+        requireAdmin(role);
         return eventoService.actualizarLugar(id, body);
     }
 
@@ -139,7 +139,7 @@ public class LugarController {
 
     @Operation(
             summary = "Crear sector en un lugar",
-            description = "Alta de sector (nombre, capacidad, tipo, numerado). Requiere ORGANIZADOR o ADMIN.",
+            description = "Alta de sector (nombre, capacidad, tipo, numerado). Solo ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Sector creado",
@@ -157,13 +157,13 @@ public class LugarController {
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Parameter(description = "UUID del lugar", required = true) @PathVariable String id,
             @RequestBody SectorRequestDTO body) {
-        requireOrgOrAdmin(role);
+        requireAdmin(role);
         return ResponseEntity.status(HttpStatus.CREATED).body(eventoService.crearSector(id, body));
     }
 
     @Operation(
             summary = "Editar sector",
-            description = "Actualiza un sector existente. Requiere ORGANIZADOR o ADMIN.",
+            description = "Actualiza un sector existente. Solo ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Sector actualizado",
@@ -181,7 +181,7 @@ public class LugarController {
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Parameter(description = "UUID del sector", required = true) @PathVariable String id,
             @RequestBody SectorRequestDTO body) {
-        requireOrgOrAdmin(role);
+        requireAdmin(role);
         return eventoService.actualizarSector(id, body);
     }
 
@@ -205,16 +205,6 @@ public class LugarController {
     private static void requireAdmin(String role) {
         if (role == null || !"ADMIN".equals(role.trim().toUpperCase())) {
             throw new ForbiddenException("Se requiere rol ADMIN");
-        }
-    }
-
-    private static void requireOrgOrAdmin(String role) {
-        if (role == null) {
-            throw new ForbiddenException("Se requiere rol ORGANIZADOR o ADMIN");
-        }
-        String r = role.trim().toUpperCase();
-        if (!"ORGANIZADOR".equals(r) && !"ADMIN".equals(r)) {
-            throw new ForbiddenException("Se requiere rol ORGANIZADOR o ADMIN");
         }
     }
 }

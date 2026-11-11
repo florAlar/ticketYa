@@ -1,4 +1,4 @@
-# Arquitectura de microservicios — Entrega 1
+# Arquitectura de microservicios — Entregas 1 y 2
 
 Fuente: `specs/arquitectura.md`, `specs/microservicios.md`, `specs/comunicacion.md`, `specs/endpoints.md` y el código.
 
@@ -45,11 +45,12 @@ flowchart LR
     NO --- DBO
 
     EV -. "Feign: abrir cupos al publicar" .-> VE
-    VE -. "Feign: precio por sector" .-> EV
+    VE -. "Feign: precio por sector; dueño y sectores del evento (reportes)" .-> EV
     VE -. "Feign: emitir entradas tras pago" .-> EN
     EN -. "Feign: liberar cupo al aprobar devolución" .-> VE
     EV -. "Feign: reintegro al cancelar evento" .-> EN
-    EN -. "Feign: nombre/lugar del evento" .-> EV
+    EN -. "Feign: nombre/lugar del evento; estado y dueño (validación de acceso)" .-> EV
+    VE -. "Feign: resumen de entradas por sector (reportes)" .-> EN
 ```
 
 Reglas de la arquitectura:
@@ -60,13 +61,13 @@ Reglas de la arquitectura:
 
 ## 2. Responsabilidades
 
-| Servicio | Puerto | Persistencia | Responsabilidad en E1 |
+| Servicio | Puerto | Persistencia | Responsabilidad |
 |---|---:|---|---|
-| **API Gateway** | 8080 | — | Punto único de entrada, enrutado por prefijo (`/api/...` → servicio), CORS, identificación del usuario y propagación de `X-User-*` |
+| **API Gateway** | 8080 | — | Punto único de entrada, enrutado por prefijo (`/api/...` → servicio), CORS, identificación del usuario y propagación de `X-User-*`, generación del `X-Correlation-Id` y autorización por rol |
 | **msvc-usuarios** | 8081 | MySQL | Cuentas, login/registro, roles, perfil |
-| **msvc-eventos** | 8082 | MySQL | Eventos, lugares, sectores, asientos, participantes, precios, publicación, estados y búsqueda |
-| **msvc-ventas** | 8083 | MySQL + Redis | Disponibilidad y cupos, reservas temporales, compras, pagos (mock), emisión de entradas, anti doble venta |
-| **msvc-entradas** | 8084 | MySQL | Entradas con QR único, devoluciones, reintegro por cancelación |
+| **msvc-eventos** | 8082 | MySQL | Eventos, **lugares** (con latitud/longitud opcionales) y sus **sectores** (los carga el ADMIN), participantes, precio y cupo de cada sector por evento, publicación, estados y búsqueda. Los asientos son virtuales: no hay tabla de asientos |
+| **msvc-ventas** | 8083 | MySQL + Redis | Disponibilidad y cupos, reservas temporales, compras, pagos (mock), emisión de entradas, anti doble venta y **reportes del organizador** (ventas, ocupación y recaudación) |
+| **msvc-entradas** | 8084 | MySQL | Entradas con QR único, devoluciones, reintegro por cancelación y **control de acceso**: validación del QR en la puerta (un QR ingresa una sola vez) con auditoría de intentos |
 | msvc-preferencias | 8085 | MongoDB | *(E2)* preferencias y recomendaciones |
 | msvc-notificaciones | 8086 | MySQL | *(E2)* avisos y plantillas |
 
@@ -78,8 +79,8 @@ Todas se consumen vía gateway con prefijo `/api`. Listado completo, parámetros
 |---|---|
 | usuarios | `POST /auth/login`, `POST /auth/register`, `GET/PATCH /usuarios/me`, `GET /usuarios`, `PATCH /usuarios/{id}/estado`, `PUT /usuarios/{id}/roles` |
 | eventos | `GET/POST /eventos`, `GET/PUT/DELETE /eventos/{id}`, `POST /eventos/{id}/publicacion`, `PATCH /eventos/{id}/estado`, `PATCH /eventos/{id}/fecha`, `PUT /eventos/{id}/sectores/{sectorId}/precio`, `/eventos/{id}/participantes`, `/lugares/**`, `/sectores/**`, `/participantes/**`, `/organizadores/me/eventos` |
-| ventas | `GET /eventos/{id}/disponibilidad`, `GET /eventos/disponibilidad?ids=`, `POST /reservas`, `/reservas/{id}/{confirmacion\|renovacion\|cancelacion}`, `POST /compras`, `POST /compras/{id}/pagos`, `POST /pagos/{id}/reintentos` |
-| entradas | `GET /entradas`, `GET /entradas/{id}`, `GET /entradas/{id}/qr`, `POST /entradas/{id}/devoluciones`, `GET /devoluciones`, `POST /devoluciones/{id}/{aprobacion\|rechazo}` |
+| ventas | `GET /eventos/{id}/disponibilidad`, `GET /eventos/disponibilidad?ids=`, `POST /reservas`, `/reservas/{id}/{confirmacion\|renovacion\|cancelacion}`, `POST /compras`, `POST /compras/{id}/pagos`, `POST /pagos/{id}/reintentos`, `GET /reportes/eventos/{id}[/ventas\|sectores\|ocupacion\|recaudacion]` |
+| entradas | `GET /entradas`, `GET /entradas/{id}`, `GET /entradas/{id}/qr`, `POST /entradas/{id}/devoluciones`, `GET /devoluciones`, `POST /devoluciones/{id}/{aprobacion\|rechazo}`, `POST /eventos/{id}/validaciones`, `GET /eventos/{id}/validaciones` |
 
 Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad` y `/eventos/{id}/cupos` a **ventas** antes del catch-all hacia **eventos**.
 
@@ -93,13 +94,20 @@ Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad` y `/e
 | ventas → entradas | Tras un pago aprobado | `POST /entradas/emision`: crear entradas con QR (idempotente por compra, con reintentos y job) |
 | entradas → ventas | Al aprobar una devolución | `POST /eventos/{id}/cupos/liberacion`: devolver 1 lugar al cupo |
 | eventos → entradas | Al cancelar un evento | `POST /eventos/{id}/reintegro-cancelacion` (best-effort) |
+| ventas → entradas | Al consultar un reporte | `GET /eventos/{id}/entradas/resumen`: entradas del evento por sector y estado (devueltas, usadas, a reintegrar y montos). Interno: el gateway no lo expone. Si falla, el reporte responde 503 |
+| ventas → eventos | Al consultar un reporte | `GET /eventos/{id}`: sectores y dueño del evento (un organizador solo ve los reportes de sus eventos) |
+| entradas → eventos | Al validar o listar validaciones | `GET /eventos/{id}`: estado del evento (cancelado no permite ingreso) y dueño del evento |
 
-Headers relevantes: `X-User-Id`, `X-User-Role` (identidad), `Idempotency-Key` (reservas y compras).
+Headers relevantes: `X-User-Id`, `X-User-Role` (identidad), `Idempotency-Key` (reservas y compras) y `X-Correlation-Id` (trazabilidad: lo genera el gateway y lo propagan los servicios y las llamadas Feign).
 
-## 5. Identificación del usuario (E1)
+## 5. Identificación del usuario
 
 Según la consigna, en la Entrega 1 no hay autenticación formal: la identidad llega por encabezado (`X-User-Id`, `X-User-Role`) y los microservicios confían en ella. El gateway admite también JWT con roles, activable con `TICKETYA_JWT_ENABLED=true` (adelanto de la Entrega 2). Detalle en el `README.md` raíz.
 
 ## 6. Despliegue
 
 `cd Backend && docker compose up -d --build` levanta gateway, microservicios, bases y frontend (15 contenedores). Puertos y diagrama Docker: `specs/infraestructura.md`.
+
+## 7. Trazabilidad y bitácora
+
+Cada request lleva un `X-Correlation-Id` que genera el gateway y que aparece en cada línea de log de todos los servicios y en la respuesta; las acciones críticas (login, publicación, pagos, devoluciones, validaciones de acceso…) quedan en una bitácora con ese mismo id. Detalle y cómo seguir una operación entre servicios: [`observabilidad.md`](./observabilidad.md).

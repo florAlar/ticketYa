@@ -28,7 +28,8 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera |
 | Cancelar evento | **ADMIN** (dispara reintegro de entradas vendidas) |
 | Cambiar fecha del evento | Dueño ORGANIZADOR o ADMIN |
-| Alta de lugares / sectores / artistas | ORGANIZADOR o ADMIN (los lugares pasan a ser solo ADMIN en LUG-04) |
+| Alta de lugares y sectores | **solo ADMIN** (el organizador los consulta y elige uno al crear el evento) |
+| Alta de artistas | ORGANIZADOR o ADMIN |
 | Asociar artistas a un evento | Dueño del evento o ADMIN |
 | Reservar / comprar / pagar | CLIENTE (y en la práctica quien el gateway autorice a compras; organizador también puede tener “mis entradas”) |
 | Ver mis entradas y QR usable | Dueño de la entrada |
@@ -80,7 +81,7 @@ En el front hay guía (“¿querés organizar?”) y el botón de solicitud est�
 ### Borrador
 
 - Se puede crear con poco: **nombre** alcanza al inicio.  
-- Fecha/lugar/sectores se completan después.  
+- Fecha, lugar y sectores se completan después: el borrador puede quedar sin lugar (lugar reservado "Por definir") y se publica recién con un lugar real y al menos un sector con precio.  
 - Solo se puede **borrar** si sigue en borrador.  
 - Edición completa del borrador: dueño o admin.
 

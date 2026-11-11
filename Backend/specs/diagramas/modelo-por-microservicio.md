@@ -70,6 +70,7 @@ erDiagram
         DECIMAL precio
         CHAR moneda
         BOOL activo
+        INT cupo "cupo del evento; NULL = toda la capacidad del sector"
     }
     PARTICIPANTE {
         CHAR36 id PK

@@ -65,6 +65,7 @@ namespace msvc_eventos {
         +DECIMAL precio
         +CHAR moneda
         +BOOL activo
+        +INT cupo
     }
     class participante {
         +CHAR36 id PK

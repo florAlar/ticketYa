@@ -169,7 +169,7 @@ class EventoServiceImplExtraTest {
 
     @Test
     void actualizar_conSectorIdExistente_usaSectorExistente() {
-        Evento evento = evento("PUBLICADO", ORG_ID);
+        Evento evento = evento("BORRADOR", ORG_ID);
         evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
         SectorInputDTO si = new SectorInputDTO();
         si.setId(SECTOR_ID);

@@ -1453,7 +1453,7 @@
               "Lugares"
             ],
             "summary": "Editar sector",
-            "description": "Actualiza un sector existente. Requiere ORGANIZADOR o ADMIN.",
+            "description": "Actualiza un sector existente. Solo ADMIN.",
             "operationId": "actualizarSector",
             "parameters": [
               {
@@ -1696,7 +1696,7 @@
               "Lugares"
             ],
             "summary": "Editar lugar",
-            "description": "Actualiza los datos del lugar. Requiere ORGANIZADOR o ADMIN.",
+            "description": "Actualiza los datos del lugar. Solo ADMIN.",
             "operationId": "actualizar_1",
             "parameters": [
               {
@@ -2483,7 +2483,7 @@
               "Lugares"
             ],
             "summary": "Crear sector en un lugar",
-            "description": "Alta de sector (nombre, capacidad, tipo, numerado). Requiere ORGANIZADOR o ADMIN.",
+            "description": "Alta de sector (nombre, capacidad, tipo, numerado). Solo ADMIN.",
             "operationId": "crearSector",
             "parameters": [
               {
@@ -3530,27 +3530,12 @@
               },
               "idLugar": {
                 "type": "string",
-                "description": "UUID de un lugar existente (alternativo a los campos lugar*)",
+                "description": "UUID de un lugar existente (los lugares los crea el ADMIN). Obligatorio para publicar; un borrador puede quedar sin lugar (queda en 'Por definir')",
                 "example": "f0000000-0000-4000-8000-000000000001"
-              },
-              "lugarNombre": {
-                "type": "string",
-                "description": "Nombre del lugar embebido",
-                "example": "Estadio Obras"
-              },
-              "lugarCiudad": {
-                "type": "string",
-                "description": "Ciudad del lugar embebido",
-                "example": "Buenos Aires"
-              },
-              "lugarDireccion": {
-                "type": "string",
-                "description": "Dirección del lugar embebido",
-                "example": "Av. del Libertador 7395"
               },
               "sectores": {
                 "type": "array",
-                "description": "Sectores/tipos de entrada con precio",
+                "description": "Sectores del lugar que se venden en este evento, con su precio y cupo. Si viene, es la lista completa del evento (en borrador reemplaza a la anterior; ausente = no se tocan). Todos deben ser sectores del lugar elegido",
                 "items": {
                   "$ref": "#/components/schemas/EventoSectorInput"
                 }
@@ -3563,12 +3548,12 @@
             "properties": {
               "id": {
                 "type": "string",
-                "description": "UUID del sector si ya existe",
+                "description": "UUID del sector del lugar (obligatorio: los sectores los define el lugar)",
                 "example": "a0000000-0000-4000-8000-000000000001"
               },
               "nombre": {
                 "type": "string",
-                "description": "Nombre del tipo de entrada",
+                "description": "Solo informativo: si viene debe coincidir con el del sector (lo define el lugar)",
                 "example": "Campo"
               },
               "precio": {

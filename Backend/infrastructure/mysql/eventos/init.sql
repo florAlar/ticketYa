@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS precio_sector (
   precio    DECIMAL(12, 2) NOT NULL,
   moneda    CHAR(3)        NOT NULL DEFAULT 'ARS',
   activo    TINYINT(1)     NOT NULL DEFAULT 1,
+  cupo      INT            NULL COMMENT 'cupo comercial del evento en el sector; NULL = toda la capacidad del sector',
   PRIMARY KEY (id),
   UNIQUE KEY uk_precio_evento_sector (id_evento, id_sector),
   CONSTRAINT fk_precio_sector_evento FOREIGN KEY (id_evento) REFERENCES evento (id),

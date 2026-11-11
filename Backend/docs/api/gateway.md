@@ -16,7 +16,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 3 | `eventos-cupos-liberacion-ventas` | 9 | `/api/eventos/{id}/cupos/liberacion` | POST | ms-ventas:8083 | 1 | Uso interno Feign msvc-entradas |
 | 4 | `eventos-cupos-ventas` | 10 | `/api/eventos/{id}/cupos` | POST | ms-ventas:8083 | 1 | Uso interno Feign msvc-eventos |
 | 5 | `eventos-fila-ventas` | 11 | `/api/eventos/{id}/fila/**` | — | ms-ventas:8083 | 1 | Fila virtual no implementada en E1 |
-| 6 | `eventos-validaciones-entradas` | 12 | `/api/eventos/{id}/validaciones` | — | ms-entradas:8084 | 1 | Validación de acceso en evento |
+| 6 | `eventos-validaciones-entradas` | 12 | `/api/eventos/{id}/validaciones` | — | ms-entradas:8084 | 1 | Control de acceso QR (E2-ACC-01): POST PERSONAL_ACCESO/ADMIN, GET ORGANIZADOR/ADMIN |
 | 7 | `eventos-recomendaciones-preferencias` | 13 | `/api/eventos/{id}/recomendaciones` | — | ms-preferencias:8085 | 1 | — |
 | 8 | `eventos` | 20 | `/api/eventos`, `/api/eventos/**` | — | ms-eventos:8082 | 1 | Catch-all eventos/lugares |
 | 9 | `lugares` | 21 | `/api/lugares`, `/api/lugares/**` | — | ms-eventos:8082 | 1 | — |
@@ -28,7 +28,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 15 | `reservas` | 40 | `/api/reservas`, `/api/reservas/**` | — | ms-ventas:8083 | 1 | Self-service comprador |
 | 16 | `compras` | 41 | `/api/compras`, `/api/compras/**` | — | ms-ventas:8083 | 1 | Self-service comprador |
 | 17 | `pagos` | 42 | `/api/pagos`, `/api/pagos/**` | — | ms-ventas:8083 | 1 | Self-service comprador |
-| 18 | `reportes` | 43 | `/api/reportes`, `/api/reportes/**` | — | ms-ventas:8083 | 1 | Endpoints no implementados en E1 |
+| 18 | `reportes` | 43 | `/api/reportes`, `/api/reportes/**` | — | ms-ventas:8083 | 1 | Reportes del organizador (E2-REP-01): ORGANIZADOR dueño o ADMIN |
 | 19 | `entradas` | 50 | `/api/entradas`, `/api/entradas/**` | — | ms-entradas:8084 | 1 | Self-service comprador |
 | 20 | `devoluciones` | 51 | `/api/devoluciones`, `/api/devoluciones/**` | — | ms-entradas:8084 | 1 | Self-service comprador + admin |
 | 21 | `preferencias` | 60 | `/api/preferencias`, `/api/preferencias/**` | — | ms-preferencias:8085 | 1 | — |
@@ -36,7 +36,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 23 | `clientes-preferencias` | 62 | `/api/clientes`, `/api/clientes/**` | — | ms-preferencias:8085 | 1 | — |
 | 24 | `notificaciones` | 70 | `/api/notificaciones`, `/api/notificaciones/**` | — | ms-notificaciones:8086 | 1 | — |
 
-**Sobre los endpoints no implementados en E1:** `/api/reportes/*`, `/api/eventos/{id}/fila/**`, `/api/eventos/{id}/validaciones` y `/api/eventos/{id}/recomendaciones` se rutean pero sus microservicios destino no los implementan todavía (se documentan como pendientes de E2).
+**Rutas todavía sin implementar:** `/api/eventos/{id}/fila/**`, `/api/eventos/{id}/recomendaciones`, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**` y `/api/notificaciones/**` se rutean pero sus microservicios destino no los implementan todavía (pendientes de E2). `/api/reportes/**` y `/api/eventos/{id}/validaciones` ya están implementados.
 
 ---
 
@@ -74,7 +74,7 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | Rol | Paths permitidos | Nota |
 |-----|------------------|------|
 | `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila GET, `/api/preferencias/**`, `/api/clientes/**`, `GET /api/eventos/**` | El msvc filtra recursos por `X-User-Id` |
-| `ORGANIZADOR` | `/api/eventos/**`, `/api/lugares/**`, `/api/sectores/**`, `/api/participantes/**`, `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
+| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `/api/participantes/**`, `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
 | `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), compras propias (self-service) | Validación de ingreso en evento |
 | `ADMIN` | Todo | Short-circuit en `hasPermission` |
 
@@ -88,10 +88,11 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/devoluciones/{id}/aprobacion` | POST |
 | `/api/devoluciones/{id}/rechazo` | POST |
 | `/api/reportes/**` | DELETE |
+| `/api/lugares/**`, `/api/sectores/**` | POST / PUT / PATCH / DELETE (alta, edición y baja de lugares y sectores; LUG-01/LUG-04) |
 
 ### 3.3 Notas de política
 
-- **Lugares:** `GET /api/lugares*` y `GET /api/eventos/{id}/sectores` requieren JWT (no están en la lista pública). Un `CLIENTE` recibe **403** en `/api/lugares` (solo ORG/ADMIN).  
+- **Lugares:** `GET /api/lugares*` y `GET /api/eventos/{id}/sectores` requieren JWT (no están en la lista pública). Un `CLIENTE` recibe **403** en `/api/lugares`. El `ORGANIZADOR` solo los lee; alta, edición y baja de lugares y sectores son exclusivas de ADMIN (el backend lo revalida).  
 - **Self-service comprador:** `CLIENTE`, `ORGANIZADOR` y `PERSONAL_ACCESO` pueden usar `/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`; el msvc destino filtra por `X-User-Id` (recursos propios) o rechaza si no es dueño (403 del msvc).
 - **Organizador no es dueño automático:** el msvc-eventos revalida que el usuario sea dueño del evento o ADMIN en operaciones de escritura (`POST /eventos`, `PUT /eventos/{id}`, `DELETE /eventos/{id}`, `POST /eventos/{id}/publicacion`, etc.).
 
@@ -107,6 +108,7 @@ Tras validar el JWT, el gateway inyecta/sobrescribe estos headers en la petició
 | `X-User-Email` | claim `email` (fallback `sub`) | Correo del usuario |
 | `X-User-Role` | claim `rol` / `role` (primero) | Rol principal |
 | `X-User-Roles` | claim `roles` (lista o CSV) | Roles, separados por coma |
+| `X-Correlation-Id` | generado por el gateway (o el del cliente si es válido) | Identificador de la operación: se reenvía a los servicios, va en cada línea de log y en la respuesta (ver `observabilidad.md`). Lo asigna un filtro que corre **antes** que el de JWT |
 
 Cada microservicio lee `X-User-Id` (obligatorio en operaciones protegidas) y, cuando aplica, `X-User-Role` para revalidar autorización localmente.
 

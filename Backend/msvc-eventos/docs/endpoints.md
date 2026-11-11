@@ -16,7 +16,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | --- | --- | --- |
 | GET /eventos | **hecho** | Catálogo; default `estado=PUBLICADO`. Gestión admin: `estado=TODOS\|ALL` (todos los estados). |
 | GET /eventos/{id} | **hecho** | Detalle + sectores con precio activo |
-| POST /eventos | **hecho** | Crear BORRADOR (ORG/ADMIN). Body form FE: nombre, fechaInicio, lugar* o idLugar, sectores[{nombre,precio,capacidadTotal,sinCupo,esNumerado,filas,asientosPorFila}] (sector numerado: filas y asientosPorFila obligatorios al publicar; capacidad = filas x asientosPorFila). Si `estado=PUBLICADO` publica al final. |
+| POST /eventos | **hecho** | Crear BORRADOR (ORG/ADMIN). Body: nombre, fechaInicio, `idLugar` (lugar existente; sin lugar queda en "Por definir"), sectores[{id,precio,capacidadTotal?}] (LUG-04: los sectores son del lugar; `capacidadTotal` = cupo del evento ≤ capacidad del sector, vacío = todo; numerados se venden completos). Si `estado=PUBLICADO` publica al final (exige lugar real y ≥1 sector). |
 | PUT /eventos/{id} | **hecho** | Editar config (dueño o ADMIN); no CANCELADO/FINALIZADO |
 | DELETE /eventos/{id} | **hecho** | Solo BORRADOR |
 | POST /eventos/{id}/publicacion | **hecho** | Valida nombre/fecha/lugar/≥1 precio sector activo |
@@ -96,17 +96,20 @@ Authz: lectura abierta (GET). Escritura POST/PUT `/participantes` y PUT asociaci
   "fechaInicio": "2026-12-01T21:00:00",
   "estado": "BORRADOR",
   "esAltaDemanda": false,
-  "idLugar": null,
-  "lugarNombre": "Anfiteatro",
-  "lugarCiudad": "Tandil",
-  "lugarDireccion": "…",
+  "idLugar": "c0000000-0000-4000-8000-000000000001",
   "sectores": [
-    { "nombre": "General", "precio": 15000, "capacidadTotal": 500, "sinCupo": false, "esNumerado": false }
+    { "id": "c0000000-0000-4000-8000-000000000011", "precio": 95000, "capacidadTotal": 5000 },
+    { "id": "c0000000-0000-4000-8000-000000000012", "precio": 180000 }
   ]
 }
 ```
 
-Sin `idLugar`: crea lugar + sectores nuevos. Con `idLugar`: reutiliza lugar; sectores sin `id` se crean bajo ese lugar.
+LUG-04 — **el evento elige un lugar y sus sectores; no los crea.** Los lugares y sectores los carga el ADMIN (`POST /lugares`, `POST /lugares/{id}/sectores`).
+
+- `idLugar`: lugar existente. Sin él el borrador queda en el lugar reservado "Por definir" (uno solo, compartido, oculto del listado); no se puede publicar ni definir sectores.
+- `sectores[].id` es obligatorio y debe ser del lugar elegido. `nombre`, `tipo`, `esNumerado`, `filas` y `asientosPorFila` pertenecen al sector: si vienen tienen que coincidir (400 «lo define el lugar»).
+- `capacidadTotal` = **cupo del evento** en ese sector (`precio_sector.cupo`): de 1 a la capacidad del sector; vacío o igual = se vende todo. Los sectores numerados se venden completos (cupo menor → 400). Al publicar, ventas abre ese cupo.
+- En `PUT` (borrador) `sectores` es la lista completa de sectores vendidos; cambiar `idLugar` descarta los sectores elegidos. Con el evento publicado solo cambia el precio de sectores que ya estaban (409 si cambia el lugar, se agrega un sector o se cambia el cupo).
 
 ---
 

@@ -156,7 +156,8 @@ public class EventoMapper {
                 dto.setId(s.getId());
                 dto.setNombre(s.getNombre());
                 dto.setTipo(s.getTipo());
-                dto.setCapacidad(s.getCapacidad());
+                // cupo del evento (LUG-04): el propio o, si no tiene, la capacidad del sector
+                dto.setCapacidad(ps.cupoEfectivo());
                 dto.setEsNumerado(s.getEsNumerado());
                 dto.setFilas(s.getFilas());
                 dto.setAsientosPorFila(s.getAsientosPorFila());

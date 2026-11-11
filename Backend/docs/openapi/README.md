@@ -21,6 +21,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-11 (lugares):** `msvc-eventos.json`: el lugar suma `latitud` y `longitud` opcionales (`LugarRequest`, `Lugar`, `LugarDetalle`) y `quitarCoordenadas` en el pedido. `openapi-bundle.json` regenerado.
 >
 > **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
+>
+> **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.
 
 ## Regeneración (tras cambios en anotaciones)
 

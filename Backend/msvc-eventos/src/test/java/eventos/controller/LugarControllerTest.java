@@ -6,6 +6,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import eventos.exception.BusinessConflictException;
@@ -14,6 +16,7 @@ import eventos.exception.ResourceNotFoundException;
 import eventos.service.EventoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -55,6 +58,40 @@ class LugarControllerTest {
         doThrow(new BusinessConflictException("El lugar tiene eventos asociados")).when(service).eliminarLugar(LUGAR);
 
         mvc.perform(delete("/lugares/{id}", LUGAR).header("X-User-Role", "ADMIN")).andExpect(status().isConflict());
+    }
+
+    @Test
+    void altaYEdicionDeLugaresYSectores_soloAdmin_elOrganizadorRecibe403() throws Exception {
+        String lugar = "{\"nombre\":\"Estadio\",\"ciudad\":\"Buenos Aires\"}";
+        String sector = "{\"nombre\":\"Campo\",\"capacidad\":100}";
+        for (String rol : new String[] {"ORGANIZADOR", "CLIENTE", "PERSONAL_ACCESO"}) {
+            mvc.perform(post("/lugares").header("X-User-Role", rol).contentType(MediaType.APPLICATION_JSON).content(lugar))
+                    .andExpect(status().isForbidden());
+            mvc.perform(put("/lugares/{id}", LUGAR).header("X-User-Role", rol).contentType(MediaType.APPLICATION_JSON).content(lugar))
+                    .andExpect(status().isForbidden());
+            mvc.perform(post("/lugares/{id}/sectores", LUGAR).header("X-User-Role", rol).contentType(MediaType.APPLICATION_JSON).content(sector))
+                    .andExpect(status().isForbidden());
+            mvc.perform(put("/sectores/{id}", "s1").header("X-User-Role", rol).contentType(MediaType.APPLICATION_JSON).content(sector))
+                    .andExpect(status().isForbidden());
+        }
+        verify(service, never()).crearLugar(any());
+        verify(service, never()).actualizarLugar(any(), any());
+        verify(service, never()).crearSector(any(), any());
+        verify(service, never()).actualizarSector(any(), any());
+    }
+
+    @Test
+    void admin_puedeCrearYEditarLugaresYSectores() throws Exception {
+        String lugar = "{\"nombre\":\"Estadio\",\"ciudad\":\"Buenos Aires\"}";
+        String sector = "{\"nombre\":\"Campo\",\"capacidad\":100}";
+        mvc.perform(post("/lugares").header("X-User-Role", "ADMIN").contentType(MediaType.APPLICATION_JSON).content(lugar))
+                .andExpect(status().isCreated());
+        mvc.perform(put("/lugares/{id}", LUGAR).header("X-User-Role", "ADMIN").contentType(MediaType.APPLICATION_JSON).content(lugar))
+                .andExpect(status().isOk());
+        mvc.perform(post("/lugares/{id}/sectores", LUGAR).header("X-User-Role", "ADMIN").contentType(MediaType.APPLICATION_JSON).content(sector))
+                .andExpect(status().isCreated());
+        mvc.perform(put("/sectores/{id}", "s1").header("X-User-Role", "ADMIN").contentType(MediaType.APPLICATION_JSON).content(sector))
+                .andExpect(status().isOk());
     }
 
     @Test

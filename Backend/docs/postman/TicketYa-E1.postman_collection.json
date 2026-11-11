@@ -1123,7 +1123,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/eventos",
-            "description": "Rol: ORGANIZADOR · Esperado: 201 · Guarda {{eventId}} y {{sectorId}} del sector creado.",
+            "description": "Rol: ORGANIZADOR · Esperado: 201 · El lugar seed ya tiene sus sectores: el evento elige el Campo del lugar (por id) y le pone precio y cupo (50). No crea sectores. Guarda {{eventId}} y {{sectorId}}.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -1136,7 +1136,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\"nombre\":\"Postman E1 {{$guid}}\",\"descripcion\":\"Evento creado por la colección\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2027-12-15T21:00:00\",\"fechaFin\":\"2027-12-16T01:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"nombre\":\"Campo Postman\",\"precio\":75000,\"capacidadTotal\":50,\"tipo\":\"GENERAL\",\"esNumerado\":false}]}",
+              "raw": "{\"nombre\":\"Postman E1 {{$guid}}\",\"descripcion\":\"Evento creado por la colección\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2027-12-15T21:00:00\",\"fechaFin\":\"2027-12-16T01:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"id\":\"{{sectorGeneralSeedId}}\",\"precio\":75000,\"capacidadTotal\":50}]}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1158,6 +1158,8 @@
                   "  pm.expect(b.estado).to.eql('BORRADOR');",
                   "  pm.expect(b.sectores).to.be.an('array').with.lengthOf.at.least(1);",
                   "  pm.expect(b.sectores[0].precio).to.eql(75000);",
+                  "  pm.expect(b.sectores[0].id).to.eql(pm.environment.get('sectorGeneralSeedId'));",
+                  "  pm.expect(b.sectores[0].capacidad).to.eql(50);  // cupo del evento, no la capacidad del sector (60000)",
                   "});",
                   "pm.environment.set('eventId', b.id);",
                   "pm.environment.set('sectorId', b.sectores[0].id);"
@@ -1609,6 +1611,583 @@
               }
             }
           ]
+        },
+        {
+          "name": "02.16 Crear evento con un sector sin id → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 400 · No se crean sectores desde el evento: se eligen los del lugar.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"nombre\":\"Sector inventado\",\"precio\":1000,\"capacidadTotal\":100}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Pide el id del sector', function () { pm.expect(pm.response.json().message).to.include('sectores[].id'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.17 Sector de otro lugar → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 400 · Cadeira es del Maracanã, no del lugar elegido.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"id\":\"c0000000-0000-4000-8000-000000000014\",\"precio\":1000}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('No pertenece al lugar', function () { pm.expect(pm.response.json().message).to.include('no pertenece al lugar'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.18 Cupo mayor a la capacidad del sector → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 400 · El cupo del evento va de 1 a la capacidad del sector (Campo: 60000).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"id\":\"{{sectorGeneralSeedId}}\",\"precio\":1000,\"capacidadTotal\":60001}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Rango del cupo', function () { pm.expect(pm.response.json().message).to.include('entre 1 y 60000'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.19 El evento no puede cambiar el sector del lugar → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 400 · Nombre, tipo y layout los define el lugar.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"id\":\"{{sectorNumeradoSeedId}}\",\"nombre\":\"Platea renombrada\",\"precio\":1000}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Lo define el lugar', function () { pm.expect(pm.response.json().message).to.include('lo define el lugar'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.20 Borrador con Campo (cupo 30) y Platea numerada completa → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 201 · El Campo se vende con un cupo menor a su capacidad; la Platea numerada se vende completa (100 × 250). Guarda {{draftSectoresId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"BORRADOR\",\"idLugar\":\"{{lugarSeedId}}\",\"sectores\":[{\"id\":\"{{sectorGeneralSeedId}}\",\"precio\":95000,\"capacidadTotal\":30},{\"id\":\"{{sectorNumeradoSeedId}}\",\"precio\":180000}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "const por = function (id) { return b.sectores.filter(function (s) { return s.id === id; })[0]; };",
+                  "pm.test('Campo con cupo del evento', function () { pm.expect(por(pm.environment.get('sectorGeneralSeedId')).capacidad).to.eql(30); });",
+                  "pm.test('Platea numerada completa', function () { const p = por(pm.environment.get('sectorNumeradoSeedId')); pm.expect(p.esNumerado).to.eql(true); pm.expect(p.capacidad).to.eql(25000); pm.expect(p.filas).to.eql(100); });",
+                  "pm.environment.set('draftSectoresId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.21 Editar el borrador: la lista de sectores reemplaza a la anterior → 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{draftSectoresId}}",
+            "description": "Rol: ORGANIZADOR · Esperado: 200 · En borrador `sectores` es la lista completa: la Platea omitida se quita.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"sectores\":[{\"id\":\"{{sectorGeneralSeedId}}\",\"precio\":99000,\"capacidadTotal\":30}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Solo queda el Campo, con el precio nuevo', function () { pm.expect(b.sectores).to.have.lengthOf(1); pm.expect(b.sectores[0].precio).to.eql(99000); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.22 Cambiar el lugar de un borrador descarta sus sectores → 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{draftSectoresId}}",
+            "description": "Rol: ORGANIZADOR · Esperado: 200 · Los sectores pertenecían al lugar anterior.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idLugar\":\"c0000000-0000-4000-8000-000000000002\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Nuevo lugar y sin sectores', function () { pm.expect(b.lugar.id).to.eql('c0000000-0000-4000-8000-000000000002'); pm.expect(b.sectores).to.have.lengthOf(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.23 Eliminar ese borrador → 204",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{draftSectoresId}}",
+            "description": "Rol: ORGANIZADOR · Esperado: 204 · Limpieza.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.24 Publicar sin elegir lugar → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 400 · idLugar es obligatorio para publicar.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"PUBLICADO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Pide el lugar', function () { pm.expect(pm.response.json().message).to.include('idLugar'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.25 Un borrador puede quedar sin lugar → 201 (\"Por definir\")",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos",
+            "description": "Rol: ORGANIZADOR · Esperado: 201 · Los borradores sin lugar comparten un único lugar reservado \"Por definir\". Guarda {{draftSinLugarId}}.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Postman LUG-04 {{$guid}}\",\"tipo\":\"RECITAL\",\"fechaInicio\":\"2028-02-10T20:00:00\",\"estado\":\"BORRADOR\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Lugar por definir', function () { pm.expect(b.lugar.nombre).to.eql('Por definir'); });",
+                  "pm.environment.set('draftSinLugarId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.26 Ese borrador no se puede publicar sin lugar → 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{draftSinLugarId}}/publicacion",
+            "description": "Rol: ORGANIZADOR · Esperado: 409.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', function () { pm.response.to.have.status(409); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "pm.test('Pide elegir lugar', function () { pm.expect(pm.response.json().message).to.include('elegí un lugar'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02.27 Eliminar el borrador sin lugar → 204",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{draftSinLugarId}}",
+            "description": "Rol: ORGANIZADOR · Esperado: 204 · Limpieza.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1631,13 +2210,13 @@
               }
             ],
             "url": "{{baseUrl}}/api/lugares",
-            "description": "Rol: ORGANIZADOR · Esperado: 201 · Guarda {{lugarId}}.",
+            "description": "Rol: ADMIN · Esperado: 201 · Guarda {{lugarId}}.",
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_org}}",
+                  "value": "{{token_admin}}",
                   "type": "string"
                 }
               ]
@@ -1771,13 +2350,13 @@
               }
             ],
             "url": "{{baseUrl}}/api/lugares/{{lugarId}}",
-            "description": "Rol: ORGANIZADOR · Esperado: 200.",
+            "description": "Rol: ADMIN · Esperado: 200.",
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_org}}",
+                  "value": "{{token_admin}}",
                   "type": "string"
                 }
               ]
@@ -1826,13 +2405,13 @@
               }
             ],
             "url": "{{baseUrl}}/api/lugares/{{lugarId}}/sectores",
-            "description": "Rol: ORGANIZADOR · Esperado: 201 · Guarda {{lugarSectorId}}.",
+            "description": "Rol: ADMIN · Esperado: 201 · Guarda {{lugarSectorId}}.",
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_org}}",
+                  "value": "{{token_admin}}",
                   "type": "string"
                 }
               ]
@@ -1882,13 +2461,13 @@
               }
             ],
             "url": "{{baseUrl}}/api/sectores/{{lugarSectorId}}",
-            "description": "Rol: ORGANIZADOR · Esperado: 200.",
+            "description": "Rol: ADMIN · Esperado: 200.",
             "auth": {
               "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "{{token_org}}",
+                  "value": "{{token_admin}}",
                   "type": "string"
                 }
               ]
@@ -2665,6 +3244,180 @@
                 "exec": [
                   "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
                   "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.24 Un ORGANIZADOR no puede crear lugares → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares",
+            "description": "Rol: ORGANIZADOR · Esperado: 403 · Los lugares los crea el ADMIN; el organizador elige uno al crear el evento.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Lugar del organizador\",\"ciudad\":\"Rosario\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.25 Un ORGANIZADOR no puede editar lugares ni sectores → 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/sectores/{{sectorGeneralSeedId}}",
+            "description": "Rol: ORGANIZADOR · Esperado: 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Campo\",\"capacidad\":1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.26 El ORGANIZADOR puede consultar los lugares → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares",
+            "description": "Rol: ORGANIZADOR · Esperado: 200 · Es la lista de la que elige al crear un evento (el lugar reservado \"Por definir\" no aparece).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_org}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Content-Type JSON', function () { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Trae los lugares con sus sectores', function () { pm.expect(b).to.be.an('array').that.is.not.empty; pm.expect(b[0].sectores).to.be.an('array'); });",
+                  "pm.test('No aparece Por definir', function () { b.forEach(function (l) { pm.expect(l.nombre).to.not.eql('Por definir'); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03.27 Eliminar el lugar de 03.01 (con su sector) → 204",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/lugares/{{lugarId}}",
+            "description": "Rol: ADMIN · Esperado: 204 · Limpieza del lugar y el sector que crearon 03.01 y 03.05.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', function () { pm.response.to.have.status(204); });"
                 ]
               }
             }

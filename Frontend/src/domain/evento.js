@@ -5,14 +5,6 @@
  * msvc-eventos = MySQL (confirmado). Notificaciones = msvc propio futuro (no mockeamos aún).
  */
 
-import {
-  MAX_ASIENTOS_POR_FILA,
-  MAX_FILAS,
-  capacidadDeLayout,
-  layoutValido,
-  parseEntero,
-} from './asiento'
-
 export const EVENTO_TIPOS = {
   RECITAL: 'RECITAL',
   TEATRO: 'TEATRO',
@@ -105,47 +97,92 @@ export function isFechaInicioFutura(value) {
 }
 
 /**
- * Limpia filas de tipos de entrada del form.
- * Nunca cupo ilimitado: sinCupo se ignora; capacidad es número o null si vacío.
+ * Lugar reservado del backend para los borradores que todavía no tienen lugar elegido.
+ * No se muestra ni se elige (el backend lo oculta del listado de lugares).
  */
-export function cleanSectoresFromForm(sectores) {
-  if (!Array.isArray(sectores)) return []
-  return sectores
-    .map((s) => {
-      const nombre = String(s?.nombre || '').trim()
-      const precioRaw = s?.precio
-      const precio =
-        precioRaw === '' || precioRaw == null ? null : Number(precioRaw)
-      const esNumerado = Boolean(s?.esNumerado)
-      // Sector numerado: la capacidad SIEMPRE se deriva de filas * asientosPorFila (se ignora el cupo suelto).
-      const filas = esNumerado ? parseEntero(s?.filas) : undefined
-      const asientosPorFila = esNumerado ? parseEntero(s?.asientosPorFila) : undefined
-      let capacidadTotal
-      if (esNumerado) {
-        capacidadTotal = capacidadDeLayout(filas, asientosPorFila)
-      } else {
-        const capRaw = s?.capacidad ?? s?.capacidadTotal
-        const cap = capRaw === '' || capRaw == null ? null : Number(capRaw)
-        capacidadTotal = Number.isFinite(cap) ? cap : null
-      }
-      return {
-        id: s?.id || undefined,
-        nombre,
-        precio: Number.isFinite(precio) ? precio : null,
-        capacidadTotal,
-        esNumerado,
-        filas,
-        asientosPorFila,
-        sinCupo: false,
-      }
-    })
-    .filter((s) => s.nombre)
+export const LUGAR_POR_DEFINIR_ID = 'c0000000-0000-4000-8000-0000000000ff'
+
+/**
+ * Filas de la tabla de sectores de un evento (LUG-04). Los sectores los define el lugar: el
+ * organizador solo elige cuáles se venden en el evento y les fija precio y cupo.
+ * @param {{ sectores?: object[] }} lugar lugar con sus sectores
+ * @param {object[]} [delEvento] sectores ya elegidos en el evento (detalle) para precargar al editar
+ */
+export function rowsDeLugar(lugar, delEvento = []) {
+  const sectores = Array.isArray(lugar?.sectores) ? lugar.sectores : []
+  return sectores.map((s) => {
+    const previo = (Array.isArray(delEvento) ? delEvento : []).find((x) => x.id === s.id)
+    const capacidad = Number(s.capacidad) || 0
+    const cupoPrevio = previo ? Number(previo.capacidad ?? previo.capacidadTotal) : 0
+    return {
+      id: s.id,
+      nombre: s.nombre || '',
+      tipo: s.tipo || '',
+      capacidad,
+      esNumerado: Boolean(s.esNumerado),
+      filas: s.filas,
+      asientosPorFila: s.asientosPorFila,
+      incluido: Boolean(previo),
+      precio: previo && previo.precio != null ? String(previo.precio) : '',
+      // Un cupo menor a la capacidad es propio del evento; igual (o vacío) = se vende todo el sector.
+      cupo:
+        previo && !s.esNumerado && cupoPrevio > 0 && cupoPrevio < capacidad
+          ? String(cupoPrevio)
+          : '',
+    }
+  })
+}
+
+/** '' / null → null; otro valor → Number (NaN si es basura). Acepta coma decimal. */
+function numeroOVacio(valor) {
+  const s = String(valor ?? '').trim().replace(',', '.')
+  return s === '' ? null : Number(s)
 }
 
 /**
- * Validación form gestión.
- * mode 'borrador': solo nombre; sin límite de fecha; sectores opcionales.
- * mode 'publicacion': completo (fecha, lugar, ≥1 sector con cupo≥1) + artista principal.
+ * Sectores elegidos del form, listos para el pedido: { id, precio, capacidadTotal? }.
+ * `capacidadTotal` es el cupo del evento y solo va si se cargó (vacío = todo el sector; en sectores
+ * numerados nunca va: se venden completos).
+ */
+export function cleanSectoresFromForm(rows) {
+  if (!Array.isArray(rows)) return []
+  return rows
+    .filter((r) => r?.incluido)
+    .map((r) => {
+      const precio = numeroOVacio(r.precio)
+      const cupo = r.esNumerado ? null : numeroOVacio(r.cupo)
+      const out = { id: r.id, precio: Number.isFinite(precio) ? precio : null }
+      if (cupo !== null) out.capacidadTotal = cupo
+      return out
+    })
+}
+
+/** Mensaje de error de los sectores elegidos ('' si están bien). `estricto` = al publicar. */
+function errorEnSectoresElegidos(rows, estricto) {
+  for (const r of (Array.isArray(rows) ? rows : []).filter((x) => x?.incluido)) {
+    const precio = numeroOVacio(r.precio)
+    if (precio === null) {
+      if (estricto) return `Para publicar, «${r.nombre}» necesita precio ≥ 0`
+    } else if (!Number.isFinite(precio) || precio < 0) {
+      return `Precio inválido en «${r.nombre}»`
+    }
+    if (estricto && !(r.capacidad >= 1)) {
+      return `El sector «${r.nombre}» no tiene capacidad: el administrador tiene que definirla en el lugar`
+    }
+    if (!r.esNumerado) {
+      const cupo = numeroOVacio(r.cupo)
+      if (cupo !== null && (!Number.isInteger(cupo) || cupo < 1 || cupo > r.capacidad)) {
+        return `El cupo de «${r.nombre}» debe ser un entero entre 1 y ${r.capacidad} (capacidad del sector)`
+      }
+    }
+  }
+  return ''
+}
+
+/**
+ * Validación form gestión (LUG-04: el evento elige un lugar y sus sectores).
+ * mode 'borrador': solo nombre y artista principal; lugar y sectores opcionales.
+ * mode 'publicacion': completo (fecha, lugar, ≥1 sector elegido con precio) + artista principal.
  * No se valida “fecha futura” acá (fuera de alcance de evaluación).
  * @returns {{ ok: boolean, error: string, sectores: object[] }}
  */
@@ -187,98 +224,34 @@ export function validateEventoGestionForm(form, sectoresRows, mode = 'borrador')
   }
 
   const fecha = form?.fechaInicio || form?.fechaHora || ''
+  const idLugar = String(form?.idLugar || '').trim()
   const sectores = cleanSectoresFromForm(sectoresRows)
 
+  if (sectores.length && !idLugar) {
+    return { ok: false, error: 'Elegí un lugar antes de seleccionar sectores', sectores }
+  }
+  const errorSectores = errorEnSectoresElegidos(sectoresRows, isPub)
+  if (errorSectores) {
+    return { ok: false, error: errorSectores, sectores }
+  }
+
   if (!isPub) {
-    // Borrador: sin límite de fecha; sectores a medias OK
-    for (const s of sectores) {
-      if (s.precio != null && (s.precio < 0 || !Number.isFinite(s.precio))) {
-        return {
-          ok: false,
-          error: `Precio inválido en «${s.nombre}»`,
-          sectores,
-        }
-      }
-      // Numerado en borrador: puede quedar sin layout, pero si se cargó algo debe ser válido.
-      if (
-        s.esNumerado &&
-        (s.filas != null || s.asientosPorFila != null) &&
-        !layoutValido(s.filas, s.asientosPorFila)
-      ) {
-        return {
-          ok: false,
-          error: `Layout inválido en «${s.nombre}»: filas (1 a ${MAX_FILAS}) y asientos por fila (1 a ${MAX_ASIENTOS_POR_FILA}), números enteros`,
-          sectores,
-        }
-      }
-      if (
-        s.capacidadTotal != null &&
-        (!Number.isFinite(s.capacidadTotal) || s.capacidadTotal < 0)
-      ) {
-        return {
-          ok: false,
-          error: `Cupo inválido en «${s.nombre}»`,
-          sectores,
-        }
-      }
-    }
+    // Borrador: sin límite de fecha; lugar y sectores pueden quedar a medias
     return { ok: true, error: '', sectores }
   }
 
   // Publicación: completo (sin chequeo de “futuro”)
   if (!fecha) {
-    return {
-      ok: false,
-      error: 'Para publicar necesitás fecha y hora de inicio',
-      sectores,
-    }
+    return { ok: false, error: 'Para publicar necesitás fecha y hora de inicio', sectores }
   }
-  if (!String(form?.lugarNombre || '').trim()) {
-    return {
-      ok: false,
-      error: 'Para publicar necesitás el nombre del lugar',
-      sectores,
-    }
-  }
-  if (!String(form?.lugarCiudad || '').trim()) {
-    return {
-      ok: false,
-      error: 'Para publicar necesitás la ciudad del lugar',
-      sectores,
-    }
+  if (!idLugar) {
+    return { ok: false, error: 'Para publicar elegí un lugar', sectores }
   }
   if (!sectores.length) {
     return {
       ok: false,
-      error: 'Para publicar agregá al menos un tipo de entrada con nombre',
+      error: 'Para publicar elegí al menos un sector del lugar con su precio',
       sectores,
-    }
-  }
-  for (const s of sectores) {
-    if (s.precio == null || !Number.isFinite(s.precio) || s.precio < 0) {
-      return {
-        ok: false,
-        error: `Para publicar, «${s.nombre}» necesita precio ≥ 0`,
-        sectores,
-      }
-    }
-    if (s.esNumerado && !layoutValido(s.filas, s.asientosPorFila)) {
-      return {
-        ok: false,
-        error: `Para publicar, el sector numerado «${s.nombre}» necesita filas (1 a ${MAX_FILAS}) y asientos por fila (1 a ${MAX_ASIENTOS_POR_FILA})`,
-        sectores,
-      }
-    }
-    if (
-      s.capacidadTotal == null ||
-      !Number.isFinite(s.capacidadTotal) ||
-      s.capacidadTotal < 1
-    ) {
-      return {
-        ok: false,
-        error: `Para publicar, «${s.nombre}» necesita cupo ≥ 1 (no hay cupo ilimitado)`,
-        sectores,
-      }
     }
   }
   return { ok: true, error: '', sectores }
