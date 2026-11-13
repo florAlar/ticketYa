@@ -1,5 +1,6 @@
 package eventos.service;
 
+import eventos.Messaging.EventChangeEvent;
 import feign.FeignException;
 import eventos.clients.EntradasClient;
 import eventos.clients.VentasClient;
@@ -51,6 +52,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -84,8 +86,9 @@ public class EventoServiceImpl implements EventoService {
         private final EventoMapper eventoMapper;
         private final EntradasClient entradasClient;
         private final VentasClient ventasClient;
+        private final ApplicationEventPublisher eventPublisher;
 
-        public EventoServiceImpl(
+    public EventoServiceImpl(
                 EventoRepository eventoRepository,
                 PrecioSectorRepository precioSectorRepository,
                 LugarRepository lugarRepository,
@@ -94,7 +97,8 @@ public class EventoServiceImpl implements EventoService {
                 EventoParticipanteRepository eventoParticipanteRepository,
                 EventoMapper eventoMapper,
                 EntradasClient entradasClient,
-                VentasClient ventasClient) {
+                VentasClient ventasClient,
+                ApplicationEventPublisher eventPublisher) {
             this.eventoRepository = eventoRepository;
             this.precioSectorRepository = precioSectorRepository;
             this.lugarRepository = lugarRepository;
@@ -104,6 +108,7 @@ public class EventoServiceImpl implements EventoService {
             this.eventoMapper = eventoMapper;
             this.entradasClient = entradasClient;
             this.ventasClient = ventasClient;
+            this.eventPublisher = eventPublisher;
         }
 
         @Override
@@ -388,12 +393,18 @@ public class EventoServiceImpl implements EventoService {
             throw new ForbiddenException("Sin permiso para cambiar estado a " + next);
         }
 
-        if (BORRADOR.equalsIgnoreCase(evento.getEstado()) && !PUBLICADO.equals(next)) {
+        if (BORRADOR.equalsIgnoreCase(evento.getEstado())) {
             throw new BusinessConflictException("Publicá el borrador antes de cambiar a " + next);
         }
 
+        String anterior = evento.getEstado();      // se lee ANTES de cambiarlo
         evento.setEstado(next);
         eventoRepository.save(evento);
+
+        if (!next.equalsIgnoreCase(anterior) && (CANCELADO.equals(next) || SUSPENDIDO.equals(next))) {
+            eventPublisher.publishEvent(new EventChangeEvent(
+                    evento.getId(), next, evento.getNombre(), evento.getFechaPublicacion(), null));
+        }
 
         if (CANCELADO.equals(next)) {
             notifyReintegroBestEffort(evento.getId());
