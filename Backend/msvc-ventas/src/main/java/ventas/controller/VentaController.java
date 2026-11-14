@@ -348,6 +348,31 @@ public class VentaController {
         return ventaService.listarCompras(requireUser(userId));
     }
 
+    /**
+     * Interno: ids de clientes con compra APROBADA del evento.
+     * Uso principal: Feign desde msvc-notificaciones (fan-out de avisos push).
+     */
+    @Operation(
+            summary = "Clientes con compra aprobada de un evento",
+            description = """
+                    Uso interno (Feign msvc-notificaciones): ids de clientes a notificar
+                    ante una cancelación. No requiere identidad de usuario.
+                    """,
+            tags = "Ventas",
+            extensions = @Extension(name = "x-internal",
+                    properties = @ExtensionProperty(name = "value", value = "true")))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Ids de clientes (puede ser vacío)",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = String.class)))),
+            @ApiResponse(responseCode = "400", description = "idEvento inválido",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class)))
+    })
+    @GetMapping("/compras/evento/{idEvento}")
+    public List<String> listarClientesAprobadosPorEvento(
+            @Parameter(description = "UUID del evento", required = true) @PathVariable String idEvento) {
+        return ventaService.listarClientesAprobadosPorEvento(idEvento);
+    }
+
     @Operation(
             summary = "Iniciar pago de una compra",
             description = """

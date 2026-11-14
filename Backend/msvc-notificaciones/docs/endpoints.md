@@ -21,6 +21,9 @@ Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio v
 
 Eventos broker (no REST, ambos docs): CompraConfirmada; EventoCancelado; EventoModificado; NuevoEventoArtistaFavorito; DevolucionAprobada.
 
+Implementado hoy: `EventoCancelado` → notificación **push** a cada cliente con compra APROBADA del evento.
+El resto de los eventos queda pendiente (ver contrato en `specs/comunicacion.md`).
+
 ### Enrutamiento gateway (relacionado)
 
 - /notificaciones/** → msvc-notificaciones

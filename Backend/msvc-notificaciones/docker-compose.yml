@@ -17,6 +17,7 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: ticketya
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-ticketya_dev}
+      TICKETYA_URI_VENTAS: http://ms-ventas:8083
     depends_on:
       db-mysql-notificaciones:
         condition: service_healthy

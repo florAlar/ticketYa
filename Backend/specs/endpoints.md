@@ -182,6 +182,7 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 - POST /compras — Crear compra desde reserva válida (Idempotency-Key)
 - GET /compras/{id} — Consultar compra propia
 - GET /compras — Listar compras propias
+- GET /compras/evento/{idEvento} — Ids de clientes con compra APROBADA del evento (interno; Feign desde msvc-notificaciones para avisos push)
 - POST /compras/{id}/pagos — Iniciar pago
 - GET /compras/{id}/pagos — Consultar pagos de la compra
 - POST /pagos/{id}/reintentos — Reintentar pago permitido

@@ -55,7 +55,8 @@ flowchart LR
 Reglas de la arquitectura:
 - El navegador habla **solo con el gateway**; nunca con un microservicio directo.
 - **Una base de datos por microservicio.** No se comparten entidades ni tablas; las referencias entre servicios son lógicas (UUID sin FK física). Ver `modelo-datos.md`.
-- Comunicación **REST síncrona** (OpenFeign) entre microservicios, según la consigna E1. No hay broker en esta entrega.
+- Comunicación **REST síncrona** (OpenFeign) entre microservicios para el flujo de E1.
+- **Broker RabbitMQ** para eventos de dominio (E2): `msvc-eventos` publica `EventoCancelado` en `eventos.exchange` y `msvc-notificaciones` lo consume para generar avisos push. Contrato en `specs/comunicacion.md`.
 - Cada servicio es un proyecto Maven independiente con su `Dockerfile` y su `docker-compose.yml`; `Backend/docker-compose.yml` los integra con `include`.
 
 ## 2. Responsabilidades

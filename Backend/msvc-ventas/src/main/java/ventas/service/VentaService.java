@@ -50,6 +50,12 @@ public interface VentaService {
 
     List<CompraResponseDTO> listarCompras(String idCliente);
 
+    /**
+     * Ids de clientes con compra APROBADA del evento.
+     * Interno (Feign msvc-notificaciones): destinatarios de avisos ante cancelación.
+     */
+    List<String> listarClientesAprobadosPorEvento(String idEvento);
+
     PagoResponseDTO iniciarPago(String idCliente, String idCompra, PagoCreateRequestDTO request);
 
     List<PagoResponseDTO> listarPagos(String idCliente, String idCompra);

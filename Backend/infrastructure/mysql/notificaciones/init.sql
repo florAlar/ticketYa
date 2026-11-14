@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS intento_envio (
 INSERT INTO plantilla_notificacion (id_plantilla, tipo_evento, canal, asunto, contenido, activa) VALUES
   ('n0000000-0000-4000-8000-000000000001', 'CompraConfirmada', 'EMAIL',
    'Tu compra en TicketYa', 'Hola, adjuntamos el detalle de tu compra y entradas.', 1),
-  ('n0000000-0000-4000-8000-000000000002', 'EventoCancelado', 'EMAIL',
+  ('n0000000-0000-4000-8000-000000000002', 'EventoCancelado', 'PUSH',
    'Evento cancelado', 'El evento fue cancelado. Gestionaremos el reintegro.', 1)
-ON DUPLICATE KEY UPDATE asunto = VALUES(asunto);
+ON DUPLICATE KEY UPDATE asunto = VALUES(asunto), canal = VALUES(canal), contenido = VALUES(contenido);
 
 -- Sin notificaciones/intentos seed (solo catálogo de plantillas)

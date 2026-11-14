@@ -28,11 +28,55 @@
 | `/eventos/{idEvento}/validaciones` | msvc-entradas |
 | `/eventos/{id}/recomendaciones` | msvc-preferencias |
 
-## Async (justificado)
+## Async (broker)
 
-- Notificaciones y efectos de dominio (compra confirmada, cancelación de evento, etc.): vía broker/eventos de dominio cuando se implemente (E2).
+Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Implementado para avisos de cancelación.
+
+### Contrato `EventoCancelado`
+
+| Elemento | Valor |
+|---|---|
+| Exchange | `eventos.exchange` (topic, durable=true, autoDelete=false) — lo declara `msvc-eventos` |
+| Routing key | `evento.cancelado` (`evento.suspendido` reservado) |
+| Cola consumidora | `notificaciones.eventos` → binding `evento.#`, DLQ `notificaciones.eventos.dlq` vía `notificaciones.dlx` |
+| Semántica | at-least-once; consumidor idempotente por (`eventoId`, `idUsuario`, `tipo`). `messageId` es trazabilidad (uuid por publicación), no clave de deduplicación |
+
+Payload (JSON):
+
+```json
+{
+  "messageId": "uuid",
+  "eventoId": "uuid",
+  "tipo": "EventoCancelado",
+  "nombre": "Rock in Rio",
+  "fecha": "2026-12-20T21:00:00",
+  "cambios": null,
+  "occurredAt": "2026-11-13T19:20:00Z"
+}
+```
+
+`tipo` usa el vocabulario de `plantilla_notificacion.tipo_evento`. `fecha` es `fechaInicio` del evento.
+
+Formatos: `fecha` es ISO-8601 **sin** zona (LocalDateTime del evento); `occurredAt` es ISO-8601 **UTC con `Z`** y puede traer nanosegundos (`2026-11-14T04:49:57.150570083Z`). Ambos son aceptados por `Instant`/`LocalDateTime` de Java sin configuración extra.
+
+### Fan-out al cliente
+
+`EventoCancelado` no lleva destinatarios: quien los conoce es `msvc-ventas`.
+
+```
+msvc-eventos --evento.cancelado--> msvc-notificaciones
+                                          |
+                                          +--> GET /compras/evento/{id} (interno, ventas)
+                                          +--> una notificación PUSH por cliente con compra APROBADA
+```
+
+- Canal: **PUSH** (`plantilla_notificacion.tipo_evento = 'EventoCancelado'`).
+- Los clientes con compra `PENDIENTE_PAGO` no reciben aviso de reintegro.
+
+### Resto de efectos de dominio
+
 - Fila virtual / tokens temporales: apoyo Redis en msvc-ventas (E2).
-- No hay REST obligatorio entre msvcs para esas ingestas.
+- `EventoModificado`, `CompraConfirmada`, `DevolucionAprobada`: pendientes.
 
 ## Headers de correlación / idempotencia
 

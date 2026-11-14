@@ -470,6 +470,16 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<String> listarClientesAprobadosPorEvento(String idEvento) {
+        if (idEvento == null || idEvento.isBlank()) {
+            throw new IllegalArgumentException("idEvento es obligatorio");
+        }
+        return compraRepository.findDistinctClientesByEventoAndEstado(
+                idEvento.trim(), EST_COMPRA_APROBADA);
+    }
+
+    @Override
     @Transactional
     public PagoResponseDTO iniciarPago(String idCliente, String idCompra, PagoCreateRequestDTO request) {
         Compra compra = requireCompraPropia(idCliente, idCompra);
