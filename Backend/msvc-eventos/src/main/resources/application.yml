@@ -16,6 +16,11 @@ spring:
       hibernate:
         jdbc:
           time_zone: UTC
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:ticketya}
+    password: ${SPRING_RABBITMQ_PASSWORD:ticketya_dev}
 
 # msvc-entradas (Feign reintegro cancelación). Docker: http://ms-entradas:8084
 ticketya:

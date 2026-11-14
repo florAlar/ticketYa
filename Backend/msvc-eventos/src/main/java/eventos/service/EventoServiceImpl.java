@@ -396,18 +396,18 @@ public class EventoServiceImpl implements EventoService {
         if (BORRADOR.equalsIgnoreCase(evento.getEstado())) {
             throw new BusinessConflictException("Publicá el borrador antes de cambiar a " + next);
         }
-
+		//Guardar estados del evento
         String anterior = evento.getEstado();      // se lee ANTES de cambiarlo
-        evento.setEstado(next);
+        evento.setEstado(next); //guarda el nuevo estado
         eventoRepository.save(evento);
 
-        if (!next.equalsIgnoreCase(anterior) && (CANCELADO.equals(next) || SUSPENDIDO.equals(next))) {
+        if (!next.equalsIgnoreCase(anterior) && (CANCELADO.equals(next) || SUSPENDIDO.equals(next))) { // esta bosta puede bugearse 
             eventPublisher.publishEvent(new EventChangeEvent(
-                    evento.getId(), next, evento.getNombre(), evento.getFechaPublicacion(), null));
+                    evento.getId(), next, evento.getNombre(), evento.getFechaInicio(), null));
         }
 
         if (CANCELADO.equals(next)) {
-            notifyReintegroBestEffort(evento.getId());
+            notifyReintegroBestEffort(evento.getId()); //Arreglar esto tambien
         }
         return toDetalle(evento);
     }

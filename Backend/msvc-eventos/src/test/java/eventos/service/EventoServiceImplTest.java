@@ -23,11 +23,13 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -35,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import eventos.clients.EntradasClient;
 import eventos.clients.VentasClient;
 import eventos.clients.VentasClient.AbrirCuposBody;
+import eventos.Messaging.EventChangeEvent;
 import eventos.dto.EventoFechaRequestDTO;
 import eventos.dto.EventoParticipantesRequestDTO;
 import eventos.dto.EventoRequestDTO;
@@ -95,6 +98,9 @@ class EventoServiceImplTest {
     @Mock
     private VentasClient ventasClient;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     @InjectMocks
     private EventoServiceImpl service;
 
@@ -107,7 +113,7 @@ class EventoServiceImplTest {
     void setUp() {
         reset(eventoRepository, precioSectorRepository, lugarRepository, sectorRepository,
                 participanteRepository, eventoParticipanteRepository,
-                eventoMapper, entradasClient, ventasClient);
+                eventoMapper, entradasClient, ventasClient, eventPublisher);
         when(eventoRepository.findByIdWithLugar(any())).thenReturn(Optional.empty());
         when(eventoRepository.buscar(any(), any(), any(), any(),
                 anyBoolean(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
@@ -553,6 +559,7 @@ class EventoServiceImplTest {
         service.patchEstado(EVENTO_ID, "SUSPENDIDO", ORG_ID, "ADMIN");
 
         assertEquals("SUSPENDIDO", evento.getEstado());
+        verify(eventPublisher).publishEvent(any(EventChangeEvent.class));
     }
 
     @Test
@@ -564,6 +571,21 @@ class EventoServiceImplTest {
         service.patchEstado(EVENTO_ID, "SUSPENDIDO", ORG_ID, "ORGANIZADOR");
 
         assertEquals("SUSPENDIDO", evento.getEstado());
+        verify(eventPublisher).publishEvent(any(EventChangeEvent.class));
+    }
+
+    @Test
+    void patchEstado_cancelado_publicaEventoConFechaDelEvento() {
+        Evento evento = evento("PUBLICADO", ORG_ID);
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        service.patchEstado(EVENTO_ID, "CANCELADO", ORG_ID, "ADMIN");
+
+        ArgumentCaptor<EventChangeEvent> captor = ArgumentCaptor.forClass(EventChangeEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertEquals("CANCELADO", captor.getValue().tipo());
+        assertEquals(evento.getFechaInicio(), captor.getValue().fecha());
     }
 
     @Test

@@ -1,3 +1,6 @@
+include:
+  - path: ../infrastructure/rabbitmq/docker-compose.yml
+
 services:
 
   ms-eventos:
@@ -10,10 +13,16 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db-mysql-eventos:3306/eventos
       SPRING_DATASOURCE_USERNAME: ticketya
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-ticketya_dev}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ticketya
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-ticketya_dev}
       TICKETYA_URI_ENTRADAS: http://ms-entradas:8084
       TICKETYA_URI_VENTAS: http://ms-ventas:8083
     depends_on:
       db-mysql-eventos:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   db-mysql-eventos:
