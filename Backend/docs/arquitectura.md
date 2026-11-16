@@ -102,7 +102,11 @@ Headers relevantes: `X-User-Id`, `X-User-Role` (identidad), `Idempotency-Key` (r
 
 ## 5. Identificación del usuario
 
-Según la consigna, en la Entrega 1 no hay autenticación formal: la identidad llega por encabezado (`X-User-Id`, `X-User-Role`) y los microservicios confían en ella. El gateway admite también JWT con roles, activable con `TICKETYA_JWT_ENABLED=true` (adelanto de la Entrega 2). Detalle en el `README.md` raíz.
+Autenticación formal con **JWT y roles** en el borde (Entrega 2): el gateway valida el token
+(firma, expiración, roles) y es el único que decide el acceso. La identidad viaja hacia los
+microservicios en los headers `X-User-Id` / `X-User-Role` / `X-User-Roles`, que **el gateway
+sobreescribe con los claims del token**: los que envíe el cliente se descartan (en rutas públicas
+se vacían). Detalle en el `README.md` raíz.
 
 ## 6. Despliegue
 

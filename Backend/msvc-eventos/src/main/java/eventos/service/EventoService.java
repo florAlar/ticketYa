@@ -1,6 +1,7 @@
 package eventos.service;
 
 import eventos.dto.AsientoResponseDTO;
+import eventos.dto.CoordenadasDTO;
 import eventos.dto.EventoDetalleResponseDTO;
 import eventos.dto.EventoFechaRequestDTO;
 import eventos.dto.EventoParticipantesRequestDTO;
@@ -62,6 +63,9 @@ public interface EventoService {
 
     /** Elimina un lugar y sus sectores; 409 si tiene eventos asociados. */
     void eliminarLugar(String id);
+
+    /** Resuelve coordenadas geográficas a partir de dirección y ciudad (LUG-03). */
+    CoordenadasDTO geocodificar(String direccion, String ciudad);
 
     SectorEventoDTO crearSector(String idLugar, SectorRequestDTO body);
 

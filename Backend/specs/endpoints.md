@@ -142,6 +142,7 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 ### recurso Lugares y sectores
 
 - GET: /lugares — Buscar lugares
+- GET: /lugares/geocodificar?direccion=&ciudad= — Geocodificar dirección y ciudad con caché y fallback resiliente (**solo ADMIN**, LUG-03)
 - GET: /lugares/{id} — Consultar lugar y sectores
 - POST: /lugares — Crear lugar (**solo ADMIN**)
 - PUT: /lugares/{id} — Modificar lugar (**solo ADMIN**)

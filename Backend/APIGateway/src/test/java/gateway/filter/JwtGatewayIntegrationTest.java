@@ -2,6 +2,7 @@ package gateway.filter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -80,8 +81,8 @@ class JwtGatewayIntegrationTest {
         }
     }
 
-    private Resultado ejecutar(boolean jwtEnabled, MockHttpServletRequest req) throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil, jwtEnabled);
+    private Resultado ejecutar(MockHttpServletRequest req) throws Exception {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil);
         Resultado r = new Resultado();
         filter.doFilterInternal(req, r.response, r.chain);
         return r;
@@ -99,7 +100,7 @@ class JwtGatewayIntegrationTest {
     void tokenDeUsuarios_esAceptadoYPropagaHeadersDeIdentidad() throws Exception {
         String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
 
-        Resultado r = ejecutar(true, get("/api/entradas", token));
+        Resultado r = ejecutar(get("/api/entradas", token));
 
         assertTrue(r.paso(), "el gateway debe aceptar un token emitido por usuarios");
         HttpServletRequest down = r.requestDownstream();
@@ -116,7 +117,7 @@ class JwtGatewayIntegrationTest {
         req.addHeader("X-User-Id", "00000000-0000-0000-0000-000000000000");
         req.addHeader("X-User-Role", "ADMIN");
 
-        Resultado r = ejecutar(true, req);
+        Resultado r = ejecutar(req);
 
         assertTrue(r.paso());
         assertEquals(USER_ID, r.requestDownstream().getHeader("X-User-Id"));
@@ -127,7 +128,7 @@ class JwtGatewayIntegrationTest {
     void tokenFirmadoConOtroSecreto_devuelve401() throws Exception {
         String token = tokenComoUsuarios("otro-secreto-distinto-de-32-caracteres-o-mas!!", "ADMIN", 60_000);
 
-        Resultado r = ejecutar(true, get("/api/entradas", token));
+        Resultado r = ejecutar(get("/api/entradas", token));
 
         assertEquals(401, r.response.getStatus());
         assertEquals(false, r.paso());
@@ -137,7 +138,7 @@ class JwtGatewayIntegrationTest {
     void tokenExpirado_devuelve401() throws Exception {
         String token = tokenComoUsuarios(SECRET, "CLIENTE", -60_000);
 
-        Resultado r = ejecutar(true, get("/api/entradas", token));
+        Resultado r = ejecutar(get("/api/entradas", token));
 
         assertEquals(401, r.response.getStatus());
         assertEquals(false, r.paso());
@@ -147,7 +148,7 @@ class JwtGatewayIntegrationTest {
     void clienteNoPuedeListarUsuarios_devuelve403() throws Exception {
         String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
 
-        Resultado r = ejecutar(true, get("/api/usuarios", token));
+        Resultado r = ejecutar(get("/api/usuarios", token));
 
         assertEquals(403, r.response.getStatus());
         assertEquals(false, r.paso());
@@ -157,7 +158,7 @@ class JwtGatewayIntegrationTest {
     void adminPuedeListarUsuarios() throws Exception {
         String token = tokenComoUsuarios(SECRET, "ADMIN", 60_000);
 
-        Resultado r = ejecutar(true, get("/api/usuarios", token));
+        Resultado r = ejecutar(get("/api/usuarios", token));
 
         assertTrue(r.paso());
         assertEquals("ADMIN", r.requestDownstream().getHeader("X-User-Role"));
@@ -167,13 +168,13 @@ class JwtGatewayIntegrationTest {
     void bajaDeLugares_esSoloAdmin() throws Exception {
         MockHttpServletRequest comoOrg = new MockHttpServletRequest("DELETE", "/api/lugares/c0000000-0000-4000-8000-000000000001");
         comoOrg.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, "ORGANIZADOR", 60_000));
-        Resultado r1 = ejecutar(true, comoOrg);
+        Resultado r1 = ejecutar(comoOrg);
         assertEquals(403, r1.response.getStatus());
         assertEquals(false, r1.paso());
 
         MockHttpServletRequest comoAdmin = new MockHttpServletRequest("DELETE", "/api/lugares/c0000000-0000-4000-8000-000000000001");
         comoAdmin.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, "ADMIN", 60_000));
-        Resultado r2 = ejecutar(true, comoAdmin);
+        Resultado r2 = ejecutar(comoAdmin);
         assertTrue(r2.paso());
     }
 
@@ -191,20 +192,28 @@ class JwtGatewayIntegrationTest {
         for (String[] e : escrituras) {
             MockHttpServletRequest comoOrg = new MockHttpServletRequest(e[0], e[1]);
             comoOrg.addHeader("Authorization", "Bearer " + org);
-            Resultado r = ejecutar(true, comoOrg);
+            Resultado r = ejecutar(comoOrg);
             assertEquals(403, r.response.getStatus(), "organizador " + e[0] + " " + e[1]);
 
             MockHttpServletRequest comoAdmin = new MockHttpServletRequest(e[0], e[1]);
             comoAdmin.addHeader("Authorization", "Bearer " + admin);
-            assertTrue(ejecutar(true, comoAdmin).paso(), "admin " + e[0] + " " + e[1]);
+            assertTrue(ejecutar(comoAdmin).paso(), "admin " + e[0] + " " + e[1]);
         }
         // lectura: el organizador elige lugar al crear un evento
         MockHttpServletRequest lee = new MockHttpServletRequest("GET", "/api/lugares");
         lee.addHeader("Authorization", "Bearer " + org);
-        assertTrue(ejecutar(true, lee).paso());
+        assertTrue(ejecutar(lee).paso());
         MockHttpServletRequest leeUno = new MockHttpServletRequest("GET", "/api/lugares/c0000000-0000-4000-8000-000000000001");
         leeUno.addHeader("Authorization", "Bearer " + org);
-        assertTrue(ejecutar(true, leeUno).paso());
+        assertTrue(ejecutar(leeUno).paso());
+
+        MockHttpServletRequest geoOrg = new MockHttpServletRequest("GET", "/api/lugares/geocodificar");
+        geoOrg.addHeader("Authorization", "Bearer " + org);
+        assertEquals(403, ejecutar(geoOrg).response.getStatus());
+
+        MockHttpServletRequest geoAdmin = new MockHttpServletRequest("GET", "/api/lugares/geocodificar");
+        geoAdmin.addHeader("Authorization", "Bearer " + admin);
+        assertTrue(ejecutar(geoAdmin).paso());
     }
 
     @Test
@@ -215,53 +224,69 @@ class JwtGatewayIntegrationTest {
         for (String[] e : new String[][] {{"PUT", id}, {"DELETE", id}}) {
             MockHttpServletRequest comoOrg = new MockHttpServletRequest(e[0], e[1]);
             comoOrg.addHeader("Authorization", "Bearer " + org);
-            Resultado r = ejecutar(true, comoOrg);
+            Resultado r = ejecutar(comoOrg);
             assertEquals(403, r.response.getStatus(), "organizador " + e[0]);
 
             MockHttpServletRequest comoAdmin = new MockHttpServletRequest(e[0], e[1]);
             comoAdmin.addHeader("Authorization", "Bearer " + admin);
-            assertTrue(ejecutar(true, comoAdmin).paso(), "admin " + e[0]);
+            assertTrue(ejecutar(comoAdmin).paso(), "admin " + e[0]);
         }
         // el alta sigue abierta al organizador (para no bloquear la creación del evento)
         MockHttpServletRequest alta = new MockHttpServletRequest("POST", "/api/participantes");
         alta.addHeader("Authorization", "Bearer " + org);
-        assertTrue(ejecutar(true, alta).paso());
+        assertTrue(ejecutar(alta).paso());
         // y asociar participantes a su evento también
         MockHttpServletRequest asociar = new MockHttpServletRequest("PUT", "/api/eventos/d0000000-0000-4000-8000-000000000001/participantes");
         asociar.addHeader("Authorization", "Bearer " + org);
-        assertTrue(ejecutar(true, asociar).paso());
+        assertTrue(ejecutar(asociar).paso());
     }
 
     @Test
-    void jwtHabilitado_sinToken_devuelve401() throws Exception {
-        Resultado r = ejecutar(true, get("/api/entradas", null));
+    void sinToken_devuelve401() throws Exception {
+        Resultado r = ejecutar(get("/api/entradas", null));
 
         assertEquals(401, r.response.getStatus());
         assertEquals(false, r.paso());
     }
 
     /**
-     * Documenta la limitación de la Entrega 1 (jwt-enabled=false): sin Bearer el gateway CONFÍA en
-     * los headers X-User-* que manda el cliente, por lo que cualquiera puede declararse ADMIN.
-     * Con TICKETYA_JWT_ENABLED=true (Entrega 2) esto deja de ser posible.
+     * El JWT es obligatorio: sin Bearer, los headers X-User-* del cliente NO habilitan el paso.
+     * Nadie se puede declarar ADMIN a mano.
      */
     @Test
-    void entrega1_sinToken_confiaEnHeadersDelCliente_limitacionConocida() throws Exception {
+    void sinToken_conHeadersXUserFalsificados_devuelve401() throws Exception {
         MockHttpServletRequest req = get("/api/usuarios", null);
         req.addHeader("X-User-Id", USER_ID);
         req.addHeader("X-User-Role", "ADMIN");
 
-        Resultado r = ejecutar(false, req);
+        Resultado r = ejecutar(req);
 
-        assertTrue(r.paso());
-        assertEquals("ADMIN", r.requestDownstream().getHeader("X-User-Role"));
+        assertEquals(401, r.response.getStatus());
+        assertEquals(false, r.paso());
     }
 
     @Test
-    void entrega1_conBearerInvalido_sigueDevolviendo401() throws Exception {
-        Resultado r = ejecutar(false, get("/api/entradas", "abc.def.ghi"));
+    void conBearerInvalido_devuelve401() throws Exception {
+        Resultado r = ejecutar(get("/api/entradas", "abc.def.ghi"));
 
         assertEquals(401, r.response.getStatus());
+        assertEquals(false, r.paso());
+    }
+
+    /**
+     * En rutas públicas tampoco se propaga la identidad del cliente: los headers X-User-* se vacían.
+     */
+    @Test
+    void rutaPublica_noPropagaHeadersXUserDelCliente() throws Exception {
+        MockHttpServletRequest req = get("/api/eventos", null);
+        req.addHeader("X-User-Id", USER_ID);
+        req.addHeader("X-User-Role", "ADMIN");
+
+        Resultado r = ejecutar(req);
+
+        assertTrue(r.paso());
+        assertNull(r.requestDownstream().getHeader("X-User-Id"));
+        assertNull(r.requestDownstream().getHeader("X-User-Role"));
     }
 
     /**

@@ -22,6 +22,12 @@ ticketya:
   uri:
     entradas: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
     ventas: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+  geocoding:
+    enabled: ${TICKETYA_GEOCODING_ENABLED:true}
+    provider: ${TICKETYA_GEOCODING_PROVIDER:mock}
+    timeout-ms: ${TICKETYA_GEOCODING_TIMEOUT_MS:2000}
+    max-retries: ${TICKETYA_GEOCODING_MAX_RETRIES:2}
+    cache-ttl-minutes: ${TICKETYA_GEOCODING_CACHE_TTL_MINUTES:60}
 
 # E2-NFR-03: correlation id en cada línea de log
 logging:

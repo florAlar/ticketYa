@@ -7,7 +7,7 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 | `TicketYa-E1.postman_collection.json` | 193 requests en 12 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
 
-**Última corrida verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (stack local completo con el gateway en `TICKETYA_JWT_ENABLED=false`; las carpetas 10 y 11 corren sin reiniciar datos).
+**Última corrida verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (stack local completo; las carpetas 10 y 11 corren sin reiniciar datos).
 
 ## Requisitos
 
@@ -47,11 +47,10 @@ No hace falta loguearse a mano. Un script *pre-request* de la colección hace lo
 
 Cada request declara en su descripción el rol que usa y el status esperado.
 
-**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección (hasta la carpeta 09: 127 requests, 376 assertions, 0 fallos) pasó con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles); la carpeta 10 se verificó solo con `false`. Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
-
-```bash
-curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
-```
+**Autenticación:** el gateway exige JWT (`Authorization: Bearer <token>`) fuera de las rutas
+públicas. La colección se loguea sola por rol y manda el `Bearer` en cada request, así que corre
+sin intervención. Los headers `X-User-Id` / `X-User-Role` que se manden a mano se descartan: la
+identidad sale siempre del token verificado.
 
 ## Carpetas
 

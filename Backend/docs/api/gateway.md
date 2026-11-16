@@ -89,6 +89,7 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/devoluciones/{id}/rechazo` | POST |
 | `/api/reportes/**` | DELETE |
 | `/api/lugares/**`, `/api/sectores/**` | POST / PUT / PATCH / DELETE (alta, edición y baja de lugares y sectores; LUG-01/LUG-04) |
+| `/api/lugares/geocodificar` | GET (geocodificación de lugares por dirección y ciudad; LUG-03) |
 
 ### 3.3 Notas de política
 
