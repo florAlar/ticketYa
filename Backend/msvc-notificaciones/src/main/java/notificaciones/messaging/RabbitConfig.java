@@ -20,8 +20,11 @@ public class RabbitConfig {
 
     public static final String EXCHANGE = "eventos.exchange";
     public static final String QUEUE = "notificaciones.eventos";
+    public static final String QUEUE_COMPRAS = "notificaciones.compras";
     public static final String DLX = "notificaciones.dlx";
     public static final String DLQ = "notificaciones.eventos.dlq";
+    public static final String DLQ_COMPRAS = "notificaciones.compras.dlq";
+    public static final String ROUTING_COMPRA = "compra.confirmada";
 
     @Bean
     TopicExchange eventosExchange() {
@@ -47,15 +50,40 @@ public class RabbitConfig {
     }
 
     @Bean
+    Queue colaCompras() {
+        return QueueBuilder.durable(QUEUE_COMPRAS)
+                .deadLetterExchange(DLX)
+                .deadLetterRoutingKey(DLQ_COMPRAS)
+                .build();
+    }
+
+    @Bean
+    Queue colaDlqCompras() {
+        return QueueBuilder.durable(DLQ_COMPRAS).build();
+    }
+
+    @Bean
     Binding bindingEventos(@Qualifier("colaEventos") Queue cola,
                            @Qualifier("eventosExchange") TopicExchange exchange) {
         return BindingBuilder.bind(cola).to(exchange).with("evento.#");
     }
 
     @Bean
+    Binding bindingCompras(@Qualifier("colaCompras") Queue cola,
+                           @Qualifier("eventosExchange") TopicExchange exchange) {
+        return BindingBuilder.bind(cola).to(exchange).with("compra.#");
+    }
+
+    @Bean
     Binding bindingDlq(@Qualifier("colaDlq") Queue cola,
                        @Qualifier("notificacionesDlx") DirectExchange exchange) {
         return BindingBuilder.bind(cola).to(exchange).with(DLQ);
+    }
+
+    @Bean
+    Binding bindingDlqCompras(@Qualifier("colaDlqCompras") Queue cola,
+                              @Qualifier("notificacionesDlx") DirectExchange exchange) {
+        return BindingBuilder.bind(cola).to(exchange).with(DLQ_COMPRAS);
     }
 
     @Bean

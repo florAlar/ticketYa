@@ -30,16 +30,23 @@
 
 ## Async (broker)
 
-Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Implementado para avisos de cancelación.
+Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Exchange compartido: `eventos.exchange`
+(topic, durable=true, autoDelete=false), declarado por `msvc-eventos`, `msvc-ventas` y
+`msvc-notificaciones` con los mismos atributos.
 
-### Contrato `EventoCancelado`
+### Colas consumidoras de msvc-notificaciones
 
-| Elemento | Valor |
-|---|---|
-| Exchange | `eventos.exchange` (topic, durable=true, autoDelete=false) — lo declara `msvc-eventos` |
-| Routing key | `evento.cancelado` (`evento.suspendido` reservado) |
-| Cola consumidora | `notificaciones.eventos` → binding `evento.#`, DLQ `notificaciones.eventos.dlq` vía `notificaciones.dlx` |
-| Semántica | at-least-once; consumidor idempotente por (`eventoId`, `idUsuario`, `tipo`). `messageId` es trazabilidad (uuid por publicación), no clave de deduplicación |
+| Cola | Binding | Routing keys | DLQ |
+|---|---|---|---|
+| `notificaciones.eventos` | `evento.#` | `evento.cancelado`, `evento.suspendido`, `evento.modificado`, `evento.publicado` | `notificaciones.eventos.dlq` |
+| `notificaciones.compras` | `compra.#` | `compra.confirmada` | `notificaciones.compras.dlq` |
+
+Semántica **at-least-once**; `messageId` es solo trazabilidad. La deduplicación es por
+(`idUsuario`, `clave_idempotencia`), donde la clave es `tipo:canal:eventoId` para eventos
+(`EventoCancelado:PUSH:uuid` y `EventoCancelado:EMAIL:uuid` son avisos distintos) y
+`CompraConfirmada:EMAIL:compraId` para compras (permite dos compras del mismo evento).
+
+### Contrato `evento.#` (msvc-eventos)
 
 Payload (JSON):
 
@@ -51,32 +58,81 @@ Payload (JSON):
   "nombre": "Rock in Rio",
   "fecha": "2026-12-20T21:00:00",
   "cambios": null,
+  "occurredAt": "2026-11-13T19:20:00Z",
+  "ciudad": "Buenos Aires",
+  "artistas": ["Metallica"]
+}
+```
+
+| `tipo` | Routing key | Cuándo | Destinatarios |
+|---|---|---|---|
+| `EventoCancelado` | `evento.cancelado` | `PATCH /eventos/{id}/estado` → `CANCELADO` | compradores con compra APROBADA (PUSH + EMAIL) |
+| `EventoSuspendido` | `evento.suspendido` | `PATCH .../estado` → `SUSPENDIDO` | compradores con compra APROBADA (PUSH + EMAIL) |
+| `EventoModificado` | `evento.modificado` | `PUT /eventos/{id}`, `PATCH .../fecha` con cambios reales | compradores con compra APROBADA (PUSH + EMAIL) |
+| `EventoPublicado` | `evento.publicado` | `POST /eventos/{id}/publicacion` o alta con `publicarAlFinal` | clientes con artista favorito + ciudad (PUSH + EMAIL) |
+
+El envío es **dual** para eventos: se crea una notificación por cada canal que tenga plantilla
+activa (`PUSH` y/o `EMAIL`). Las plantillas EMAIL de eventos están en la migración
+`04-plantillas-email-eventos.sql`.
+
+`ciudad` y `artistas` solo se completan en `EventoPublicado`. `fecha` es `fechaInicio` (ISO-8601 sin
+zona); `occurredAt` es UTC con `Z` y puede traer nanosegundos.
+
+### Contrato `compra.confirmada` (msvc-ventas)
+
+Se publica después del commit (`@TransactionalEventListener(AFTER_COMMIT)`) al aprobarse el pago.
+
+```json
+{
+  "messageId": "uuid",
+  "compraId": "uuid",
+  "clienteId": "uuid",
+  "eventoId": "uuid",
+  "total": 1500.00,
+  "moneda": "ARS",
+  "cantidadEntradas": 2,
   "occurredAt": "2026-11-13T19:20:00Z"
 }
 ```
 
-`tipo` usa el vocabulario de `plantilla_notificacion.tipo_evento`. `fecha` es `fechaInicio` del evento.
-
-Formatos: `fecha` es ISO-8601 **sin** zona (LocalDateTime del evento); `occurredAt` es ISO-8601 **UTC con `Z`** y puede traer nanosegundos (`2026-11-14T04:49:57.150570083Z`). Ambos son aceptados por `Instant`/`LocalDateTime` de Java sin configuración extra.
-
-### Fan-out al cliente
-
-`EventoCancelado` no lleva destinatarios: quien los conoce es `msvc-ventas`.
+### Fan-out y matching
 
 ```
-msvc-eventos --evento.cancelado--> msvc-notificaciones
-                                          |
-                                          +--> GET /compras/evento/{id} (interno, ventas)
-                                          +--> una notificación PUSH por cliente con compra APROBADA
+msvc-eventos --evento.*--> notificaciones.eventos --+
+                                                    +--> GET /compras/evento/{id} (ventas)
+                                                    +--> una notificación PUSH y una EMAIL por
+                                                         comprador (si ambas plantillas están activas)
+
+msvc-eventos --evento.publicado--> notificaciones.eventos --+
+                                                            +--> POST /preferencias/clientes/matching
+                                                            +--> PUSH + EMAIL por cliente que sigue
+                                                                 un artista y vive en la ciudad
+
+msvc-ventas --compra.confirmada--> notificaciones.compras --> una notificación EMAIL por compra
 ```
 
-- Canal: **PUSH** (`plantilla_notificacion.tipo_evento = 'EventoCancelado'`).
-- Los clientes con compra `PENDIENTE_PAGO` no reciben aviso de reintegro.
+Antes de crear cada aviso, notificaciones consulta `GET /preferencias/clientes/{id}/notificaciones`
+(canales y tipos habilitados). Si preferencias no responde, se envía igual (fallback permisivo).
+
+### Entrega
+
+Un job `@Scheduled` (30 s por defecto) toma hasta 50 notificaciones `PENDIENTE` con lock
+`SKIP LOCKED`, registra `intento_envio` y las pasa a `ENVIADA` o, tras 3 fallos, `FALLIDA`.
+
+- `PUSH`: adaptador mock (sin Firebase), deja evidencia en logs.
+- `EMAIL`: **SMTP real** con `spring-boot-starter-mail`. En local/Docker apunta a **MailHog**
+  (`mailhog:1025`, bandeja web en <http://localhost:8025>). Se activa con
+  `ticketya.notificaciones.email.provider=smtp`; con `mock` (default sin Docker) solo loguea.
+- El email de destino se resuelve al crear la notificación con `GET /usuarios/{id}` (Feign a
+  msvc-usuarios) y se guarda en `notificacion.destinatario`. Si no se puede resolver, el proveedor
+  SMTP usa `ticketya.notificaciones.email.destino-default`.
+
 
 ### Resto de efectos de dominio
 
 - Fila virtual / tokens temporales: apoyo Redis en msvc-ventas (E2).
-- `EventoModificado`, `CompraConfirmada`, `DevolucionAprobada`: pendientes.
+- `DevolucionAprobada`: pendiente (requiere productor en msvc-entradas).
+
 
 ## Headers de correlación / idempotencia
 

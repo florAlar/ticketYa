@@ -4,4 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import notificaciones.entity.IntentoEnvio;
 
 public interface IntentoEnvioRepository extends JpaRepository<IntentoEnvio, String> {
+
+    long countByNotificacion_IdNotificacion(String idNotificacion);
 }

@@ -53,6 +53,31 @@ class EventChangePublisherTest {
     }
 
     @Test
+    void publicar_modificado_usaRoutingKeyYTipoCanonicos() {
+        publisher.publicar(new EventChangeEvent(
+                EVENTO_ID, "MODIFICADO", "Rock", FECHA_EVENTO, "fechaInicio cambiada"));
+
+        ArgumentCaptor<EventMessaging> captor = ArgumentCaptor.forClass(EventMessaging.class);
+        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq("evento.modificado"), captor.capture());
+        assertEquals("EventoModificado", captor.getValue().getTipo());
+        assertEquals("fechaInicio cambiada", captor.getValue().getCambios());
+    }
+
+    @Test
+    void publicar_publicado_llevaCiudadYArtistasParaMatching() {
+        publisher.publicar(new EventChangeEvent(
+                EVENTO_ID, "PUBLICADO", "Rock", FECHA_EVENTO, null,
+                "Buenos Aires", java.util.List.of("Metallica")));
+
+        ArgumentCaptor<EventMessaging> captor = ArgumentCaptor.forClass(EventMessaging.class);
+        verify(rabbitTemplate).convertAndSend(eq(RabbitConfig.EXCHANGE), eq("evento.publicado"), captor.capture());
+        EventMessaging msg = captor.getValue();
+        assertEquals("EventoPublicado", msg.getTipo());
+        assertEquals("Buenos Aires", msg.getCiudad());
+        assertEquals(java.util.List.of("Metallica"), msg.getArtistas());
+    }
+
+    @Test
     void publicar_estadoSinEvento_noPublica() {
         publisher.publicar(new EventChangeEvent(EVENTO_ID, "AGOTADO", "Rock", FECHA_EVENTO, null));
 

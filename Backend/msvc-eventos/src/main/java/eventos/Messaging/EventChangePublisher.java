@@ -17,15 +17,17 @@ public class EventChangePublisher {
 
     private static final Logger log = LoggerFactory.getLogger(EventChangePublisher.class);
 
-    
     private static final Map<String, String> TIPOS = Map.of(
             "CANCELADO", "EventoCancelado",
-            "SUSPENDIDO", "EventoSuspendido");
+            "SUSPENDIDO", "EventoSuspendido",
+            "MODIFICADO", "EventoModificado",
+            "PUBLICADO", "EventoPublicado");
 
-    
     private static final Map<String, String> ROUTING_KEYS = Map.of(
             "CANCELADO", "evento.cancelado",
-            "SUSPENDIDO", "evento.suspendido");
+            "SUSPENDIDO", "evento.suspendido",
+            "MODIFICADO", "evento.modificado",
+            "PUBLICADO", "evento.publicado");
 
     private final RabbitTemplate rabbitTemplate;
 
@@ -42,15 +44,23 @@ public class EventChangePublisher {
             return;
         }
         EventMessaging msg = new EventMessaging(
-                UUID.randomUUID().toString(), //me cago en esto
+                UUID.randomUUID().toString(),
                 e.eventoId(),
                 TIPOS.get(estado),
                 e.nombre(),
                 e.fecha(),
                 e.cambios(),
-                Instant.now());
-        rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, routingKey, msg);
-        log.info("Evento publicado: tipo={} eventoId={} routingKey={} messageId={}",
-                msg.getTipo(), msg.getEventoId(), routingKey, msg.getMessageId());
+                Instant.now(),
+                e.ciudad(),
+                e.artistas());
+        try {
+            rabbitTemplate.convertAndSend(RabbitConfig.EXCHANGE, routingKey, msg);
+            log.info("Evento publicado: tipo={} eventoId={} routingKey={} messageId={}",
+                    msg.getTipo(), msg.getEventoId(), routingKey, msg.getMessageId());
+        } catch (RuntimeException ex) {
+            // El cambio ya está commiteado en la base: se registra y se sigue (best-effort).
+            log.error("No se pudo publicar {} para evento {}: {}",
+                    msg.getTipo(), msg.getEventoId(), ex.getMessage());
+        }
     }
 }

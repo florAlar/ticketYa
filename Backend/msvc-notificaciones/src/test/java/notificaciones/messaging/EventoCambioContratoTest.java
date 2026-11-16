@@ -42,8 +42,7 @@ class EventoCambioContratoTest {
     }
 
     @Test
-    void deserializaUnMensajeRealCapturadoDelBroker() {
-        // Captura real del panel de RabbitMQ (ms-eventos -> evento.cancelado).
+    void deserializaUnMensajeRealCapturadoDelBroker() {        // Captura real del panel de RabbitMQ (ms-eventos -> evento.cancelado).
         String json = """
                 {"messageId":"f894d182-cdbd-42ed-9fd2-10f29b8f949d",
                  "eventoId":"d0000000-0000-4000-8000-000000000001",
@@ -61,5 +60,26 @@ class EventoCambioContratoTest {
         assertEquals("Metallica — M72 World Tour", dto.nombre());
         assertEquals(LocalDateTime.of(2027, 3, 15, 21, 0), dto.fecha());
         assertEquals(Instant.parse("2026-11-14T04:49:57.150570083Z"), dto.occurredAt());
+    }
+
+    @Test
+    void deserializaEventoPublicadoConCiudadYArtistas() {
+        String json = """
+                {"messageId":"m-3",
+                 "eventoId":"d0000000-0000-4000-8000-000000000001",
+                 "tipo":"EventoPublicado",
+                 "nombre":"Metallica — M72 World Tour",
+                 "fecha":"2027-03-15T21:00:00",
+                 "cambios":null,
+                 "occurredAt":"2026-11-16T21:00:00Z",
+                 "ciudad":"Buenos Aires",
+                 "artistas":["Metallica","Gojira"]}
+                """;
+
+        EventoCambioDTO dto = mapper.readValue(json, EventoCambioDTO.class);
+
+        assertEquals("EventoPublicado", dto.tipo());
+        assertEquals("Buenos Aires", dto.ciudad());
+        assertEquals(java.util.List.of("Metallica", "Gojira"), dto.artistas());
     }
 }

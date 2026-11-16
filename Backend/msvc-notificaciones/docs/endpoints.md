@@ -11,19 +11,38 @@ Paths públicos vía gateway: prefijo `/api`. Abajo se listan como en el global.
 
 Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio vía broker; REST para consulta/admin
 
-- GET /notificaciones/me — Listar notificaciones propias
-- GET /notificaciones/me/{id} — Detalle de notificación
-- PATCH /notificaciones/me/{id}/leida — Marcar como leída
-- GET /notificaciones/me/preferencias — Canales habilitados
-- PUT /notificaciones/me/preferencias — Actualizar canales
-- POST /notificaciones — Crear notificación administrativa (ADMIN)
-- GET /notificaciones/{id}/estado — Estado de envío (ADMIN)
+- `GET /notificaciones/me` — Listar notificaciones propias. Query: `page` (0), `size` (20, máx 100),
+  `leida` (opcional). Respuesta paginada + `noLeidas`.
+- `GET /notificaciones/me/{id}` — Detalle (solo dueño).
+- `PATCH /notificaciones/me/{id}/leida` — Marcar como leída (setea `fecha_lectura`).
+- `POST /notificaciones` — Crear notificación administrativa (ADMIN). Queda `PENDIENTE`.
+- `GET /notificaciones/{id}/estado` — Estado de envío (ADMIN).
 
-Eventos broker (no REST, ambos docs): CompraConfirmada; EventoCancelado; EventoModificado; NuevoEventoArtistaFavorito; DevolucionAprobada.
+Identidad: `X-User-Id` (obligatorio en `/me`); el gateway lo deriva del JWT y no confía en el header
+del cliente. Las preferencias de canal viven en `msvc-preferencias` (`/preferencias/me/notificaciones`).
 
-Implementado hoy: `EventoCancelado` → notificación **push** a cada cliente con compra APROBADA del evento.
-El resto de los eventos queda pendiente (ver contrato en `specs/comunicacion.md`).
+### Eventos broker consumidos
+
+| Routing key | Tipo | Fan-out |
+|---|---|---|
+| `evento.cancelado` | `EventoCancelado` | compradores APROBADOS (PUSH + EMAIL) |
+| `evento.suspendido` | `EventoSuspendido` | compradores APROBADOS (PUSH + EMAIL) |
+| `evento.modificado` | `EventoModificado` | compradores APROBADOS (PUSH + EMAIL) |
+| `evento.publicado` | `EventoPublicado` | artistas favoritos + ciudad (PUSH + EMAIL) |
+| `compra.confirmada` | `CompraConfirmada` | cliente de la compra (EMAIL) |
+
+Contrato completo en `Backend/specs/comunicacion.md`.
+
+### Entrega
+
+Job `@Scheduled` (30 s, configurable con `TICKETYA_NOTIF_ENVIO_INTERVALO_MS`): toma `PENDIENTE` con
+lock `SKIP LOCKED`, registra `intento_envio` y pasa a `ENVIADA`/`FALLIDA` (3 intentos).
+`PUSH` usa `MockPushProvider` (sin Firebase). `EMAIL` usa SMTP real: en Docker Compose apunta a
+**MailHog** (`http://localhost:8025`) con `TICKETYA_NOTIF_EMAIL_PROVIDER=smtp`; sin esa variable usa
+`MockEmailProvider`. Los avisos de evento se generan por **ambos canales** si hay plantilla activa
+para cada uno; la compra usa solo EMAIL. El destinatario se resuelve con `GET /usuarios/{id}` y se
+guarda en `notificacion.destinatario`; si falla, se usa `TICKETYA_NOTIF_EMAIL_DESTINO_DEFAULT`.
 
 ### Enrutamiento gateway (relacionado)
 
-- /notificaciones/** → msvc-notificaciones
+- /notificaciones/** → msvc-notificaciones (cualquier rol autenticado; el msvc valida dueño/ADMIN)

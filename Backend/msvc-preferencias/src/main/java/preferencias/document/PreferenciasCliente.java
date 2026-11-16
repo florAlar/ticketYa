@@ -31,5 +31,7 @@ public class PreferenciasCliente {
 
     private List<String> artistas = new ArrayList<>();
 
+    private NotificacionesPreferencias notificaciones = new NotificacionesPreferencias();
+
     private Instant fechaActualizacion;
 }

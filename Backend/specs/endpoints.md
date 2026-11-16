@@ -236,8 +236,11 @@ Servicio: msvc-entradas | Prefijos: /entradas, /devoluciones + /eventos/{idEvent
 Servicio: msvc-preferencias-recomendaciones | Prefijos: /preferencias, /recomendaciones, /clientes + /eventos/{id}/recomendaciones
 
 - GET /preferencias/me — Consultar preferencias propias
-- PUT /preferencias/me — Actualizar preferencias (categorías, ciudad, rangoPrecio, etc.)
-- GET /preferencias/me/artistas — Consultar artistas favoritos
+- PUT /preferencias/me — Actualizar preferencias (categorías, ciudad, rangoPrecio, artistas, notificaciones)
+- GET /preferencias/me/notificaciones — Canales y tipos habilitados
+- PUT /preferencias/me/notificaciones — Actualizar canales y tipos
+- POST /preferencias/clientes/matching — Interno (Feign de notificaciones): artistas + ciudad → ids de clientes
+- GET /preferencias/clientes/{idCliente}/notificaciones — Interno (Feign): preferencias de canal con defaults
 - PUT /preferencias/me/artistas — Actualizar artistas favoritos
 - GET /recomendaciones/me — Eventos recomendados (?limit=)
 - GET /eventos/{id}/recomendaciones — Eventos similares (público)
@@ -252,15 +255,17 @@ Ingesta async típica: CompraConfirmada, EntradaValidada (no REST entre msvcs).
 
 Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio vía broker; REST para consulta/admin
 
-- GET /notificaciones/me — Listar notificaciones propias
+- GET /notificaciones/me — Listar notificaciones propias (paginado; incluye `noLeidas`)
 - GET /notificaciones/me/{id} — Detalle de notificación
 - PATCH /notificaciones/me/{id}/leida — Marcar como leída
-- GET /notificaciones/me/preferencias — Canales habilitados
-- PUT /notificaciones/me/preferencias — Actualizar canales
 - POST /notificaciones — Crear notificación administrativa (ADMIN)
 - GET /notificaciones/{id}/estado — Estado de envío (ADMIN)
 
-Eventos broker (no REST, ambos docs): CompraConfirmada; EventoCancelado; EventoModificado; NuevoEventoArtistaFavorito; DevolucionAprobada.
+Las preferencias de canal viven en msvc-preferencias (`/preferencias/me/notificaciones`).
+
+Eventos broker (no REST): `CompraConfirmada` (`compra.confirmada`); `EventoCancelado`, `EventoSuspendido`,
+`EventoModificado`, `EventoPublicado` (`evento.*`). Contrato en `specs/comunicacion.md`.
+Pendiente: `DevolucionAprobada` (requiere productor en msvc-entradas).
 
 ## 5. resumen
 

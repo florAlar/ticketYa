@@ -18,11 +18,32 @@ services:
       SPRING_RABBITMQ_USERNAME: ticketya
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-ticketya_dev}
       TICKETYA_URI_VENTAS: http://ms-ventas:8083
+      TICKETYA_URI_PREFERENCIAS: http://ms-preferencias:8085
+      TICKETYA_URI_USUARIOS: http://ms-usuarios:8081
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+      TICKETYA_NOTIF_EMAIL_PROVIDER: smtp
+      TICKETYA_NOTIF_EMAIL_REMITENTE: no-reply@ticketya.local
+      TICKETYA_NOTIF_EMAIL_DESTINO_DEFAULT: destinatarios@ticketya.local
+      TICKETYA_NOTIF_ENVIO_INTERVALO_MS: ${TICKETYA_NOTIF_ENVIO_INTERVALO_MS:-30000}
+      TICKETYA_NOTIF_ENVIO_MAX_INTENTOS: ${TICKETYA_NOTIF_ENVIO_MAX_INTENTOS:-3}
+      TICKETYA_NOTIF_ENVIO_LOTE: ${TICKETYA_NOTIF_ENVIO_LOTE:-50}
     depends_on:
       db-mysql-notificaciones:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      mailhog:
+        condition: service_started
+
+  # Servidor SMTP de prueba: los emails se ven en http://localhost:8025
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
   db-mysql-notificaciones:
     image: mysql:8.4
