@@ -54,6 +54,7 @@ import ventas.repository.DetalleReservaRepository;
 import ventas.repository.PagoRepository;
 import ventas.repository.ReservaRepository;
 import ventas.util.AsientoLayout;
+import ventas.observability.Bitacora;
 
 @Service
 public class VentaServiceImpl implements VentaService {
@@ -541,6 +542,9 @@ public class VentaServiceImpl implements VentaService {
             expireOne(r);
             n++;
         }
+        if (n > 0) {
+            Bitacora.registrar("RESERVAS_EXPIRADAS", null, null, "cantidad=" + n);
+        }
         return n;
     }
 
@@ -572,10 +576,14 @@ public class VentaServiceImpl implements VentaService {
             pago.setEstado(EST_PAGO_APROBADO);
             pagoRepository.save(pago);
             confirmarVenta(compra);
+            Bitacora.registrar("PAGO_APROBADO", compra.getIdCliente(), compra.getIdCompra(),
+                    "pago=" + pago.getIdPago() + " monto=" + pago.getMonto() + " proveedor=" + proveedor);
         } else {
             pago.setEstado(EST_PAGO_RECHAZADO);
             pagoRepository.save(pago);
             rechazarVenta(compra);
+            Bitacora.registrar("PAGO_RECHAZADO", compra.getIdCliente(), compra.getIdCompra(),
+                    "pago=" + pago.getIdPago() + " monto=" + pago.getMonto() + " proveedor=" + proveedor);
         }
         return ventaMapper.toPago(pago);
     }

@@ -24,3 +24,8 @@ ticketya:
     ventas: ${TICKETYA_URI_VENTAS:http://localhost:8083}
   entradas:
     plazo-devolucion-horas: ${TICKETYA_DEVOLUCION_HORAS:72}
+
+# E2-NFR-03: correlation id en cada línea de log
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:app},%X{correlationId:-}]"

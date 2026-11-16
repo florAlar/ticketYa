@@ -11,7 +11,7 @@ Roles definidos en la plataforma:
 | **CLIENTE** | Busca eventos, reserva, compra, ve sus entradas/QR, pide devolución, edita su perfil. |
 | **ORGANIZADOR** | Crea y configura **sus** eventos, publica, edita borradores, puede suspender los propios, ve listado propio; también puede comprar como cualquier persona (mis entradas). |
 | **ADMIN** | Opera la plataforma: usuarios (listar, activar/desactivar, roles), cualquier evento (incl. cancelar), cola de devoluciones, consulta de entradas ajenas si hace falta. |
-| **PERSONAL_ACCESO** | En la **segunda entrega**: validar QR en la puerta. Hoy el rol existe en seeds/demo; el escaneo aún no está implementado. |
+| **PERSONAL_ACCESO** | Valida el QR en la puerta (E2-ACC-01): el sistema verifica que la entrada exista, sea del evento y no esté usada, y la marca como utilizada. Puede validar **cualquier** evento (no hay asignación de eventos por persona: simplificación). |
 
 Registro público: **solo CLIENTE**.  
 Organizador, admin y personal de acceso **no** se auto-registran por la web abierta.
@@ -28,7 +28,8 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera |
 | Cancelar evento | **ADMIN** (dispara reintegro de entradas vendidas) |
 | Cambiar fecha del evento | Dueño ORGANIZADOR o ADMIN |
-| Alta de lugares / sectores / artistas | ORGANIZADOR o ADMIN |
+| Alta de lugares y sectores | **solo ADMIN** (el organizador los consulta y elige uno al crear el evento) |
+| Alta de artistas | ORGANIZADOR o ADMIN |
 | Asociar artistas a un evento | Dueño del evento o ADMIN |
 | Reservar / comprar / pagar | CLIENTE (y en la práctica quien el gateway autorice a compras; organizador también puede tener “mis entradas”) |
 | Ver mis entradas y QR usable | Dueño de la entrada |
@@ -36,8 +37,8 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Pedir devolución | CLIENTE dueño, con reglas de plazo y estado |
 | Aprobar / rechazar devolución | ADMIN |
 | Listar usuarios / cambiar estado / asignar roles | ADMIN |
-| Validar ingreso con QR en puerta | PERSONAL_ACCESO — **pendiente E2** |
-| Reportes de ventas del evento | ORGANIZADOR dueño — **pendiente E2** |
+| Validar ingreso con QR en puerta | PERSONAL_ACCESO (y ADMIN) — hecho (E2-ACC-01) |
+| Reportes de ventas, ocupación y recaudación del evento | ORGANIZADOR dueño (y ADMIN) — hecho (E2-REP-01) |
 | Fila virtual alta demanda | — **pendiente E2** |
 | Preferencias y recomendaciones | CLIENTE — **pendiente E2** |
 | Notificaciones | — **pendiente E2** |
@@ -80,7 +81,7 @@ En el front hay guía (“¿querés organizar?”) y el botón de solicitud est�
 ### Borrador
 
 - Se puede crear con poco: **nombre** alcanza al inicio.  
-- Fecha/lugar/sectores se completan después.  
+- Fecha, lugar y sectores se completan después: el borrador puede quedar sin lugar (lugar reservado "Por definir") y se publica recién con un lugar real y al menos un sector con precio.  
 - Solo se puede **borrar** si sigue en borrador.  
 - Edición completa del borrador: dueño o admin.
 
@@ -106,6 +107,11 @@ Al publicar, el sistema **abre el stock de venta** (cupos por sector). Si eso fa
 - Son **artistas / bandas / equipos**, no los compradores.  
 - Se asocian al evento (principal, telonero, etc.).  
 - Sirven para buscar por artista.
+- **Tipos:** ARTISTA, BANDA, ELENCO, EQUIPO, PILOTO (obligatorio al crear).
+- **Sin duplicados:** no puede haber dos participantes con el mismo nombre (sin importar mayúsculas): se elige el del catálogo.
+- **Quién:** el organizador puede dar de alta (para no bloquear la creación del evento); **editar y eliminar es solo ADMIN** (el cambio se ve en todos los eventos que lo usan).
+- **Baja:** solo si no participa en ningún evento (409 si participa: solo se edita).
+- "Banda principal" no es un atributo del participante: es el rol PRINCIPAL/TELONERO por evento.
 
 ### Suspender vs cancelar
 

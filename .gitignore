@@ -2,6 +2,8 @@ target/
 .idea/
 *.iml
 .env
+# Frontend/.env se versiona a propósito: solo URL del gateway y flags de mock (sin secretos)
+!Frontend/.env
 .DS_Store
 node_modules/
 dist/

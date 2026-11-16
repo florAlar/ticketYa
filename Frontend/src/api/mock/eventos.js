@@ -1,6 +1,4 @@
-import { EVENT_IMAGES, HERO_SLIDES } from './images'
-
-export { HERO_SLIDES }
+import { EVENT_IMAGES } from './images'
 
 const img = (i) => EVENT_IMAGES[i % EVENT_IMAGES.length]
 

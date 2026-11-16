@@ -3,7 +3,7 @@ import './ImageCarousel.css'
 
 /**
  * Carrusel de imágenes (Hero u otros banners).
- * slides: [{ id, imageUrl, alt? }]
+ * slides: [{ id, imageUrl, alt?, position? }]  (position = object-position, ej. 'center top')
  */
 const ImageCarousel = ({
   slides = [],
@@ -38,6 +38,7 @@ const ImageCarousel = ({
           src={current.imageUrl}
           alt={current.alt || ''}
           className="image-carousel__img"
+          style={current.position ? { objectPosition: current.position } : undefined}
         />
       </div>
 

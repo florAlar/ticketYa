@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS lugar (
   nombre           VARCHAR(200) NOT NULL,
   direccion        VARCHAR(255) NULL,
   ciudad           VARCHAR(120) NOT NULL,
+  latitud          DECIMAL(9, 6) NULL COMMENT 'grados decimales (-90..90); opcional, va junto con longitud',
+  longitud         DECIMAL(9, 6) NULL COMMENT 'grados decimales (-180..180); opcional, va junto con latitud',
   capacidad_total  INT          NOT NULL DEFAULT 0,
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -25,16 +27,6 @@ CREATE TABLE IF NOT EXISTS sector (
   asientos_por_fila INT    NULL COMMENT 'solo sector numerado: asientos por fila; capacidad = filas * asientos_por_fila',
   PRIMARY KEY (id),
   CONSTRAINT fk_sector_lugar FOREIGN KEY (id_lugar) REFERENCES lugar (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS asiento (
-  id        CHAR(36)    NOT NULL,
-  id_sector CHAR(36)    NOT NULL,
-  fila      VARCHAR(16) NULL,
-  numero    INT         NULL,
-  codigo    VARCHAR(32) NULL,
-  PRIMARY KEY (id),
-  CONSTRAINT fk_asiento_sector FOREIGN KEY (id_sector) REFERENCES sector (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS evento (
@@ -63,23 +55,11 @@ CREATE TABLE IF NOT EXISTS precio_sector (
   precio    DECIMAL(12, 2) NOT NULL,
   moneda    CHAR(3)        NOT NULL DEFAULT 'ARS',
   activo    TINYINT(1)     NOT NULL DEFAULT 1,
+  cupo      INT            NULL COMMENT 'cupo comercial del evento en el sector; NULL = toda la capacidad del sector',
   PRIMARY KEY (id),
   UNIQUE KEY uk_precio_evento_sector (id_evento, id_sector),
   CONSTRAINT fk_precio_sector_evento FOREIGN KEY (id_evento) REFERENCES evento (id),
   CONSTRAINT fk_precio_sector_sector FOREIGN KEY (id_sector) REFERENCES sector (id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS precio_asiento (
-  id         CHAR(36)       NOT NULL,
-  id_evento  CHAR(36)       NOT NULL,
-  id_asiento CHAR(36)       NOT NULL,
-  precio     DECIMAL(12, 2) NOT NULL,
-  moneda     CHAR(3)        NOT NULL DEFAULT 'ARS',
-  activo     TINYINT(1)     NOT NULL DEFAULT 1,
-  PRIMARY KEY (id),
-  UNIQUE KEY uk_precio_evento_asiento (id_evento, id_asiento),
-  CONSTRAINT fk_precio_asiento_evento  FOREIGN KEY (id_evento)  REFERENCES evento (id),
-  CONSTRAINT fk_precio_asiento_asiento FOREIGN KEY (id_asiento) REFERENCES asiento (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Artistas/bandas del show (no compradores). N:M con evento.
@@ -103,11 +83,11 @@ CREATE TABLE IF NOT EXISTS evento_participante (
   CONSTRAINT fk_ep_participante FOREIGN KEY (id_participante) REFERENCES participante (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO lugar (id, nombre, direccion, ciudad, capacidad_total) VALUES
-  ('c0000000-0000-4000-8000-000000000001', 'Estadio Más Monumental', 'Av. Figueroa Alcorta 7597', 'Buenos Aires', 85000),
-  ('c0000000-0000-4000-8000-000000000002', 'Estádio do Maracanã', 'Av. Pres. Castelo Branco', 'Rio de Janeiro', 78838),
-  ('c0000000-0000-4000-8000-000000000003', 'Wembley Stadium', 'Wembley', 'London', 90000)
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), direccion = VALUES(direccion), ciudad = VALUES(ciudad), capacidad_total = VALUES(capacidad_total);
+INSERT INTO lugar (id, nombre, direccion, ciudad, latitud, longitud, capacidad_total) VALUES
+  ('c0000000-0000-4000-8000-000000000001', 'Estadio Más Monumental', 'Av. Figueroa Alcorta 7597', 'Buenos Aires', -34.545300, -58.449700, 85000),
+  ('c0000000-0000-4000-8000-000000000002', 'Estádio do Maracanã', 'Av. Pres. Castelo Branco', 'Rio de Janeiro', -22.912200, -43.230200, 78838),
+  ('c0000000-0000-4000-8000-000000000003', 'Wembley Stadium', 'Wembley', 'London', 51.556000, -0.279600, 90000)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), direccion = VALUES(direccion), ciudad = VALUES(ciudad), latitud = VALUES(latitud), longitud = VALUES(longitud), capacidad_total = VALUES(capacidad_total);
 
 INSERT INTO sector (id, id_lugar, nombre, capacidad, tipo, es_numerado, filas, asientos_por_fila) VALUES
   ('c0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000001', 'Campo', 60000, 'GENERAL', 0, NULL, NULL),
@@ -118,11 +98,6 @@ INSERT INTO sector (id, id_lugar, nombre, capacidad, tipo, es_numerado, filas, a
   ('c0000000-0000-4000-8000-000000000016', 'c0000000-0000-4000-8000-000000000003', 'Club Wembley', 18000, 'PLATEA', 1, 72, 250)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), capacidad = VALUES(capacidad), tipo = VALUES(tipo),
   filas = VALUES(filas), asientos_por_fila = VALUES(asientos_por_fila);
-
-INSERT INTO asiento (id, id_sector, fila, numero, codigo) VALUES
-  ('c0000000-0000-4000-8000-000000000021', 'c0000000-0000-4000-8000-000000000012', 'A', 1, 'A-1'),
-  ('c0000000-0000-4000-8000-000000000022', 'c0000000-0000-4000-8000-000000000012', 'A', 2, 'A-2')
-ON DUPLICATE KEY UPDATE codigo = VALUES(codigo);
 
 -- Catálogo demo amplio (IDs d001–d003 fijos cross-msvc compras/entradas)
 INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio, fecha_fin, estado, id_lugar, fecha_publicacion, es_alta_demanda) VALUES
@@ -220,11 +195,6 @@ INSERT INTO precio_sector (id, id_evento, id_sector, precio, moneda, activo) VAL
   ('e0000000-0000-4000-8000-00000000001a', 'd0000000-0000-4000-8000-00000000000e', 'c0000000-0000-4000-8000-000000000013', 125000.00, 'ARS', 1),
   ('e0000000-0000-4000-8000-00000000001b', 'd0000000-0000-4000-8000-00000000000e', 'c0000000-0000-4000-8000-000000000014', 250000.00, 'ARS', 1)
 ON DUPLICATE KEY UPDATE precio = VALUES(precio), activo = VALUES(activo);
-
-INSERT INTO precio_asiento (id, id_evento, id_asiento, precio, moneda, activo) VALUES
-  ('e0000000-0000-4000-8000-000000000021', 'd0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000021', 280000.00, 'ARS', 1),
-  ('e0000000-0000-4000-8000-000000000022', 'd0000000-0000-4000-8000-000000000002', 'c0000000-0000-4000-8000-000000000022', 280000.00, 'ARS', 1)
-ON DUPLICATE KEY UPDATE precio = VALUES(precio);
 
 INSERT INTO participante (id, nombre, tipo, descripcion) VALUES
   ('p0000000-0000-4000-8000-000000000001', 'Metallica', 'BANDA', 'Thrash metal — M72 World Tour'),

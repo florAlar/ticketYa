@@ -290,52 +290,6 @@ class EventoServiceImplTest {
     }
 
     @Test
-    void crear_publicarOk_conSectosNuevos() {
-        EventoRequestDTO req = new EventoRequestDTO();
-        req.setNombre("Evento");
-        req.setEstado("PUBLICADO");
-        req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
-        req.setIdLugar(LUGAR_ID);
-        SectorInputDTO si = new SectorInputDTO();
-        si.setNombre("Campo");
-        si.setCapacidadTotal(500);
-        si.setPrecio(BigDecimal.valueOf(25000));
-        req.setSectores(List.of(si));
-        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
-        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
-        Sector sector = sector(SECTOR_ID, lugar, "Campo", 500, false);
-        when(sectorRepository.save(any(Sector.class))).thenReturn(sector);
-        when(precioSectorRepository.findByEventoIdAndSectorId(any(), any()))
-                .thenReturn(Optional.of(precioSector(sector, BigDecimal.valueOf(25000))));
-        when(precioSectorRepository.findActivosByEventoId(any()))
-                .thenReturn(List.of(precioSector(sector, BigDecimal.valueOf(25000))));
-        when(eventoRepository.save(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
-        when(eventoMapper.toDetalle(any(), any(), anyList(), anyList())).thenReturn(detalle(new Evento()));
-
-        service.crear(req, ORG_ID);
-
-        verify(ventasClient, times(1)).abrirCupos(any(String.class), any(AbrirCuposBody.class));
-    }
-
-    @Test
-    void crear_publicarSectorCapacidadCero_throws() {
-        EventoRequestDTO req = new EventoRequestDTO();
-        req.setNombre("Evento");
-        req.setEstado("PUBLICADO");
-        req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
-        req.setIdLugar(LUGAR_ID);
-        SectorInputDTO si = new SectorInputDTO();
-        si.setNombre("Campo");
-        si.setCapacidadTotal(0);
-        si.setPrecio(BigDecimal.valueOf(25000));
-        req.setSectores(List.of(si));
-        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
-        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
-
-        assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID));
-    }
-
-    @Test
     void crear_null_throws() {
         assertThrows(IllegalArgumentException.class, () -> service.crear(null, ORG_ID));
     }
@@ -380,41 +334,6 @@ class EventoServiceImplTest {
 
         assertThrows(ForbiddenException.class,
                 () -> service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR"));
-    }
-
-    @Test
-    void actualizar_cambiarLugarPorIdLugar() {
-        Evento evento = evento("PUBLICADO", ORG_ID);
-        evento.setLugar(lugar(LUGAR_ID, "Viejo", "Vieja"));
-        Lugar nuevo = lugar("f002", "Nuevo", "Nueva");
-        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
-        when(lugarRepository.findById("f002")).thenReturn(Optional.of(nuevo));
-        when(eventoRepository.save(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
-
-        EventoRequestDTO req = new EventoRequestDTO();
-        req.setIdLugar("f002");
-
-        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
-
-        assertEquals("f002", evento.getLugar().getId());
-    }
-
-    @Test
-    void actualizar_cambiarLugarNombreYCiudad() {
-        Evento evento = evento("PUBLICADO", ORG_ID);
-        evento.setLugar(lugar(LUGAR_ID, "Viejo", "Vieja"));
-        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
-        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
-        when(eventoRepository.save(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
-
-        EventoRequestDTO req = new EventoRequestDTO();
-        req.setLugarNombre("Renombrado");
-        req.setLugarCiudad("Reciudad");
-
-        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
-
-        assertEquals("Renombrado", evento.getLugar().getNombre());
-        assertEquals("Reciudad", evento.getLugar().getCiudad());
     }
 
     // ---------- eliminarBorrador ----------
@@ -826,6 +745,147 @@ class EventoServiceImplTest {
         assertEquals("Nueva", l.getCiudad());
     }
 
+    // ---------- coordenadas del lugar (LUG-02) ----------
+
+    private static java.math.BigDecimal bd(String s) {
+        return new java.math.BigDecimal(s);
+    }
+
+    @Test
+    void crearLugar_conCoordenadas_laGuardaConSeisDecimales_yLaDevuelve() {
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(any())).thenReturn(List.of());
+        LugarRequestDTO body = new LugarRequestDTO();
+        body.setNombre("Estadio");
+        body.setCiudad("Buenos Aires");
+        body.setLatitud(bd("-34.5453"));
+        body.setLongitud(bd("-58.4497"));
+
+        var res = service.crearLugar(body);
+
+        assertEquals(0, bd("-34.545300").compareTo(res.getLatitud()));
+        assertEquals(0, bd("-58.449700").compareTo(res.getLongitud()));
+        assertEquals(6, res.getLatitud().scale());
+    }
+
+    @Test
+    void crearLugar_sinCoordenadas_quedanNulas() {
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(any())).thenReturn(List.of());
+        LugarRequestDTO body = new LugarRequestDTO();
+        body.setNombre("Estadio");
+        body.setCiudad("Rosario");
+
+        var res = service.crearLugar(body);
+
+        assertNull(res.getLatitud());
+        assertNull(res.getLongitud());
+    }
+
+    @Test
+    void crearLugar_coordenadasIncompletasOFueraDeRango_son400_yNoSeGuarda() {
+        LugarRequestDTO soloLat = new LugarRequestDTO();
+        soloLat.setNombre("X");
+        soloLat.setCiudad("Y");
+        soloLat.setLatitud(bd("10"));
+        assertThrows(IllegalArgumentException.class, () -> service.crearLugar(soloLat));
+
+        LugarRequestDTO soloLng = new LugarRequestDTO();
+        soloLng.setNombre("X");
+        soloLng.setCiudad("Y");
+        soloLng.setLongitud(bd("10"));
+        assertThrows(IllegalArgumentException.class, () -> service.crearLugar(soloLng));
+
+        LugarRequestDTO fuera = new LugarRequestDTO();
+        fuera.setNombre("X");
+        fuera.setCiudad("Y");
+        fuera.setLatitud(bd("91"));
+        fuera.setLongitud(bd("0"));
+        assertThrows(IllegalArgumentException.class, () -> service.crearLugar(fuera));
+
+        verify(lugarRepository, times(0)).save(any(Lugar.class));
+    }
+
+    @Test
+    void actualizarLugar_sinCoordenadasEnElPedido_conservaLasExistentes_yConCoordenadasLasCambia() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        l.setLatitud(bd("-34.545300"));
+        l.setLongitud(bd("-58.449700"));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(LUGAR_ID)).thenReturn(List.of());
+
+        LugarRequestDTO soloNombre = new LugarRequestDTO();
+        soloNombre.setNombre("Estadio Renombrado");
+        service.actualizarLugar(LUGAR_ID, soloNombre);
+        assertEquals(0, bd("-34.545300").compareTo(l.getLatitud()));
+
+        LugarRequestDTO nuevas = new LugarRequestDTO();
+        nuevas.setLatitud(bd("-31.4"));
+        nuevas.setLongitud(bd("-64.18"));
+        service.actualizarLugar(LUGAR_ID, nuevas);
+        assertEquals(0, bd("-31.400000").compareTo(l.getLatitud()));
+        assertEquals(0, bd("-64.180000").compareTo(l.getLongitud()));
+    }
+
+    @Test
+    void actualizarLugar_quitarCoordenadas_lasBorra_ySiSeCombinaConValores_es400() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        l.setLatitud(bd("-34.545300"));
+        l.setLongitud(bd("-58.449700"));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(lugarRepository.save(any(Lugar.class))).thenAnswer(i -> i.getArgument(0));
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(LUGAR_ID)).thenReturn(List.of());
+
+        LugarRequestDTO combinado = new LugarRequestDTO();
+        combinado.setQuitarCoordenadas(true);
+        combinado.setLatitud(bd("1"));
+        combinado.setLongitud(bd("1"));
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarLugar(LUGAR_ID, combinado));
+
+        LugarRequestDTO quitar = new LugarRequestDTO();
+        quitar.setQuitarCoordenadas(true);
+        service.actualizarLugar(LUGAR_ID, quitar);
+
+        assertNull(l.getLatitud());
+        assertNull(l.getLongitud());
+    }
+
+    // ---------- eliminarLugar (LUG-01) ----------
+
+    @Test
+    void eliminarLugar_sinEventos_borraSectoresYLugar() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        Sector s1 = sector(SECTOR_ID, l, "Campo", 100, false);
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(eventoRepository.existsByLugarId(LUGAR_ID)).thenReturn(false);
+        when(sectorRepository.findByLugarIdOrderByNombreAsc(LUGAR_ID)).thenReturn(List.of(s1));
+
+        service.eliminarLugar(LUGAR_ID);
+
+        verify(sectorRepository).deleteAll(List.of(s1));
+        verify(lugarRepository).delete(l);
+    }
+
+    @Test
+    void eliminarLugar_conEventos_es409_yNoBorraNada() {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "Buenos Aires");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        when(eventoRepository.existsByLugarId(LUGAR_ID)).thenReturn(true);
+
+        assertThrows(BusinessConflictException.class, () -> service.eliminarLugar(LUGAR_ID));
+
+        verify(lugarRepository, times(0)).delete(any(Lugar.class));
+        verify(sectorRepository, times(0)).deleteAll(any());
+    }
+
+    @Test
+    void eliminarLugar_inexistente_es404() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.eliminarLugar(LUGAR_ID));
+    }
+
     // ---------- crearSector ----------
 
     @Test
@@ -1016,59 +1076,402 @@ class EventoServiceImplTest {
         assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID));
     }
 
-    @Test
-    void crear_borradorSectorNumeradoSinLayout_ok() {
+    // ---------- LUG-04: el evento elige un lugar; los sectores los define el lugar ----------
+
+    private static final String POR_DEFINIR_ID = "c0000000-0000-4000-8000-0000000000ff";
+
+    private SectorInputDTO elegir(String idSector, int precio) {
+        SectorInputDTO in = new SectorInputDTO();
+        in.setId(idSector);
+        in.setPrecio(BigDecimal.valueOf(precio));
+        return in;
+    }
+
+    private EventoRequestDTO borradorEn(String idLugar, SectorInputDTO... sectores) {
         EventoRequestDTO req = new EventoRequestDTO();
         req.setNombre("Evento");
-        req.setIdLugar(LUGAR_ID);
-        SectorInputDTO si = new SectorInputDTO();
-        si.setNombre("Platea");
-        si.setCapacidadTotal(300);
-        si.setEsNumerado(true);
-        si.setPrecio(BigDecimal.valueOf(25000));
-        req.setSectores(List.of(si));
-        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        req.setEstado("BORRADOR");
+        req.setIdLugar(idLugar);
+        if (sectores.length > 0) {
+            req.setSectores(List.of(sectores));
+        }
+        return req;
+    }
 
-        service.crear(req, ORG_ID);
+    private Lugar lugarConSector(Sector[] salida, String nombreSector, int capacidad, boolean numerado) {
+        Lugar l = lugar(LUGAR_ID, "Estadio", "CABA");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(l));
+        salida[0] = sector(SECTOR_ID, l, nombreSector, capacidad, numerado);
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(salida[0]));
+        return l;
+    }
 
-        var captor = org.mockito.ArgumentCaptor.forClass(Sector.class);
-        verify(sectorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
-        Sector guardado = captor.getValue();
-        assertEquals(true, guardado.getEsNumerado());
-        assertNull(guardado.getFilas());
-        assertEquals(Integer.valueOf(300), guardado.getCapacidad());
+    private PrecioSector ultimoPrecioGuardado() {
+        var captor = org.mockito.ArgumentCaptor.forClass(PrecioSector.class);
+        verify(precioSectorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
+        return captor.getValue();
     }
 
     @Test
-    void crear_publicarSectorNumeradoConLayout_derivaCapacidad() {
-        EventoRequestDTO req = new EventoRequestDTO();
-        req.setNombre("Evento");
+    void crear_sinLugar_borrador_usaElLugarPorDefinirCompartido_yLoCreaUnaSolaVez() {
+        when(lugarRepository.findById(POR_DEFINIR_ID)).thenReturn(Optional.empty());
+
+        service.crear(borradorEn(null), ORG_ID);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Lugar.class);
+        verify(lugarRepository).save(captor.capture());
+        assertEquals(POR_DEFINIR_ID, captor.getValue().getId());
+        assertEquals("Por definir", captor.getValue().getNombre());
+
+        // el segundo borrador reutiliza el mismo lugar: no se vuelve a crear
+        org.mockito.Mockito.clearInvocations(lugarRepository);
+        when(lugarRepository.findById(POR_DEFINIR_ID)).thenReturn(Optional.of(captor.getValue()));
+        service.crear(borradorEn(""), ORG_ID);
+        verify(lugarRepository, times(0)).save(any(Lugar.class));
+    }
+
+    @Test
+    void crear_sinLugar_publicar_throws() {
+        EventoRequestDTO req = borradorEn(null);
         req.setEstado("PUBLICADO");
         req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
-        req.setIdLugar(LUGAR_ID);
-        SectorInputDTO si = new SectorInputDTO();
-        si.setNombre("Platea");
-        si.setCapacidadTotal(1); // se ignora
-        si.setEsNumerado(true);
-        si.setFilas(10);
-        si.setAsientosPorFila(20);
-        si.setPrecio(BigDecimal.valueOf(25000));
-        req.setSectores(List.of(si));
-        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
-        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar));
-        Sector sector = sector(SECTOR_ID, lugar, "Platea", 200, true);
-        when(precioSectorRepository.findActivosByEventoId(any()))
-                .thenReturn(List.of(precioSector(sector, BigDecimal.valueOf(25000))));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID));
+        assertTrue(e.getMessage().contains("idLugar"));
+    }
+
+    @Test
+    void crear_sinLugar_conSectores_throws() {
+        assertThrows(IllegalArgumentException.class, () -> service.crear(borradorEn(null, elegir(SECTOR_ID, 100)), ORG_ID));
+    }
+
+    @Test
+    void crear_elLugarPorDefinirNoSeEligeComoLugarReal() {
+        // pasarlo como idLugar equivale a "sin lugar": un borrador, nunca un lugar elegible
+        when(lugarRepository.findById(POR_DEFINIR_ID)).thenReturn(Optional.empty());
+        EventoRequestDTO req = borradorEn(POR_DEFINIR_ID);
+        req.setEstado("PUBLICADO");
+        req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
+
+        assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID));
+    }
+
+    @Test
+    void crear_sectorSinId_throws_yNoSeCreanSectoresDesdeElEvento() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        SectorInputDTO nuevo = new SectorInputDTO();
+        nuevo.setNombre("Campo nuevo");
+        nuevo.setCapacidadTotal(500);
+        nuevo.setPrecio(BigDecimal.valueOf(1000));
+
+        IllegalArgumentException e =
+                assertThrows(IllegalArgumentException.class, () -> service.crear(borradorEn(LUGAR_ID, nuevo), ORG_ID));
+
+        assertTrue(e.getMessage().contains("sectores[].id"));
+        verify(sectorRepository, times(0)).save(any(Sector.class));
+    }
+
+    @Test
+    void crear_sectorRepetido_throws() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.crear(borradorEn(LUGAR_ID, elegir(SECTOR_ID, 1), elegir(SECTOR_ID, 2)), ORG_ID));
+    }
+
+    @Test
+    void crear_sectorInexistente_404() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> service.crear(borradorEn(LUGAR_ID, elegir(SECTOR_ID, 1000)), ORG_ID));
+    }
+
+    @Test
+    void crear_sectorDeOtroLugar_throws() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        when(sectorRepository.findById(SECTOR_ID))
+                .thenReturn(Optional.of(sector(SECTOR_ID, lugar("otro", "Otro", "X"), "Campo", 500, false)));
+
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> service.crear(borradorEn(LUGAR_ID, elegir(SECTOR_ID, 1000)), ORG_ID));
+        assertTrue(e.getMessage().contains("no pertenece al lugar"));
+    }
+
+    @Test
+    void crear_elEventoNoPuedeCambiarNombreTipoNiLayoutDelSector() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Platea", 200, true);
+        s[0].setFilas(10);
+        s[0].setAsientosPorFila(20);
+
+        SectorInputDTO otroNombre = elegir(SECTOR_ID, 1000);
+        otroNombre.setNombre("Otro nombre");
+        SectorInputDTO otroTipo = elegir(SECTOR_ID, 1000);
+        otroTipo.setTipo("VIP");
+        SectorInputDTO dejaDeSerNumerado = elegir(SECTOR_ID, 1000);
+        dejaDeSerNumerado.setEsNumerado(false);
+        SectorInputDTO otroLayout = elegir(SECTOR_ID, 1000);
+        otroLayout.setFilas(5);
+
+        for (SectorInputDTO in : List.of(otroNombre, otroTipo, dejaDeSerNumerado, otroLayout)) {
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> service.crear(borradorEn(LUGAR_ID, in), ORG_ID));
+            assertTrue(e.getMessage().contains("lo define el lugar"), e.getMessage());
+        }
+        verify(sectorRepository, times(0)).save(any(Sector.class));
+    }
+
+    @Test
+    void crear_datosDelSectorQueCoinciden_seAceptan() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Campo", 500, false);
+        SectorInputDTO in = elegir(SECTOR_ID, 25000);
+        in.setNombre("campo");
+        in.setTipo("CAMPO");
+        in.setEsNumerado(false);
+
+        service.crear(borradorEn(LUGAR_ID, in), ORG_ID);
+
+        assertEquals(0, BigDecimal.valueOf(25000).compareTo(ultimoPrecioGuardado().getPrecio()));
+    }
+
+    @Test
+    void crear_sectorGeneral_cupoMenorALaCapacidad_seGuardaEnElPrecioDelEvento_yElSectorNoSeTocaa() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Campo", 500, false);
+        SectorInputDTO in = elegir(SECTOR_ID, 25000);
+        in.setCapacidadTotal(120);
+
+        service.crear(borradorEn(LUGAR_ID, in), ORG_ID);
+
+        PrecioSector ps = ultimoPrecioGuardado();
+        assertEquals(Integer.valueOf(120), ps.getCupo());
+        assertEquals(Integer.valueOf(120), ps.cupoEfectivo());
+        assertEquals(Integer.valueOf(500), s[0].getCapacidad(), "la capacidad del sector la define el lugar");
+        verify(sectorRepository, times(0)).save(any(Sector.class));
+    }
+
+    @Test
+    void crear_sectorGeneral_sinCupoOCupoIgualALaCapacidad_vendeTodoElSector() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Campo", 500, false);
+        SectorInputDTO sinCupo = elegir(SECTOR_ID, 25000);
+        service.crear(borradorEn(LUGAR_ID, sinCupo), ORG_ID);
+        assertNull(ultimoPrecioGuardado().getCupo());
+        assertEquals(Integer.valueOf(500), ultimoPrecioGuardado().cupoEfectivo());
+
+        org.mockito.Mockito.clearInvocations(precioSectorRepository);
+        SectorInputDTO igual = elegir(SECTOR_ID, 25000);
+        igual.setCapacidadTotal(500);
+        service.crear(borradorEn(LUGAR_ID, igual), ORG_ID);
+        assertNull(ultimoPrecioGuardado().getCupo());
+    }
+
+    @Test
+    void crear_sectorGeneral_cupoFueraDeRango_throws() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Campo", 500, false);
+
+        for (int cupo : new int[] {0, -5, 501}) {
+            SectorInputDTO in = elegir(SECTOR_ID, 25000);
+            in.setCapacidadTotal(cupo);
+            IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                    () -> service.crear(borradorEn(LUGAR_ID, in), ORG_ID), "cupo " + cupo);
+            assertTrue(e.getMessage().contains("entre 1 y 500"), e.getMessage());
+        }
+    }
+
+    @Test
+    void crear_sectorNumerado_seVendeCompleto_yNoAdmiteUnCupoMenor() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Platea", 200, true);
+
+        SectorInputDTO completo = elegir(SECTOR_ID, 25000);
+        completo.setCapacidadTotal(200);
+        service.crear(borradorEn(LUGAR_ID, completo), ORG_ID);
+        assertNull(ultimoPrecioGuardado().getCupo());
+        assertEquals(Integer.valueOf(200), ultimoPrecioGuardado().cupoEfectivo());
+
+        SectorInputDTO parcial = elegir(SECTOR_ID, 25000);
+        parcial.setCapacidadTotal(100);
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
+                () -> service.crear(borradorEn(LUGAR_ID, parcial), ORG_ID));
+        assertTrue(e.getMessage().contains("se vende completo"));
+    }
+
+    @Test
+    void crear_publicarOk_conSectoresDelLugar_abreLosCuposConElCupoDelEvento() {
+        Sector[] s = new Sector[1];
+        lugarConSector(s, "Campo", 500, false);
+        SectorInputDTO in = elegir(SECTOR_ID, 25000);
+        in.setCapacidadTotal(120);
+        EventoRequestDTO req = borradorEn(LUGAR_ID, in);
+        req.setEstado("PUBLICADO");
+        req.setFechaInicio(LocalDateTime.of(2026, 3, 14, 20, 0));
+        PrecioSector ps = precioSector(s[0], BigDecimal.valueOf(25000));
+        ps.setCupo(120);
+        when(precioSectorRepository.findActivosByEventoId(any())).thenReturn(List.of(ps));
         when(eventoMapper.toDetalle(any(), any(), anyList(), anyList())).thenReturn(detalle(new Evento()));
 
         service.crear(req, ORG_ID);
 
-        var captor = org.mockito.ArgumentCaptor.forClass(Sector.class);
-        verify(sectorRepository, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
-        Sector guardado = captor.getValue();
-        assertEquals(Integer.valueOf(200), guardado.getCapacidad());
-        assertEquals(Integer.valueOf(10), guardado.getFilas());
-        assertEquals(Integer.valueOf(20), guardado.getAsientosPorFila());
+        var captor = org.mockito.ArgumentCaptor.forClass(AbrirCuposBody.class);
+        verify(ventasClient, times(1)).abrirCupos(any(String.class), captor.capture());
+        assertEquals(1, captor.getValue().getSectores().size());
+        assertEquals(Integer.valueOf(120), captor.getValue().getSectores().get(0).getCapacidadTotal(),
+                "ventas abre el cupo del evento, no la capacidad del sector");
+    }
+
+    @Test
+    void publicar_conElLugarPorDefinir_throws() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(POR_DEFINIR_ID, "Por definir", "Por definir"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+
+        BusinessConflictException e = assertThrows(BusinessConflictException.class,
+                () -> service.publicar(EVENTO_ID, ORG_ID, "ORGANIZADOR"));
+        assertTrue(e.getMessage().contains("elegí un lugar"));
+    }
+
+    @Test
+    void actualizar_borrador_cambiarDeLugar_descartaLosPreciosDelLugarAnterior() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(LUGAR_ID, "Viejo", "Vieja"));
+        Lugar nuevo = lugar("f002", "Nuevo", "Nueva");
+        List<PrecioSector> viejos = List.of(precioSector(sector(SECTOR_ID, evento.getLugar(), "Campo", 500, false), BigDecimal.TEN));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(lugarRepository.findById("f002")).thenReturn(Optional.of(nuevo));
+        when(precioSectorRepository.findByEventoId(EVENTO_ID)).thenReturn(viejos);
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setIdLugar("f002");
+
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+
+        assertEquals("f002", evento.getLugar().getId());
+        verify(precioSectorRepository).deleteAll(viejos);
+    }
+
+    @Test
+    void actualizar_conElMismoLugarOSinLugar_noCambiaNadaDelLugar() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(evento.getLugar()));
+
+        EventoRequestDTO mismo = new EventoRequestDTO();
+        mismo.setIdLugar(LUGAR_ID);
+        service.actualizar(EVENTO_ID, mismo, ORG_ID, "ORGANIZADOR");
+        service.actualizar(EVENTO_ID, new EventoRequestDTO(), ORG_ID, "ORGANIZADOR");
+
+        assertEquals(LUGAR_ID, evento.getLugar().getId());
+        verify(precioSectorRepository, times(0)).deleteAll(any());
+    }
+
+    @Test
+    void actualizar_publicado_noPuedeCambiarDeLugar_409() {
+        Evento evento = evento("PUBLICADO", ORG_ID);
+        evento.setLugar(lugar(LUGAR_ID, "Viejo", "Vieja"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(lugarRepository.findById("f002")).thenReturn(Optional.of(lugar("f002", "Nuevo", "Nueva")));
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setIdLugar("f002");
+
+        assertThrows(BusinessConflictException.class, () -> service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR"));
+        assertEquals(LUGAR_ID, evento.getLugar().getId());
+    }
+
+    @Test
+    void actualizar_borrador_losSectoresSonLaListaCompleta_yLosOmitidosSeQuitan() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
+        evento.setLugar(lugar);
+        Sector campo = sector(SECTOR_ID, lugar, "Campo", 500, false);
+        Sector platea = sector("s-platea", lugar, "Platea", 200, true);
+        PrecioSector psCampo = precioSector(campo, BigDecimal.valueOf(10));
+        PrecioSector psPlatea = precioSector(platea, BigDecimal.valueOf(20));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(campo));
+        when(precioSectorRepository.findByEventoId(EVENTO_ID)).thenReturn(List.of(psCampo, psPlatea));
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setSectores(List.of(elegir(SECTOR_ID, 40000)));
+
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+
+        verify(precioSectorRepository).delete(psPlatea);
+        verify(precioSectorRepository, times(0)).delete(psCampo);
+    }
+
+    @Test
+    void actualizar_sinSectoresEnElPedido_noTocaLosSectoresDelEvento() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Solo cambio el nombre");
+
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+
+        assertEquals("Solo cambio el nombre", evento.getNombre());
+        verify(precioSectorRepository, times(0)).delete(any(PrecioSector.class));
+        verify(precioSectorRepository, times(0)).findByEventoId(any());
+    }
+
+    @Test
+    void actualizar_conElLugarPorDefinir_noSePuedenDefinirSectores() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(POR_DEFINIR_ID, "Por definir", "Por definir"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setSectores(List.of(elegir(SECTOR_ID, 1000)));
+
+        assertThrows(IllegalArgumentException.class, () -> service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR"));
+    }
+
+    @Test
+    void actualizar_publicado_soloCambiaElPrecioDeSectoresQueYaEstaban() {
+        Evento evento = evento("PUBLICADO", ORG_ID);
+        Lugar lugar = lugar(LUGAR_ID, "Estadio", "CABA");
+        evento.setLugar(lugar);
+        Sector campo = sector(SECTOR_ID, lugar, "Campo", 500, false);
+        PrecioSector actual = precioSector(campo, BigDecimal.valueOf(10));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(sectorRepository.findById(SECTOR_ID)).thenReturn(Optional.of(campo));
+        when(precioSectorRepository.findByEventoId(EVENTO_ID)).thenReturn(List.of(actual));
+        when(precioSectorRepository.findByEventoIdAndSectorId(EVENTO_ID, SECTOR_ID)).thenReturn(Optional.of(actual));
+
+        EventoRequestDTO soloPrecio = new EventoRequestDTO();
+        soloPrecio.setSectores(List.of(elegir(SECTOR_ID, 99000)));
+        service.actualizar(EVENTO_ID, soloPrecio, ORG_ID, "ORGANIZADOR");
+        assertEquals(0, BigDecimal.valueOf(99000).compareTo(actual.getPrecio()));
+
+        // cambiar el cupo de un evento publicado: el stock ya está abierto en ventas
+        SectorInputDTO otroCupo = elegir(SECTOR_ID, 99000);
+        otroCupo.setCapacidadTotal(100);
+        EventoRequestDTO conCupo = new EventoRequestDTO();
+        conCupo.setSectores(List.of(otroCupo));
+        assertThrows(BusinessConflictException.class, () -> service.actualizar(EVENTO_ID, conCupo, ORG_ID, "ORGANIZADOR"));
+
+        // agregar un sector que no estaba
+        Sector platea = sector("s-platea", lugar, "Platea", 200, true);
+        when(sectorRepository.findById("s-platea")).thenReturn(Optional.of(platea));
+        EventoRequestDTO nuevoSector = new EventoRequestDTO();
+        nuevoSector.setSectores(List.of(elegir("s-platea", 50000)));
+        assertThrows(BusinessConflictException.class, () -> service.actualizar(EVENTO_ID, nuevoSector, ORG_ID, "ORGANIZADOR"));
+    }
+
+    @Test
+    void listarLugares_ocultaElLugarPorDefinir_yNoSePuedeConsultarNiEditar() {
+        when(lugarRepository.findAllByOrderByNombreAsc()).thenReturn(List.of(
+                lugar(POR_DEFINIR_ID, "Por definir", "Por definir"), lugar(LUGAR_ID, "Estadio", "CABA")));
+
+        var lugares = service.listarLugares(null);
+
+        assertEquals(1, lugares.size());
+        assertEquals(LUGAR_ID, lugares.get(0).getId());
+        assertThrows(ResourceNotFoundException.class, () -> service.obtenerLugar(POR_DEFINIR_ID));
+        assertThrows(ResourceNotFoundException.class, () -> service.eliminarLugar(POR_DEFINIR_ID));
     }
 
     // ---------- listarAsientos ----------
@@ -1201,6 +1604,126 @@ class EventoServiceImplTest {
         service.actualizarParticipante("d-1", body);
 
         assertEquals("Nuevo", p.getNombre());
+    }
+
+    // ---------- PAR-01: tipo válido, sin duplicados, baja con guarda ----------
+
+    private ParticipanteRequestDTO participante(String nombre, String tipo) {
+        ParticipanteRequestDTO b = new ParticipanteRequestDTO();
+        b.setNombre(nombre);
+        b.setTipo(tipo);
+        return b;
+    }
+
+    @Test
+    void crearParticipante_sinTipoOTipoInvalido_throws_yNoSeGuarda() {
+        for (String tipo : new String[] {null, "", "  ", "COSA", "musico"}) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> service.crearParticipante(participante("Banda X", tipo)), "tipo=" + tipo);
+        }
+        verify(participanteRepository, times(0)).save(any(Participante.class));
+    }
+
+    @Test
+    void crearParticipante_tipoEnMinusculas_seNormaliza() {
+        when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
+        when(eventoMapper.toParticipante(any(Participante.class))).thenReturn(new ParticipanteResponseDTO());
+
+        service.crearParticipante(participante("Banda X", "banda"));
+
+        var captor = org.mockito.ArgumentCaptor.forClass(Participante.class);
+        verify(participanteRepository).save(captor.capture());
+        assertEquals("BANDA", captor.getValue().getTipo());
+    }
+
+    @Test
+    void crearParticipante_aceptaTodosLosTiposDelCatalogo() {
+        when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
+        when(eventoMapper.toParticipante(any(Participante.class))).thenReturn(new ParticipanteResponseDTO());
+
+        for (String tipo : new String[] {"ARTISTA", "BANDA", "ELENCO", "EQUIPO", "PILOTO"}) {
+            service.crearParticipante(participante("Nombre " + tipo, tipo));
+        }
+
+        verify(participanteRepository, times(5)).save(any(Participante.class));
+    }
+
+    @Test
+    void crearParticipante_nombreDuplicado_409_yNoSeGuarda() {
+        when(participanteRepository.existsByNombreIgnoreCase("Metallica")).thenReturn(true);
+
+        BusinessConflictException e = assertThrows(BusinessConflictException.class,
+                () -> service.crearParticipante(participante("Metallica", "BANDA")));
+
+        assertTrue(e.getMessage().contains("Ya existe"));
+        verify(participanteRepository, times(0)).save(any(Participante.class));
+    }
+
+    @Test
+    void actualizarParticipante_nombreDeOtro_409_peroElPropioNoEsDuplicado() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("Viejo");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+        when(participanteRepository.save(any(Participante.class))).thenAnswer(i -> i.getArgument(0));
+        when(eventoMapper.toParticipante(any(Participante.class))).thenReturn(new ParticipanteResponseDTO());
+        when(participanteRepository.existsByNombreIgnoreCaseAndIdNot("Metallica", "d-1")).thenReturn(true);
+
+        assertThrows(BusinessConflictException.class,
+                () -> service.actualizarParticipante("d-1", participante("Metallica", null)));
+        assertEquals("Viejo", p.getNombre());
+
+        // cambiar solo mayúsculas del propio nombre no es un duplicado
+        service.actualizarParticipante("d-1", participante("VIEJO", null));
+        assertEquals("VIEJO", p.getNombre());
+    }
+
+    @Test
+    void actualizarParticipante_tipoInvalidoOVacio_throws() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("X");
+        p.setTipo("BANDA");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarParticipante("d-1", participante(null, "COSA")));
+        assertThrows(IllegalArgumentException.class, () -> service.actualizarParticipante("d-1", participante(null, "")));
+        assertEquals("BANDA", p.getTipo());
+    }
+
+    @Test
+    void eliminarParticipante_sinEventos_loBorra() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("Banda de prueba");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+        when(eventoParticipanteRepository.existsByParticipanteId("d-1")).thenReturn(false);
+
+        service.eliminarParticipante("d-1");
+
+        verify(participanteRepository).delete(p);
+    }
+
+    @Test
+    void eliminarParticipante_conEventos_409_yNoSeBorra() {
+        Participante p = new Participante();
+        p.setId("d-1");
+        p.setNombre("Metallica");
+        when(participanteRepository.findById("d-1")).thenReturn(Optional.of(p));
+        when(eventoParticipanteRepository.existsByParticipanteId("d-1")).thenReturn(true);
+
+        BusinessConflictException e =
+                assertThrows(BusinessConflictException.class, () -> service.eliminarParticipante("d-1"));
+
+        assertTrue(e.getMessage().contains("participa en eventos"));
+        verify(participanteRepository, times(0)).delete(any(Participante.class));
+    }
+
+    @Test
+    void eliminarParticipante_inexistente_404() {
+        when(participanteRepository.findById("nope")).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class, () -> service.eliminarParticipante("nope"));
     }
 
     @Test

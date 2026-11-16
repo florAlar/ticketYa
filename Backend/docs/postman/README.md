@@ -4,10 +4,10 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 127 requests en 10 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 193 requests en 12 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
 
-**Última corrida verificada (2026-11-10):** 127 requests, 376 assertions, 0 fallos (stack local completo, datos seed limpios; dos corridas seguidas sin reiniciar datos).
+**Última corrida verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (stack local completo; las carpetas 10 y 11 corren sin reiniciar datos).
 
 ## Requisitos
 
@@ -21,7 +21,7 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 1. Importar los dos archivos `.json`.
 2. Elegir el environment **TicketYa local**.
-3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 08**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
+3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 11**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
 
 ### Por consola (sin instalar nada)
 
@@ -47,11 +47,10 @@ No hace falta loguearse a mano. Un script *pre-request* de la colección hace lo
 
 Cada request declara en su descripción el rol que usa y el status esperado.
 
-**Entrega 1 vs Entrega 2 (flag del gateway `TICKETYA_JWT_ENABLED`):** la colección pasa completa (127 requests, 376 assertions, 0 fallos) con el flag en `false` (default de E1, identificación por encabezado) y también con `true` (JWT + roles). Como la colección se loguea y envía `Bearer`, el gateway valida el token en ambos modos. Para probar a mano en modo E1 sin login basta con enviar `X-User-Id` y `X-User-Role`, por ejemplo:
-
-```bash
-curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
-```
+**Autenticación:** el gateway exige JWT (`Authorization: Bearer <token>`) fuera de las rutas
+públicas. La colección se loguea sola por rol y manda el `Bearer` en cada request, así que corre
+sin intervención. Los headers `X-User-Id` / `X-User-Role` que se manden a mano se descartan: la
+identidad sale siempre del token verificado.
 
 ## Carpetas
 
@@ -59,14 +58,16 @@ curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIEN
 |---------|----------|-----------|
 | 00 Auth | 9 | login de los 4 roles, registro, refresh, logout, 401 y 409 |
 | 01 Usuarios | 9 | perfil propio, listado, estado, roles; 403 y 404 |
-| 02 Eventos | 15 | catálogo con filtros, detalle, borrador → edición → precio → participantes → publicación → reprogramación, borrado |
-| 03 Lugares y participantes | 11 | CRUD de lugares, sectores (el numerado se crea con `filas` y `asientosPorFila`), asientos virtuales y participantes |
+| 02 Eventos | 27 | catálogo con filtros, detalle, borrador → edición → precio → participantes → publicación → reprogramación, borrado, y LUG-04: el evento elige un lugar y sus sectores (cupo propio; 400 si el sector no tiene id, es de otro lugar, supera la capacidad o se intenta cambiar su layout), edición de borrador con lista completa de sectores, cambio de lugar y borrador sin lugar ("Por definir") |
+| 03 Lugares y participantes | 37 | CRUD de lugares, sectores (el numerado se crea con `filas` y `asientosPorFila`), asientos virtuales y participantes, coordenadas opcionales del lugar (latitud/longitud: alta, 400 si falta una o está fuera de rango, edición, `quitarCoordenadas` y detalle de evento), y baja de lugares (solo ADMIN: 409 si tiene eventos, 403 para organizador, 204 y luego 404), alta y edición de lugares y sectores solo ADMIN (403 para el organizador, que sí puede leerlos) |
 | 04 Ventas | 21 | disponibilidad, cupos, reserva (idempotente, renovación, confirmación, cancelación), compra, pago APROBAR y RECHAZAR |
 | 05 Entradas | 4 | emisión idempotente, listado, detalle y QR |
 | 06 Devoluciones | 10 | solicitud, listado, aprobación, rechazo, reintegro por cancelación |
 | 07 Negativos | 17 | 401, 403, 400, 404 y 409 |
 | 08 Gateway | 8 | health, rutas públicas sin token y preflight CORS |
 | 09 Asientos numerados | 23 | reserva de un asiento concreto (Platea numerada del evento seed), `asientosOcupados` en disponibilidad (RESERVADO → VENDIDO), errores 409/400, entrada con fila y número, devolución que libera el asiento y pago rechazado que libera el asiento |
+| 10 Control de acceso QR | 19 | cliente compra una entrada y el personal de acceso la valida: ingreso aceptado, QR repetido (YA_USADA), QR de otro evento, QR inexistente, roles y auditoría de intentos |
+| 11 Reportes del organizador | 9 | reporte completo, ventas, sectores, ocupación y recaudación como organizador dueño y ADMIN (con las identidades aritméticas: vigentes y neta), 403 para cliente y personal de acceso, 401 sin token y 404 |
 
 ## Flujo de negocio que recorre
 
@@ -86,6 +87,10 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 ## Carpeta 09 — asientos numerados
 
 Se puede correr varias veces sin reiniciar los datos: registra un **cliente nuevo por corrida** (evita el límite de 6 entradas por cliente y evento) y elige asientos libres al azar en la Platea del evento seed (100 filas × 250). Variables que usa: `sectorNumeradoSeedId`, `sectorGeneralSeedId` (Campo, general) y `token_asientos`; el resto las captura sola (`asientoNum`, `asientoNum2`, `asientoNum3`, `asientoReservaId`, `asientoCompraId`, `asientoEntradaId`, `asientoDevolucionId`...). Va al final de la colección para no alterar el orden de las carpetas anteriores.
+
+## Carpeta 10 — control de acceso QR (E2-ACC-01)
+
+Autónoma y repetible: registra un **cliente nuevo por corrida**, compra una entrada en el Campo del evento seed y la escanea como `PERSONAL_ACCESO`. Verifica `POST /eventos/{id}/validaciones` (200 `VALIDA`; 409 con `resultado` = `YA_USADA` / `OTRO_EVENTO`; 404 y 400), que la entrada del cliente queda `USADA` y sin QR, y que `GET /eventos/{id}/validaciones` (ADMIN u ORGANIZADOR dueño) lista los tres intentos. Cliente y organizador no pueden validar (403).
 
 ## Reiniciar los datos
 

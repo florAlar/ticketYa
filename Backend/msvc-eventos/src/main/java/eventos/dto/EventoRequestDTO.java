@@ -39,31 +39,25 @@ public class EventoRequestDTO {
     @Schema(description = "Marca de alta demanda", example = "false")
     private Boolean esAltaDemanda;
 
-    @Schema(description = "UUID de un lugar existente (alternativo a los campos lugar*)",
+    @Schema(description = "UUID de un lugar existente (los lugares los crea el ADMIN). Obligatorio para publicar; "
+            + "un borrador puede quedar sin lugar (queda en 'Por definir')",
             example = "f0000000-0000-4000-8000-000000000001")
     private String idLugar;
 
-    @Schema(description = "Nombre del lugar embebido", example = "Estadio Obras")
-    private String lugarNombre;
-
-    @Schema(description = "Ciudad del lugar embebido", example = "Buenos Aires")
-    private String lugarCiudad;
-
-    @Schema(description = "Dirección del lugar embebido", example = "Av. del Libertador 7395")
-    private String lugarDireccion;
-
-    @Schema(description = "Sectores/tipos de entrada con precio")
-    private List<SectorInputDTO> sectores = new ArrayList<>();
+    @Schema(description = "Sectores del lugar que se venden en este evento, con su precio y cupo. Si viene, es la lista "
+            + "completa del evento (en borrador reemplaza a la anterior; ausente = no se tocan). Todos deben ser "
+            + "sectores del lugar elegido")
+    private List<SectorInputDTO> sectores;
 
     @Getter
     @Setter
     @Schema(name = "EventoSectorInput", description = "Sector del evento con precio y capacidad")
     public static class SectorInputDTO {
 
-        @Schema(description = "UUID del sector si ya existe", example = "a0000000-0000-4000-8000-000000000001")
+        @Schema(description = "UUID del sector del lugar (obligatorio: los sectores los define el lugar)", example = "a0000000-0000-4000-8000-000000000001")
         private String id;
 
-        @Schema(description = "Nombre del tipo de entrada", example = "Campo")
+        @Schema(description = "Solo informativo: si viene debe coincidir con el del sector (lo define el lugar)", example = "Campo")
         private String nombre;
 
         @Schema(description = "Precio unitario en ARS", example = "25000.00")

@@ -30,7 +30,7 @@ const GestionUsuariosPage = () => {
   })
 
   const load = useCallback(async () => {
-    if (!FEATURE.adminUsuarios) {
+    if (!FEATURE.adminUsuariosListado) {
       setStatus('gated')
       setItems([])
       setEventos([])
@@ -66,7 +66,7 @@ const GestionUsuariosPage = () => {
   )
 
   const onRol = async (id, rol) => {
-    if (!FEATURE.adminUsuarios) return
+    if (!FEATURE.adminUsuariosListado) return
     setBusyId(id)
     setError('')
     try {
@@ -80,7 +80,7 @@ const GestionUsuariosPage = () => {
   }
 
   const onActivo = async (id, activo) => {
-    if (!FEATURE.adminUsuarios) return
+    if (!FEATURE.adminUsuariosListado) return
     setBusyId(id)
     setError('')
     try {
@@ -182,7 +182,7 @@ const GestionUsuariosPage = () => {
           {showCreate ? 'Cerrar alta' : 'Nuevo personal de acceso'}
         </GateButton>
         <GateButton
-          enabled={FEATURE.adminUsuarios}
+          enabled={FEATURE.adminUsuariosListado}
           type="button"
           className="btn"
           onClick={load}
@@ -294,7 +294,7 @@ const GestionUsuariosPage = () => {
                         className="form-input"
                         value={normalizeRol(u.rol)}
                         disabled={
-                          busyId === u.id || u.id === user?.id || !FEATURE.adminUsuarios
+                          busyId === u.id || u.id === user?.id || !FEATURE.adminUsuariosListado
                         }
                         onChange={(e) => onRol(u.id, e.target.value)}
                       >
@@ -313,7 +313,7 @@ const GestionUsuariosPage = () => {
                           className="form-input"
                           value={u.activo ? '1' : '0'}
                           disabled={
-                            busyId === u.id || u.id === user?.id || !FEATURE.adminUsuarios
+                            busyId === u.id || u.id === user?.id || !FEATURE.adminUsuariosListado
                           }
                           onChange={(e) => onActivo(u.id, e.target.value === '1')}
                         >

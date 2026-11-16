@@ -21,3 +21,8 @@ spring:
 jwt:
   secret: ${JWT_SECRET:ticketya-dev-jwt-secret-change-me-32b}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+# E2-NFR-03: correlation id en cada línea de log
+logging:
+  pattern:
+    level: "%5p [${spring.application.name:app},%X{correlationId:-}]"

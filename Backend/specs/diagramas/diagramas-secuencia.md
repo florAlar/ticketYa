@@ -195,6 +195,136 @@ Reglas y errores:
 - **Devolución aprobada:** `POST /eventos/{id}/cupos/liberacion` con `{idSector, asientos:[{fila,numero}]}` (deben figurar `VENDIDO`) libera esos asientos y devuelve el cupo.
 - `GET /eventos/{id}/disponibilidad` informa por sector `asientosOcupados[{fila,numero,estado}]` para que el frontend marque los no disponibles.
 
+## 6. Control de acceso: validar el QR en la puerta
+
+El personal de acceso escanea el QR y `msvc-entradas` decide. Un QR solo puede ingresar una vez, aun con escaneos simultáneos en varias puertas: la fila de la entrada se lee con `SELECT … FOR UPDATE`, así que el segundo escaneo espera, ve la entrada `USADA` y se rechaza.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor P as Personal de acceso
+    participant GW as API Gateway
+    participant N as msvc-entradas
+    participant E as msvc-eventos
+    participant DB as MySQL entradas
+
+    P->>GW: POST /api/eventos/{idEvento}/validaciones {codigoQR, dispositivo}
+    GW->>GW: valida JWT y rol (PERSONAL_ACCESO o ADMIN)
+    GW->>N: POST /eventos/{idEvento}/validaciones (X-User-Id, X-User-Role)
+    N->>E: GET /eventos/{idEvento} (estado del evento; best-effort)
+    N->>DB: SELECT entrada WHERE codigo_qr = ? FOR UPDATE
+    alt no existe ninguna entrada con ese QR
+        N-->>P: 404 (no se registra: no hay entrada)
+    else existe
+        alt la entrada es de otro evento
+            N->>DB: INSERT validacion_acceso (OTRO_EVENTO)
+            N-->>P: 409 OTRO_EVENTO (sin datos de la entrada)
+        else ya USADA
+            N->>DB: INSERT validacion_acceso (YA_USADA)
+            N-->>P: 409 YA_USADA
+        else DEVUELTA o A_REINTEGRAR
+            N->>DB: INSERT validacion_acceso (NO_VALIDA)
+            N-->>P: 409 NO_VALIDA
+        else evento CANCELADO
+            N->>DB: INSERT validacion_acceso (EVENTO_CANCELADO)
+            N-->>P: 409 EVENTO_CANCELADO
+        else VENDIDA y evento vigente
+            N->>DB: UPDATE entrada SET estado = USADA, fecha_validacion = ahora
+            N->>DB: INSERT validacion_acceso (VALIDA, id_personal_acceso)
+            N-->>P: 200 VALIDA + entrada (evento, sector, asiento)
+        end
+    end
+```
+
+- **Auditoría:** todo intento sobre una entrada existente queda en `validacion_acceso` (resultado, quién escaneó, dispositivo, fecha), aceptado o rechazado. `GET /api/eventos/{idEvento}/validaciones` lo lista (ADMIN; ORGANIZADOR solo el dueño del evento).
+- **Si `msvc-eventos` no responde** no se bloquea la puerta: se confía en el estado de la entrada (una entrada de un evento cancelado ya está `A_REINTEGRAR`).
+- **Simplificación:** cualquier `PERSONAL_ACCESO` puede validar cualquier evento; no se modela la asignación de eventos por persona.
+
+## 7. Reportes del organizador
+
+El organizador (o un ADMIN) consulta cómo viene su evento. `msvc-ventas` arma el reporte: lo que se vendió sale de su propia base y lo que ocurrió después (devoluciones, ingresos) se pide a `msvc-entradas`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor O as Organizador / Admin
+    participant GW as API Gateway
+    participant V as msvc-ventas
+    participant E as msvc-eventos
+    participant N as msvc-entradas
+
+    O->>GW: GET /api/reportes/eventos/{idEvento}
+    GW->>GW: valida JWT y rol (ORGANIZADOR o ADMIN)
+    GW->>V: GET /reportes/eventos/{idEvento} (X-User-Id, X-User-Role)
+    V->>E: GET /eventos/{idEvento} (sectores y dueño)
+    alt evento inexistente
+        V-->>O: 404
+    else ORGANIZADOR que no es el dueño
+        V-->>O: 403
+    else permitido
+        V->>V: compras APROBADAS y capacidad por sector (SQL)
+        V->>N: GET /eventos/{idEvento}/entradas/resumen (devueltas, usadas, a reintegrar, montos)
+        alt eventos o entradas no responden
+            V-->>O: 503 (no se entrega un reporte parcial)
+        else
+            V-->>O: 200 totales + detalle por sector
+        end
+    end
+```
+
+- **Definiciones:** vigentes = vendidas − devueltas − a reintegrar; ocupación = vigentes / capacidad; recaudación neta = bruta − devuelta − a reintegrar.
+- **Por qué dos servicios:** las ventas y los cupos viven en `msvc-ventas`; las devoluciones y los ingresos, en `msvc-entradas`. Cada servicio tiene su base y no se comparten tablas.
+
+## 8. Alta de evento: el organizador elige un lugar y sus sectores
+
+Los lugares y sus sectores (con capacidad y layout de asientos) los carga el **ADMIN**. El organizador solo elige un lugar existente y, de sus sectores, cuáles se venden en el evento, con su precio y su cupo. Al publicar, `msvc-eventos` abre ese cupo en `msvc-ventas`.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Administrador
+    actor O as Organizador
+    participant GW as API Gateway
+    participant E as msvc-eventos
+    participant V as msvc-ventas
+
+    A->>GW: POST /api/lugares {nombre, ciudad, direccion, latitud?, longitud?}
+    GW->>GW: escritura de lugares y sectores: solo ADMIN
+    GW->>E: POST /lugares
+    E-->>A: 201 lugar
+    A->>GW: POST /api/lugares/{id}/sectores {nombre, capacidad | filas × asientosPorFila}
+    GW->>E: POST /lugares/{id}/sectores
+    E-->>A: 201 sector
+
+    O->>GW: GET /api/lugares (elige uno)
+    GW->>E: GET /lugares
+    E-->>O: lugares con sus sectores (sin el lugar reservado "Por definir")
+
+    O->>GW: POST /api/eventos {idLugar, sectores[{id, precio, capacidadTotal?}]}
+    GW->>E: POST /eventos
+    alt algún sector no tiene id, no es del lugar, cambia nombre/tipo/layout o el cupo excede su capacidad
+        E-->>O: 400
+    else
+        E->>E: guarda evento BORRADOR y precio_sector (precio + cupo propio)
+        E-->>O: 201 borrador
+    end
+
+    O->>GW: POST /api/eventos/{id}/publicacion
+    GW->>E: POST /eventos/{id}/publicacion
+    E->>E: valida fecha, lugar real (no "Por definir") y ≥1 sector con precio
+    E->>V: POST /eventos/{id}/cupos {sectores[{idSector, capacidadTotal = cupo del evento}]}
+    alt ventas no responde
+        E-->>O: 409 (no se publica)
+    else
+        E->>E: estado PUBLICADO
+        E-->>O: 200 evento publicado
+    end
+```
+
+- **Cupo del evento:** `precio_sector.cupo` (de 1 a la capacidad del sector; vacío = todo). Los sectores numerados se venden completos: el cliente elige asiento (ver §5).
+- **Borrador:** puede quedar sin lugar (lugar reservado "Por definir") y se edita con `PUT`: `sectores` es la lista completa y cambiar de lugar descarta los sectores elegidos. Con el evento ya publicado solo cambia el precio de sectores que ya estaban.
+- **Baja de lugares:** `DELETE /lugares/{id}` solo ADMIN; responde 409 si el lugar tiene eventos.
+
 ## Garantía de no doble venta
 
 Hay dos defensas combinadas:

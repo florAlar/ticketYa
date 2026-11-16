@@ -36,6 +36,8 @@ erDiagram
         VARCHAR nombre
         VARCHAR direccion
         VARCHAR ciudad
+        DECIMAL latitud "opcional (-90..90)"
+        DECIMAL longitud "opcional (-180..180)"
         INT capacidad_total
     }
     SECTOR {
@@ -47,13 +49,6 @@ erDiagram
         BOOL es_numerado
         INT filas
         INT asientos_por_fila
-    }
-    ASIENTO {
-        CHAR36 id PK
-        CHAR36 id_sector FK
-        VARCHAR fila
-        INT numero
-        VARCHAR codigo
     }
     EVENTO {
         CHAR36 id PK
@@ -75,14 +70,7 @@ erDiagram
         DECIMAL precio
         CHAR moneda
         BOOL activo
-    }
-    PRECIO_ASIENTO {
-        CHAR36 id PK
-        CHAR36 id_evento FK
-        CHAR36 id_asiento FK
-        DECIMAL precio
-        CHAR moneda
-        BOOL activo
+        INT cupo "cupo del evento; NULL = toda la capacidad del sector"
     }
     PARTICIPANTE {
         CHAR36 id PK
@@ -102,11 +90,8 @@ erDiagram
 
     LUGAR ||--o{ SECTOR : contiene
     LUGAR ||--o{ EVENTO : alberga
-    SECTOR ||--o{ ASIENTO : tiene
     EVENTO ||--o{ PRECIO_SECTOR : define
     SECTOR ||--o{ PRECIO_SECTOR : tarifado
-    EVENTO ||--o{ PRECIO_ASIENTO : define
-    ASIENTO ||--o{ PRECIO_ASIENTO : tarifado
     EVENTO ||--o{ EVENTO_PARTICIPANTE : tiene
     PARTICIPANTE ||--o{ EVENTO_PARTICIPANTE : participa
     EVENTO }o..|| EXT_USUARIO : "id_organizador (ref lógica)"

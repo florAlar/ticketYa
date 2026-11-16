@@ -31,6 +31,8 @@ namespace msvc_eventos {
         +VARCHAR nombre
         +VARCHAR direccion
         +VARCHAR ciudad
+        +DECIMAL latitud
+        +DECIMAL longitud
         +INT capacidad_total
     }
     class sector {
@@ -42,13 +44,6 @@ namespace msvc_eventos {
         +BOOL es_numerado
         +INT filas
         +INT asientos_por_fila
-    }
-    class asiento {
-        +CHAR36 id PK
-        +CHAR36 id_sector FK
-        +VARCHAR fila
-        +INT numero
-        +VARCHAR codigo
     }
     class evento {
         +CHAR36 id PK
@@ -70,14 +65,7 @@ namespace msvc_eventos {
         +DECIMAL precio
         +CHAR moneda
         +BOOL activo
-    }
-    class precio_asiento {
-        +CHAR36 id PK
-        +CHAR36 id_evento FK
-        +CHAR36 id_asiento FK
-        +DECIMAL precio
-        +CHAR moneda
-        +BOOL activo
+        +INT cupo
     }
     class participante {
         +CHAR36 id PK
@@ -245,11 +233,8 @@ rol "1" -- "0..*" usuario_rol : asignado
 
 lugar "1" -- "0..*" sector : contiene
 lugar "1" -- "0..*" evento : alberga
-sector "1" -- "0..*" asiento : tiene
 evento "1" -- "0..*" precio_sector : define
 sector "1" -- "0..*" precio_sector : tarifado
-evento "1" -- "0..*" precio_asiento : define
-asiento "1" -- "0..*" precio_asiento : tarifado
 evento "1" -- "0..*" evento_participante : tiene
 participante "1" -- "0..*" evento_participante : participa
 

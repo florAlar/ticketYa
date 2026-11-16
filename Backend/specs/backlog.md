@@ -10,7 +10,7 @@ Este archivo es la lista de trabajo del repo; no reemplaza la consigna.
 
 | Entrega | Foco |
 | --- | --- |
-| E1 | Core: eventos, lugares, publicación, búsqueda, reserva temporal, compra, pago mock, emisión QR, no doble venta, devoluciones, cancelaciones. Sin auth formal (id por header/param). Apps en local; DBs pueden ir en Docker. |
+| E1 | Core: eventos, lugares, publicación, búsqueda, reserva temporal, compra, pago mock, emisión QR, no doble venta, devoluciones, cancelaciones. Identificación por header (`X-User-Id`). Apps en local; DBs pueden ir en Docker. |
 | E2 | Fila virtual, control de acceso QR, preferencias/recs (NoSQL), notificaciones, reportes, JWT+roles, cache, resiliencia, trazabilidad, compose completo, tests integración/seguridad/carga. |
 | Transversal | Infra, docs de repo, higiene — sirve a ambas entregas. |
 
@@ -34,13 +34,13 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 | INF-10 | Carpeta `infrastructure/` (mysql/mongodb/redis/nginx + readme) | Transversal | hecho | MySQL init + Mongo init + **redis.conf** montado en `db-redis-ventas` + nginx conf → `ms-gateway`. |
 | INF-11 | `SecurityConfig` temporal `permitAll` donde hay starter Security (smoke temprano) | Transversal | hecho | Cerrar en E2 con JWT. |
 | INF-12 | Docs transversales base: `arquitectura.md`, `estructura.md`, `infraestructura.md`, `bases-de-datos.md`, `consigna.md` + `comunicacion.md` / `microservicios.md` | Transversal | hecho | Higiene fina de `arquitectura`/`bases-de-datos` (notifs) sigue en INF-19. |
-| INF-13 | `docs/endpoints.md` — listado de rutas, enrutado gateway y solapes `/eventos/**` | E1/E2 | parcial | Faltan params, status HTTP, JSON de ejemplo y OpenAPI. FE alineado en `Frontend/docs/endpoints-front.md` ↔ back. |
+| INF-13 | `docs/endpoints.md` — listado de rutas, enrutado gateway y solapes `/eventos/**` | E1/E2 | hecho | 2026-11-11. Rutas, roles y códigos en `specs/endpoints.md` y `docs/api/gateway.md`; contratos completos (params, status, errores, ejemplos) en `docs/openapi/` y la colección Postman. FE alineado en `Frontend/docs/endpoints-front.md` ↔ back. |
 | INF-14 | `docs/diagramas/modelo.md` — ER Mermaid **solo MySQL** (preferencias fuera) | E1 | hecho | Preferencias/historial sacados del ER; FKs explícitas en atributos + relaciones. Mongo → `modelo-mongodb.md`. |
 | INF-15 | Seeds / init de datos de prueba por contexto | E1 | hecho | Via `infrastructure/mysql/*/init.sql` (no DataLoader Java). UUIDs fijos cross-msvc documentados en `mysql/README.md`. Passwords BCrypt demo. |
 | INF-16 | README raíz / Backend con instrucciones de ejecución verificables | E1 | hecho | `Backend/README.md` + README monorepo (light): compose, puertos, smoke curl, link a docs. |
 | INF-17 | Colección Postman (o similar) de endpoints | E1 | hecho | `docs/postman/` (colección v2.1 E1 + environment local). Actualizar en E2. Sin ejecutar en verificación 2026-11-10 (Docker apagado). |
 | INF-18 | Higiene compose preferencias: URI Mongo con `${MONGO_PASSWORD:-…}` (sin literal frágil) | Transversal | hecho | `msvc-preferencias/docker-compose.yml` usa `${MONGO_PASSWORD:-mongo_dev}`. |
-| INF-19 | Alinear docs (`arquitectura`, `bases-de-datos`) con `msvc-notificaciones` y conteo real de servicios | Transversal | pendiente | |
+| INF-19 | Alinear docs (`arquitectura`, `bases-de-datos`) con `msvc-notificaciones` y conteo real de servicios | Transversal | hecho | 2026-11-11. `docs/arquitectura.md` (7 servicios, responsabilidades, APIs y comunicación al día) y `specs/bases-de-datos.md` (suma notificaciones y el uso real de Redis). |
 | INF-20 | Ingreso SPA cliente en `Frontend/`: React 19 + Vite + Router, `src/` (api/auth/pages/routes/domain/…), `package.json`, `.env.example` (`VITE_API_BASE_URL`, `VITE_USE_MOCK`) | Transversal | hecho | Copia del simulacro; `node_modules`/`dist` locales presentes. |
 | INF-21 | README de ejecución del front (`Frontend/README.md`) + scripts npm (`dev`/`build`/`lint`) | Transversal | hecho | No sustituye README raíz/Backend (INF-16). |
 | INF-22 | Contrato front documentado: `Frontend/docs/endpoints-front.md` + `endpoints-back.md` | Transversal | hecho | Paths front alineados al contrato back mandatorio. |
@@ -60,10 +60,10 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
 | DOC-MS-00 | Definir plantilla común de `docs/` por msvc (alcance del contexto, agregados, API pública, modelo local, eventos/mensajes, criterios de aceptación, cómo correr) | Transversal | pendiente | Una sola convención para no divergir. |
-| DOC-MS-GW | Specs + diseño de `APIGateway/docs/` (rutas, filtros, correlación, qué no hace el gateway) | E1 | pendiente | |
+| DOC-MS-GW | Specs + diseño de `APIGateway/docs/` (rutas, filtros, correlación, qué no hace el gateway) | E1 | hecho | `docs/api/gateway.md` (24 rutas, matriz RBAC, headers incl. `X-Correlation-Id`, errores) + `docs/observabilidad.md` (correlation id y bitácora). Actualizado el 2026-11-11. |
 | DOC-MS-EVE | Specs + diseño de `msvc-eventos/docs/` | E1 | parcial | `endpoints.md` msvc vivo (alta/publicación/cupo Feign). Falta plantilla DOC-MS-00 completa + OpenAPI. |
 | DOC-MS-VEN | Specs + diseño de `msvc-ventas/docs/` | E1 (+ fila E2) | parcial | `endpoints.md` msvc vivo (+ POST cupos). Falta plantilla completa + fila E2. |
-| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | `endpoints.md` msvc con emisión/QR/devo. E2-ACC API pendiente. |
+| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | `endpoints.md` msvc con emisión/QR/devo y validación de acceso (E2-ACC-01). |
 | DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | parcial | `endpoints.md` auth JWT. Falta plantilla DOC-MS-00 completa. |
 | DOC-MS-PRE | Specs + diseño de `msvc-preferencias/docs/` (documentos Mongo, recs) | E2 | pendiente | Incluir justificación NoSQL. Modelo doc: MOD-04. |
 | DOC-MS-NOT | Specs + diseño de `msvc-notificaciones/docs/` | E2 | pendiente | Canales, plantillas, disparos async. |
@@ -80,7 +80,7 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | hecho | Las 19 referencias lógicas entre msvc quedan dibujadas como líneas punteadas (columnas `REF`) en el diagrama de `modelo.md` (incluye `asiento_reservado`). |
 | MOD-04 | **Modelo de preferencias en MongoDB** (`docs/diagramas/modelo-mongodb.md`) | E2 | hecho | Doc + init.js INF-28. Código Spring Data / recs = E2-PRE-*. |
 | MOD-05 | Modelo local notificaciones (MySQL) alineado a ER + `notificaciones/init.sql` | E2 | hecho | Init + JPA (Plantilla/Notificacion/IntentoEnvio) en INF-27. Specs DOC-MS siguen pendientes. |
-| MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | pendiente | |
+| MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | parcial | 2026-11-11: modelos y secuencias al día con el esquema real (21 tablas verificadas columna por columna contra los `init.sql`; lugares con coordenadas, cupo por evento, control de acceso, reportes, alta de evento §8). Falta cuando entren fila, notificaciones y recomendaciones. |
 
 ---
 
@@ -98,7 +98,7 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
-| ARQ-01 | Definir responsabilidades finales de cada msvc y APIs públicas (cierre de `microservicios.md` / `comunicacion.md`) | E1 | pendiente | Scaffold de nombres ya existe. |
+| ARQ-01 | Definir responsabilidades finales de cada msvc y APIs públicas (cierre de `microservicios.md` / `comunicacion.md`) | E1 | parcial | `docs/arquitectura.md` actualizado el 2026-11-11 (responsabilidades, APIs públicas y comunicación entre servicios, incl. reportes y validación de acceso). Falta cerrar `microservicios.md` / `comunicacion.md` y preferencias/notificaciones. |
 | ARQ-02 | Diagrama de módulos de la arquitectura | E1 | hecho | `docs/arquitectura.md` (Mermaid, con las llamadas Feign reales entre servicios). Complementa el diagrama Docker (`diagramas/img.png`). |
 | ARQ-03 | Diagrama de secuencia: compra de entrada **numerada** (éxito) | E1 | hecho | `diagramas/diagramas-secuencia.md` §1 (compra exitosa) y §5 (asiento concreto: `asiento_reservado`, `RESERVADO` → `VENDIDO`, errores 400/409, devolución). Flujo (SEAT-01…05): elegir asientos → `POST /reservas` con `asientos` (lock de cupo + `asiento_reservado`) → compra → pago → emisión de una entrada por asiento. |
 | ARQ-04 | Misma secuencia: **pago rechazado** y **vencimiento de reserva** | E1 | hecho | `diagramas/diagramas-secuencia.md` §2 (pago rechazado) y §3 (vencimiento por job y lazy). Quedan en diagramas separados; la consigna pide uno solo que contemple ambas variantes, pendiente de consolidar. |
@@ -111,10 +111,10 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
-| API-01 | Completar `endpoints.md`: método, ruta, params, roles (E1: header), códigos de respuesta | E1 | pendiente | Base de rutas ya escrita. |
-| API-02 | Ejemplos JSON request/response de flujos E1 (eventos, reserva, compra, entradas, devolución) | E1 | pendiente | |
-| API-03 | OpenAPI / Swagger por msvc o agregado vía gateway — descripciones, ejemplos, errores | E1 | pendiente | |
-| API-04 | Actualizar OpenAPI con endpoints E2 y security JWT | E2 | pendiente | |
+| API-01 | Completar `endpoints.md`: método, ruta, params, roles (E1: header), códigos de respuesta | E1 | hecho | `specs/endpoints.md` + `<msvc>/docs/endpoints.md` + `docs/openapi/` (método, ruta, params, roles, códigos) + matriz RBAC en `docs/api/gateway.md`. |
+| API-02 | Ejemplos JSON request/response de flujos E1 (eventos, reserva, compra, entradas, devolución) | E1 | hecho | Colección Postman (193 requests con cuerpos y tests), ejemplos en los schemas OpenAPI y bloques JSON en los `endpoints.md`. |
+| API-03 | OpenAPI / Swagger por msvc o agregado vía gateway — descripciones, ejemplos, errores | E1 | hecho | 4 specs OpenAPI 3.1 + `openapi-bundle.json` regenerados el 2026-11-11 (asientos, acceso QR, reportes, lugares); Swagger UI por servicio. |
+| API-04 | Actualizar OpenAPI con endpoints E2 y security JWT | E2 | parcial | Los specs ya declaran `bearerAuth` e incluyen los endpoints E2 hechos (validación de acceso, reportes, lugares, baja de lugares). Falta cuando existan fila virtual, preferencias/recomendaciones y notificaciones. |
 | API-05 | Implementar en Gateway el enrutado real según `endpoints.md` (incl. excepciones `/eventos/{id}/disponibilidad`, `/cupos`, `/fila/**`, `/validaciones`, `/recomendaciones`) | E1 (rutas core) / E2 (resto) | hecho | Routes en `application.yml` (Gateway MVC). StripPrefix `/api`. Excepciones order 10–13 (+ **cupos POST** → ventas). Compose: `TICKETYA_URI_*`. Doc: `APIGateway/docs/endpoints.md`. |
 
 ---
@@ -122,6 +122,8 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 ## 6. Entrega 1 — Implementación del núcleo
 
 Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) documentado en specs.
+> **Actualizado 2026-11-13:** el gateway ya no tiene flag de auth — el **JWT es obligatorio** (E2-SEC-01).
+> Los headers `X-User-*` que mande el cliente se descartan: la identidad sale del token verificado.
 
 **Prerrequisito de implementación:** INF-27 (Spring + init) antes de abrir GETs de negocio.
 
@@ -130,12 +132,12 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-EVE-00 | Datasource + JPA validate contra `eventos/init.sql` (parte de INF-27) | hecho | EMF OK; JDBC `db-mysql-eventos`. |
-| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). `Sector` suma `filas`/`asientosPorFila` (SEAT-01); `Asiento` y `PrecioAsiento` quedan sin uso (SEAT-07). |
+| E1-EVE-01 | Entidades JPA reales alineadas al init: Evento, Lugar, Sector, Asiento, PrecioSector/PrecioAsiento (+ Participante) | hecho | + Participante, EventoParticipante (2026-11-07). `Sector` suma `filas`/`asientosPorFila` (SEAT-01); `Asiento` y `PrecioAsiento` se eliminaron (SEAT-07). |
 | E1-EVE-02 | CRUD lugares y sectores; asientos en sector numerado | hecho | GET/POST/PUT lugares; POST `/lugares/{id}/sectores`; PUT `/sectores/{id}`; GET asientos **virtuales** calculados desde el layout del sector (SEAT-01; antes: asientos físicos del seed). Sector numerado exige `filas` + `asientosPorFila` y deriva la capacidad. Alta embebida también desde POST evento. |
 | E1-EVE-03 | Eventos en borrador; configuración sectores/precios; publicación con validaciones | hecho | POST/PUT/DELETE evento; PUT precio sector; POST publicacion. **2026-11-07:** borrador laxo (nombre; sin límite fecha); publicar exige lugar real + ≥1 sector precio + **capacidad ≥ 1** (no cupo ilimitado). Al publicar: Feign ventas `POST /eventos/{id}/cupos` **fail-hard**. Body alineado form FE. |
 | E1-EVE-04 | **GETs** búsqueda/catálogo: tipo, ciudad, fechas; orden; paginación — `GET /eventos`, `GET /eventos/{id}` | hecho | + `estado=TODOS` para gestión admin. Default PUBLICADO. + filtro `participante=` (id artista). Doc: `msvc-eventos/docs/endpoints.md`. |
 | E1-EVE-05 | Patch estado (suspender/cancelar) y fecha; listado organizador | hecho | PATCH estado/fecha; GET `/organizadores/me/eventos`. CANCELADO → Feign reintegro entradas best-effort. ORG: SUSPENDIDO propios; resto ADMIN. |
-| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema `participante`+`evento_participante`; CRUD `/participantes`; GET/PUT `/eventos/{id}/participantes`; filtro `GET /eventos?participante=`. Authz: GET público; write ORG/ADMIN; asociar dueño/ADMIN. FE: autocomplete catálogo (guarda **id**) + CTA crear + principal obligatorio / teloneros +. Seed demo: Metallica/Gojira, UCL (equipos), Iron Maiden/Ghost. Migración `02-add-participantes.sql`; reseed live `03-reseed-clean-demo.sql`. |
+| E1-EVE-06 | Participantes (artistas/bandas) y asociación a evento | hecho | Schema `participante`+`evento_participante`; CRUD `/participantes`; GET/PUT `/eventos/{id}/participantes`; filtro `GET /eventos?participante=`. Authz: GET público; write ORG/ADMIN; asociar dueño/ADMIN. FE: autocomplete catálogo (guarda **id**) + CTA crear + principal obligatorio / teloneros +. Seed demo: Metallica/Gojira, UCL (equipos), Iron Maiden/Ghost. |
 
 ### 6.2 msvc-ventas
 
@@ -157,7 +159,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E1-ENT-00 | Datasource + JPA validate contra `entradas/init.sql` (INF-27) | hecho | EMF OK. |
-| E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. **ValidacionAcceso sin API** (E2-ACC-01). Seed intacto. |
+| E1-ENT-01 | Modelo Entrada (QR único), Devolucion, ValidacionAcceso | hecho | 3 entidades + repos. ValidacionAcceso con API desde E2-ACC-01. Seed intacto. |
 | E1-ENT-02 | Emisión de entradas con QR tras compra confirmada | hecho | `POST /entradas/emision`; Feign ventas post-pago con **reintentos + emision_estado PENDIENTE/EMITIDA/FALLIDA + job** (ya no fire-and-forget). Idempotente por idCompra. **`entrada.precio` persistido**. |
 | E1-ENT-03 | **GET** entradas del cliente (`GET /entradas`, `GET /entradas/{id}`) | hecho | + GET `/{id}/qr`. DTO enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos. **GET /{id}: dueño o ADMIN** (un método). FE admin: `/gestion/entradas/:id` (no mis-entradas). |
 | E1-ENT-04 | Solicitud de devolución (plazo 72 h, no usada); approve/reject admin; liberación + reintegro mock | hecho | 72h desde **emisión**; ADMIN→DEVUELTA + **Feign ventas libera 1 cupo** fail-hard. Monto desde `entrada.precio`. FE admin cola: `USE_MOCK_ENTRADAS`. |
@@ -179,18 +181,19 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | --- | --- | --- | --- |
 | E1-TST-01 | Unitarias: compra, devoluciones, búsqueda | hecho | JUnit5+Mockito por msvc. Verificado 2026-11-10: gateway 23, usuarios 51, eventos 101, entradas 48 OK. Ventas 109 OK (re-verificado, ver HIG-04). Preferencias/notificaciones sin unitarias reales (E2, HIG-01/03). |
 | E1-TST-02 | Prueba de concurrencia: mismo asiento / último cupo → una sola venta exitosa | hecho | Unitario + IT Testcontainers MySQL (`CupoSectorConcurrenciaIT`) + informe `docs/testing/concurrencia.md`. IT no re-ejecutado 2026-11-10 (requiere Docker). **Por asiento:** `ReservaAsientoConcurrenciaTest` (20 hilos, mismo asiento → 1 éxito; lock emulado); IT con MySQL real pendiente (SEAT-06). |
-| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | parcial | Datos = init.sql (INF-15) hecho; Postman = INF-17 hecho; README ejecución existe pero desactualizado (dice "sin API de negocio aún"). |
+| E1-REL-01 | Datos de prueba + Postman + README ejecución del núcleo | hecho | Datos = un único `init.sql` por base (INF-15); Postman = INF-17; README raíz con arranque por Docker Compose y `npm run dev` (2026-11-11). |
 
 ### 6.6 Higiene detectada en verificación 2026-11-10
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | HIG-01 | `msvc-notificaciones`: `contextLoads` falla sin MySQL (único test del módulo) | pendiente | Hacerlo independiente de DB (slice/H2/mock) o reemplazar por unitarias reales. |
-| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. |
+| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. 2026-11-11: siguen los mismos 12 errores preexistentes; los cambios de esa fecha no agregaron ninguno. |
 | HIG-03 | `msvc-preferencias`: sin tests | pendiente | Hacerlo junto con E2-PRE-*. |
 | HIG-04 | Entorno local: `~/.m2/.../org.jacoco.build-0.8.8.pom` truncado → `mvn test` en ventas no resolvía jacoco | hecho | Causa: la corrida en paralelo de 7 `mvn` (2026-11-10) escribió a la vez el mismo archivo del repo local. Re-ejecutado en solitario: ventas 109 tests OK. Evitar correr varios `mvn` en paralelo sobre el mismo `~/.m2`. |
-| HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | pendiente | Ver E1-REL-01. |
-| HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | pendiente | Docker Desktop apagado en la sesión. Cubre también E2-DEP-01. |
+| HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | hecho | README raíz y de Frontend reescritos (2026-11-11); ya no dicen "sin API de negocio aún". |
+| HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | hecho | 2026-11-11: stack recreado desde cero (`down -v` + `up -d --build`): 15 contenedores Up, bases healthy, sin errores de arranque; login JWT real, reserva por asiento (201), misma reserva (409) y cancelación por el gateway; front en :3000 con proxy `/api`. No se re-ejecutaron los IT Testcontainers ni la colección Postman completa. |
+| HIG-07 | Un único `init.sql` por base; eliminar `migrations/` (02, 03, 04) | hecho | 2026-11-11: los `init.sql` ya incluían todo el esquema y el seed; los `03-reseed` eran idénticos al seed salvo las tablas de SEAT-07. Cambio de esquema = recrear volumen (`docker compose down -v`). README de mysql y docs actualizados. |
 
 ### 6.7 Asientos virtuales (sectores numerados)
 
@@ -198,13 +201,13 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
-| SEAT-01 | eventos: `sector.filas` + `asientos_por_fila`; capacidad = filas x asientosPorFila; `GET .../asientos` calculado | hecho | `init.sql`, `03-reseed`, `04-add-sector-layout.sql`. Límites 1..200 filas, 1..500 por fila. Tests eventos 119 OK. |
-| SEAT-02 | ventas: tabla `asiento_reservado` (única por evento+sector+fila+número); reservar por asiento; liberar al cancelar/rechazar/expirar; VENDIDO al pagar; `asientosOcupados` en disponibilidad; liberar asiento en devolución | hecho | `04-add-asiento-reservado.sql`. Lock de cupo + pre-chequeo + clave única como 2ª defensa. Tests ventas 139 OK. |
-| SEAT-03 | entradas: `entrada.fila` + `numero`; emisión una entrada por asiento; devolución libera el asiento en ventas | hecho | `04-add-entrada-asiento.sql`. DTO expone `fila` y `asiento`. Tests entradas 54 OK. |
+| SEAT-01 | eventos: `sector.filas` + `asientos_por_fila`; capacidad = filas x asientosPorFila; `GET .../asientos` calculado | hecho | `eventos/init.sql`. Límites 1..200 filas, 1..500 por fila. Tests eventos 119 OK. |
+| SEAT-02 | ventas: tabla `asiento_reservado` (única por evento+sector+fila+número); reservar por asiento; liberar al cancelar/rechazar/expirar; VENDIDO al pagar; `asientosOcupados` en disponibilidad; liberar asiento en devolución | hecho | `ventas/init.sql`. Lock de cupo + pre-chequeo + clave única como 2ª defensa. Tests ventas 139 OK. |
+| SEAT-03 | entradas: `entrada.fila` + `numero`; emisión una entrada por asiento; devolución libera el asiento en ventas | hecho | `entradas/init.sql`. DTO expone `fila` y `asiento`. Tests entradas 54 OK. |
 | SEAT-04 | Gateway / OpenAPI / Postman | hecho | Gateway sin cambios (las rutas existentes cubren todo). OpenAPI regenerado el 2026-11-10 con los asientos. Postman: carpeta `09 Asientos numerados` (23 requests: reserva por asiento, 409/400, pago aprobado/rechazado, entrada con fila y número, devolución). Colección completa 127/376/0 con el flag en `false` y en `true`. |
 | SEAT-05 | Frontend: selector de asientos + enviar `filas`/`asientosPorFila` al crear sector numerado | hecho | Forms Nuevo/Editar (filas × asientos, cupo derivado de solo lectura, borrador laxo / publicación estricta); `SeatPicker` en dos pasos (fila → asientos, hasta 6); 409 quita solo los asientos en conflicto; detalle muestra layout; mock mínimo. Verificado: lint sin errores nuevos, build OK, 15 checks de dominio y render del picker. **No** probado contra el BE real (Docker apagado). |
 | SEAT-06 | IT con MySQL real del flujo de asientos (unique key, rollback de contadores) | hecho | `AsientoReservadoConcurrenciaIT` (4 casos, perfil `-Pit`, carga el `init.sql` real). Verificado quitando la clave única: fallan los casos que la ejercitan. Ver `docs/testing/concurrencia.md` §3.3. |
-| SEAT-07 | Limpieza: eliminar `asiento`, `precio_asiento` (tablas, entidades, repos) | pendiente | Sin uso desde SEAT-01. Al hacerlo: quitarlas de `init.sql`, `03-reseed`, entidades/repos de eventos, `modelo.md` y `modelo-por-microservicio.md`. |
+| SEAT-07 | Limpieza: eliminar `asiento`, `precio_asiento` (tablas, entidades, repos) | hecho | Quitadas de `init.sql`, entidades y repos de eventos, y de los 3 modelos (`modelo.md`, `modelo-por-microservicio.md`, `docs/modelo-datos.md`). El endpoint calculado `GET /lugares/{id}/sectores/{sectorId}/asientos` se mantiene. Tests eventos 119 OK. |
 | SEAT-08 | Documentación actualizada | hecho | `reglas-de-negocio.md` (reglas + pregunta 6 resuelta), `documentacion-y-validacion.md` (D-16/R-05, changelog 1.2), `endpoints.md`, `msvc-{eventos,ventas,entradas}/docs/endpoints.md`, `infrastructure/readme.md` + `mysql/README.md` (migraciones y asientos virtuales), `docs/testing/concurrencia.md`, `docs/postman/README.md`, `docs/openapi/README.md`, `Frontend/docs/endpoints-{back,front}.md`, diagramas (`modelo.md`, `modelo-por-microservicio.md`). `consigna.md` no se toca. |
 
 ---
@@ -216,29 +219,29 @@ Decisión (2026-11-10): sector numerado se vende por asiento concreto; sector ge
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | E2-FILA-01 | Fila virtual (alta demanda): ingreso, posición, tandas, token de compra | pendiente | Simplificable con justificación. |
-| E2-ACC-01 | Control de acceso QR: validar existencia, evento, no reutilizada; marcar usada | pendiente | PERSONAL_ACCESO. |
+| E2-ACC-01 | Control de acceso QR: validar existencia, evento, no reutilizada; marcar usada | hecho | 2026-11-11. `POST /eventos/{id}/validaciones` (PERSONAL_ACCESO o ADMIN): 200 `VALIDA` (entrada → USADA) o 409 `YA_USADA` / `OTRO_EVENTO` / `NO_VALIDA` / `EVENTO_CANCELADO`; 404 QR inexistente; 400 QR vacío. Atómico por QR (`SELECT … FOR UPDATE`), probado con MySQL real (8 puertas, un solo ingreso; `ValidacionIngresoConcurrenciaIT`, `-Pit`). Todo intento sobre una entrada existente queda en `validacion_acceso`. `GET /eventos/{id}/validaciones` para ADMIN y ORGANIZADOR dueño. Tests entradas 74 OK; Postman carpeta `10 Control de acceso QR` (19 requests, sin fallos). FE: pantalla de escaneo con selector de evento (gate `accesoScan`). **Simplificación:** cualquier PERSONAL_ACCESO valida cualquier evento (ver X-ACC-01). |
 | E2-PRE-01 | Preferencias cliente en **Mongo** (categorías, ciudad, rango precio, artistas) | pendiente | Init INF-28 hecho; falta dominio Spring Data + API. |
 | E2-PRE-02 | Recomendaciones (propias y/o similares por evento); puede ser simplificado | pendiente | |
 | E2-PRE-03 | Historial de cliente / ingesta desde compras o eventos de dominio | pendiente | Colección `interacciones_eventos` en modelo Mongo. |
 | E2-NOT-01 | Dominio notificaciones + plantillas + intentos de envío | pendiente | init MySQL plantillas ya; completar pom JPA + código. |
 | E2-NOT-02 | Disparos: compra confirmada, cancelación/modificación evento, artista favorito, devolución aprobada | pendiente | Async justificado. |
-| E2-REP-01 | Reportes organizador: vendidas/devueltas por sector, ocupación, recaudación | pendiente | |
+| E2-REP-01 | Reportes organizador: vendidas/devueltas por sector, ocupación, recaudación | hecho | 2026-11-11. `GET /reportes/eventos/{id}` (+ `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`) en `msvc-ventas`; ORGANIZADOR dueño o ADMIN. Devoluciones e ingresos por Feign a entradas (`GET /eventos/{id}/entradas/resumen`, interno); dueño por Feign a eventos; 503 si fallan (sin reporte parcial). Tests ventas 160 / entradas 84; Postman carpeta `11 Reportes del organizador` (9 requests). FE: pantalla `/gestion/eventos/:id/reportes` (gate `reportes`). |
 
 ### 7.2 Seguridad, resiliencia, observabilidad, despliegue, testing E2
 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
-| E2-SEC-01 | JWT + roles (CLIENTE, ORGANIZADOR, ADMIN, PERSONAL_ACCESO); emitir en usuarios; validar en gateway | hecho | Emisión msvc-usuarios + validación/RBAC gateway (misma `jwt.secret`). |
-| E2-SEC-02 | Autorización por endpoint según rol | parcial | GW RBAC por path/rol existe. 2026-11: `PATCH /eventos/{id}/estado` ya no es admin-only en GW (ORG llega a msvc; BE limita SUSPENDIDO vs CANCELADO). Falta auditoría fina resto paths + tests E2-TST-02. |
-| E2-NFR-01 | Cache: qué, dónde, TTL, invalidación; qué no cachear (disponibilidad asientos) | pendiente | |
-| E2-NFR-02 | Resiliencia: timeouts, reintentos, fallback ante externos | pendiente | |
-| E2-NFR-03 | Trazabilidad HTTP + log centralizado de operaciones críticas con correlation id | pendiente | |
-| E2-DEP-01 | Verificar stack completo `docker compose up` (apps + DBs + gateway) con dominio real | pendiente | Estructura compose ya existe (INF-08). DBs con init = INF-10/15. |
+| E2-SEC-01 | JWT + roles (CLIENTE, ORGANIZADOR, ADMIN, PERSONAL_ACCESO); emitir en usuarios; validar en gateway | hecho | Emisión msvc-usuarios + validación/RBAC gateway (misma `jwt.secret`). **2026-11-13: se eliminó el flag `TICKETYA_JWT_ENABLED`** — el JWT es obligatorio; sin `Bearer` → 401 y los headers `X-User-*` del cliente se descartan (el gateway los sobreescribe con los claims del token, o los vacía en rutas públicas). Antes había un modo "identificación por encabezado" que permitía declararse ADMIN a mano. |
+| E2-SEC-02 | Autorización por endpoint según rol | parcial | GW RBAC por path/rol existe. 2026-11: `PATCH /eventos/{id}/estado` ya no es admin-only en GW (ORG llega a msvc; BE limita SUSPENDIDO vs CANCELADO). Falta auditoría fina resto paths + tests E2-TST-02. 2026-11-11: alta, edición y baja de lugares y sectores solo ADMIN (gateway + controller + tests); reportes ORGANIZADOR dueño/ADMIN; validaciones PERSONAL_ACCESO/ADMIN. |
+| E2-NFR-01 | Cache: qué, dónde, TTL, invalidación; qué no cachear (disponibilidad asientos) | hecho | 2026-11-16. Redis `StockCache` en `msvc-ventas` (holds de reserva con TTL 10 min + claves de idempotencia con TTL 24 h; la disponibilidad de asientos/cupos no se cachea) + caché en memoria con TTL (`60 min`) en `GeocodingClient` (`msvc-eventos`) por clave normalizada `direccion\|ciudad`. |
+| E2-NFR-02 | Resiliencia: timeouts, reintentos, fallback ante externos | hecho | 2026-11-16. `GeocodingClient` (`msvc-eventos`) envuelve al proveedor (`GeocodingProvider`) con timeout por intento (`2000 ms`), hasta 2 reintentos y fallback silencioso a carga manual (`Optional.empty()`). Emisión de entradas post-pago con 3 reintentos inmediatos + job cada 30 s (`EmisionEntradasService`). |
+| E2-NFR-03 | Trazabilidad HTTP + log centralizado de operaciones críticas con correlation id | hecho | 2026-11-11. `X-Correlation-Id` generado en el gateway (o el del cliente si es válido), propagado a los 6 servicios y por Feign, en cada línea de log y en la respuesta; línea de acceso `trace.http`; bitácora (`bitacora`) de login, eventos, pagos, entradas, devoluciones y validaciones. Verificado de punta a punta (gateway → ventas → entradas con el mismo id). "Centralizado" = `docker compose logs` con formato común (sin Loki/ELK). Ver `docs/observabilidad.md`. |
+| E2-DEP-01 | Verificar stack completo `docker compose up` (apps + DBs + gateway) con dominio real | parcial | 2026-11-11: el stack completo levanta desde cero y el flujo E1 funciona de punta a punta (ver HIG-06). Falta repetirlo cuando `msvc-preferencias` y `msvc-notificaciones` tengan dominio real (E2-PRE/NOT). |
 | E2-TST-01 | Pruebas de integración entre msvcs (Testcontainers o compose) | pendiente | |
-| E2-TST-02 | Pruebas de autorización por rol | pendiente | |
+| E2-TST-02 | Pruebas de autorización por rol | parcial | 2026-11-11: `JwtGatewayIntegrationTest` (gateway, 10 casos con `JwtUtil` real y tokens armados como los emite usuarios): firma/expiración, 403 por rol, propagación de `X-User-*`, límite de la Entrega 1 y secreto igual en gateway y usuarios. Falta recorrer cada endpoint por rol. Roles de validaciones de acceso: `EntradaControllerValidacionTest` + Postman carpeta 10. También cubre lugares/sectores solo ADMIN (gateway 42 tests, `LugarControllerTest`). |
 | E2-TST-03 | Prueba de carga flujo compra (JMeter u otro) + informe (usuarios, latencias, errores) | pendiente | |
-| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6; probado solo sin BE real). Falta: mock residual cero + E2-ACC. |
-| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | E2/E1-late | parcial | Demock selectivo AUTH/EVENTOS/COMPRAS/ENTRADAS (`.env` actual). Alta/publicar/cupo/checkout OK. Catálogo default BE: PUBLICADO+AGOTADO. **Siguiente FE:** demock **admin usuarios selectivo** (list/get + PATCH estado + PUT roles → BE; alta PERSONAL_ACCESO / eventosAsignados / DELETE siguen OFF/501; ideal flag `VITE_USE_MOCK_USUARIOS` + `FEATURE.adminUsuarios` solo lo cableable). Residual E2: scan ACC, transferencia, prefs, X-ORG-01. |
+| E2-UI-01 | (Opcional valorado) UI mínima cliente vía gateway: buscar, elegir sector/asiento, comprar, mis entradas | parcial | Flujos cliente demockeados. Checkout **bloquea** sin disponibilidad/cupo. Mis entradas QR + cancel. **Elegir asiento hecho** (SEAT-05: `SeatPicker` fila → asientos, hasta 6). 2026-11-11: probado contra el BE real (reserva por asiento 201, doble reserva 409; compra desde el navegador OK). Mock residual cero con `VITE_USE_MOCK=false`. Pantalla de escaneo cableada (E2-ACC-01). |
+| E2-UI-02 | Cablear front a gateway (`VITE_USE_MOCK=false`) cuando existan endpoints E1 reales | hecho | 2026-11-11: un solo flag `VITE_USE_MOCK` (false = todo contra el gateway; true = todo mock; sin mezcla) y `Frontend/.env` versionado. Admin usuarios: listar/estado/rol reales (gate `adminUsuariosListado`); alta de personal de acceso, eliminar y asignar eventos quedan OFF (no existen en BE). Lo que no tiene BE (scan ACC, transferencia, reportes, preferencias, X-ORG-01) queda deshabilitado por `featureGates`. |
 | E2-UI-03 | Instrucciones en README raíz del monorepo para levantar FE + gateway juntos | E2 | hecho | README raíz: gateway :8080 + `Frontend` npm dev + `VITE_USE_MOCK`. |
 
 ### 7.3 Extra / nice-to-have (no consigna — baja prioridad)
@@ -257,6 +260,7 @@ Fuera del alcance formal del TP. Solo si sobra tiempo o se quiere UX de producto
 | X-UI-06 | SPA: badge cupo (Agotado / últimos / &lt;50 / &lt;100) en listado + detalle | hecho | BE: batch `GET /eventos/disponibilidad?ids=` + DTO `disponibleTotal`/`nivelCupo`. FE: EventList 1 batch; cards + detalle; Comprar por sector si disponible≥1. |
 | X-ORG-01 | Extensión cuenta CLIENTE → ORGANIZADOR (solicitud + auth admin) | pendiente | **No se implementa ahora.** Diseño §7.3.1. FE: CTA «Solicitar cuenta de organizador» en `/perfil` (solo CLIENTE) con `FEATURE.solicitudOrganizador=false` + guía `/cuenta/organizador`. Falta: API solicitudes, form, cola admin, approve→rol, refresh JWT. |
 | X-ORG-02 | Política de roles: cuenta base CLIENTE; privilegios los otorga ADMIN | pendiente | Doc/producto (no code). CLIENTE = register; ORG = extensión (X-ORG-01) o admin asigna rol; ADMIN/ACCESO = solo admin. Seeds demo siguen. Opcional: reflejar en US-01 cuando se escriba. |
+| X-ACC-01 | Asignar eventos a cada PERSONAL_ACCESO (solo puede validar los asignados) | descartado | Decisión 2026-11-11: no se modela (suma tabla de asignación, endpoints de alta/asignación, chequeo Feign en cada escaneo y pantalla de admin; la consigna no lo pide). Hoy cualquier PERSONAL_ACCESO valida cualquier evento; se documenta como simplificación. Si se retoma, el cambio se limita a un chequeo extra en la validación. |
 
 ### 7.3.1 Diseño acordado — extensión a organizador (X-ORG-01)
 
@@ -325,6 +329,27 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 
 ---
 
+### 7.4 Lugares, participantes y recomendaciones en el front (2026-11-11: LUG-01/02/04 y PAR-01 hechos; **LUG-03 próxima a implementar**; E2-PRE-04 propuesta)
+
+Origen: faltan el alta de lugares desde el panel de admin y la ubicación por latitud/longitud; además hay que definir cómo se muestran las recomendaciones en el front.
+
+| ID | Tarea | Estado | Notas |
+| --- | --- | --- | --- |
+| LUG-01 | Panel admin: alta/edición/baja de **lugares** (nombre, dirección, ciudad, latitud/longitud) y de los **sectores del lugar** (capacidad, numerado y layout filas × asientos) | hecho | 2026-11-11 (Paso 2). Backend: `DELETE /lugares/{id}` solo ADMIN (409 si el lugar tiene eventos; borra sus sectores), regla de gateway y tests (eventos 144, gateway 41). FE: `/gestion/lugares` (listado + filtro por ciudad + baja), `/gestion/lugares/nuevo` y `/:id` (formulario con coordenadas opcionales y gestión de sectores; reutiliza `SectorCupoFields`), gate `lugares`, tarjeta en Gestión. Los sectores no se eliminan (decisión). Postman: carpeta 03 con 23 requests (colección 167 requests, 478 assertions, 0 fallos). Alta y edición de lugares siguen abiertas al ORGANIZADOR hasta LUG-04. |
+| LUG-02 | Ubicación por **latitud/longitud** además de la dirección | hecho | 2026-11-11 (Paso 1). `lugar.latitud` / `lugar.longitud` DECIMAL(9,6) **opcionales** (van juntas, rango −90..90 / −180..180, 6 decimales); `quitarCoordenadas` las borra; editar sin coordenadas no las toca. Seed con los 3 estadios. API: `LugarRequest`/`Lugar`/`LugarDetalle`; el detalle de evento las expone. FE: enlace "Ver en el mapa" (OpenStreetMap) si hay coordenadas. Tests eventos 137; Postman carpeta 03 (+6 requests; colección 161 requests, 466 assertions, 0 fallos). |
+| LUG-03 | **Geocodificación** (dirección → lat/lng) con **Patrón Adaptador + Mock + Resiliencia + Caché** | hecho | 2026-11-16. Backend (`msvc-eventos`): puerto `GeocodingProvider` + adaptador por defecto `MockGeocodingAdapter` (`ticketya.geocoding.provider=mock`) + `GeocodingClient` con caché en memoria con TTL (`60 min`), timeout (`2000 ms`), reintentos (`2`) y fallback a vacío (E2-NFR-01/02). Autocompleta coordenadas en `crearLugar`/`actualizarLugar` si vienen vacías y hay dirección + ciudad, y expone `GET /lugares/geocodificar?direccion=&ciudad=` (solo ADMIN en controller y gateway). Frontend: botón «Buscar coordenadas por dirección» en `/gestion/lugares/nuevo` y `/:id`. Tests: `GeocodingClientTest` (5 casos), `LugarControllerTest` y `JwtGatewayIntegrationTest` (eventos 185, gateway 44 OK). |
+| LUG-04 | **Solo ADMIN** crea y edita lugares; el **organizador selecciona** un lugar al crear el evento | hecho | 2026-11-11 (Paso 3). Backend: escrituras de lugares y sectores solo ADMIN (gateway + controller); el evento referencia `idLugar` (sin lugar embebido) y elige `sectores[{id, precio, capacidadTotal?}]` del lugar: no crea ni modifica sectores (400 si cambia nombre/tipo/layout), cupo propio por evento en `precio_sector.cupo` (≤ capacidad; numerados completos) que es el que abre ventas al publicar; borrador sin lugar usa un único lugar reservado "Por definir" (oculto, no publicable); en borrador `sectores` es la lista completa y cambiar de lugar la descarta; publicado: solo precio. FE: selector de lugar con filtro + sectores del lugar (vender, precio, cupo) en alta y edición (`EventoLugarSectores`). Tests eventos 164, gateway 42; Postman 183 requests, 518 assertions, 0 fallos; flujo del front verificado contra el stack (24 comprobaciones). Pendiente conocido: los sectores de un lugar con eventos publicados se pueden editar (afecta cupos ya abiertos en ventas). |
+| E2-PRE-04 | **Recomendaciones en el front** (depende de E2-PRE-01/02/03) | propuesto | 1) Home: sección "Recomendados para vos" (usuario logueado) reutilizando `EventSection`/`EventList` en modo controlado y la card `compact`, ya reservada para recomendaciones. 2) Detalle de evento: "Eventos similares" (`GET /api/eventos/{id}/recomendaciones`, público). 3) Perfil: "Mis preferencias" (categorías, ciudades, rango de precio, artistas; reutiliza `ArtistaAutocomplete`) con `GET/PUT /api/preferencias/me`. Facade `api/preferencias.js`, gates `preferencias`/`recomendaciones`, fallback a "Destacados" si no hay datos. Backend: el servicio devuelve eventos ya armados (no solo ids) para no hacer N pedidos desde el front. |
+| PAR-01 | Panel admin: ABM de **participantes** (artistas, bandas, equipos, pilotos) | hecho | 2026-11-11. Sin cambios de modelo. Backend: `POST` (ORG/ADMIN) exige `tipo` válido (ARTISTA/BANDA/ELENCO/EQUIPO/PILOTO) y rechaza nombres repetidos (409, sin importar mayúsculas); `PUT` solo ADMIN (409 si el nombre lo tiene otro); nuevo `DELETE /participantes/{id}` solo ADMIN (204; 409 si participa en un evento). Gateway: `PUT/PATCH/DELETE /api/participantes/{id}` solo ADMIN. Front: pantalla `/gestion/participantes` (búsqueda, filtro por tipo, alta, edición, baja, gate `FEATURE.participantes`, tarjeta en Gestión) y el autocompletado del evento avisa "ya existe" ante el 409. "Banda principal" no es atributo del participante: sigue siendo el rol PRINCIPAL/TELONERO por evento. Tests: eventos 179, gateway 43; Postman 193 requests / 540 assertions, 0 fallos. Análisis previo: **Viable, sin cambios en el modelo de datos** (tabla `participante`: id, nombre, tipo, descripción). **Ya implementado:** `GET /participantes` (búsqueda `q`/`tipo`), `GET /participantes/{id}`, `POST` y `PUT /participantes/{id}` (ORGANIZADOR o ADMIN); alta desde el formulario de evento con el autocompletado "Crear «…»" (siempre `tipo=BANDA`) y asociación por evento con rol PRINCIPAL/TELONERO (`PUT /eventos/{id}/participantes`). **Falta:** (1) pantalla `/gestion/participantes` solo ADMIN (listado con búsqueda y filtro por tipo, alta, edición, baja, gate y tarjeta en Gestión); (2) `DELETE /participantes/{id}` (hoy 405): 409 si está asociado a un evento (`evento_participante`); (3) el front no tiene `updateParticipante` ni `deleteParticipante`. **Huecos que conviene cerrar a la par:** cualquier organizador puede editar (`PUT`) un participante de otro evento y cambia el nombre en todos; no hay control de duplicados (el mismo nombre se crea varias veces); `tipo` no se valida (acepta cualquier texto; el catálogo usa BANDA/EQUIPO/PILOTO y la doc dice ARTISTA/BANDA/ELENCO). **Propuesta:** el organizador conserva el alta (para no bloquear la creación del evento) con control de duplicados y tipo válido; edición y baja solo ADMIN (gateway + backend). "Banda principal" no es un atributo del participante: es el rol en cada evento, que se sigue eligiendo en el formulario del evento. Esfuerzo bajo-medio (más simple que LUG-01). |
+
+**Decisiones a tomar antes de implementar**
+- ¿Las coordenadas son obligatorias o quedan opcionales? (propuesta: opcionales).
+- ¿Se agrega mapa (Leaflet + tiles de OpenStreetMap) o alcanza con un enlace "Ver en el mapa"? (propuesta: enlace primero).
+- ¿Los lugares ya usados por eventos publicados se pueden editar/borrar? (propuesta: se pueden editar datos de ubicación; no borrar si tienen eventos).
+- Recomendaciones: ¿se registra solo la compra como interacción o también la vista de un evento? (propuesta: solo compras, es lo que pide la consigna; la vista queda como mejora).
+
+---
+
 ## 8. Orden sugerido de ataque (no es el backlog formal)
 
 1. **INF-27** — hecho (datasource + entidades = schema validate).  
@@ -338,9 +363,10 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 9. **E1-EVE write (02/03/05)** — **hecho** (lugares/sectores, borrador→publicar, patch estado/fecha, listado org).  
 10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
 11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
-12. **FE residual (próxima sesión):** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
+12. **FE residual — hecho 2026-11-11:** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
 13. E1-TST + INF-17 (Postman) — **hecho** (equipo, rama feature/tests); E1-REL parcial (README). Higiene HIG-01…06 abierta.  
-14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.
+14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.  
+15. **Hecho 2026-11-11:** E2-ACC-01, E2-REP-01, E2-NFR-03, LUG-01/02/04, PAR-01. **Siguiente: LUG-03** (primera integración con API externa; luego E2-NFR-01/02 le agregan caché/circuit breaker) y después E2-PRE.
 
 Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` **parcial**.
 
@@ -350,26 +376,26 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 
 | Bloque | Hecho | Parcial | Pendiente |
 | --- | --- | --- | --- |
-| Infra / scaffold / smoke / compose | INF-01…12, 14–16, 18, **25**, **27**, **28** | INF-13 | INF-17, 19 |
-| Frontend (ingreso SPA) | INF-20…25, E2-UI-03; **X-UI-01…05**, **X-QR-01/02**, **X-UI-06**, **SEAT-05** (selector de asientos + forms con layout) | E2-UI-01/02 demock AUTH/EVE/COM/ENT + cupo/AGOTADO | **admin usuarios demock selectivo** (próx.); E2-ACC; X-ORG-01; transferencia/prefs |
-| Docs por msvc (specs) | — | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/GW/PRE/NOT/SYNC plantilla formal |
-| Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03 | MOD-06 |
+| Infra / scaffold / smoke / compose | INF-01…19, 25, 27, 28 | — | — |
+| Frontend (ingreso SPA) | INF-20…25, E2-UI-02/03 (flag único de mock); **X-UI-01…06**, **X-QR-01/02**, **SEAT-05**, **E2-ACC-01** (escaneo), **E2-REP-01** (pantalla de reportes), **LUG-01/02/04** (panel de lugares, coordenadas, selector de lugar y sectores en el evento), **PAR-01** (panel de participantes) | E2-UI-01 | X-ORG-01; transferencia / preferencias (E2-PRE-04) |
+| Docs por msvc (specs) | **DOC-MS-GW** (`docs/api/gateway.md`) | DOC-MS-USU/EVE/VEN/ENT (`endpoints.md` vivo) | DOC-MS-00/PRE/NOT/SYNC plantilla formal |
+| Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA) | MOD-02, 03, **MOD-06** (al día con los `init.sql`: 21 tablas verificadas) | — |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | dominio E2-PRE-* |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** | — | — |
-| Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino) | E2-TST-02 |
-| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…04; OpenAPI regenerado con asientos | endpoints listado + contratos FE | ARQ-01 (cerrar `microservicios.md` / `comunicacion.md`) |
-| Código de negocio E1 | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | — | E2-ACC; SEAT-07 (limpieza `asiento`/`precio_asiento`) |
-| Extra producto | X-UI-01…06, X-QR-* | — | X-ORG-01/02 |
-| Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE | E1-REL-01 (README desactualizado) | HIG-01…06 (notificaciones/preferencias sin tests, lint FE, jacoco local, verificación Docker); E2-TST-01/02/03 |
+| Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01 | **E2-SEC-02** (estado eventos ORG ok; resto fino), **E2-TST-02** (`JwtGatewayIntegrationTest`; falta cada endpoint por rol) | — |
+| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…04; **API-01/02/03**, **INF-13** (OpenAPI regenerado el 2026-11-11) | **API-04**, **ARQ-01** | ARQ-05/06; US-03 |
+| Código de negocio (E1 + E2) | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos) | —; **E2-ACC-01** (control de acceso QR); **E2-REP-01** (reportes del organizador); **E2-NFR-01/02/03** (caché, resiliencia y correlation id + bitácora); **LUG-01/02/03/04** (lugares con coordenadas y geocodificación con patrón adaptador, solo ADMIN los carga; el evento elige lugar y sectores con cupo propio) | E2-PRE-01…03; E2-NOT-01/02; E2-FILA-01 |
+| Extra producto | X-UI-01…06, X-QR-*, X-ACC-01 (descartado), **LUG-03** | — | X-ORG-01/02 |
+| Testing / Postman / README | E1-TST-01/02, INF-17, README raíz + Backend + FE; Postman 193 requests (540 assertions, 0 fallos); tests gateway 44, usuarios 58, eventos 185, ventas 160, entradas 84; IT con MySQL real (asientos, acceso QR) | E2-TST-02 | HIG-01…03 (notificaciones/preferencias sin tests, lint FE); E2-TST-01/03 |
 
 **Lectura (2026-11-07, cierre sesión — seed amplio + catálogo AGOTADO):**  
 - **Hecho E1 core:** eventos GET+write; ventas (+ cupo al publicar); entradas QR/devo; JWT; FE demock AUTH/EVENTOS/COMPRAS/ENTRADAS.  
 - **Hecho E1-EVE-06:** participantes=artistas; API+authz; FE autocomplete por id.  
-- **Seed demo:** 14 eventos / 3 estadios (Oasis **AGOTADO** visible); cupos ventas + mocks FE; `init.sql` + `03-reseed-clean-demo.sql`.  
+- **Seed demo:** 14 eventos / 3 estadios (Oasis **AGOTADO** visible); cupos ventas + mocks FE; `init.sql` por base.  
 - **Catálogo BE default:** PUBLICADO + **AGOTADO** (home/list sin `estado=`); jar `ms-eventos` redeployed.  
 - **Ops:** `init.sql` solo en volumen nuevo; live → reseed `03-*.sql` o borrar volumen; jars `docker cp` si stale.  
-- **Demock residual:** admin usuarios aún con `VITE_USE_MOCK=true` / gate OFF; E2-ACC/transfer/prefs/X-ORG-01 = BE o gated.  
+- **Demock residual:** transfer/prefs/reportes/X-ORG-01 = sin BE, deshabilitados por gate (el scan de acceso ya está cableado).  
 - **Gap E1 formal:** cerrado salvo E1-REL (README). Ver actualización 2026-11-10.  
 - **Próxima sesión (acordado):** demock **admin usuarios selectivo** (list/estado/roles reales; alta acceso + eventosAsignados + DELETE OFF).  
 
@@ -379,3 +405,15 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - Sin verificar: stack compose, smoke, IT Testcontainers, Postman (HIG-06). **Asientos virtuales (SEAT-01…05) sin probar contra MySQL/Redis/gateway reales**: scripts `04-*.sql` sin ejecutar, flujo reserva→pago→emisión→devolución con asientos solo cubierto por unitarios y mocks.  
 - **Decisión 2026-11-10 (resuelve la pregunta 6 de `reglas-de-negocio.md`):** modelo híbrido — sector numerado por asiento concreto (virtual, solo se guarda el tomado), sector general por cupo; precio por sector.  
 - E2 sin código de negocio: ACC, FILA, PRE (solo docs Mongo + repos), NOT (solo entidades/service stub), REP, NFR-01/02/03.  
+
+**Actualización 2026-11-11 (cierre de sesión):**  
+- **Hecho:** SEAT-07 (sin `asiento`/`precio_asiento`, 119 tests eventos OK); un único `init.sql` por base y sin `migrations/` (HIG-07); front con un solo flag de mock y `Frontend/.env` versionado (E2-UI-02); test de integración JWT en el gateway (E2-TST-02 parcial; gateway 35 tests OK); stack completo verificado desde cero (HIG-06, E2-DEP-01 parcial).  
+- **Verificado contra el BE real:** login JWT, reserva por asiento (201), doble reserva (409), cancelación; compra con asientos desde el navegador OK.  
+- **E2-ACC-01 hecho (control de acceso QR):** `POST/GET /eventos/{id}/validaciones` en `msvc-entradas` (atómico por QR, auditado, 74 tests + IT con MySQL real), scan cableado en el front, Postman carpeta 10 (colección completa: 146 requests, 424 assertions, 0 fallos), OpenAPI y diagrama de secuencia §6. Sin asignación de eventos por persona (X-ACC-01 descartado).  
+- **E2-REP-01 y E2-NFR-03 hechos (2026-11-11):** reportes del organizador (API + pantalla) y correlation id + bitácora en los 7 servicios. Tests (cierre): gateway 43, usuarios 58, eventos 179, ventas 160, entradas 84. Postman (cierre): 193 requests, 540 assertions, 0 fallos (tras PAR-01).  
+- **LUG-02 hecho (2026-11-11, Paso 1 de lugares):** latitud/longitud opcionales en el lugar + enlace al mapa. Quedan LUG-01 (panel admin de lugares) y LUG-04 (solo ADMIN crea; el organizador elige).  
+- **LUG-01 hecho (2026-11-11, Paso 2 de lugares):** panel de admin de lugares y sectores + baja con guarda de eventos. Queda LUG-04 (solo ADMIN crea y edita; el organizador elige el lugar al crear el evento).  
+- **LUG-04 hecho (2026-11-11, Paso 3 de lugares):** solo ADMIN crea lugares y sectores; el organizador elige lugar y sectores al crear el evento (cupo propio por evento). Con esto quedan hechos LUG-01, LUG-02 y LUG-04; **LUG-03 (geocodificación con API externa) es la próxima tarea a implementar**.  
+- **Verificación de documentación (2026-11-11):** modelos de datos (`modelo.md`, `modelo-por-microservicio.md`, `docs/modelo-datos.md`) comparados con los 5 `init.sql`: 21 tablas y todas sus columnas coinciden (script de verificación); modelo Mongo coincide con `init.js`. Se actualizaron `docs/arquitectura.md` (diagrama, responsabilidades, APIs y comunicación), `docs/api/gateway.md` (rutas, RBAC, `X-Correlation-Id`), `specs/bases-de-datos.md` y los diagramas de secuencia (§6 acceso, §7 reportes, §8 alta de evento).  
+- **PAR-01 hecho (2026-11-11):** panel de ADMIN de participantes (listado con búsqueda y tipo, alta, edición, baja con 409 si participa en eventos); el organizador conserva el alta con control de duplicados y tipo válido; editar/eliminar solo ADMIN (backend + gateway). Sin cambios de modelo.  
+- **Queda para la Entrega 2 (sin código de negocio):** E2-PRE-01/02/03 (Mongo), E2-NOT-01/02 (en progreso en rama `origin/notificaciones`), E2-FILA-01; tests: integración entre msvcs, autorización por endpoint y carga (E2-TST-01/02/03); docs: ARQ-05/06, cierre de API-04, MOD-06, ARQ-01 y US-03. **Hecho 2026-11-16:** LUG-03 + E2-NFR-01/02 (geocodificación con patrón adaptador, mock, caché con TTL, timeout/reintentos/fallback y botón en el front). Propuesta siguiente: E2-PRE-01..04 (preferencias y recomendaciones en Mongo + front).  

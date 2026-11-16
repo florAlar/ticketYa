@@ -1,5 +1,5 @@
 import { http } from './http'
-import { USE_MOCK_COMPRAS } from './config'
+import { USE_MOCK } from './config'
 import { getEvento } from './eventos'
 import { listMisEntradas } from './entradas'
 import { insertCompra } from './mock/comprasStore'
@@ -48,7 +48,7 @@ export async function comprarEntrada(
     throw err
   }
 
-  if (USE_MOCK_COMPRAS) {
+  if (USE_MOCK) {
     await delay()
     const evento = await getEvento(idEvento)
     if (!evento) {
@@ -245,7 +245,7 @@ export async function comprarEntrada(
 
 /** POST /api/reservas — TTL ~10 min */
 export async function crearReserva(body, opts = {}) {
-  if (USE_MOCK_COMPRAS) {
+  if (USE_MOCK) {
     const err = new Error('Reservas: usar compra mock directa en simulacro')
     err.status = 501
     throw err
@@ -262,7 +262,7 @@ export async function crearReserva(body, opts = {}) {
 
 /** GET /api/compras — listar compras propias */
 export async function listMisCompras(opts = {}) {
-  if (USE_MOCK_COMPRAS) {
+  if (USE_MOCK) {
     return []
   }
   return http('/api/compras', { token: opts.token })
@@ -270,7 +270,7 @@ export async function listMisCompras(opts = {}) {
 
 /** GET /api/compras/{id} */
 export async function getCompra(id, opts = {}) {
-  if (USE_MOCK_COMPRAS) {
+  if (USE_MOCK) {
     const err = new Error('getCompra mock no implementado')
     err.status = 501
     throw err

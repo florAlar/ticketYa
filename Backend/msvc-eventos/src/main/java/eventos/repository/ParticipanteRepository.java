@@ -16,4 +16,9 @@ public interface ParticipanteRepository extends JpaRepository<Participante, Stri
             order by p.nombre asc
             """)
     List<Participante> buscar(@Param("q") String q, @Param("tipo") String tipo);
+
+    /** Control de duplicados: mismo nombre sin importar mayúsculas (la colación de MySQL ignora también acentos). */
+    boolean existsByNombreIgnoreCase(String nombre);
+
+    boolean existsByNombreIgnoreCaseAndIdNot(String nombre, String id);
 }

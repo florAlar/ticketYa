@@ -25,6 +25,8 @@ public interface EventosClient {
         private String nombre;
         /** PUBLICADO | CANCELADO | … — para política de exposición de QR. */
         private String estado;
+        /** Para que un ORGANIZADOR solo consulte las validaciones de sus propios eventos. */
+        private String idOrganizador;
         private LugarFeignDTO lugar;
         private List<SectorFeignDTO> sectores = new ArrayList<>();
     }

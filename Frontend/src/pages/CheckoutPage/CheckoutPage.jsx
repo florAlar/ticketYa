@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
 import { comprarEntrada } from '../../api/ventasCliente'
-import { USE_MOCK_COMPRAS } from '../../api/config'
+import { USE_MOCK } from '../../api/config'
 import {
   MAX_ASIENTOS_POR_COMPRA,
   asientosDeMensajeConflicto,
@@ -53,7 +53,7 @@ const CheckoutPage = () => {
     try {
       const data = await getEvento(eventoId)
       setEvento(data)
-      if (!USE_MOCK_COMPRAS) {
+      if (!USE_MOCK) {
         try {
           const disp = await getDisponibilidadEvento(eventoId, { token })
           setDisponibilidad(disp)
@@ -100,7 +100,7 @@ const CheckoutPage = () => {
   const esNumerado = Boolean(sector?.esNumerado)
   const tieneLayout = sectorTieneLayout(sector)
   const usaPicker = esNumerado && tieneLayout
-  const numeradoSinLayout = esNumerado && !tieneLayout && !USE_MOCK_COMPRAS
+  const numeradoSinLayout = esNumerado && !tieneLayout && !USE_MOCK
   const ocupados = cupoSector?.asientosOcupados || []
   const cantidad = usaPicker ? seleccion.length : 1
 
@@ -110,7 +110,7 @@ const CheckoutPage = () => {
     if (usaPicker && (cantidad < 1 || cantidad > MAX_ASIENTOS_POR_COMPRA)) {
       return false
     }
-    if (USE_MOCK_COMPRAS) return true
+    if (USE_MOCK) return true
     if (dispError || !disponibilidad) return false
     if (!cupoSector) return false
     const disp = Number(cupoSector.cantidadDisponible)
@@ -176,7 +176,7 @@ const CheckoutPage = () => {
     setMpPreview(null)
     setSuccess(null)
     try {
-      if (USE_MOCK_COMPRAS) {
+      if (USE_MOCK) {
         const preferenciaId = `mp_pref_mock_${Date.now()}`
         const initPoint = `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${preferenciaId}`
         setMpPreview({ preferenciaId, initPoint })
@@ -245,7 +245,7 @@ const CheckoutPage = () => {
       </p>
 
       <h1>Comprar entrada</h1>
-      {!USE_MOCK_COMPRAS && (
+      {!USE_MOCK && (
         <p className="checkout-page__muted">
           Modo gateway: reserva + compra + pago mock del backend.
         </p>
@@ -296,10 +296,10 @@ const CheckoutPage = () => {
               <strong>Precio{usaPicker ? ' por asiento' : ''}:</strong>{' '}
               {formatPrecioDesde(sector.precio)}
             </p>
-            {!USE_MOCK_COMPRAS && dispError && (
+            {!USE_MOCK && dispError && (
               <p className="checkout-page__error">{dispError}</p>
             )}
-            {!USE_MOCK_COMPRAS && !dispError && cupoSector && (
+            {!USE_MOCK && !dispError && cupoSector && (
               <p className="checkout-page__muted">
                 Disponibles: {cupoSector.cantidadDisponible} /{' '}
                 {cupoSector.capacidadTotal} (vendidas{' '}
@@ -307,7 +307,7 @@ const CheckoutPage = () => {
                 {cupoSector.cantidadReservada})
               </p>
             )}
-            {!USE_MOCK_COMPRAS &&
+            {!USE_MOCK &&
               !dispError &&
               disponibilidad &&
               !cupoSector && (
@@ -315,7 +315,7 @@ const CheckoutPage = () => {
                   Este tipo de entrada no tiene cupo comercial abierto.
                 </p>
               )}
-            {!USE_MOCK_COMPRAS &&
+            {!USE_MOCK &&
               cupoSector &&
               Number(cupoSector.cantidadDisponible) < 1 && (
                 <p className="checkout-page__error">Sin stock disponible.</p>
@@ -344,7 +344,7 @@ const CheckoutPage = () => {
                   max={MAX_ASIENTOS_POR_COMPRA}
                   disabled={paying}
                 />
-                {!USE_MOCK_COMPRAS && (
+                {!USE_MOCK && (
                   <button
                     type="button"
                     className="btn"
@@ -372,12 +372,12 @@ const CheckoutPage = () => {
 
           <div className="checkout-mp">
             <p className="checkout-mp__label">
-              {USE_MOCK_COMPRAS
+              {USE_MOCK
                 ? 'Pago (mock Mercado Pago local)'
                 : 'Pago (pasarela mock del BE)'}
             </p>
             <p className="checkout-page__muted">
-              {USE_MOCK_COMPRAS
+              {USE_MOCK
                 ? 'Link ficticio de checkout. No hay cobro real; al confirmar se acredita la entrada en tu cuenta (LS).'
                 : 'Se crea reserva TTL, compra con Idempotency-Key y pago APROBAR en msvc-ventas.'}
             </p>
@@ -404,7 +404,7 @@ const CheckoutPage = () => {
           >
             {paying
               ? 'Procesando…'
-              : USE_MOCK_COMPRAS
+              : USE_MOCK
                 ? 'Pagar con Mercado Pago (mock)'
                 : 'Confirmar compra (gateway)'}
           </button>

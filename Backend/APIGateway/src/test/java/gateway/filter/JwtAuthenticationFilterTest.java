@@ -99,28 +99,33 @@ class JwtAuthenticationFilterTest {
         assertNotNull(filter);
     }
 
+    /**
+     * El JWT es obligatorio: sin Bearer el request se rechaza, aunque el cliente mande
+     * headers X-User-* (no hay modo "identificación por encabezado").
+     */
     @Test
-    void jwtDeshabilitado_sinToken_pasaConHeadersDelCliente() throws Exception {
-        JwtAuthenticationFilter sinJwt = new JwtAuthenticationFilter(jwtUtil, false);
+    void sinToken_devuelve401AunConHeadersXUserDelCliente() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/entradas");
         when(request.getMethod()).thenReturn("GET");
         when(request.getHeader("Authorization")).thenReturn(null);
 
-        sinJwt.doFilterInternal(request, response, filterChain);
+        filter.doFilterInternal(request, response, filterChain);
 
-        verify(filterChain).doFilter(request, response);
-        verify(response, never()).setStatus(eq(401));
+        verify(response).setStatus(eq(401));
+        verify(filterChain, never()).doFilter(any(), any());
     }
 
+    /**
+     * Con Bearer inválido también 401, y el request no sigue hacia el msvc.
+     */
     @Test
-    void jwtDeshabilitado_conTokenInvalido_sigueDevolviendo401() throws Exception {
-        JwtAuthenticationFilter sinJwt = new JwtAuthenticationFilter(jwtUtil, false);
+    void conTokenInvalido_devuelve401YNoPropaga() throws Exception {
         when(request.getRequestURI()).thenReturn("/api/entradas");
         when(request.getMethod()).thenReturn("GET");
         when(request.getHeader("Authorization")).thenReturn("Bearer token.invalido");
         when(jwtUtil.validateToken("token.invalido")).thenReturn(false);
 
-        sinJwt.doFilterInternal(request, response, filterChain);
+        filter.doFilterInternal(request, response, filterChain);
 
         verify(response).setStatus(eq(401));
         verify(filterChain, never()).doFilter(any(), any());

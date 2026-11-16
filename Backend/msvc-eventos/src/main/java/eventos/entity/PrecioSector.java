@@ -37,4 +37,19 @@ public class PrecioSector {
 
     @Column(name = "activo", nullable = false)
     private Boolean activo;
+
+    /**
+     * Cupo comercial del evento en este sector (LUG-04). Null = toda la capacidad del sector. En
+     * sectores numerados siempre es toda la capacidad (se venden asientos concretos).
+     */
+    @Column(name = "cupo")
+    private Integer cupo;
+
+    /** Cupo que efectivamente se vende: el propio del evento o, si no tiene, la capacidad del sector. */
+    public Integer cupoEfectivo() {
+        if (cupo != null) {
+            return cupo;
+        }
+        return sector != null ? sector.getCapacidad() : null;
+    }
 }

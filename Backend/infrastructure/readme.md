@@ -1,7 +1,7 @@
 esta carpeta existe para centralizar la inicializacion de las DB y carga inicial de datos, de esta manera queda desacoplada la infraestructura de la funcionalidad de cada ms.
 Archivo	Responsabilidad
 mysql/usuarios/init.sql	Schema + seed mínimo usuarios (rol, usuario, usuario_rol).
-mysql/eventos/init.sql	Schema + seed mínimo eventos (lugar, sector con layout filas×asientos_por_fila, asiento (sin uso), evento, precios).
+mysql/eventos/init.sql	Schema + seed mínimo eventos (lugar, sector con layout filas×asientos_por_fila, evento, precios).
 mysql/ventas/init.sql	Schema + seed mínimo ventas (reserva, detalle, compra, pago, cupo, asiento_reservado).
 mysql/entradas/init.sql	Schema + seed mínimo entradas (entrada con fila/numero, devolucion, validacion_acceso).
 mysql/notificaciones/init.sql	Schema + seed mínimo notificaciones (plantilla; tablas notif/intento).

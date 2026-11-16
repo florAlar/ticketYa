@@ -74,11 +74,45 @@ const GestionPage = () => {
               para quien tiene rol PERSONAL_ACCESO).
             </p>
             <GateLink
-              enabled={FEATURE.adminUsuarios}
+              enabled={FEATURE.adminUsuariosListado}
               className="btn btn-primary"
               to="/gestion/usuarios"
             >
               Administrar usuarios
+            </GateLink>
+          </article>
+        )}
+
+        {canManageStaff && (
+          <article className="gestion-card gestion-card--ops">
+            <h2>Lugares</h2>
+            <p>
+              Estadios, teatros y salas con sus sectores y su ubicación (dirección, latitud y
+              longitud). Los organizadores eligen uno al crear un evento.
+            </p>
+            <GateLink
+              enabled={FEATURE.lugares}
+              className="btn btn-primary"
+              to="/gestion/lugares"
+            >
+              Administrar lugares
+            </GateLink>
+          </article>
+        )}
+
+        {canManageStaff && (
+          <article className="gestion-card gestion-card--ops">
+            <h2>Participantes</h2>
+            <p>
+              Catálogo de bandas, artistas, elencos, equipos y pilotos. Editá nombres y tipos o
+              eliminá los que no se usan; el principal y los teloneros se eligen por evento.
+            </p>
+            <GateLink
+              enabled={FEATURE.participantes}
+              className="btn btn-primary"
+              to="/gestion/participantes"
+            >
+              Administrar participantes
             </GateLink>
           </article>
         )}

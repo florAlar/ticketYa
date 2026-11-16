@@ -7,12 +7,24 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | Archivo | Contenido |
 |---------|-----------|
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
-| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (25 ops / 17 paths) |
-| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos (16 ops / 14 paths, 16 schemas) |
-| `msvc-entradas.json` | Contrato de entradas/QR/devoluciones (11 ops / 11 paths, 7 schemas) |
+| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (27 ops / 17 paths) |
+| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador (21 ops / 19 paths, 23 schemas) |
+| `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 4 specs bajo la clave `specs` |
 
 > **Actualizado 2026-11-10:** los specs incluyen los asientos virtuales (`filas`/`asientosPorFila` en sectores; `asientos` en `POST /reservas`, `POST /eventos/{id}/cupos/liberacion` y `POST /entradas/emision`; `asientosOcupados` en disponibilidad; `fila`/`asiento` en la entrada).
+>
+> **Actualizado 2026-11-11:** `msvc-entradas.json` suma el control de acceso QR (`POST` y `GET /eventos/{idEvento}/validaciones`, schemas `ValidacionRequest`, `ValidacionResponse` y `ValidacionRegistro`). `openapi-bundle.json` regenerado (los otros tres specs sin cambios).
+>
+> **Actualizado 2026-11-11 (reportes):** `msvc-ventas.json` suma los reportes del organizador (`GET /reportes/eventos/{idEvento}` y `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`; schemas `Reporte*`). `msvc-entradas.json` suma el resumen interno `GET /eventos/{idEvento}/entradas/resumen` (marcado `x-internal`: lo consume ventas por Feign y el gateway no lo expone).
+>
+> **Actualizado 2026-11-11 (lugares):** `msvc-eventos.json`: el lugar suma `latitud` y `longitud` opcionales (`LugarRequest`, `Lugar`, `LugarDetalle`) y `quitarCoordenadas` en el pedido. `openapi-bundle.json` regenerado.
+>
+> **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
+>
+> **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
+
+> **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.
 
 ## Regeneración (tras cambios en anotaciones)
 

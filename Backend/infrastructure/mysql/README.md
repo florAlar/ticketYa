@@ -44,27 +44,24 @@ Mongo preferencias: `../mongodb/preferencias/` (aparte). No hay loader por msvc 
 
 - FK **físicas** solo dentro de la misma DB.
 - Cross-msvc: columnas comentadas `ref lógica` (CHAR 36), sin FK.
-- Para re-aplicar: borrar volumen Docker del MySQL correspondiente, o script `eventos/migrations/03-reseed-clean-demo.sql` (+ ventas/entradas).
+- **Un único `init.sql` por base**: es la fuente de verdad del esquema y del seed demo. No hay scripts de migración sueltos.
 
-## Migraciones para volúmenes ya creados (`<db>/migrations/`)
+## Re-aplicar / actualizar el esquema
 
-Los scripts `02-*`, `03-*` y `04-*` viven en `<db>/migrations/` y **no** corren solos: MySQL solo ejecuta los `.sql` de primer nivel de `docker-entrypoint-initdb.d`, y los ejecuta en orden alfabético (un `02-*` o `04-*` en el nivel superior correría antes que `init.sql` y abortaría la inicialización).
+`init.sql` solo corre en un volumen vacío. Si cambia el esquema (o el volumen quedó de una versión anterior), se recrea la base desde cero:
 
+```bash
+cd Backend
+docker compose down -v      # borra los volúmenes (se pierden los datos locales)
+docker compose up -d --build
+```
 
-`init.sql` solo corre en un volumen vacío. Si el volumen existe de antes, aplicar a mano (en este orden por servicio):
+Para recrear una sola base: `docker compose rm -sf db-mysql-<servicio>`, borrar su volumen (`docker volume ls`) y `docker compose up -d`.
 
-| Script | Qué agrega |
-|---|---|
-| `eventos/migrations/02-add-participantes.sql` | `participante`, `evento_participante` |
-| `eventos/migrations/04-add-sector-layout.sql` | `sector.filas`, `sector.asientos_por_fila` (+ layout 250 por fila a los numerados existentes cuya capacidad es múltiplo de 250; revisar el resto) |
-| `ventas/migrations/02-add-compra-emision.sql` | `compra.emision_*` |
-| `ventas/migrations/04-add-asiento-reservado.sql` | tabla `asiento_reservado` |
-| `entradas/migrations/02-add-entrada-precio.sql` | `entrada.precio` |
-| `entradas/migrations/04-add-entrada-asiento.sql` | `entrada.fila`, `entrada.numero` |
+Los `init.sql` son idempotentes (`CREATE TABLE IF NOT EXISTS` y `ON DUPLICATE KEY UPDATE`), por lo que también se pueden volver a ejecutar a mano sobre una base ya creada para recargar el seed. Eso **no** agrega columnas a tablas existentes: ante un cambio de esquema, recrear el volumen.
 
 ## Asientos virtuales (sectores numerados)
 
-- El sector numerado guarda `filas` y `asientos_por_fila`; su capacidad es el producto. No hay filas de asiento libres en ninguna tabla.
+- El sector numerado guarda `filas` y `asientos_por_fila`; su capacidad es el producto. No hay filas de asiento libres en ninguna tabla (las tablas `asiento` y `precio_asiento` se eliminaron).
 - Solo `ventas.asiento_reservado` guarda asientos, y únicamente los **tomados** (RESERVADO | VENDIDO). Clave única: evento + sector + fila + número.
-- Seeds: los 3 sectores numerados (Platea `…012` 100×250, Cadeira `…014` 80×250, Club Wembley `…016` 72×250) mantienen su capacidad anterior (25.000 / 20.000 / 18.000). Las tablas `asiento` y `precio_asiento` de eventos ya no se usan.
-- `ventas/migrations/03-reseed-clean-demo.sql` también vacía `asiento_reservado`.
+- Seeds: los 3 sectores numerados (Platea `…012` 100×250, Cadeira `…014` 80×250, Club Wembley `…016` 72×250) mantienen su capacidad (25.000 / 20.000 / 18.000).

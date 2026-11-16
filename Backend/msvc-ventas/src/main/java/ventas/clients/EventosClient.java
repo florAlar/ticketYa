@@ -22,7 +22,10 @@ public interface EventosClient {
     @Setter
     class EventoDetalleFeignDTO {
         private String id;
+        private String nombre;
         private String estado;
+        /** Para que un ORGANIZADOR solo consulte los reportes de sus propios eventos. */
+        private String idOrganizador;
         private List<SectorFeignDTO> sectores = new ArrayList<>();
     }
 

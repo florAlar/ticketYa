@@ -14,7 +14,11 @@ import GestionPage from '../pages/GestionPage/GestionPage'
 import GestionEventosPage from '../pages/GestionPage/GestionEventosPage'
 import GestionEventoNuevoPage from '../pages/GestionPage/GestionEventoNuevoPage'
 import GestionEventoEditarPage from '../pages/GestionPage/GestionEventoEditarPage'
+import GestionEventoReportesPage from '../pages/GestionPage/GestionEventoReportesPage'
 import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
+import GestionLugaresPage from '../pages/GestionPage/GestionLugaresPage'
+import GestionLugarFormPage from '../pages/GestionPage/GestionLugarFormPage'
+import GestionParticipantesPage from '../pages/GestionPage/GestionParticipantesPage'
 import OrganizerAccountPage from '../pages/CuentaRolesPage/OrganizerAccountPage'
 import PerfilPage from '../pages/PerfilPage/PerfilPage'
 import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
@@ -126,6 +130,46 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
             <GestionEventoEditarPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/eventos/:eventoId/reportes"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
+            <GestionEventoReportesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/lugares"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <GestionLugaresPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/lugares/nuevo"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <GestionLugarFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/lugares/:lugarId"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <GestionLugarFormPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/gestion/participantes"
+        element={
+          <ProtectedRoute roles={[ROLES.ADMIN]}>
+            <GestionParticipantesPage />
           </ProtectedRoute>
         }
       />

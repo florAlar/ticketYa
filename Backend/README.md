@@ -52,11 +52,14 @@ docker compose down
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/      # frontend → 200
-curl -s http://localhost:8080/api/eventos                            # gateway → 200 con eventos
-curl -s -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
+curl -s http://localhost:8080/api/eventos                            # gateway → 200 con eventos (ruta pública)
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"demo@ticketya.com","password":"demo1234"}' | jq -r .token)
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/entradas   # ruta privada → 200
 ```
 
-Gateway sin headers en rutas privadas → 401. Modo de auth (Entrega 1/2): flag `TICKETYA_JWT_ENABLED`, ver README raíz.
+Gateway sin `Bearer` en rutas privadas → 401. El JWT es obligatorio (no hay flag); ver README raíz.
 
 ## Correr un msvc en local (sin imagen)
 

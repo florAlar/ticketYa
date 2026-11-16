@@ -3,9 +3,11 @@ package eventos.service;
 import eventos.Messaging.EventChangeEvent;
 import feign.FeignException;
 import eventos.clients.EntradasClient;
+import eventos.clients.GeocodingClient;
 import eventos.clients.VentasClient;
 import eventos.clients.VentasClient.AbrirCuposBody;
 import eventos.dto.AsientoResponseDTO;
+import eventos.dto.CoordenadasDTO;
 import eventos.dto.EventoDetalleResponseDTO;
 import eventos.dto.EventoFechaRequestDTO;
 import eventos.dto.EventoParticipantesRequestDTO;
@@ -52,6 +54,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -59,6 +62,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import eventos.observability.Bitacora;
 
 @Service
 public class EventoServiceImpl implements EventoService {
@@ -86,6 +90,7 @@ public class EventoServiceImpl implements EventoService {
         private final EventoMapper eventoMapper;
         private final EntradasClient entradasClient;
         private final VentasClient ventasClient;
+        private final GeocodingClient geocodingClient;
         private final ApplicationEventPublisher eventPublisher;
 
     public EventoServiceImpl(
@@ -108,6 +113,33 @@ public class EventoServiceImpl implements EventoService {
             this.eventoMapper = eventoMapper;
             this.entradasClient = entradasClient;
             this.ventasClient = ventasClient;
+            this.geocodingClient = GeocodingClient.defaultMock();
+            this.eventPublisher = eventPublisher;
+        }
+
+        @Autowired
+        public EventoServiceImpl(
+                EventoRepository eventoRepository,
+                PrecioSectorRepository precioSectorRepository,
+                LugarRepository lugarRepository,
+                SectorRepository sectorRepository,
+                ParticipanteRepository participanteRepository,
+                EventoParticipanteRepository eventoParticipanteRepository,
+                EventoMapper eventoMapper,
+                EntradasClient entradasClient,
+                VentasClient ventasClient,
+                GeocodingClient geocodingClient,
+                ApplicationEventPublisher eventPublisher) {
+            this.eventoRepository = eventoRepository;
+            this.precioSectorRepository = precioSectorRepository;
+            this.lugarRepository = lugarRepository;
+            this.sectorRepository = sectorRepository;
+            this.participanteRepository = participanteRepository;
+            this.eventoParticipanteRepository = eventoParticipanteRepository;
+            this.eventoMapper = eventoMapper;
+            this.entradasClient = entradasClient;
+            this.ventasClient = ventasClient;
+            this.geocodingClient = geocodingClient;
             this.eventPublisher = eventPublisher;
         }
 
@@ -213,33 +245,27 @@ public class EventoServiceImpl implements EventoService {
                 tipo = tipo.toUpperCase();
             }
 
-            Lugar lugar = resolveLugarForCreate(request, publicarAlFinal);
+            boolean sinLugar = esSinLugar(request.getIdLugar());
+            if (sinLugar && publicarAlFinal) {
+                throw new IllegalArgumentException("idLugar es obligatorio para publicar: elegí un lugar");
+            }
+            Lugar lugar = sinLugar ? lugarPorDefinir() : requireLugar(request.getIdLugar().trim());
             List<SectorInputDTO> inputs = normalizeSectorInputs(request.getSectores());
+            if (!inputs.isEmpty() && sinLugar) {
+                throw new IllegalArgumentException("Elegí un lugar (idLugar) antes de definir sus sectores");
+            }
             if (publicarAlFinal && inputs.isEmpty()) {
-                throw new IllegalArgumentException("Agregá al menos un sector/tipo de entrada con nombre");
+                throw new IllegalArgumentException("Agregá al menos un sector del lugar con su precio");
             }
 
-            // crear sectores nuevos del lugar si el payload no trae id de sector existente
-            List<Sector> sectoresCreados = new ArrayList<>();
+            // Los sectores los define el lugar: acá solo se eligen y se les pone precio y cupo del evento.
+            List<Sector> sectoresElegidos = new ArrayList<>();
+            List<Integer> cupos = new ArrayList<>();
             for (SectorInputDTO in : inputs) {
-                if (blankToNull(in.getId()) != null) {
-                    Sector existing = sectorRepository
-                            .findById(in.getId().trim())
-                            .orElseThrow(() -> new ResourceNotFoundException("Sector no encontrado: " + in.getId()));
-                    if (!existing.getLugar().getId().equals(lugar.getId())) {
-                        throw new IllegalArgumentException("Sector no pertenece al lugar del evento");
-                    }
-                    applySectorInput(existing, in, publicarAlFinal);
-                    sectoresCreados.add(sectorRepository.save(existing));
-                } else {
-                    Sector s = new Sector();
-                    s.setId(UUID.randomUUID().toString());
-                    s.setLugar(lugar);
-                    applySectorInput(s, in, publicarAlFinal);
-                    sectoresCreados.add(sectorRepository.save(s));
-                }
+                Sector sector = requireSectorDelLugar(in, lugar);
+                cupos.add(cupoDelEvento(sector, in));
+                sectoresElegidos.add(sector);
             }
-            recalcularCapacidadLugar(lugar);
 
             Evento evento = new Evento();
             evento.setId(UUID.randomUUID().toString());
@@ -261,10 +287,11 @@ public class EventoServiceImpl implements EventoService {
 
             for (int i = 0; i < inputs.size(); i++) {
                 SectorInputDTO in = inputs.get(i);
-                Sector sector = sectoresCreados.get(i);
-                upsertPrecio(evento, sector, precioOf(in), "ARS", true);
+                Sector sector = sectoresElegidos.get(i);
+                upsertPrecio(evento, sector, precioOf(in), "ARS", true, cupos.get(i));
             }
 
+            Bitacora.registrar("EVENTO_CREADO", idOrganizador, evento.getId(), "publicarAlFinal=" + publicarAlFinal);
             if (publicarAlFinal) {
                 return doPublicar(evento);
             }
@@ -302,45 +329,22 @@ public class EventoServiceImpl implements EventoService {
             evento.setEsAltaDemanda(request.getEsAltaDemanda());
         }
 
-        if (blankToNull(request.getIdLugar()) != null) {
-            Lugar lugar = lugarRepository
-                    .findById(request.getIdLugar().trim())
-                    .orElseThrow(() -> new ResourceNotFoundException("Lugar no encontrado: " + request.getIdLugar()));
-            evento.setLugar(lugar);
-        } else if (blankToNull(request.getLugarNombre()) != null || blankToNull(request.getLugarCiudad()) != null) {
-            Lugar lugar = evento.getLugar();
-            if (blankToNull(request.getLugarNombre()) != null) {
-                lugar.setNombre(request.getLugarNombre().trim());
+        boolean borrador = BORRADOR.equalsIgnoreCase(evento.getEstado());
+        if (!esSinLugar(request.getIdLugar())) {
+            Lugar nuevo = requireLugar(request.getIdLugar().trim());
+            if (!nuevo.getId().equals(evento.getLugar().getId())) {
+                if (!borrador) {
+                    throw new BusinessConflictException("Solo se puede cambiar el lugar de un evento en BORRADOR");
+                }
+                // Los sectores y precios del evento pertenecen al lugar anterior: se descartan.
+                precioSectorRepository.deleteAll(precioSectorRepository.findByEventoId(evento.getId()));
+                evento.setLugar(nuevo);
             }
-            if (blankToNull(request.getLugarCiudad()) != null) {
-                lugar.setCiudad(request.getLugarCiudad().trim());
-            }
-            if (request.getLugarDireccion() != null) {
-                lugar.setDireccion(blankToNull(request.getLugarDireccion()));
-            }
-            lugarRepository.save(lugar);
         }
 
-        // sectores opcionales en PUT: si vienen, upsert precios/alta de sectores del lugar
-        List<SectorInputDTO> inputs = normalizeSectorInputs(request.getSectores());
-        if (!inputs.isEmpty()) {
-            Lugar lugar = evento.getLugar();
-            for (SectorInputDTO in : inputs) {
-                Sector sector;
-                if (blankToNull(in.getId()) != null) {
-                    sector = sectorRepository
-                            .findById(in.getId().trim())
-                            .orElseThrow(() -> new ResourceNotFoundException("Sector no encontrado: " + in.getId()));
-                } else {
-                    sector = new Sector();
-                    sector.setId(UUID.randomUUID().toString());
-                    sector.setLugar(lugar);
-                }
-                applySectorInput(sector, in, false);
-                sectorRepository.save(sector);
-                upsertPrecio(evento, sector, precioOf(in), "ARS", true);
-            }
-            recalcularCapacidadLugar(lugar);
+        // sectores: si vienen, son la lista completa de los sectores del lugar que se venden en el evento
+        if (request.getSectores() != null) {
+            sincronizarSectoresDelEvento(evento, normalizeSectorInputs(request.getSectores()), borrador);
         }
 
         eventoRepository.save(evento);
@@ -400,6 +404,7 @@ public class EventoServiceImpl implements EventoService {
         String anterior = evento.getEstado();      // se lee ANTES de cambiarlo
         evento.setEstado(next); //guarda el nuevo estado
         eventoRepository.save(evento);
+        Bitacora.registrar("EVENTO_ESTADO_" + next, userId, evento.getId(), "rol=" + role);
 
         if (!next.equalsIgnoreCase(anterior) && (CANCELADO.equals(next) || SUSPENDIDO.equals(next))) { // esta bosta puede bugearse 
             eventPublisher.publishEvent(new EventChangeEvent(
@@ -467,7 +472,10 @@ public class EventoServiceImpl implements EventoService {
         List<Lugar> list = blankToNull(ciudad) == null
                 ? lugarRepository.findAllByOrderByNombreAsc()
                 : lugarRepository.findByCiudadContainingIgnoreCaseOrderByNombreAsc(ciudad.trim());
-        return list.stream().map(this::toLugarResponse).toList();
+        return list.stream()
+                .filter(l -> !LUGAR_POR_DEFINIR_ID.equals(l.getId()))
+                .map(this::toLugarResponse)
+                .toList();
     }
 
     @Override
@@ -499,6 +507,19 @@ public class EventoServiceImpl implements EventoService {
         applyLugar(lugar, body, false);
         lugarRepository.save(lugar);
         return toLugarResponse(lugar);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarLugar(String id) {
+        Lugar lugar = requireLugar(id);
+        if (eventoRepository.existsByLugarId(id)) {
+            throw new BusinessConflictException(
+                    "El lugar tiene eventos asociados; no se puede eliminar (solo editar)");
+        }
+        sectorRepository.deleteAll(sectorRepository.findByLugarIdOrderByNombreAsc(id));
+        lugarRepository.delete(lugar);
+        Bitacora.registrar("LUGAR_ELIMINADO", null, id, "nombre=" + lugar.getNombre());
     }
 
     @Override
@@ -606,10 +627,15 @@ public class EventoServiceImpl implements EventoService {
                     throw new IllegalArgumentException("Body requerido");
                 }
                 String nombre = requireText(body.getNombre(), "nombre");
+                String tipo = tipoParticipanteValido(body.getTipo(), true);
+                if (participanteRepository.existsByNombreIgnoreCase(nombre)) {
+                    throw new BusinessConflictException(
+                            "Ya existe un participante con el nombre «" + nombre + "»: elegilo del catálogo");
+                }
                 Participante p = new Participante();
                 p.setId(UUID.randomUUID().toString());
                 p.setNombre(nombre);
-                p.setTipo(blankToNull(body.getTipo()) != null ? body.getTipo().trim().toUpperCase() : null);
+                p.setTipo(tipo);
                 p.setDescripcion(blankToNull(body.getDescripcion()));
                 return eventoMapper.toParticipante(participanteRepository.save(p));
             }
@@ -622,15 +648,54 @@ public class EventoServiceImpl implements EventoService {
                     throw new IllegalArgumentException("Body requerido");
                 }
                 if (blankToNull(body.getNombre()) != null) {
-                    p.setNombre(body.getNombre().trim());
+                    String nombre = body.getNombre().trim();
+                    if (participanteRepository.existsByNombreIgnoreCaseAndIdNot(nombre, id)) {
+                        throw new BusinessConflictException(
+                                "Ya existe otro participante con el nombre «" + nombre + "»");
+                    }
+                    p.setNombre(nombre);
                 }
                 if (body.getTipo() != null) {
-                    p.setTipo(blankToNull(body.getTipo()) != null ? body.getTipo().trim().toUpperCase() : null);
+                    p.setTipo(tipoParticipanteValido(body.getTipo(), true));
                 }
                 if (body.getDescripcion() != null) {
                     p.setDescripcion(blankToNull(body.getDescripcion()));
                 }
+                Bitacora.registrar("PARTICIPANTE_ACTUALIZADO", null, id, "nombre=" + p.getNombre());
                 return eventoMapper.toParticipante(participanteRepository.save(p));
+            }
+
+            @Override
+            @Transactional
+            public void eliminarParticipante(String id) {
+                Participante p = requireParticipante(id);
+                if (eventoParticipanteRepository.existsByParticipanteId(id)) {
+                    throw new BusinessConflictException("«" + p.getNombre()
+                            + "» participa en eventos: no se puede eliminar (solo editar)");
+                }
+                participanteRepository.delete(p);
+                Bitacora.registrar("PARTICIPANTE_ELIMINADO", null, id, "nombre=" + p.getNombre());
+            }
+
+            /** Tipos del catálogo de participantes (PAR-01). */
+            static final java.util.Set<String> TIPOS_PARTICIPANTE =
+                    java.util.Set.of("ARTISTA", "BANDA", "ELENCO", "EQUIPO", "PILOTO");
+
+            private static String tipoParticipanteValido(String tipo, boolean requerido) {
+                String t = blankToNull(tipo);
+                if (t == null) {
+                    if (requerido) {
+                        throw new IllegalArgumentException(
+                                "tipo es obligatorio (ARTISTA, BANDA, ELENCO, EQUIPO o PILOTO)");
+                    }
+                    return null;
+                }
+                t = t.toUpperCase();
+                if (!TIPOS_PARTICIPANTE.contains(t)) {
+                    throw new IllegalArgumentException(
+                            "tipo inválido «" + tipo.trim() + "»: ARTISTA, BANDA, ELENCO, EQUIPO o PILOTO");
+                }
+                return t;
             }
 
             @Override
@@ -731,6 +796,9 @@ public class EventoServiceImpl implements EventoService {
                 throw new BusinessConflictException("Publicación: falta lugar");
             }
             Lugar lugar = evento.getLugar();
+            if (LUGAR_POR_DEFINIR_ID.equals(lugar.getId())) {
+                throw new BusinessConflictException("Publicación: elegí un lugar");
+            }
             if (blankToNull(lugar.getNombre()) == null
                     || LUGAR_BORRADOR_NOMBRE.equalsIgnoreCase(lugar.getNombre().trim())) {
                 throw new BusinessConflictException("Publicación: definí el nombre del lugar");
@@ -751,7 +819,7 @@ public class EventoServiceImpl implements EventoService {
                 if (sec == null || blankToNull(sec.getNombre()) == null) {
                     throw new BusinessConflictException("Publicación: sector incompleto");
                 }
-                Integer cap = sec.getCapacidad();
+                Integer cap = ps.cupoEfectivo();
                                 if (cap == null || cap < 1) {
                                     throw new BusinessConflictException(
                                             "Publicación: el sector «" + sec.getNombre() + "» necesita cupo ≥ 1 (no hay cupo ilimitado)");
@@ -766,6 +834,7 @@ public class EventoServiceImpl implements EventoService {
                                 evento.setFechaPublicacion(LocalDateTime.now(ZoneOffset.UTC));
                             }
                             eventoRepository.save(evento);
+                            Bitacora.registrar("EVENTO_PUBLICADO", null, evento.getId(), "nombre=" + evento.getNombre());
                             return toDetalle(evento);
                         }
 
@@ -780,7 +849,7 @@ public class EventoServiceImpl implements EventoService {
                             List<AbrirCuposBody.Item> items = new ArrayList<>();
                             for (PrecioSector ps : activos) {
                                 Sector sec = ps.getSector();
-                                items.add(new AbrirCuposBody.Item(sec.getId(), sec.getCapacidad()));
+                                items.add(new AbrirCuposBody.Item(sec.getId(), ps.cupoEfectivo()));
                             }
                             body.setSectores(items);
                             try {
@@ -807,30 +876,115 @@ public class EventoServiceImpl implements EventoService {
             }
         }
 
-        private Lugar resolveLugarForCreate(EventoRequestDTO request, boolean exigirCompleto) {
-            if (blankToNull(request.getIdLugar()) != null) {
-                return requireLugar(request.getIdLugar().trim());
+        /** Lugar reservado del sistema que tienen los borradores todavía sin lugar elegido (uno solo, compartido). */
+        static final String LUGAR_POR_DEFINIR_ID = "c0000000-0000-4000-8000-0000000000ff";
+
+        private static boolean esSinLugar(String idLugar) {
+            String id = blankToNull(idLugar);
+            return id == null || LUGAR_POR_DEFINIR_ID.equals(id.trim());
+        }
+
+        private Lugar lugarPorDefinir() {
+            return lugarRepository.findById(LUGAR_POR_DEFINIR_ID).orElseGet(() -> {
+                Lugar l = new Lugar();
+                l.setId(LUGAR_POR_DEFINIR_ID);
+                l.setNombre(LUGAR_BORRADOR_NOMBRE);
+                l.setCiudad(LUGAR_BORRADOR_CIUDAD);
+                l.setCapacidadTotal(0);
+                return lugarRepository.save(l);
+            });
+        }
+
+        /** El sector elegido tiene que existir y ser del lugar del evento; no se acepta crear sectores desde el evento. */
+        private Sector requireSectorDelLugar(SectorInputDTO in, Lugar lugar) {
+            String idSector = requireText(in.getId(), "sectores[].id").trim();
+            Sector sector = sectorRepository
+                    .findById(idSector)
+                    .orElseThrow(() -> new ResourceNotFoundException("Sector no encontrado: " + idSector));
+            if (!sector.getLugar().getId().equals(lugar.getId())) {
+                throw new IllegalArgumentException("El sector «" + sector.getNombre() + "» no pertenece al lugar del evento");
             }
-            String nombre = blankToNull(request.getLugarNombre());
-            String ciudad = blankToNull(request.getLugarCiudad());
-            if (exigirCompleto) {
-                nombre = requireText(request.getLugarNombre(), "lugarNombre (o idLugar)");
-                ciudad = requireText(request.getLugarCiudad(), "lugarCiudad (o idLugar)");
-            } else {
-                if (nombre == null) {
-                    nombre = LUGAR_BORRADOR_NOMBRE;
+            soloSePuedeElegirPrecioYCupo(sector, in);
+            return sector;
+        }
+
+        /** Nombre, tipo y layout los define el lugar: si el pedido los trae tienen que coincidir. */
+        private static void soloSePuedeElegirPrecioYCupo(Sector s, SectorInputDTO in) {
+            boolean cambia = (blankToNull(in.getNombre()) != null && !in.getNombre().trim().equalsIgnoreCase(s.getNombre()))
+                    || (blankToNull(in.getTipo()) != null && !in.getTipo().trim().equalsIgnoreCase(s.getTipo() == null ? "" : s.getTipo()))
+                    || (in.getEsNumerado() != null && in.getEsNumerado() != Boolean.TRUE.equals(s.getEsNumerado()))
+                    || (in.getFilas() != null && !in.getFilas().equals(s.getFilas()))
+                    || (in.getAsientosPorFila() != null && !in.getAsientosPorFila().equals(s.getAsientosPorFila()));
+            if (cambia) {
+                throw new IllegalArgumentException("El sector «" + s.getNombre()
+                        + "» lo define el lugar: desde el evento solo se elige su precio y su cupo");
+            }
+        }
+
+        /**
+         * Cupo del evento en el sector: null = toda la capacidad. En sectores numerados siempre es toda la
+         * capacidad (se venden asientos concretos); en generales va de 1 a la capacidad del sector.
+         */
+        private static Integer cupoDelEvento(Sector sector, SectorInputDTO in) {
+            Integer pedido = in.getCapacidadTotal() != null ? in.getCapacidadTotal() : in.getCapacidad();
+            if (pedido == null) {
+                return null;
+            }
+            int capacidad = sector.getCapacidad() != null ? sector.getCapacidad() : 0;
+            if (Boolean.TRUE.equals(sector.getEsNumerado())) {
+                if (pedido != capacidad) {
+                    throw new IllegalArgumentException("El sector numerado «" + sector.getNombre()
+                            + "» se vende completo (" + capacidad + " asientos): no admite un cupo menor");
                 }
-                if (ciudad == null) {
-                    ciudad = LUGAR_BORRADOR_CIUDAD;
+                return null;
+            }
+            if (pedido < 1 || pedido > capacidad) {
+                throw new IllegalArgumentException("El cupo de «" + sector.getNombre()
+                        + "» debe estar entre 1 y " + capacidad + " (capacidad del sector)");
+            }
+            return pedido == capacidad ? null : pedido;
+        }
+
+        /**
+         * Aplica la lista de sectores de un PUT. Borrador: es la lista completa (lo que falta se quita).
+         * Evento ya publicado: solo se puede cambiar el precio de sectores que ya estaban; no se agregan ni
+         * se cambia el cupo (el stock ya está abierto en ventas).
+         */
+        private void sincronizarSectoresDelEvento(Evento evento, List<SectorInputDTO> inputs, boolean borrador) {
+            Lugar lugar = evento.getLugar();
+            if (!inputs.isEmpty() && LUGAR_POR_DEFINIR_ID.equals(lugar.getId())) {
+                throw new IllegalArgumentException("Elegí un lugar (idLugar) antes de definir sus sectores");
+            }
+            List<PrecioSector> existentes = precioSectorRepository.findByEventoId(evento.getId());
+            Set<String> incluidos = new HashSet<>();
+            for (SectorInputDTO in : inputs) {
+                Sector sector = requireSectorDelLugar(in, lugar);
+                Integer cupo = cupoDelEvento(sector, in);
+                PrecioSector actual = existentes.stream()
+                        .filter(ps -> ps.getSector().getId().equals(sector.getId()))
+                        .findFirst()
+                        .orElse(null);
+                if (!borrador) {
+                    if (actual == null) {
+                        throw new BusinessConflictException("Solo se pueden agregar sectores a un evento en BORRADOR");
+                    }
+                    Integer pedido = cupo != null ? cupo : sector.getCapacidad();
+                    if (!java.util.Objects.equals(pedido, actual.cupoEfectivo())) {
+                        throw new BusinessConflictException(
+                                "El cupo de un evento publicado no se cambia desde la edición");
+                    }
+                    cupo = actual.getCupo();
+                }
+                upsertPrecio(evento, sector, precioOf(in), "ARS", true, cupo);
+                incluidos.add(sector.getId());
+            }
+            if (borrador) {
+                for (PrecioSector ps : existentes) {
+                    if (!incluidos.contains(ps.getSector().getId())) {
+                        precioSectorRepository.delete(ps);
+                    }
                 }
             }
-            Lugar lugar = new Lugar();
-            lugar.setId(UUID.randomUUID().toString());
-            lugar.setNombre(nombre);
-            lugar.setCiudad(ciudad);
-            lugar.setDireccion(blankToNull(request.getLugarDireccion()));
-            lugar.setCapacidadTotal(0);
-            return lugarRepository.save(lugar);
         }
 
         private void applyLugar(Lugar lugar, LugarRequestDTO body, boolean creating) {
@@ -848,45 +1002,74 @@ public class EventoServiceImpl implements EventoService {
             } else if (lugar.getCapacidadTotal() == null) {
                 lugar.setCapacidadTotal(0);
             }
+            applyCoordenadas(lugar, body);
         }
 
         /**
-         * Nunca cupo ilimitado. En publicación (strict) cupo ≥ 1; en borrador se admite 0/provisional.
+         * LUG-02: coordenadas opcionales. Sin latitud ni longitud en el pedido no se toca lo que hay;
+         * si viene una tiene que venir la otra y ambas dentro de rango; `quitarCoordenadas` las borra.
          */
-        private void applySectorInput(Sector s, SectorInputDTO in, boolean strictCupo) {
-            s.setNombre(requireText(in.getNombre(), "sectores[].nombre"));
-            // sinCupo del payload se ignora (no hay cupo ilimitado)
-            Integer cap = in.getCapacidadTotal() != null ? in.getCapacidadTotal() : in.getCapacidad();
-            int capacidad = cap != null ? Math.max(0, cap) : 0;
-            boolean numerado = Boolean.TRUE.equals(in.getEsNumerado());
-            Integer filas = null;
-            Integer porFila = null;
-            if (numerado) {
-                filas = in.getFilas() != null ? in.getFilas() : s.getFilas();
-                porFila = in.getAsientosPorFila() != null ? in.getAsientosPorFila() : s.getAsientosPorFila();
-                // borrador laxo: se admite sin layout; al publicar o si se informa alguno, deben estar ambos
-                if (strictCupo || filas != null || porFila != null) {
-                    SectorLayout.validar(filas, porFila, s.getNombre());
-                    capacidad = SectorLayout.capacidad(filas, porFila);
-                }
+        private void autocompletarCoordenadas(Lugar lugar) {
+            if (geocodingClient == null
+                    || lugar.getLatitud() != null
+                    || lugar.getLongitud() != null
+                    || blankToNull(lugar.getCiudad()) == null
+                    || blankToNull(lugar.getDireccion()) == null) {
+                return;
             }
-            if (strictCupo && capacidad < 1) {
-                throw new IllegalArgumentException(
-                        "sectores[].capacidadTotal debe ser ≥ 1 para «" + s.getNombre() + "» (no hay cupo ilimitado)");
-            }
-            s.setCapacidad(capacidad);
-            s.setEsNumerado(numerado);
-            s.setFilas(filas);
-            s.setAsientosPorFila(porFila);
-            String tipo = blankToNull(in.getTipo());
-            if (tipo == null) {
-                tipo = s.getNombre().toUpperCase().replace(' ', '_');
-            }
-            s.setTipo(tipo);
+            geocodingClient.resolver(lugar.getDireccion(), lugar.getCiudad()).ifPresent(coords -> {
+                lugar.setLatitud(coords.latitud());
+                lugar.setLongitud(coords.longitud());
+            });
         }
 
+        @Override
+        @Transactional(readOnly = true)
+        public CoordenadasDTO geocodificar(String direccion, String ciudad) {
+            String ciu = requireText(ciudad, "ciudad");
+            String dir = blankToNull(direccion);
+            if (geocodingClient == null) {
+                throw new ResourceNotFoundException("Servicio de geocodificación no disponible");
+            }
+            return geocodingClient
+                    .resolver(dir, ciu)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "No se encontraron coordenadas para la dirección indicada"));
+        }
+
+        private void applyCoordenadas(Lugar lugar, LugarRequestDTO body) {
+            if (Boolean.TRUE.equals(body.getQuitarCoordenadas())) {
+                if (body.getLatitud() != null || body.getLongitud() != null) {
+                    throw new IllegalArgumentException("quitarCoordenadas no se combina con latitud/longitud");
+                }
+                lugar.setLatitud(null);
+                lugar.setLongitud(null);
+                return;
+            }
+            if (body.getLatitud() == null && body.getLongitud() == null) {
+                autocompletarCoordenadas(lugar);
+                return;
+            }
+            eventos.util.Coordenadas.validar(body.getLatitud(), body.getLongitud());
+            lugar.setLatitud(eventos.util.Coordenadas.normalizar(body.getLatitud()));
+            lugar.setLongitud(eventos.util.Coordenadas.normalizar(body.getLongitud()));
+        }
+
+        /** Alta/edición del precio de un sector del evento sin tocar su cupo. */
         private PrecioSector upsertPrecio(
             Evento evento, Sector sector, BigDecimal precio, String moneda, boolean activo) {
+        return guardarPrecio(evento, sector, precio, moneda, activo, false, null);
+    }
+
+        /** Alta/edición del precio de un sector del evento y de su cupo (null = toda la capacidad del sector). */
+        private PrecioSector upsertPrecio(
+            Evento evento, Sector sector, BigDecimal precio, String moneda, boolean activo, Integer cupo) {
+        return guardarPrecio(evento, sector, precio, moneda, activo, true, cupo);
+    }
+
+        private PrecioSector guardarPrecio(
+            Evento evento, Sector sector, BigDecimal precio, String moneda, boolean activo,
+            boolean fijarCupo, Integer cupo) {
         PrecioSector ps = precioSectorRepository
                 .findByEventoIdAndSectorId(evento.getId(), sector.getId())
                 .orElseGet(() -> {
@@ -899,6 +1082,9 @@ public class EventoServiceImpl implements EventoService {
         ps.setPrecio(precio != null ? precio : BigDecimal.ZERO);
         ps.setMoneda(moneda != null ? moneda : "ARS");
         ps.setActivo(activo);
+        if (fijarCupo) {
+            ps.setCupo(cupo);
+        }
         return precioSectorRepository.save(ps);
     }
 
@@ -926,6 +1112,8 @@ public class EventoServiceImpl implements EventoService {
         dto.setNombre(lugar.getNombre());
         dto.setDireccion(lugar.getDireccion());
         dto.setCiudad(lugar.getCiudad());
+        dto.setLatitud(lugar.getLatitud());
+        dto.setLongitud(lugar.getLongitud());
         dto.setCapacidadTotal(lugar.getCapacidadTotal());
         List<SectorEventoDTO> sectores = sectorRepository.findByLugarIdOrderByNombreAsc(lugar.getId()).stream()
                 .map(s -> eventoMapper.toSectorFromEntity(s, null, null))
@@ -941,6 +1129,10 @@ public class EventoServiceImpl implements EventoService {
     }
 
     private Lugar requireLugar(String id) {
+        if (LUGAR_POR_DEFINIR_ID.equals(id)) {
+            // lugar reservado del sistema para borradores: no se elige, no se consulta ni se edita
+            throw new ResourceNotFoundException("Lugar no encontrado: " + id);
+        }
         return lugarRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Lugar no encontrado: " + id));
@@ -985,14 +1177,17 @@ public class EventoServiceImpl implements EventoService {
             return List.of();
         }
         List<SectorInputDTO> out = new ArrayList<>();
-        Set<String> seenNames = new HashSet<>();
+        Set<String> vistos = new HashSet<>();
         for (SectorInputDTO in : raw) {
-            if (in == null || blankToNull(in.getNombre()) == null) {
+            if (in == null) {
                 continue;
             }
-            String key = in.getNombre().trim().toLowerCase();
-            if (!seenNames.add(key) && blankToNull(in.getId()) == null) {
-                continue;
+            String id = blankToNull(in.getId());
+            if (id == null) {
+                throw new IllegalArgumentException("sectores[].id es obligatorio: elegí sectores del lugar");
+            }
+            if (!vistos.add(id.trim())) {
+                throw new IllegalArgumentException("Sector repetido en el pedido: " + id);
             }
             out.add(in);
         }

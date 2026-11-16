@@ -25,13 +25,21 @@ import entradas.dto.DevolucionResponseDTO;
 import entradas.dto.EmitirEntradasRequestDTO;
 import entradas.dto.EntradaResponseDTO;
 import entradas.dto.QrResponseDTO;
+import entradas.dto.ResumenSectorDTO;
+import entradas.dto.ValidacionRegistroDTO;
+import entradas.dto.ValidacionRequestDTO;
+import entradas.dto.ValidacionResponseDTO;
 import entradas.entity.Devolucion;
 import entradas.entity.Entrada;
+import entradas.entity.ValidacionAcceso;
 import entradas.exception.BusinessConflictException;
+import entradas.exception.ForbiddenException;
 import entradas.exception.ResourceNotFoundException;
 import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
 import entradas.repository.EntradaRepository;
+import entradas.repository.ValidacionAccesoRepository;
+import entradas.observability.Bitacora;
 
 @Service
 public class EntradaServiceImpl implements EntradaService {
@@ -55,11 +63,19 @@ public class EntradaServiceImpl implements EntradaService {
         /** Evento no admite ingreso ni exhibición de QR. */
         public static final String EVT_CANCELADO = "CANCELADO";
 
+        /** Resultados de la validación de ingreso (validacion_acceso.resultado). */
+        public static final String RES_VALIDA = "VALIDA";
+        public static final String RES_YA_USADA = "YA_USADA";
+        public static final String RES_OTRO_EVENTO = "OTRO_EVENTO";
+        public static final String RES_NO_VALIDA = "NO_VALIDA";
+        public static final String RES_EVENTO_CANCELADO = "EVENTO_CANCELADO";
+
     private final EntradaRepository entradaRepository;
         private final DevolucionRepository devolucionRepository;
         private final EntradaMapper entradaMapper;
         private final EventosClient eventosClient;
         private final VentasClient ventasClient;
+        private final ValidacionAccesoRepository validacionAccesoRepository;
                 private final long plazoDevolucionHoras;
 
                 public EntradaServiceImpl(
@@ -68,12 +84,14 @@ public class EntradaServiceImpl implements EntradaService {
                         EntradaMapper entradaMapper,
                         EventosClient eventosClient,
                         VentasClient ventasClient,
+                        ValidacionAccesoRepository validacionAccesoRepository,
                         @Value("${ticketya.entradas.plazo-devolucion-horas:72}") long plazoDevolucionHoras) {
                     this.entradaRepository = entradaRepository;
                     this.devolucionRepository = devolucionRepository;
                     this.entradaMapper = entradaMapper;
                     this.eventosClient = eventosClient;
                     this.ventasClient = ventasClient;
+                    this.validacionAccesoRepository = validacionAccesoRepository;
                     this.plazoDevolucionHoras = plazoDevolucionHoras;
                 }
 
@@ -122,6 +140,8 @@ public class EntradaServiceImpl implements EntradaService {
             throw new IllegalArgumentException("items vacíos o cantidad 0");
         }
         entradaRepository.saveAll(creadas);
+        Bitacora.registrar("ENTRADAS_EMITIDAS", request.idCliente(), request.idCompra(),
+                "evento=" + request.idEvento() + " cantidad=" + creadas.size());
         return mapEnriquecidas(creadas);
     }
 
@@ -190,6 +210,8 @@ public class EntradaServiceImpl implements EntradaService {
         d.setFechaSolicitud(nowUtc());
         d.setEstado(DEV_PENDIENTE);
         devolucionRepository.save(d);
+        Bitacora.registrar("DEVOLUCION_SOLICITADA", idCliente, d.getIdDevolucion(),
+                "entrada=" + idEntrada + " monto=" + monto);
         return entradaMapper.toDevolucion(d);
     }
 
@@ -235,6 +257,8 @@ public class EntradaServiceImpl implements EntradaService {
                 devolucionRepository.save(d);
                 // Reabrir cupo en ventas; si Feign falla → excepción → rollback de approve
                 liberarCupoVentasFailHard(entrada);
+                Bitacora.registrar("DEVOLUCION_APROBADA", null, d.getIdDevolucion(),
+                        "entrada=" + entrada.getIdEntrada() + " monto=" + d.getMonto());
                 return entradaMapper.toDevolucion(d);
             }
 
@@ -289,6 +313,8 @@ public class EntradaServiceImpl implements EntradaService {
         Devolucion d = requireDevPendiente(idDevolucion);
         d.setEstado(DEV_RECHAZADA);
         devolucionRepository.save(d);
+        Bitacora.registrar("DEVOLUCION_RECHAZADA", null, d.getIdDevolucion(),
+                "entrada=" + (d.getEntrada() != null ? d.getEntrada().getIdEntrada() : "-"));
         return entradaMapper.toDevolucion(d);
     }
 
@@ -320,6 +346,7 @@ public class EntradaServiceImpl implements EntradaService {
                 }
             }
             entradaRepository.saveAll(list);
+            Bitacora.registrar("REINTEGRO_CANCELACION", null, idEvento, "entradas=" + list.size());
             return list.size();
         }
 
@@ -332,6 +359,137 @@ public class EntradaServiceImpl implements EntradaService {
             throw new BusinessConflictException("Devolución no está PENDIENTE (estado=" + d.getEstado() + ")");
         }
         return d;
+    }
+
+    @Override
+    @Transactional
+    public ValidacionResponseDTO validarIngreso(
+            String idEvento, String idPersonalAcceso, ValidacionRequestDTO body) {
+        String codigo = body.codigoQR().trim();
+        // Evento (cancelado?) antes de tomar el lock de la fila: no se retiene mientras se llama a Feign.
+        EventoDetalleFeignDTO evento = fetchEventoCached(idEvento, new HashMap<>());
+
+        Entrada e = entradaRepository
+                .findByCodigoQrForUpdate(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException("Entrada no encontrada para el QR"));
+
+        String resultado;
+        String mensaje;
+        if (!idEvento.equals(e.getIdEvento())) {
+            resultado = RES_OTRO_EVENTO;
+            mensaje = "La entrada no corresponde a este evento";
+        } else if (EST_USADA.equals(e.getEstado())) {
+            resultado = RES_YA_USADA;
+            mensaje = "Entrada ya utilizada"
+                    + (e.getFechaValidacion() != null ? " (ingresó " + e.getFechaValidacion() + " UTC)" : "");
+        } else if (!EST_VENDIDA.equals(e.getEstado())) {
+            resultado = RES_NO_VALIDA;
+            mensaje = "Entrada no válida para ingreso (" + e.getEstado() + ")";
+        } else if (evento != null && evento.getEstado() != null
+                && EVT_CANCELADO.equalsIgnoreCase(evento.getEstado().trim())) {
+            resultado = RES_EVENTO_CANCELADO;
+            mensaje = "El evento está cancelado";
+        } else {
+            resultado = RES_VALIDA;
+            mensaje = "Ingreso registrado";
+        }
+
+        LocalDateTime now = nowUtc();
+        if (RES_VALIDA.equals(resultado)) {
+            e.setEstado(EST_USADA);
+            e.setFechaValidacion(now);
+            entradaRepository.save(e);
+        }
+
+        // Todo intento sobre una entrada existente queda auditado, aceptado o no.
+        ValidacionAcceso v = new ValidacionAcceso();
+        v.setIdValidacion(UUID.randomUUID().toString());
+        v.setEntrada(e);
+        v.setIdPersonalAcceso(idPersonalAcceso);
+        v.setFechaValidacion(now);
+        v.setResultado(resultado);
+        v.setDispositivo(body.dispositivo() != null && !body.dispositivo().isBlank()
+                ? body.dispositivo().trim()
+                : null);
+        validacionAccesoRepository.save(v);
+        Bitacora.registrar(RES_VALIDA.equals(resultado) ? "INGRESO_VALIDADO" : "INGRESO_RECHAZADO",
+                idPersonalAcceso, e.getIdEntrada(), "evento=" + idEvento + " resultado=" + resultado);
+
+        // De otro evento: no se devuelven datos de una entrada que no pertenece a esta puerta.
+        EntradaResponseDTO dto = null;
+        if (!RES_OTRO_EVENTO.equals(resultado)) {
+            dto = entradaMapper.toEntrada(e);
+            enriquecer(dto, evento);
+            applyQrPolicy(e, dto, evento);
+        }
+
+        ValidacionResponseDTO out = new ValidacionResponseDTO();
+        out.setOk(RES_VALIDA.equals(resultado));
+        out.setResultado(resultado);
+        out.setMensaje(mensaje);
+        out.setIdValidacion(v.getIdValidacion());
+        out.setFechaValidacion(now);
+        out.setEntrada(dto);
+        return out;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ResumenSectorDTO> resumenPorEvento(String idEvento) {
+        class Acum {
+            long vendidas, usadas, devueltas, aReintegrar;
+            BigDecimal montoDevuelto = BigDecimal.ZERO, montoAReintegrar = BigDecimal.ZERO;
+        }
+        Map<String, Acum> porSector = new java.util.LinkedHashMap<>();
+        for (Object[] fila : entradaRepository.resumenPorSectorYEstado(idEvento)) {
+            String sector = (String) fila[0];
+            String estado = (String) fila[1];
+            long cantidad = ((Number) fila[2]).longValue();
+            BigDecimal suma = fila[3] instanceof BigDecimal b ? b : BigDecimal.valueOf(((Number) fila[3]).doubleValue());
+            Acum a = porSector.computeIfAbsent(sector, k -> new Acum());
+            switch (estado) {
+                case EST_VENDIDA -> a.vendidas += cantidad;
+                case EST_USADA -> a.usadas += cantidad;
+                case EST_DEVUELTA -> {
+                    a.devueltas += cantidad;
+                    a.montoDevuelto = a.montoDevuelto.add(suma);
+                }
+                case EST_A_REINTEGRAR -> {
+                    a.aReintegrar += cantidad;
+                    a.montoAReintegrar = a.montoAReintegrar.add(suma);
+                }
+                default -> { }
+            }
+        }
+        List<ResumenSectorDTO> out = new ArrayList<>();
+        porSector.forEach((sector, a) -> out.add(new ResumenSectorDTO(
+                sector, a.vendidas, a.usadas, a.devueltas, a.aReintegrar, a.montoDevuelto, a.montoAReintegrar)));
+        return out;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ValidacionRegistroDTO> listarValidaciones(String idEvento, String idUsuario, boolean admin) {
+        if (!admin) {
+            EventoDetalleFeignDTO evento = fetchEventoCached(idEvento, new HashMap<>());
+            if (evento == null || idUsuario == null || !idUsuario.equals(evento.getIdOrganizador())) {
+                throw new ForbiddenException("Solo el organizador del evento o un ADMIN pueden ver sus validaciones");
+            }
+        }
+        List<ValidacionRegistroDTO> out = new ArrayList<>();
+        for (ValidacionAcceso v : validacionAccesoRepository.findByEntrada_IdEventoOrderByFechaValidacionDesc(idEvento)) {
+            ValidacionRegistroDTO r = new ValidacionRegistroDTO();
+            r.setIdValidacion(v.getIdValidacion());
+            r.setIdEntrada(v.getEntrada().getIdEntrada());
+            r.setIdPersonalAcceso(v.getIdPersonalAcceso());
+            r.setResultado(v.getResultado());
+            r.setFechaValidacion(v.getFechaValidacion());
+            r.setDispositivo(v.getDispositivo());
+            r.setFila(v.getEntrada().getFila());
+            r.setAsiento(v.getEntrada().getNumero());
+            out.add(r);
+        }
+        return out;
     }
 
     private Entrada requireEntrada(String idCliente, String idEntrada, boolean admin) {

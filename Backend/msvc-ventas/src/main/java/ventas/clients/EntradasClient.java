@@ -3,6 +3,8 @@ package ventas.clients;
 import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import ventas.dto.AsientoRefDTO;
@@ -12,6 +14,19 @@ public interface EntradasClient {
 
     @PostMapping("/entradas/emision")
     List<Object> emitir(@RequestBody EmitirRequest body);
+
+    /** Reportes: entradas del evento por sector y estado (devueltas, usadas, a reintegrar, montos). */
+    @GetMapping("/eventos/{idEvento}/entradas/resumen")
+    List<ResumenSector> resumenEvento(@PathVariable("idEvento") String idEvento);
+
+    record ResumenSector(
+            String idSector,
+            long vendidas,
+            long usadas,
+            long devueltas,
+            long aReintegrar,
+            BigDecimal montoDevuelto,
+            BigDecimal montoAReintegrar) {}
 
     record EmitirRequest(String idCompra, String idCliente, String idEvento, List<Item> items) {
         /** asientos: sector numerado (una entrada por asiento vendido); null en sectores generales. */
