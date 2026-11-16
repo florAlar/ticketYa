@@ -107,10 +107,17 @@ Admin pendientes reales: `GET /api/devoluciones`.
 
 ---
 
-## 5. Preferencias / notificaciones (back sí; UI no)
+## 5. Preferencias / notificaciones (implementado)
 
-Ver `endpoints-back.md` §§ preferencias y notificaciones.
-Sin facades ni pantallas todavía (home fijo; notifs vía broker).
+| Método | Endpoint | Uso |
+|---|---|---|
+| GET | `/api/notificaciones/me?page=&size=&leida=` | Campanita (conteo) y bandeja `/notificaciones` |
+| PATCH | `/api/notificaciones/me/{id}/leida` | Marcar una notificación como leída |
+| GET | `/api/preferencias/me/notificaciones` | Canales `push`/`email` en la bandeja |
+| PUT | `/api/preferencias/me/notificaciones` | Guardar canales desde la bandeja |
+
+Componentes: `NotificationBell` en el header (badge + últimas 6) y `NotificacionesPage`
+(`/notificaciones`, protegida). Polling de la campanita cada 45 s. Gate: `FEATURE.notificaciones`.
 
 ---
 
@@ -126,6 +133,7 @@ Sin facades ni pantallas todavía (home fijo; notifs vía broker).
 | `/eventos/:id/comprar` | GET `/api/eventos/{id}/disponibilidad` → POST `/api/reservas` → POST `/api/compras` → POST `/api/compras/{id}/pagos` (sector numerado: selector de asientos) |
 | `/mis-entradas` | GET `/api/entradas` |
 | `/mis-entradas/:id` | GET `/api/entradas/{id}` |
+| `/notificaciones` | GET `/api/notificaciones/me` · PATCH `.../{id}/leida` · GET/PUT `/api/preferencias/me/notificaciones` |
 | `/soporte/devolucion` | POST `/api/entradas/{id}/devoluciones` |
 | `/soporte/transferencia` | **no está en back** — shell UI |
 | `/gestion/eventos` | GET `/api/organizadores/me/eventos` o GET `/api/eventos` |

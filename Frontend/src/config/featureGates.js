@@ -63,8 +63,11 @@ export const FEATURE = {
   /** Reportes del organizador: GET /api/reportes/eventos/{id} (ORGANIZADOR dueño o ADMIN) — E2-REP-01 */
   reportes: !USE_MOCK,
 
-  /** Preferencias / recs cliente — E2-PRE dominio incompleto */
-  preferencias: false,
+  /** Preferencias de canal del cliente — msvc-preferencias (Mongo) */
+  preferencias: !USE_MOCK,
+
+  /** Bandeja y campanita de notificaciones — E2-NOT (GET/PATCH /notificaciones/me) */
+  notificaciones: !USE_MOCK,
 
   /**
    * Solicitud CLIENTE → ORGANIZADOR (X-ORG-01).

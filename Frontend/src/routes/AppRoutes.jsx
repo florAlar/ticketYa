@@ -25,6 +25,7 @@ import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
 import GestionEntradaDetallePage from '../pages/GestionPage/GestionEntradaDetallePage'
 import AccesoPage from '../pages/AccesoPage/AccesoPage'
 import AccesoScanPage from '../pages/AccesoPage/AccesoScanPage'
+import NotificacionesPage from '../pages/NotificacionesPage/NotificacionesPage'
 import ForbiddenPage from '../pages/ForbiddenPage/ForbiddenPage'
 import NotFoundPage from '../pages/NotFoundPage/NotFoundPage'
 import ProtectedRoute from './ProtectedRoute'
@@ -73,6 +74,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <MisEntradasPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notificaciones"
+        element={
+          <ProtectedRoute>
+            <NotificacionesPage />
           </ProtectedRoute>
         }
       />
