@@ -7,6 +7,8 @@ services:
     ports:
       - "8085:8085"
     environment:
+      SPRING_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@db-mongo-preferencias:27017/preferencias?authSource=admin
+      # Compatibilidad con la variable vieja (Spring Boot < 4)
       SPRING_DATA_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@db-mongo-preferencias:27017/preferencias?authSource=admin
     depends_on:
       db-mongo-preferencias:

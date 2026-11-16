@@ -4,9 +4,9 @@ server:
 spring:
   application:
     name: msvc-preferencias
-  data:
-    mongodb:
-      uri: ${SPRING_DATA_MONGODB_URI:mongodb://ticketya:mongo_dev@localhost:27018/preferencias?authSource=admin}
+  # Spring Boot 4: la conexión de Mongo vive en spring.mongodb.*
+  mongodb:
+    uri: ${SPRING_MONGODB_URI:${SPRING_DATA_MONGODB_URI:mongodb://ticketya:mongo_dev@localhost:27018/preferencias?authSource=admin}}
 
 # E2-NFR-03: correlation id en cada línea de log
 logging:

@@ -17,7 +17,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +48,7 @@ import ventas.entity.Reserva;
 import ventas.exception.BusinessConflictException;
 import ventas.exception.ResourceNotFoundException;
 import ventas.mapper.VentaMapper;
+import ventas.messaging.CompraConfirmadaEvent;
 import ventas.redis.StockCache;
 import ventas.repository.AsientoReservadoRepository;
 import ventas.repository.CompraRepository;
@@ -53,7 +56,7 @@ import ventas.repository.CupoSectorRepository;
 import ventas.repository.DetalleReservaRepository;
 import ventas.repository.PagoRepository;
 import ventas.repository.ReservaRepository;
-import ventas.util.AsientoLayout;
+import ventas.util.AsientoLayout;
 import ventas.observability.Bitacora;
 
 @Service
@@ -91,6 +94,9 @@ public class VentaServiceImpl implements VentaService {
     private final StockCache stockCache;
     private final VentaMapper ventaMapper;
     private final EmisionEntradasService emisionEntradasService;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     private final Duration reservaTtl;
     private final int maxEntradasPorClienteEvento;
@@ -471,6 +477,16 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<String> listarClientesAprobadosPorEvento(String idEvento) {
+        if (idEvento == null || idEvento.isBlank()) {
+            throw new IllegalArgumentException("idEvento es obligatorio");
+        }
+        return compraRepository.findDistinctClientesByEventoAndEstado(
+                idEvento.trim(), EST_COMPRA_APROBADA);
+    }
+
+    @Override
     @Transactional
     public PagoResponseDTO iniciarPago(String idCliente, String idCompra, PagoCreateRequestDTO request) {
         Compra compra = requireCompraPropia(idCliente, idCompra);
@@ -603,6 +619,18 @@ public class VentaServiceImpl implements VentaService {
         compra.setEstado(EST_COMPRA_APROBADA);
         emisionEntradasService.marcarPendienteYAgendar(compra);
         compraRepository.save(compra);
+        if (eventPublisher != null) {
+            int cantidad = detalles.stream()
+                    .mapToInt(d -> d.getCantidad() == null ? 0 : d.getCantidad())
+                    .sum();
+            eventPublisher.publishEvent(new CompraConfirmadaEvent(
+                    compra.getIdCompra(),
+                    compra.getIdCliente(),
+                    reserva.getIdEvento(),
+                    compra.getTotal(),
+                    compra.getMoneda(),
+                    cantidad));
+        }
         stockCache.releaseReservaHold(reserva.getIdReserva());
     }
 

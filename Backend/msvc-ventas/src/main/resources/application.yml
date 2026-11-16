@@ -20,6 +20,11 @@ spring:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:localhost}
       port: ${SPRING_DATA_REDIS_PORT:6380}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:ticketya}
+    password: ${SPRING_RABBITMQ_PASSWORD:ticketya_dev}
 
 # msvc-eventos / msvc-entradas (Feign). Docker: http://ms-*:port
 ticketya:

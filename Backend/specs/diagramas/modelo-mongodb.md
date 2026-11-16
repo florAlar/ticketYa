@@ -15,6 +15,9 @@ direction TB
         decimal rangoPrecio_max
         string rangoPrecio_moneda
         string artistas "array"
+        boolean notificaciones_push
+        boolean notificaciones_email
+        string notificaciones_tipos "array"
         datetime fechaActualizacion
     }
 
@@ -40,6 +43,8 @@ Almacena las preferencias de cada cliente en un único documento.
 - `ciudades[]`: ubicaciones de interés.
 - `rangoPrecio`: objeto embebido con mínimo, máximo y moneda.
 - `artistas[]`: artistas de interés.
+- `notificaciones`: objeto embebido `{ push, email, tipos[] }` con los canales habilitados
+  (`tipos` vacío = todos).
 - `fechaActualizacion`: última modificación.
 
 ### 2. `interacciones_eventos`

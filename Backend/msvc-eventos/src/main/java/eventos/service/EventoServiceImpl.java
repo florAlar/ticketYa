@@ -1,5 +1,6 @@
 package eventos.service;
 
+import eventos.Messaging.EventChangeEvent;
 import feign.FeignException;
 import eventos.clients.EntradasClient;
 import eventos.clients.GeocodingClient;
@@ -48,18 +49,20 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import eventos.observability.Bitacora;
 
 @Service
@@ -89,8 +92,9 @@ public class EventoServiceImpl implements EventoService {
         private final EntradasClient entradasClient;
         private final VentasClient ventasClient;
         private final GeocodingClient geocodingClient;
+        private final ApplicationEventPublisher eventPublisher;
 
-        public EventoServiceImpl(
+    public EventoServiceImpl(
                 EventoRepository eventoRepository,
                 PrecioSectorRepository precioSectorRepository,
                 LugarRepository lugarRepository,
@@ -99,7 +103,8 @@ public class EventoServiceImpl implements EventoService {
                 EventoParticipanteRepository eventoParticipanteRepository,
                 EventoMapper eventoMapper,
                 EntradasClient entradasClient,
-                VentasClient ventasClient) {
+                VentasClient ventasClient,
+                ApplicationEventPublisher eventPublisher) {
             this.eventoRepository = eventoRepository;
             this.precioSectorRepository = precioSectorRepository;
             this.lugarRepository = lugarRepository;
@@ -110,6 +115,7 @@ public class EventoServiceImpl implements EventoService {
             this.entradasClient = entradasClient;
             this.ventasClient = ventasClient;
             this.geocodingClient = GeocodingClient.defaultMock();
+            this.eventPublisher = eventPublisher;
         }
 
         @Autowired
@@ -123,7 +129,8 @@ public class EventoServiceImpl implements EventoService {
                 EventoMapper eventoMapper,
                 EntradasClient entradasClient,
                 VentasClient ventasClient,
-                GeocodingClient geocodingClient) {
+                GeocodingClient geocodingClient,
+                ApplicationEventPublisher eventPublisher) {
             this.eventoRepository = eventoRepository;
             this.precioSectorRepository = precioSectorRepository;
             this.lugarRepository = lugarRepository;
@@ -134,6 +141,7 @@ public class EventoServiceImpl implements EventoService {
             this.entradasClient = entradasClient;
             this.ventasClient = ventasClient;
             this.geocodingClient = geocodingClient;
+            this.eventPublisher = eventPublisher;
         }
 
         @Override
@@ -303,6 +311,12 @@ public class EventoServiceImpl implements EventoService {
             throw new IllegalArgumentException("Body requerido");
         }
 
+        String nombreAnterior = evento.getNombre();
+        LocalDateTime inicioAnterior = evento.getFechaInicio();
+        LocalDateTime finAnterior = evento.getFechaFin();
+        String tipoAnterior = evento.getTipo();
+        String lugarAnterior = evento.getLugar() == null ? null : evento.getLugar().getId();
+
         if (blankToNull(request.getNombre()) != null) {
             evento.setNombre(request.getNombre().trim());
         }
@@ -341,6 +355,13 @@ public class EventoServiceImpl implements EventoService {
         }
 
         eventoRepository.save(evento);
+        publicarModificacion(
+                evento,
+                nombreAnterior,
+                inicioAnterior,
+                finAnterior,
+                tipoAnterior,
+                lugarAnterior);
         return toDetalle(evento);
     }
 
@@ -390,16 +411,22 @@ public class EventoServiceImpl implements EventoService {
             throw new ForbiddenException("Sin permiso para cambiar estado a " + next);
         }
 
-        if (BORRADOR.equalsIgnoreCase(evento.getEstado()) && !PUBLICADO.equals(next)) {
+        if (BORRADOR.equalsIgnoreCase(evento.getEstado())) {
             throw new BusinessConflictException("Publicá el borrador antes de cambiar a " + next);
         }
-
-        evento.setEstado(next);
+		//Guardar estados del evento
+        String anterior = evento.getEstado();      // se lee ANTES de cambiarlo
+        evento.setEstado(next); //guarda el nuevo estado
         eventoRepository.save(evento);
         Bitacora.registrar("EVENTO_ESTADO_" + next, userId, evento.getId(), "rol=" + role);
 
+        if (!next.equalsIgnoreCase(anterior) && (CANCELADO.equals(next) || SUSPENDIDO.equals(next))) { // esta bosta puede bugearse 
+            eventPublisher.publishEvent(new EventChangeEvent(
+                    evento.getId(), next, evento.getNombre(), evento.getFechaInicio(), null));
+        }
+
         if (CANCELADO.equals(next)) {
-            notifyReintegroBestEffort(evento.getId());
+            notifyReintegroBestEffort(evento.getId()); //Arreglar esto tambien
         }
         return toDetalle(evento);
     }
@@ -415,6 +442,8 @@ public class EventoServiceImpl implements EventoService {
         if (CANCELADO.equalsIgnoreCase(evento.getEstado()) || FINALIZADO.equalsIgnoreCase(evento.getEstado())) {
             throw new BusinessConflictException("No se puede cambiar fecha de un evento " + evento.getEstado());
         }
+        LocalDateTime inicioAnterior = evento.getFechaInicio();
+        LocalDateTime finAnterior = evento.getFechaFin();
         if (body.getFechaInicio() != null) {
                     evento.setFechaInicio(body.getFechaInicio());
                 }
@@ -422,6 +451,13 @@ public class EventoServiceImpl implements EventoService {
             evento.setFechaFin(body.getFechaFin());
         }
         eventoRepository.save(evento);
+        publicarModificacion(
+                evento,
+                evento.getNombre(),
+                inicioAnterior,
+                finAnterior,
+                evento.getTipo(),
+                evento.getLugar() == null ? null : evento.getLugar().getId());
         return toDetalle(evento);
     }
 
@@ -755,6 +791,19 @@ public class EventoServiceImpl implements EventoService {
                     saved.add(eventoParticipanteRepository.save(ep));
                     idx++;
                 }
+                // Si el evento ya está visible, un cambio de artistas puede hacer matching nuevo
+                // con clientes que siguen a esos artistas en la ciudad.
+                if (PUBLICADO.equalsIgnoreCase(evento.getEstado())
+                        || AGOTADO.equalsIgnoreCase(evento.getEstado())) {
+                    eventPublisher.publishEvent(new EventChangeEvent(
+                            evento.getId(),
+                            "PUBLICADO",
+                            evento.getNombre(),
+                            evento.getFechaInicio(),
+                            null,
+                            ciudadDe(evento),
+                            artistasDelEvento(evento.getId())));
+                }
                 return eventoMapper.toParticipantesEvento(saved);
             }
 
@@ -822,6 +871,14 @@ public class EventoServiceImpl implements EventoService {
                             }
                             eventoRepository.save(evento);
                             Bitacora.registrar("EVENTO_PUBLICADO", null, evento.getId(), "nombre=" + evento.getNombre());
+                            eventPublisher.publishEvent(new EventChangeEvent(
+                                    evento.getId(),
+                                    "PUBLICADO",
+                                    evento.getNombre(),
+                                    evento.getFechaInicio(),
+                                    null,
+                                    ciudadDe(evento),
+                                    artistasDelEvento(evento.getId())));
                             return toDetalle(evento);
                         }
 
@@ -851,6 +908,64 @@ public class EventoServiceImpl implements EventoService {
                                 throw new BusinessConflictException(
                                         "Publicación: no se pudo abrir el stock comercial en ventas: " + e.getMessage());
                             }
+                        }
+
+                        /**
+                         * Publica EventoModificado cuando cambió algún dato relevante de un evento ya
+                         * visible. Los clientes con compra APROBADA reciben el aviso en notificaciones.
+                         */
+                        private void publicarModificacion(
+                                Evento evento,
+                                String nombreAnterior,
+                                LocalDateTime inicioAnterior,
+                                LocalDateTime finAnterior,
+                                String tipoAnterior,
+                                String lugarAnterior) {
+                            if (evento == null || BORRADOR.equalsIgnoreCase(evento.getEstado())) {
+                                return;
+                            }
+                            List<String> cambios = new ArrayList<>();
+                            if (!Objects.equals(nombreAnterior, evento.getNombre())) {
+                                cambios.add("nombre: " + nombreAnterior + " → " + evento.getNombre());
+                            }
+                            if (!Objects.equals(inicioAnterior, evento.getFechaInicio())) {
+                                cambios.add("fechaInicio: " + inicioAnterior + " → " + evento.getFechaInicio());
+                            }
+                            if (!Objects.equals(finAnterior, evento.getFechaFin())) {
+                                cambios.add("fechaFin: " + finAnterior + " → " + evento.getFechaFin());
+                            }
+                            if (!Objects.equals(tipoAnterior, evento.getTipo())) {
+                                cambios.add("tipo: " + tipoAnterior + " → " + evento.getTipo());
+                            }
+                            String lugarActual = evento.getLugar() == null ? null : evento.getLugar().getId();
+                            if (!Objects.equals(lugarAnterior, lugarActual)) {
+                                cambios.add("lugar modificado");
+                            }
+                            if (cambios.isEmpty()) {
+                                return;
+                            }
+                            eventPublisher.publishEvent(new EventChangeEvent(
+                                    evento.getId(),
+                                    "MODIFICADO",
+                                    evento.getNombre(),
+                                    evento.getFechaInicio(),
+                                    String.join("; ", cambios),
+                                    ciudadDe(evento),
+                                    artistasDelEvento(evento.getId())));
+                        }
+
+                        private static String ciudadDe(Evento evento) {
+                            return evento.getLugar() == null ? null : evento.getLugar().getCiudad();
+                        }
+
+                        private List<String> artistasDelEvento(String idEvento) {
+                            return eventoParticipanteRepository.findByEventoIdOrdered(idEvento).stream()
+                                    .map(EventoParticipante::getParticipante)
+                                    .filter(Objects::nonNull)
+                                    .map(Participante::getNombre)
+                                    .filter(nombre -> nombre != null && !nombre.isBlank())
+                                    .distinct()
+                                    .toList();
                         }
 
                         private void notifyReintegroBestEffort(String idEvento) {

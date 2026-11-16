@@ -47,6 +47,12 @@ prefDb.preferencias_clientes.updateOne(
         moneda: 'ARS'
       },
       artistas: ['Metallica', 'Iron Maiden', 'Gojira'],
+      notificaciones: {
+        push: true,
+        email: true,
+        tipos: ['CompraConfirmada', 'EventoCancelado', 'EventoSuspendido', 'EventoModificado',
+                'NuevoEventoArtistaFavorito']
+      },
       fechaActualizacion: ISODate('2026-10-01T12:00:00.000Z')
     }
   },

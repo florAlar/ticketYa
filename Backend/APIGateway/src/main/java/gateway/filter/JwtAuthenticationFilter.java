@@ -216,6 +216,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean roleAllows(String path, String method, String rol) {
+        // Bandeja propia de notificaciones: cualquier rol autenticado; el msvc valida dueño/ADMIN.
+        if (path.startsWith("/api/notificaciones")) {
+            return true;
+        }
         return switch (rol) {
             case "ORGANIZADOR" -> isOrganizadorAccess(path, method);
             case "CLIENTE" -> isClienteAccess(path, method);

@@ -14,6 +14,23 @@ public interface CompraRepository extends JpaRepository<Compra, String> {
 
     Optional<Compra> findByReservaIdReserva(String idReserva);
 
+    /**
+     * Clientes con compra en el estado indicado para un evento.
+     * Uso interno: fan-out de notificaciones push ante cancelación (msvc-notificaciones).
+     */
+    @Query(
+            """
+            SELECT DISTINCT c.idCliente
+            FROM Compra c
+              JOIN c.reserva r
+            WHERE r.idEvento = :idEvento
+              AND c.estado = :estado
+            ORDER BY c.idCliente
+            """)
+    List<String> findDistinctClientesByEventoAndEstado(
+            @Param("idEvento") String idEvento,
+            @Param("estado") String estado);
+
     @Query(
             """
             SELECT COALESCE(SUM(d.cantidad), 0)

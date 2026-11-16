@@ -25,11 +25,11 @@ Se utilizará una arquitectura Docker modular que permita desarrollar y ejecutar
 | Microservicio | Infraestructura |
 |---|---|
 | Usuarios | Spring Boot + MySQL |
-| Eventos | Spring Boot + MySQL |
+| Eventos | Spring Boot + MySQL + RabbitMQ (produce eventos) |
 | Ventas | Spring Boot + MySQL + Redis |
 | Entradas | Spring Boot + MySQL |
 | Preferencias | Spring Boot + MongoDB |
-| Notificaciones | Spring Boot + MySQL |
+| Notificaciones | Spring Boot + MySQL + RabbitMQ (consume eventos) |
 | API Gateway | Spring Boot |
 
 Cada microservicio tendrá su propia base de datos lógica y será responsable exclusivo de administrar sus datos, una base por microservicio.
@@ -69,7 +69,8 @@ docker compose down
 - Cada microservicio y el API Gateway tienen su propio Dockerfile.
 - Cada microservicio tiene su propio docker-compose.yml, que levanta su aplicación y su base de datos (el Gateway solo la app).
 - El Compose general en Backend/ permite levantar todo el sistema con `include`.
-- Utilizamos MySQL 8.4, MongoDB y Redis.
+- El broker RabbitMQ se define una sola vez en `infrastructure/rabbitmq/docker-compose.yml` y lo incluyen los servicios que lo usan (`msvc-eventos`, `msvc-notificaciones`).
+- Utilizamos MySQL 8.4, MongoDB, Redis y RabbitMQ.
 - Los puertos se publican en localhost y coinciden con `EXPOSE` del Dockerfile y `server.port` del `application.yml` o `application.properties`.
 - Cada microservicio tiene su propia instancia de base de datos, no comparte contenedores MySQL con otros servicios.
 
@@ -96,6 +97,8 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 | db-mysql-notificaciones | 3311 | 3306 |
 | db-mongo-preferencias | 27018 | 27017 |
 | db-redis-ventas | 6380 | 6379 |
+| rabbitmq | 5672 | 5672 |
+| rabbitmq (panel) | 15672 | 15672 |
 
 ### Consideraciones
 

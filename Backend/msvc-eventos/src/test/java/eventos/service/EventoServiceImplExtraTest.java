@@ -24,6 +24,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import eventos.clients.EntradasClient;
@@ -84,6 +85,9 @@ class EventoServiceImplExtraTest {
 
     @Mock
     private VentasClient ventasClient;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private EventoServiceImpl service;
@@ -201,6 +205,7 @@ class EventoServiceImplExtraTest {
         service.patchEstado(EVENTO_ID, "CANCELADO", ORG_ID, "ADMIN");
 
         verify(entradasClient).reintegroCancelacion(EVENTO_ID, "ADMIN");
+        verify(eventPublisher).publishEvent(any(Object.class));
     }
 
     @Test

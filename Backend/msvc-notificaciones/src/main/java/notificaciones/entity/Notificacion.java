@@ -45,6 +45,10 @@ public class Notificacion {
     @Column(name = "contenido", columnDefinition = "TEXT", nullable = false)
     private String contenido;
 
+    /** Email de destino resuelto al crear la notificación (canal EMAIL). */
+    @Column(name = "destinatario", length = 255)
+    private String destinatario;
+
     @Column(name = "fecha_creacion", nullable = false)
     private LocalDateTime fechaCreacion;
 
@@ -53,4 +57,19 @@ public class Notificacion {
 
     @Column(name = "estado", length = 32, nullable = false)
     private String estado;
+
+    /** Leída por el usuario en la bandeja de la app (distinto de ENVIADA). */
+    @Column(name = "leida", nullable = false)
+    private Boolean leida = Boolean.FALSE;
+
+    @Column(name = "fecha_lectura")
+    private LocalDateTime fechaLectura;
+
+    /**
+     * Clave de idempotencia del origen: {@code tipo:eventoId} para eventos y
+     * {@code CompraConfirmada:compraId} para compras. Permite que un cliente reciba dos compras
+     * del mismo evento sin que el consumer duplique avisos ante reintentos.
+     */
+    @Column(name = "clave_idempotencia", length = 128)
+    private String claveIdempotencia;
 }
