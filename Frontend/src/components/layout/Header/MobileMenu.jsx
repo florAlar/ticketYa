@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import { HiX, HiOutlineUser } from 'react-icons/hi'
+import { HiX, HiOutlineUser, HiOutlineBell } from 'react-icons/hi'
 import useAuth from '../../../hooks/useAuth'
+import { FEATURE } from '../../../config/featureGates'
 
 const MobileMenu = ({ open, close }) => {
   const {
@@ -44,6 +45,13 @@ const MobileMenu = ({ open, close }) => {
           {canScanAccess && (
             <li>
               <NavLink to="/acceso" onClick={close}>Acceso</NavLink>
+            </li>
+          )}
+          {isAuthenticated && FEATURE.notificaciones && (
+            <li>
+              <NavLink to="/notificaciones" onClick={close}>
+                <HiOutlineBell aria-hidden /> Notificaciones
+              </NavLink>
             </li>
           )}
           {isAuthenticated ? (

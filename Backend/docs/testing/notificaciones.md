@@ -382,7 +382,28 @@ Repetir el mismo `compraId` no debe duplicar la notificación.
 
 ---
 
-## 7. Verificación en base, logs y colas
+## 7. Front (campanita y bandeja)
+
+Con el stack levantado, abrí <http://localhost:3000> y logueate con
+`demo@ticketya.com` / `demo1234`.
+
+1. En el header debe aparecer la campanita con el badge de no leídas.
+2. Al abrirla, muestra las últimas 6 notificaciones y el link “Ver todas”.
+3. `/notificaciones` muestra la bandeja completa, filtros **Todas / No leídas**,
+   “Marcar leídas” y el link “Ver evento”.
+4. El panel de **Canales** permite activar/desactivar Push y Email; al cambiar
+   uno se guarda contra `PUT /api/preferencias/me/notificaciones`.
+5. El badge se actualiza cada 45 s y al marcar una notificación como leída.
+
+Si cambiás código del front, rebuild:
+
+```bash
+cd Backend
+docker compose build ms-frontend
+docker compose up -d --no-deps --force-recreate ms-frontend
+```
+
+## 8. Verificación en base, logs y colas
 
 ```bash
 # Notificaciones e intentos
@@ -404,7 +425,7 @@ También podés mirar `notificaciones.eventos.dlq` y `notificaciones.compras.dlq
 
 ---
 
-## 8. Migración en volúmenes existentes
+## 9. Migración en volúmenes existentes
 
 Si **no** hiciste `down -v`, el esquema viejo no tiene `leida`, `fecha_lectura` ni
 `clave_idempotencia`. Aplicar una vez desde `Backend/`:
@@ -431,7 +452,7 @@ sigue funcionando porque `artistas` y `ciudades` ya estaban en el seed.
 
 ---
 
-## 9. Checklist de aceptación
+## 10. Checklist de aceptación
 
 - [ ] `CompraConfirmada` aparece como `EMAIL` y pasa a `ENVIADA` con `fecha_envio`.
 - [ ] El correo se ve en MailHog (`localhost:8025`) con destino `demo@ticketya.com`.

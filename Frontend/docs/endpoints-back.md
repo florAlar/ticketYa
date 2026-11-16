@@ -243,12 +243,16 @@ Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio v
 - GET /notificaciones/me — Listar notificaciones propias
 - GET /notificaciones/me/{id} — Detalle de notificación
 - PATCH /notificaciones/me/{id}/leida — Marcar como leída
-- GET /notificaciones/me/preferencias — Canales habilitados
-- PUT /notificaciones/me/preferencias — Actualizar canales
+
+Las preferencias de canal viven en msvc-preferencias:
+
+- GET /preferencias/me/notificaciones — Canales habilitados
+- PUT /preferencias/me/notificaciones — Actualizar canales
+
 - POST /notificaciones — Crear notificación administrativa (ADMIN)
 - GET /notificaciones/{id}/estado — Estado de envío (ADMIN)
 
-Eventos broker (no REST, ambos docs): CompraConfirmada; EventoCancelado; EventoModificado; NuevoEventoArtistaFavorito; DevolucionAprobada.
+Eventos broker (no REST, ambos docs): CompraConfirmada; EventoCancelado; EventoSuspendido; EventoModificado; NuevoEventoArtistaFavorito.
 
 ## 5. resumen
 

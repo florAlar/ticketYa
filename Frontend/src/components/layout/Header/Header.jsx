@@ -4,6 +4,7 @@ import Logo from './Logo'
 import DesktopNav from './DesktopNav'
 import HamburgerButton from './HamburgerButton'
 import MobileMenu from './MobileMenu'
+import NotificationBell from './NotificationBell'
 import SearchBar from './SearchBar'
 import '../../../styles/global.css'
 
@@ -31,6 +32,7 @@ const Header = () => {
 
         <div className="header-right">
           <SearchBar />
+          <NotificationBell />
           <DesktopNav />
           <HamburgerButton toggle={toggleMenu} />
         </div>
