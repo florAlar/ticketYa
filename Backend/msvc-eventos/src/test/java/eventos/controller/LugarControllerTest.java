@@ -6,14 +6,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import eventos.dto.CoordenadasDTO;
 import eventos.exception.BusinessConflictException;
 import eventos.exception.GlobalExceptionHandler;
 import eventos.exception.ResourceNotFoundException;
 import eventos.service.EventoService;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -99,5 +103,26 @@ class LugarControllerTest {
         doThrow(new ResourceNotFoundException("Lugar no encontrado")).when(service).eliminarLugar(LUGAR);
 
         mvc.perform(delete("/lugares/{id}", LUGAR).header("X-User-Role", "ADMIN")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void geocodificar_admin_200_yOtrosRoles_403() throws Exception {
+        org.mockito.Mockito.when(service.geocodificar("Av. Figueroa Alcorta 7597", "Buenos Aires"))
+                .thenReturn(new CoordenadasDTO(new BigDecimal("-34.545300"), new BigDecimal("-58.449700")));
+
+        mvc.perform(get("/lugares/geocodificar")
+                        .param("direccion", "Av. Figueroa Alcorta 7597")
+                        .param("ciudad", "Buenos Aires")
+                        .header("X-User-Role", "ADMIN"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.latitud").value(-34.5453))
+                .andExpect(jsonPath("$.longitud").value(-58.4497));
+
+        for (String rol : new String[] {"ORGANIZADOR", "CLIENTE", "PERSONAL_ACCESO"}) {
+            mvc.perform(get("/lugares/geocodificar")
+                            .param("ciudad", "Buenos Aires")
+                            .header("X-User-Role", rol))
+                    .andExpect(status().isForbidden());
+        }
     }
 }

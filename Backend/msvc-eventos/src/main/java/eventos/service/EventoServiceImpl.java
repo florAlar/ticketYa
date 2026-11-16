@@ -2,9 +2,11 @@ package eventos.service;
 
 import feign.FeignException;
 import eventos.clients.EntradasClient;
+import eventos.clients.GeocodingClient;
 import eventos.clients.VentasClient;
 import eventos.clients.VentasClient.AbrirCuposBody;
 import eventos.dto.AsientoResponseDTO;
+import eventos.dto.CoordenadasDTO;
 import eventos.dto.EventoDetalleResponseDTO;
 import eventos.dto.EventoFechaRequestDTO;
 import eventos.dto.EventoParticipantesRequestDTO;
@@ -51,6 +53,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -85,6 +88,7 @@ public class EventoServiceImpl implements EventoService {
         private final EventoMapper eventoMapper;
         private final EntradasClient entradasClient;
         private final VentasClient ventasClient;
+        private final GeocodingClient geocodingClient;
 
         public EventoServiceImpl(
                 EventoRepository eventoRepository,
@@ -105,6 +109,31 @@ public class EventoServiceImpl implements EventoService {
             this.eventoMapper = eventoMapper;
             this.entradasClient = entradasClient;
             this.ventasClient = ventasClient;
+            this.geocodingClient = GeocodingClient.defaultMock();
+        }
+
+        @Autowired
+        public EventoServiceImpl(
+                EventoRepository eventoRepository,
+                PrecioSectorRepository precioSectorRepository,
+                LugarRepository lugarRepository,
+                SectorRepository sectorRepository,
+                ParticipanteRepository participanteRepository,
+                EventoParticipanteRepository eventoParticipanteRepository,
+                EventoMapper eventoMapper,
+                EntradasClient entradasClient,
+                VentasClient ventasClient,
+                GeocodingClient geocodingClient) {
+            this.eventoRepository = eventoRepository;
+            this.precioSectorRepository = precioSectorRepository;
+            this.lugarRepository = lugarRepository;
+            this.sectorRepository = sectorRepository;
+            this.participanteRepository = participanteRepository;
+            this.eventoParticipanteRepository = eventoParticipanteRepository;
+            this.eventoMapper = eventoMapper;
+            this.entradasClient = entradasClient;
+            this.ventasClient = ventasClient;
+            this.geocodingClient = geocodingClient;
         }
 
         @Override
@@ -967,6 +996,34 @@ public class EventoServiceImpl implements EventoService {
          * LUG-02: coordenadas opcionales. Sin latitud ni longitud en el pedido no se toca lo que hay;
          * si viene una tiene que venir la otra y ambas dentro de rango; `quitarCoordenadas` las borra.
          */
+        private void autocompletarCoordenadas(Lugar lugar) {
+            if (geocodingClient == null
+                    || lugar.getLatitud() != null
+                    || lugar.getLongitud() != null
+                    || blankToNull(lugar.getCiudad()) == null
+                    || blankToNull(lugar.getDireccion()) == null) {
+                return;
+            }
+            geocodingClient.resolver(lugar.getDireccion(), lugar.getCiudad()).ifPresent(coords -> {
+                lugar.setLatitud(coords.latitud());
+                lugar.setLongitud(coords.longitud());
+            });
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public CoordenadasDTO geocodificar(String direccion, String ciudad) {
+            String ciu = requireText(ciudad, "ciudad");
+            String dir = blankToNull(direccion);
+            if (geocodingClient == null) {
+                throw new ResourceNotFoundException("Servicio de geocodificación no disponible");
+            }
+            return geocodingClient
+                    .resolver(dir, ciu)
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "No se encontraron coordenadas para la dirección indicada"));
+        }
+
         private void applyCoordenadas(Lugar lugar, LugarRequestDTO body) {
             if (Boolean.TRUE.equals(body.getQuitarCoordenadas())) {
                 if (body.getLatitud() != null || body.getLongitud() != null) {
@@ -977,6 +1034,7 @@ public class EventoServiceImpl implements EventoService {
                 return;
             }
             if (body.getLatitud() == null && body.getLongitud() == null) {
+                autocompletarCoordenadas(lugar);
                 return;
             }
             eventos.util.Coordenadas.validar(body.getLatitud(), body.getLongitud());

@@ -8859,7 +8859,7 @@
               }
             ],
             "url": "{{baseUrl}}/api/reportes/eventos/{{eventoSeedId}}",
-            "description": "Sin credenciales · Esperado: 401 con el flag JWT activo. Con TICKETYA_JWT_ENABLED=false (Entrega 1) el gateway deja pasar el request y el servicio responde 401 por falta de X-User-Id.",
+            "description": "Sin credenciales · Esperado: 401 del gateway (el JWT es obligatorio fuera de las rutas públicas).",
             "auth": {
               "type": "noauth"
             }

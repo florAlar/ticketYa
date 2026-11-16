@@ -45,26 +45,28 @@ curl -s http://localhost:8080/api/eventos                              # gateway
 
 Resto de cuentas (organizador, admin, personal de acceso): toast de `/login` o `DEMO_ACCOUNTS` en `Frontend/src/auth/roles.js`.
 
-### Autenticación: Entrega 1 vs Entrega 2
+### Autenticación
 
-El gateway tiene un flag `TICKETYA_JWT_ENABLED` (default `false`):
+El gateway exige **JWT + roles** (Entrega 2, sin flag): fuera de las rutas públicas, un request
+sin `Authorization: Bearer <token>` se rechaza con **401**. Los headers `X-User-Id` / `X-User-Role`
+que envíe el cliente **nunca se trustan**: el gateway los sobreescribe con los claims del token
+verificado, y en rutas públicas los vacía.
 
-| Valor | Modo |
-|---|---|
-| `false` (Entrega 1) | Identificación por encabezado: sin `Authorization`, el request pasa con los headers `X-User-Id` / `X-User-Role` que envía el cliente. Un `Bearer` presente igual se valida. |
-| `true` (Entrega 2) | JWT obligatorio y autorización por roles en el gateway. |
-
-Ejemplo Entrega 1:
+Login y uso:
 
 ```bash
-curl -H 'X-User-Id: b0000000-0000-4000-8000-000000000001' -H 'X-User-Role: CLIENTE' http://localhost:8080/api/entradas
+TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"demo@ticketya.com","password":"demo1234"}' | jq -r .token)
+
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/entradas
 ```
 
-Activar JWT: `TICKETYA_JWT_ENABLED=true docker compose up -d ms-gateway`.
+Rutas públicas (sin token): `GET /api/eventos`, `GET /api/eventos/{id}`, `GET /api/participantes`,
+`GET /api/eventos/{id}/disponibilidad`, `/api/auth/login`, `/api/auth/register`.
 
-> **Limitación conocida de la Entrega 1:** con `TICKETYA_JWT_ENABLED=false`, un request **sin** `Authorization` se acepta con los headers `X-User-Id` / `X-User-Role` que mande el cliente, sin verificarlos: cualquiera puede declararse ADMIN. Es una decisión de la entrega (identificación por encabezado), no una garantía de seguridad. Con un `Bearer` presente el token siempre se valida (firma, expiración, roles) y pisa los headers del cliente. Con `TICKETYA_JWT_ENABLED=true` (Entrega 2) el JWT es obligatorio.
->
-> El login real (`POST /api/auth/login`) emite un JWT en ambos modos, así que el front funciona sin mock. Que gateway y `msvc-usuarios` compartan el mismo `JWT_SECRET` lo verifica `JwtGatewayIntegrationTest`.
+> Gateway y `msvc-usuarios` comparten el mismo `JWT_SECRET` (verificable con
+> `JwtGatewayIntegrationTest`); si lo rotás, poné el mismo valor en los dos lados.
 
 ## Frontend (desarrollo local con `npm run dev`)
 

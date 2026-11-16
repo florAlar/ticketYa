@@ -4,6 +4,7 @@ import useAuth from '../../hooks/useAuth'
 import {
   createLugar,
   createSector,
+  geocodificarLugar,
   getLugar,
   updateLugar,
   updateSector,
@@ -42,6 +43,7 @@ const GestionLugarFormPage = () => {
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [saving, setSaving] = useState(false)
+  const [geocoding, setGeocoding] = useState(false)
 
   const [editando, setEditando] = useState(null) // null | 'nuevo' | idSector
   const [sectorForm, setSectorForm] = useState(FORM_SECTOR_VACIO)
@@ -70,6 +72,38 @@ const GestionLugarFormPage = () => {
   const onChange = (e) => {
     const { name, value } = e.target
     setForm((f) => ({ ...f, [name]: value }))
+  }
+
+  const buscarCoordenadas = async () => {
+    if (!wired) return
+    const ciudad = form.ciudad.trim()
+    if (!ciudad) {
+      setError('Ingresá al menos la ciudad para buscar coordenadas')
+      return
+    }
+    setGeocoding(true)
+    setError('')
+    setAviso('')
+    try {
+      const res = await geocodificarLugar(
+        { direccion: form.direccion, ciudad },
+        { token }
+      )
+      setForm((f) => ({
+        ...f,
+        latitud: res?.latitud != null ? String(res.latitud) : f.latitud,
+        longitud: res?.longitud != null ? String(res.longitud) : f.longitud,
+      }))
+      setAviso('Coordenadas autocompletadas.')
+    } catch (err) {
+      setError(
+        err.status === 404
+          ? 'No se encontraron coordenadas para esa dirección; podés cargarlas manualmente.'
+          : err.message || 'No se pudieron obtener las coordenadas'
+      )
+    } finally {
+      setGeocoding(false)
+    }
   }
 
   const onSubmit = async (e) => {
@@ -242,6 +276,16 @@ const GestionLugarFormPage = () => {
             Latitud entre -90 y 90, longitud entre -180 y 180. Se completan las dos o ninguna. Si el
             lugar tenía coordenadas y vaciás los dos campos, se borran.
           </p>
+          <div className="gestion-card__actions" style={{ marginTop: '0.25rem', marginBottom: '0.5rem' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={buscarCoordenadas}
+              disabled={saving || geocoding || !wired || !form.ciudad.trim()}
+            >
+              {geocoding ? 'Buscando coordenadas…' : 'Buscar coordenadas por dirección'}
+            </button>
+          </div>
 
           {error && <p className="gestion-error" role="alert">{error}</p>}
           {aviso && <p className="gestion-card__muted" role="status">✔ {aviso}</p>}

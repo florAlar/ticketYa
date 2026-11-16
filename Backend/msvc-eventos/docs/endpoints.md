@@ -25,7 +25,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | GET /organizadores/me/eventos | **hecho** | Listado del org (todos los estados) |
 | GET /eventos/{id}/sectores | **hecho** | Precios (activos e inactivos) |
 | PUT /eventos/{id}/sectores/{sectorId}/precio | **hecho** | Upsert precio |
-| GET/POST/PUT /lugares… | **hecho** | CRUD lugar + POST sectores + GET asientos virtuales (calculados desde filas x asientosPorFila del sector, sin filas persistidas; vacío si el sector no es numerado) |
+| GET/POST/PUT /lugares… | **hecho** | CRUD lugar + `GET /lugares/geocodificar` (LUG-03: patrón adaptador + caché + resiliencia, solo ADMIN) + POST sectores + GET asientos virtuales (calculados desde filas x asientosPorFila del sector, sin filas persistidas; vacío si el sector no es numerado) |
 | PUT /sectores/{id} | **hecho** | Modificar sector |
 | GET/POST/PUT/DELETE /participantes | **hecho** | Artistas/bandas (E1-EVE-06). PAR-01: alta ORG/ADMIN con control de duplicados y tipo válido; editar y eliminar solo ADMIN. |
 | GET/PUT /eventos/{id}/participantes | **hecho** | Listar / reemplazar set (ids o items con rol/orden) |

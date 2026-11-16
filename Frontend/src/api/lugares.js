@@ -73,3 +73,12 @@ export async function updateSector(idSector, body, opts = {}) {
     body: JSON.stringify(body),
   })
 }
+
+/** GET /api/lugares/geocodificar?direccion=&ciudad= — solo ADMIN (LUG-03) */
+export async function geocodificarLugar({ direccion, ciudad } = {}, opts = {}) {
+  if (USE_MOCK) sinMock()
+  const params = new URLSearchParams()
+  if (direccion && String(direccion).trim()) params.set('direccion', String(direccion).trim())
+  if (ciudad && String(ciudad).trim()) params.set('ciudad', String(ciudad).trim())
+  return http(`/api/lugares/geocodificar?${params.toString()}`, { token: opts.token })
+}

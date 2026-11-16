@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -24,6 +22,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Filtro global de auth (equivalente al GlobalFilter del gatewayejemplo, en servlet/MVC).
  * - Rutas públicas sin token
  * - Bearer JWT → validar → roles TicketYa → headers X-User-* hacia msvcs (E1-GW-02)
+ *
+ * <p>El JWT es obligatorio: fuera de las rutas públicas, sin {@code Authorization: Bearer} el request
+ * se rechaza con 401. Los headers {@code X-User-*} del cliente NUNCA se trustan: los sobreescribe
+ * el token verificado (o se vacían si el token no trae identidad), de modo que no se puede
+ * suplantar a otro usuario ni declararse ADMIN a mano.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 50)
@@ -37,25 +40,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String HDR_USER_ROLES = "X-User-Roles";
 
     private final JwtUtil jwtUtil;
-    private final boolean jwtEnabled;
 
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
-        this(jwtUtil, true);
-    }
-
-    /**
-     * jwtEnabled=false (Entrega 1): sin Bearer, el request pasa con los headers X-User-* del cliente
-     * (identificación por encabezado). Con Bearer se valida igual. Entrega 2: ticketya.security.jwt-enabled=true.
-     */
-    @Autowired
-    public JwtAuthenticationFilter(
-            JwtUtil jwtUtil, @Value("${ticketya.security.jwt-enabled:true}") boolean jwtEnabled) {
         this.jwtUtil = jwtUtil;
-        this.jwtEnabled = jwtEnabled;
-        if (!jwtEnabled) {
-            log.warn("JWT DESHABILITADO (ticketya.security.jwt-enabled=false): identificación por headers X-User-*. "
-                    + "Solo para Entrega 1 / pruebas.");
-        }
     }
 
     private static final List<String> PUBLIC_PREFIXES = List.of(
@@ -84,16 +71,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         if (isPublicPath(path, method)) {
             log.debug("Public path, skipping authentication: {}", path);
-            filterChain.doFilter(request, response);
+            // Aun siendo pública, se vacían los headers X-User-* del cliente: nadie se anuncia
+            // a sí mismo en una ruta sin token (ni en las líneas de log de los msvcs).
+            filterChain.doFilter(sinIdentidad(request), response);
             return;
         }
 
         String authHeader = request.getHeader("Authorization");
         boolean hasBearer = authHeader != null && authHeader.startsWith("Bearer ");
-        if (!jwtEnabled && !hasBearer) {
-            filterChain.doFilter(request, response);
-            return;
-        }
         if (!hasBearer) {
             log.warn("Missing or invalid Authorization header for path: {}", path);
             writeError(response, HttpStatus.UNAUTHORIZED, "No autenticado",
@@ -126,18 +111,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             MutableRequest wrapper = new MutableRequest(request);
-            if (userId != null) {
-                wrapper.putHeader(HDR_USER_ID, userId);
-            }
-            if (email != null) {
-                wrapper.putHeader(HDR_USER_EMAIL, email);
-            }
-            if (primaryRol != null) {
-                wrapper.putHeader(HDR_USER_ROLE, primaryRol);
-            }
-            if (!roles.isEmpty()) {
-                wrapper.putHeader(HDR_USER_ROLES, String.join(",", roles));
-            }
+            // La identidad sale SIEMPRE del token verificado. Si el token no trae un claim,
+            // el header se vacía: nunca se conserva el que mandó el cliente.
+            wrapper.putHeader(HDR_USER_ID, userId);
+            wrapper.putHeader(HDR_USER_EMAIL, email);
+            wrapper.putHeader(HDR_USER_ROLE, primaryRol);
+            wrapper.putHeader(HDR_USER_ROLES, roles.isEmpty() ? null : String.join(",", roles));
 
             filterChain.doFilter(wrapper, response);
 
@@ -228,6 +207,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         // LUG-01/LUG-04: alta, edición y baja de lugares y sectores son solo ADMIN (el organizador solo los consulta)
         if ((path.startsWith("/api/lugares") || path.startsWith("/api/sectores")) && !"GET".equals(method)) {
+            return true;
+        }
+        if (path.equals("/api/lugares/geocodificar")) {
             return true;
         }
         return false;
@@ -338,6 +320,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         response.getOutputStream().write(body.getBytes(StandardCharsets.UTF_8));
     }
 
+    /** Request sin identidad: los headers X-User-* del cliente quedan vacíos. */
+    private static MutableRequest sinIdentidad(HttpServletRequest request) {
+        MutableRequest wrapper = new MutableRequest(request);
+        wrapper.putHeader(HDR_USER_ID, null);
+        wrapper.putHeader(HDR_USER_EMAIL, null);
+        wrapper.putHeader(HDR_USER_ROLE, null);
+        wrapper.putHeader(HDR_USER_ROLES, null);
+        return wrapper;
+    }
+
     private static final class MutableRequest extends jakarta.servlet.http.HttpServletRequestWrapper {
         private final java.util.Map<String, String> custom = new java.util.HashMap<>();
 
@@ -345,20 +337,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             super(request);
         }
 
+        /** Un valor {@code null} vacía el header: el del cliente no se conserva. */
         void putHeader(String name, String value) {
             custom.put(name, value);
         }
 
         @Override
         public String getHeader(String name) {
-            String v = custom.get(name);
-            return v != null ? v : super.getHeader(name);
+            if (custom.containsKey(name)) {
+                return custom.get(name);
+            }
+            return super.getHeader(name);
         }
 
         @Override
         public java.util.Enumeration<String> getHeaders(String name) {
             if (custom.containsKey(name)) {
-                return java.util.Collections.enumeration(List.of(custom.get(name)));
+                String v = custom.get(name);
+                return v == null
+                        ? java.util.Collections.emptyEnumeration()
+                        : java.util.Collections.enumeration(List.of(v));
             }
             return super.getHeaders(name);
         }

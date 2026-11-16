@@ -1,6 +1,7 @@
 package eventos.controller;
 
 import eventos.dto.AsientoResponseDTO;
+import eventos.dto.CoordenadasDTO;
 import eventos.dto.LugarRequestDTO;
 import eventos.dto.LugarResponseDTO;
 import eventos.dto.SectorEventoDTO;
@@ -50,6 +51,32 @@ public class LugarController {
             @Parameter(description = "Ciudad a filtrar", example = "Buenos Aires")
             @RequestParam(required = false) String ciudad) {
         return eventoService.listarLugares(ciudad);
+    }
+
+    @Operation(
+            summary = "Geocodificar dirección de un lugar",
+            description = "Obtiene latitud y longitud a partir de dirección y ciudad (con caché y fallback resiliente). Solo ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Coordenadas encontradas",
+                    content = @Content(schema = @Schema(implementation = CoordenadasDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Falta ciudad",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "403", description = "Rol insuficiente",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "404", description = "Sin coincidencias para la dirección",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class)))
+    })
+    @GetMapping("/lugares/geocodificar")
+    public CoordenadasDTO geocodificar(
+            @Parameter(hidden = true)
+            @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Parameter(description = "Dirección (calle y número)", example = "Av. Figueroa Alcorta 7597")
+            @RequestParam(required = false) String direccion,
+            @Parameter(description = "Ciudad", required = true, example = "Buenos Aires")
+            @RequestParam(required = false) String ciudad) {
+        requireAdmin(role);
+        return eventoService.geocodificar(direccion, ciudad);
     }
 
     @Operation(
