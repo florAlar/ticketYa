@@ -41,10 +41,16 @@ Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Exchange comparti
 | `notificaciones.eventos` | `evento.#` | `evento.cancelado`, `evento.suspendido`, `evento.modificado`, `evento.publicado` | `notificaciones.eventos.dlq` |
 | `notificaciones.compras` | `compra.#` | `compra.confirmada` | `notificaciones.compras.dlq` |
 
-Semántica **at-least-once**; `messageId` es solo trazabilidad. La deduplicación es por
-(`idUsuario`, `clave_idempotencia`), donde la clave es `tipo:canal:eventoId` para eventos
-(`EventoCancelado:PUSH:uuid` y `EventoCancelado:EMAIL:uuid` son avisos distintos) y
+Semántica **at-least-once**; `messageId` identifica la ocurrencia y sirve para deduplicar
+reentregas. La deduplicación es por (`idUsuario`, `clave_idempotencia`), donde la clave es
+`tipo:canal:eventoId:messageId` para eventos (el mismo mensaje no se duplica al reintentar, pero dos
+modificaciones distintas del mismo evento sí generan avisos separados) y
 `CompraConfirmada:EMAIL:compraId` para compras (permite dos compras del mismo evento).
+
+Las filas `PUSH` y `EMAIL` de un mismo mensaje comparten `clave_mensaje` (`tipo:eventoId:messageId`
+o `CompraConfirmada:compraId`). La bandeja `GET /notificaciones/me` muestra **una sola entrada por
+mensaje** (prefiere la fila PUSH y expone `canales` con todos los canales usados); el envío sigue
+siendo dual.
 
 ### Contrato `evento.#` (msvc-eventos)
 
@@ -71,8 +77,9 @@ Payload (JSON):
 | `EventoModificado` | `evento.modificado` | `PUT /eventos/{id}`, `PATCH .../fecha` con cambios reales | compradores con compra APROBADA (PUSH + EMAIL) |
 | `EventoPublicado` | `evento.publicado` | `POST /eventos/{id}/publicacion` o alta con `publicarAlFinal` | clientes con artista favorito + ciudad (PUSH + EMAIL) |
 
-El envío es **dual** para eventos: se crea una notificación por cada canal que tenga plantilla
-activa (`PUSH` y/o `EMAIL`). Las plantillas EMAIL de eventos están en la migración
+El envío es **dual** para eventos: se crea una entrega por cada canal que tenga plantilla
+activa (`PUSH` y/o `EMAIL`), pero ambas comparten `clave_mensaje` y la bandeja las muestra como
+una sola notificación. Las plantillas EMAIL de eventos están en la migración
 `04-plantillas-email-eventos.sql`.
 
 `ciudad` y `artistas` solo se completan en `EventoPublicado`. `fecha` es `fechaInicio` (ISO-8601 sin

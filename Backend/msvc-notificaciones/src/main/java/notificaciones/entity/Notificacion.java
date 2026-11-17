@@ -66,10 +66,19 @@ public class Notificacion {
     private LocalDateTime fechaLectura;
 
     /**
-     * Clave de idempotencia del origen: {@code tipo:eventoId} para eventos y
-     * {@code CompraConfirmada:compraId} para compras. Permite que un cliente reciba dos compras
-     * del mismo evento sin que el consumer duplique avisos ante reintentos.
+     * Clave de idempotencia por canal: {@code tipo:canal:eventoId:messageId} para eventos y
+     * {@code CompraConfirmada:EMAIL:compraId} para compras. Permite que un cliente reciba dos
+     * compras del mismo evento sin que el consumer duplique avisos ante reintentos.
      */
     @Column(name = "clave_idempotencia", length = 128)
     private String claveIdempotencia;
+
+    /**
+     * Identidad del mensaje, independiente del canal: {@code tipo:eventoId:messageId} para eventos
+     * y {@code CompraConfirmada:compraId} para compras. Las filas PUSH y EMAIL de un mismo aviso
+     * comparten esta clave, lo que permite mostrar una sola entrada en la bandeja aunque se
+     * entregue por ambos canales.
+     */
+    @Column(name = "clave_mensaje", length = 128)
+    private String claveMensaje;
 }

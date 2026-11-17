@@ -41,7 +41,7 @@ curl -s http://localhost:8025/api/v2/messages | head -c 300
 ```bash
 cd Backend
 
-(cd msvc-notificaciones && mvn test)   # 31 tests: fan-out, idempotencia, envío, API/contrato, SMTP
+(cd msvc-notificaciones && mvn test)   # 36 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP
 (cd msvc-eventos        && mvn test)   # 193 tests: publicación/modificación/cancelación
 (cd msvc-ventas         && mvn test)   # 161 tests: compra/pago + evento compra.confirmada
 (cd msvc-preferencias   && mvn test)   # 12 tests: preferencias + matching
@@ -52,9 +52,10 @@ Cobertura específica de esta feature:
 
 | Test | Qué fija |
 |---|---|
-| `NotificacionServiceImplTest` | cancelación, suspensión, modificación, artista favorito, compra, preferencias de canal, idempotencia, **dual PUSH + EMAIL** |
+| `NotificacionServiceImplTest` | cancelación, suspensión, modificación, artista favorito, compra, preferencias de canal, idempotencia por canal + `messageId`, **dual PUSH + EMAIL con una sola entrada de bandeja** |
 | `NotificacionEnvioServiceTest` | `PENDIENTE → ENVIADA/FALLIDA`, reintentos, máximo, canal sin proveedor |
 | `SmtpEmailProviderTest` | envío SMTP al email resuelto y fallback al destinatario por defecto |
+| `NotificacionControllerTest` | bandeja agrupada por mensaje (PUSH + EMAIL → una entrada), `noLeidas` por mensaje, marcar leída actualiza ambos canales |
 | `NotificacionController` (vía API e2e) | `X-User-Id`, dueño, paginación, `noLeidas`, marcar leída |
 | `EventChangePublisherTest` | routing keys `evento.cancelado/suspendido/modificado/publicado` |
 | `CompraEventPublisherTest` | routing key `compra.confirmada` y payload |
@@ -96,7 +97,8 @@ En Docker Compose, `msvc-notificaciones` usa `TICKETYA_NOTIF_EMAIL_PROVIDER=smtp
 Sin Docker (tests locales o ejecución directa) el default es `mock` y solo se loguea.
 
 Los **avisos de evento** se generan por ambos canales si existen las plantillas `PUSH` y `EMAIL`:
-vas a ver dos notificaciones por usuario y dos correos en MailHog. La compra confirmada usa solo `EMAIL`.
+en la bandeja vas a ver **una sola notificación por mensaje** (con `canales: ["PUSH","EMAIL"]`) y
+en MailHog **un correo**. La compra confirmada usa solo `EMAIL`.
 
 Si querés forzar el mock dentro de Docker:
 
@@ -288,15 +290,16 @@ curl -s -X PATCH "$GATEWAY/api/eventos/d0000000-0000-4000-8000-000000000001/esta
 ```
 
 Después de cada paso (o esperando el job) consultar `GET /api/notificaciones/me` con `TOKEN_CLI`.
-Esperado: `EventoModificado`, `EventoSuspendido` y `EventoCancelado`, cada uno **dos veces**:
-una notificación `PUSH` y una `EMAIL`, ambas `ENVIADA`. Los emails deben verse en MailHog.
-La idempotencia es por canal: `EventoCancelado:PUSH:<eventoId>` y `EventoCancelado:EMAIL:<eventoId>`.
+Esperado: `EventoModificado`, `EventoSuspendido` y `EventoCancelado`, cada uno **una sola vez en la
+bandeja** (fila representativa `PUSH`, `canales: ["PUSH","EMAIL"]`), todos `ENVIADA`. Los dos envíos
+de cada mensaje se verifican en los logs (`PUSH-MOCK` y `EMAIL-SMTP`) y en MailHog.
+La idempotencia es por canal y ocurrencia: `EventoCancelado:PUSH:<eventoId>:<messageId>` y
+`EventoCancelado:EMAIL:<eventoId>:<messageId>`.
 
 > Orden importante: modificar → suspender → cancelar. Un evento cancelado ya no se puede editar.
 
-Verificar idempotencia: volver a ejecutar el `PATCH` de cancelación no debe crear otra notificación
-(el estado ya es `CANCELADO` y además la clave de idempotencia es
-`EventoCancelado:PUSH:<eventoId>` / `EventoCancelado:EMAIL:<eventoId>`).
+Verificar idempotencia: republicar el mismo payload de Rabbit (mismo `messageId`) no debe crear otra
+notificación. Dos modificaciones distintas del mismo evento sí generan dos mensajes separados.
 
 ---
 
@@ -338,8 +341,9 @@ curl -s "$GATEWAY/api/notificaciones/me?page=0&size=20" \
   -H "Authorization: Bearer $TOKEN_CLI" | python3 -m json.tool
 ```
 
-Esperado: `tipo=NuevoEventoArtistaFavorito` **dos veces** (`PUSH` y `EMAIL`), `ENVIADA`, con el
-nombre del evento y “Buenos Aires” en el contenido. El email aparece en MailHog.
+Esperado: `tipo=NuevoEventoArtistaFavorito` **una sola vez** en la bandeja, con
+`canales: ["PUSH","EMAIL"]`, `ENVIADA`, con el nombre del evento y “Buenos Aires” en el contenido.
+Los dos envíos se ven en los logs y el email en MailHog.
 
 ---
 
@@ -408,7 +412,7 @@ docker compose up -d --no-deps --force-recreate ms-frontend
 ```bash
 # Notificaciones e intentos
 docker compose exec -T db-mysql-notificaciones mysql -uticketya -pticketya_dev notificaciones -e "
-  SELECT tipo, canal, estado, leida, destinatario, clave_idempotencia, fecha_envio
+  SELECT tipo, canal, estado, leida, destinatario, clave_idempotencia, clave_mensaje, fecha_envio
   FROM notificacion ORDER BY fecha_creacion DESC LIMIT 20;
   SELECT numero_intento, resultado, detalle_error
   FROM intento_envio ORDER BY fecha_intento DESC LIMIT 20;"
@@ -428,7 +432,7 @@ También podés mirar `notificaciones.eventos.dlq` y `notificaciones.compras.dlq
 ## 9. Migración en volúmenes existentes
 
 Si **no** hiciste `down -v`, el esquema viejo no tiene `leida`, `fecha_lectura` ni
-`clave_idempotencia`. Aplicar una vez desde `Backend/`:
+`clave_idempotencia`/`clave_mensaje`. Aplicar una vez desde `Backend/`:
 
 ```bash
 docker compose exec -T db-mysql-notificaciones \
@@ -442,6 +446,10 @@ docker compose exec -T db-mysql-notificaciones \
 docker compose exec -T db-mysql-notificaciones \
   mysql -uroot -proot_dev notificaciones \
   < infrastructure/mysql/notificaciones/migrations/04-plantillas-email-eventos.sql
+
+docker compose exec -T db-mysql-notificaciones \
+  mysql -uroot -proot_dev notificaciones \
+  < infrastructure/mysql/notificaciones/migrations/05-clave-mensaje.sql
 ```
 
 Es idempotente: se puede correr varias veces.
@@ -456,10 +464,10 @@ sigue funcionando porque `artistas` y `ciudades` ya estaban en el seed.
 
 - [ ] `CompraConfirmada` aparece como `EMAIL` y pasa a `ENVIADA` con `fecha_envio`.
 - [ ] El correo se ve en MailHog (`localhost:8025`) con destino `demo@ticketya.com`.
-- [ ] `EventoCancelado` aparece como `PUSH` y `EMAIL` para el cliente con compra aprobada.
-- [ ] Los emails de cancelación/suspensión/modificación se ven en MailHog.
+- [ ] `EventoCancelado` aparece **una sola vez** en la bandeja con `canales: ["PUSH","EMAIL"]` para el cliente con compra aprobada.
+- [ ] Los emails de cancelación/suspensión/modificación se ven en MailHog (uno por mensaje).
 - [ ] `EventoSuspendido` y `EventoModificado` aparecen para el mismo cliente.
-- [ ] `NuevoEventoArtistaFavorito` aparece como `PUSH` y `EMAIL` para el cliente demo al publicar
+- [ ] `NuevoEventoArtistaFavorito` aparece **una sola vez** con `canales: ["PUSH","EMAIL"]` para el cliente demo al publicar
       Metallica en Buenos Aires.
 - [ ] `GET /api/notificaciones/me` devuelve `noLeidas` y `PATCH .../leida` lo baja.
 - [ ] `intento_envio` tiene filas `OK` por cada envío.

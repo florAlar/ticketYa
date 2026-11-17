@@ -30,10 +30,12 @@ CREATE TABLE IF NOT EXISTS notificacion (
   estado           VARCHAR(32)  NOT NULL,
   leida            TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'leída por el usuario en la app',
   fecha_lectura    DATETIME(3)  NULL,
-  clave_idempotencia VARCHAR(128) NULL COMMENT 'tipo:eventoId | CompraConfirmada:compraId',
+  clave_idempotencia VARCHAR(128) NULL COMMENT 'tipo:canal:eventoId:messageId | CompraConfirmada:EMAIL:compraId',
+  clave_mensaje      VARCHAR(128) NULL COMMENT 'identidad del mensaje sin canal (PUSH/EMAIL comparten clave)',
   PRIMARY KEY (id_notificacion),
   KEY ix_notif_usuario (id_usuario),
   KEY ix_notif_usuario_fecha (id_usuario, fecha_creacion),
+  KEY ix_notif_usuario_mensaje (id_usuario, clave_mensaje),
   KEY ix_notif_estado_fecha (estado, fecha_creacion),
   UNIQUE KEY uk_notif_usuario_clave (id_usuario, clave_idempotencia),
   CONSTRAINT fk_notif_plantilla FOREIGN KEY (id_plantilla) REFERENCES plantilla_notificacion (id_plantilla)

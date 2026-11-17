@@ -3,7 +3,13 @@ package notificaciones.controller;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import notificaciones.dto.NotificacionPageResponseDTO;
 import notificaciones.dto.NotificacionRequestDTO;
 import notificaciones.dto.NotificacionResponseDTO;
@@ -31,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificacionController {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final List<String> ORDEN_CANALES = List.of("PUSH", "EMAIL");
 
     private final NotificacionService notificacionService;
     private final NotificacionRepository notificacionRepository;
@@ -47,7 +54,11 @@ public class NotificacionController {
         return "microservicio notificaciones ok!";
     }
 
-    /** Bandeja del usuario autenticado. {@code noLeidas} alimenta el badge de la campanita. */
+    /**
+     * Bandeja del usuario autenticado: una entrada por mensaje (no por canal). Si el aviso se envió
+     * por PUSH y EMAIL se muestra la fila PUSH y {@code canales} informa ambos. {@code noLeidas}
+     * alimenta el badge de la campanita y cuenta mensajes, no filas.
+     */
     @GetMapping("/notificaciones/me")
     public NotificacionPageResponseDTO listarPropias(
             @RequestHeader(value = "X-User-Id", required = false) String userId,
@@ -60,20 +71,20 @@ public class NotificacionController {
         PageRequest pageable = PageRequest.of(pagina, tamano);
 
         Page<Notificacion> resultado = leida == null
-                ? notificacionRepository.findByIdUsuarioOrderByFechaCreacionDesc(cliente, pageable)
-                : notificacionRepository.findByIdUsuarioAndLeidaOrderByFechaCreacionDesc(
-                        cliente, leida, pageable);
+                ? notificacionRepository.findVisiblesByIdUsuario(cliente, pageable)
+                : notificacionRepository.findVisiblesByIdUsuarioAndLeida(cliente, leida, pageable);
+
+        Map<String, List<String>> canales = canalesDe(cliente, resultado.getContent());
 
         NotificacionPageResponseDTO respuesta = new NotificacionPageResponseDTO();
         respuesta.setContent(resultado.getContent().stream()
-                .map(NotificacionMapper::toResponse)
+                .map(n -> NotificacionMapper.toResponse(n, canales.get(n.getClaveMensaje())))
                 .toList());
         respuesta.setPage(resultado.getNumber());
         respuesta.setSize(resultado.getSize());
         respuesta.setTotalElements(resultado.getTotalElements());
         respuesta.setTotalPages(resultado.getTotalPages());
-        respuesta.setNoLeidas(
-                notificacionRepository.countByIdUsuarioAndLeidaFalse(cliente));
+        respuesta.setNoLeidas(notificacionRepository.countVisiblesNoLeidas(cliente));
         return respuesta;
     }
 
@@ -81,20 +92,50 @@ public class NotificacionController {
     public NotificacionResponseDTO detallePropio(
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @PathVariable String id) {
-        return NotificacionMapper.toResponse(requirePropia(requireUser(userId), id));
+        Notificacion n = requirePropia(requireUser(userId), id);
+        Map<String, List<String>> canales = canalesDe(n.getIdUsuario(), List.of(n));
+        return NotificacionMapper.toResponse(n, canales.get(n.getClaveMensaje()));
     }
 
+    /**
+     * Marca como leído el mensaje completo: las filas PUSH y EMAIL que lo componen, para que el
+     * badge no quede con una mitad sin leer.
+     */
     @PatchMapping("/notificaciones/me/{id}/leida")
     public NotificacionResponseDTO marcarLeida(
             @RequestHeader(value = "X-User-Id", required = false) String userId,
             @PathVariable String id) {
-        Notificacion n = requirePropia(requireUser(userId), id);
-        if (!Boolean.TRUE.equals(n.getLeida())) {
-            n.setLeida(Boolean.TRUE);
-            n.setFechaLectura(LocalDateTime.now(ZoneOffset.UTC));
-            notificacionRepository.save(n);
+        String cliente = requireUser(userId);
+        Notificacion notificacion = requirePropia(cliente, id);
+        LocalDateTime ahora = LocalDateTime.now(ZoneOffset.UTC);
+
+        Notificacion representante = notificacion;
+        List<Notificacion> mensaje = notificacion.getClaveMensaje() == null
+                ? List.of()
+                : notificacionRepository.findByIdUsuarioAndClaveMensaje(
+                        cliente, notificacion.getClaveMensaje());
+        if (mensaje.isEmpty()) {
+            if (!Boolean.TRUE.equals(notificacion.getLeida())) {
+                notificacion.setLeida(Boolean.TRUE);
+                notificacion.setFechaLectura(ahora);
+                representante = notificacionRepository.save(notificacion);
+            }
+        } else {
+            for (Notificacion hermana : mensaje) {
+                if (!Boolean.TRUE.equals(hermana.getLeida())) {
+                    hermana.setLeida(Boolean.TRUE);
+                    hermana.setFechaLectura(ahora);
+                    notificacionRepository.save(hermana);
+                }
+                if (hermana.getIdNotificacion().equals(id)) {
+                    representante = hermana;
+                }
+            }
         }
-        return NotificacionMapper.toResponse(n);
+
+        Map<String, List<String>> canales = canalesDe(cliente, List.of(representante));
+        return NotificacionMapper.toResponse(
+                representante, canales.get(representante.getClaveMensaje()));
     }
 
     /** Estado de envío para soporte/administración. */
@@ -117,6 +158,34 @@ public class NotificacionController {
             @Valid @RequestBody NotificacionRequestDTO request) {
         requireAdmin(role);
         return NotificacionMapper.toResponse(notificacionService.crearAdministrativa(request));
+    }
+
+    private Map<String, List<String>> canalesDe(
+            String idUsuario, List<Notificacion> notificaciones) {
+        List<String> claves = notificaciones.stream()
+                .map(Notificacion::getClaveMensaje)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<String, List<String>> canales = new HashMap<>();
+        if (claves.isEmpty()) {
+            return canales;
+        }
+        for (Object[] fila : notificacionRepository.findCanalesPorClaves(idUsuario, claves)) {
+            String clave = (String) fila[0];
+            String canal = (String) fila[1];
+            if (canal != null) {
+                canales.computeIfAbsent(clave, k -> new ArrayList<>()).add(canal);
+            }
+        }
+        canales.values().forEach(lista -> lista.sort(Comparator.comparingInt(
+                NotificacionController::ordenCanal)));
+        return canales;
+    }
+
+    private static int ordenCanal(String canal) {
+        int indice = ORDEN_CANALES.indexOf(canal);
+        return indice < 0 ? Integer.MAX_VALUE : indice;
     }
 
     private Notificacion requirePropia(String idCliente, String id) {

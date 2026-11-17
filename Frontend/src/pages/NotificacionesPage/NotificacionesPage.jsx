@@ -289,7 +289,12 @@ export default function NotificacionesPage() {
                   {tipoNotificacionLabel(n.tipo)}
                 </span>
                 <span className={`notificacion-card__channel is-${String(n.canal).toLowerCase()}`}>
-                  {canalNotificacionLabel(n.canal)}
+                  {(Array.isArray(n.canales) && n.canales.length > 0
+                    ? n.canales
+                    : [n.canal]
+                  )
+                    .map(canalNotificacionLabel)
+                    .join(' + ')}
                 </span>
                 <span className="notificacion-card__date">
                   {formatFechaNotificacion(n.fechaCreacion)}

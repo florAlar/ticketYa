@@ -271,9 +271,9 @@ aprobadas de ventas (`GET /internas/compras`). Ambos exigen `X-Internal-Token`
 
 Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio vía broker; REST para consulta/admin
 
-- GET /notificaciones/me — Listar notificaciones propias (paginado; incluye `noLeidas`)
+- GET /notificaciones/me — Listar notificaciones propias (paginado; una entrada por mensaje, `canales` y `noLeidas`)
 - GET /notificaciones/me/{id} — Detalle de notificación
-- PATCH /notificaciones/me/{id}/leida — Marcar como leída
+- PATCH /notificaciones/me/{id}/leida — Marcar como leída (mensaje completo: PUSH + EMAIL)
 - POST /notificaciones — Crear notificación administrativa (ADMIN)
 - GET /notificaciones/{id}/estado — Estado de envío (ADMIN)
 

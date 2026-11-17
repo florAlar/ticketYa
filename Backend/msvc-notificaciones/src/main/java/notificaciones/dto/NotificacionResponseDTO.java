@@ -1,6 +1,7 @@
 package notificaciones.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -13,6 +14,8 @@ public class NotificacionResponseDTO {
     private String idEventoOrigen;
     private String tipo;
     private String canal;
+    /** Canales por los que se entregó el mensaje (PUSH, EMAIL). */
+    private List<String> canales;
     private String asunto;
     private String contenido;
     private String destinatario;
