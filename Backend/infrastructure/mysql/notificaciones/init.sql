@@ -79,7 +79,13 @@ INSERT INTO plantilla_notificacion (id_plantilla, tipo_evento, canal, asunto, co
    'El evento {{evento}} cambió: {{cambios}}. Nueva fecha: {{fecha}}.', 1),
   ('n0000000-0000-4000-8000-000000000009', 'NuevoEventoArtistaFavorito', 'EMAIL',
    'Tu artista favorito se presenta',
-   '¡{{evento}} en {{ciudad}}! Un artista que seguís se presenta el {{fecha}}.', 1)
+   '¡{{evento}} en {{ciudad}}! Un artista que seguís se presenta el {{fecha}}.', 1),
+  ('n0000000-0000-4000-8000-00000000000a', 'DevolucionAprobada', 'PUSH',
+   'Devolución aprobada',
+   'Aprobamos la devolución de tu entrada para el evento {{eventoId}}. Reintegro: {{monto}} {{moneda}}.', 1),
+  ('n0000000-0000-4000-8000-00000000000b', 'DevolucionAprobada', 'EMAIL',
+   'Devolución aprobada',
+   'Aprobamos la devolución de tu entrada para el evento {{eventoId}}. Reintegro: {{monto}} {{moneda}}.', 1)
 ON DUPLICATE KEY UPDATE
   tipo_evento = VALUES(tipo_evento), canal = VALUES(canal), asunto = VALUES(asunto),
   contenido = VALUES(contenido), activa = VALUES(activa);

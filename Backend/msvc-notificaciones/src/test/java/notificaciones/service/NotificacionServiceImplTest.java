@@ -22,6 +22,7 @@ import notificaciones.clients.VentasClient;
 import notificaciones.entity.Notificacion;
 import notificaciones.entity.PlantillaNotificacion;
 import notificaciones.messaging.CompraConfirmadaDTO;
+import notificaciones.messaging.DevolucionAprobadaDTO;
 import notificaciones.messaging.EventoCambioDTO;
 import notificaciones.repository.NotificacionRepository;
 import notificaciones.repository.PlantillaNotificacionRepository;
@@ -38,6 +39,7 @@ class NotificacionServiceImplTest {
 
     private static final String EVENTO_ID = "e0000000-0000-4000-8000-000000000001";
     private static final String COMPRA_ID = "f0000000-0000-4000-8000-000000000021";
+    private static final String DEVOLUCION_ID = "d0000000-0000-4000-8000-000000000001";
     private static final String CLIENTE_1 = "c0000000-0000-4000-8000-000000000001";
     private static final String CLIENTE_2 = "c0000000-0000-4000-8000-000000000002";
 
@@ -322,6 +324,100 @@ class NotificacionServiceImplTest {
     }
 
     @Test
+    void procesarDevolucionAprobada_creaDualPushEmailConClaveCompartida() {
+        PlantillaNotificacion push = plantilla(
+                "DevolucionAprobada", "PUSH", "Devolución aprobada", "Reintegro {{monto}} {{moneda}}");
+        PlantillaNotificacion email = plantilla(
+                "DevolucionAprobada", "EMAIL", "Devolución aprobada", "Reintegro {{monto}} {{moneda}}");
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "PUSH"))
+                .thenReturn(Optional.of(push));
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "EMAIL"))
+                .thenReturn(Optional.of(email));
+        when(usuariosClient.porId(CLIENTE_1))
+                .thenReturn(new UsuariosClient.UsuarioEmailDTO(CLIENTE_1, "demo@ticketya.com"));
+        when(notificacionRepository.save(any(Notificacion.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        service.procesarDevolucionAprobada(devolucion());
+
+        ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
+        verify(notificacionRepository, times(2)).save(captor.capture());
+        List<Notificacion> guardadas = captor.getAllValues();
+        assertEquals(List.of("PUSH", "EMAIL"),
+                guardadas.stream().map(Notificacion::getCanal).toList());
+        assertEquals("DevolucionAprobada:PUSH:" + DEVOLUCION_ID,
+                guardadas.get(0).getClaveIdempotencia());
+        assertEquals("DevolucionAprobada:EMAIL:" + DEVOLUCION_ID,
+                guardadas.get(1).getClaveIdempotencia());
+        assertEquals("DevolucionAprobada:" + DEVOLUCION_ID, guardadas.get(0).getClaveMensaje());
+        assertEquals(guardadas.get(0).getClaveMensaje(), guardadas.get(1).getClaveMensaje());
+        assertEquals(EVENTO_ID, guardadas.get(0).getIdEventoOrigen());
+        assertEquals("Reintegro 95000.00 ARS", guardadas.get(0).getContenido());
+        assertEquals("demo@ticketya.com", guardadas.get(1).getDestinatario());
+    }
+
+    @Test
+    void procesarDevolucionAprobada_respetaPreferenciaDeCanal() {
+        PlantillaNotificacion push = plantilla(
+                "DevolucionAprobada", "PUSH", "Devolución aprobada", "ok");
+        PlantillaNotificacion email = plantilla(
+                "DevolucionAprobada", "EMAIL", "Devolución aprobada", "ok");
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "PUSH"))
+                .thenReturn(Optional.of(push));
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "EMAIL"))
+                .thenReturn(Optional.of(email));
+        when(preferenciasClient.preferenciasNotificaciones(CLIENTE_1))
+                .thenReturn(new PreferenciasNotificaciones(true, false, List.of()));
+        when(notificacionRepository.save(any(Notificacion.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        service.procesarDevolucionAprobada(devolucion());
+
+        ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
+        verify(notificacionRepository, times(1)).save(captor.capture());
+        assertEquals("PUSH", captor.getValue().getCanal());
+    }
+
+    @Test
+    void procesarDevolucionAprobada_yaNotificada_noDuplica() {
+        PlantillaNotificacion plantilla = plantilla(
+                "DevolucionAprobada", "PUSH", "Devolución aprobada", "ok");
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "PUSH"))
+                .thenReturn(Optional.of(plantilla));
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "EMAIL"))
+                .thenReturn(Optional.of(plantilla));
+        when(notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
+                CLIENTE_1, "DevolucionAprobada:PUSH:" + DEVOLUCION_ID)).thenReturn(true);
+        when(notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
+                CLIENTE_1, "DevolucionAprobada:EMAIL:" + DEVOLUCION_ID)).thenReturn(true);
+
+        service.procesarDevolucionAprobada(devolucion());
+
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+    }
+
+    @Test
+    void procesarDevolucionAprobada_sinPlantillas_noPersiste() {
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "PUSH"))
+                .thenReturn(Optional.empty());
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("DevolucionAprobada", "EMAIL"))
+                .thenReturn(Optional.empty());
+
+        service.procesarDevolucionAprobada(devolucion());
+
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
+    }
+
+    @Test
+    void procesarDevolucionAprobada_incompleta_seIgnora() {
+        service.procesarDevolucionAprobada(new DevolucionAprobadaDTO(
+                "m-4", DEVOLUCION_ID, "entrada-1", null, EVENTO_ID,
+                BigDecimal.TEN, "ARS", Instant.now()));
+
+        verifyNoInteractions(notificacionRepository, plantillaRepository);
+    }
+
+    @Test
     void crearAdministrativa_quedaPendienteYNoLeida() {
         notificaciones.dto.NotificacionRequestDTO request = new notificaciones.dto.NotificacionRequestDTO();
         request.setIdUsuario(CLIENTE_1);
@@ -338,6 +434,12 @@ class NotificacionServiceImplTest {
         assertEquals("PENDIENTE", n.getEstado());
         assertTrue(!n.getLeida());
         assertTrue(n.getClaveMensaje().startsWith("ADMIN:"));
+    }
+
+    private DevolucionAprobadaDTO devolucion() {
+        return new DevolucionAprobadaDTO(
+                "m-4", DEVOLUCION_ID, "entrada-1", CLIENTE_1, EVENTO_ID,
+                new BigDecimal("95000.00"), "ARS", Instant.now());
     }
 
     private static PlantillaNotificacion plantilla(

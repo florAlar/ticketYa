@@ -3,6 +3,7 @@ package notificaciones.service;
 import notificaciones.dto.NotificacionRequestDTO;
 import notificaciones.entity.Notificacion;
 import notificaciones.messaging.CompraConfirmadaDTO;
+import notificaciones.messaging.DevolucionAprobadaDTO;
 import notificaciones.messaging.EventoCambioDTO;
 
 public interface NotificacionService {
@@ -21,6 +22,12 @@ public interface NotificacionService {
 
     /** Pago aprobado en msvc-ventas → notificación de compra confirmada. Idempotente por compra. */
     void procesarCompraConfirmada(CompraConfirmadaDTO compra);
+
+    /**
+     * Devolución aprobada en msvc-entradas → aviso al cliente dueño de la entrada (PUSH + EMAIL
+     * según plantillas/preferencias). Idempotente por devolución y canal.
+     */
+    void procesarDevolucionAprobada(DevolucionAprobadaDTO devolucion);
 
     /** Alta administrativa (ADMIN); queda PENDIENTE para que el job la envíe. */
     Notificacion crearAdministrativa(NotificacionRequestDTO request);

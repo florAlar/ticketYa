@@ -18,7 +18,7 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 | POST /entradas/{id}/devoluciones | **hecho** | 72h desde emisión; solo VENDIDA no usada |
 | GET /devoluciones | **hecho** | Cliente: propias; ADMIN: pendientes |
 | GET /devoluciones/{id} | **hecho** | |
-| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) + Feign ventas `POST …/cupos/liberacion` fail-hard (1 unidad del sector) |
+| POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) + Feign ventas `POST …/cupos/liberacion` fail-hard (1 unidad del sector) + publica `devolucion.aprobada` al broker (PUSH + EMAIL al cliente) |
 | POST /eventos/{id}/reintegro-cancelacion | **hecho** | E1-ENT-05; VENDIDA→A_REINTEGRAR + invalida QR + crea `devolucion` **EN_CURSO** (motivo cancelación; visible al cliente, no cola admin) |
 | POST /eventos/{id}/validaciones | **hecho** | E2-ACC-01. Body `{codigoQR, dispositivo?}`. PERSONAL_ACCESO o ADMIN. 200 `VALIDA` (entrada → USADA); 409 con `resultado` = `YA_USADA` \| `OTRO_EVENTO` \| `NO_VALIDA` \| `EVENTO_CANCELADO`; 404 QR inexistente; 400 QR vacío; 403 otro rol. Atómico por QR (`SELECT … FOR UPDATE`). Cada intento sobre una entrada existente se registra en `validacion_acceso`, también los rechazados. |
 | GET /eventos/{id}/validaciones | **hecho** | Intentos del evento (el más reciente primero). ADMIN: cualquiera; ORGANIZADOR: solo el dueño del evento (Feign a eventos; si no responde → 403). |
@@ -55,9 +55,16 @@ GET emisión/listado/detalle: Feign `GET /eventos/{id}` → `eventoNombre`, `lug
 ### Emisión
 QR: `QR-` + 16 hex. UK `codigo_qr`.
 
+### Evento de dominio `devolucion.aprobada`
+Al aprobar una devolución, después del commit, se publica en `eventos.exchange` con routing key
+`devolucion.aprobada` (`DevolucionEventPublisher`, `@TransactionalEventListener(AFTER_COMMIT)`).
+Consumidor: `msvc-notificaciones` (cola `notificaciones.devoluciones`). Contrato en
+`specs/comunicacion.md`.
+
 ### Config
-`ticketya.entradas.plazo-devolucion-horas` (72)  
-`ticketya.uri.eventos` (Feign enriquecimiento)
+- `ticketya.entradas.plazo-devolucion-horas` (72)
+- `ticketya.uri.eventos` (Feign enriquecimiento)
+- `SPRING_RABBITMQ_*` (broker; Docker: `rabbitmq:5672`)
 
 ### Shape FE
 ```json

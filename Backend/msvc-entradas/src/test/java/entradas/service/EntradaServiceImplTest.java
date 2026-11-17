@@ -24,11 +24,13 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.context.ApplicationEventPublisher;
 import entradas.clients.EventosClient;
 import entradas.clients.EventosClient.EventoDetalleFeignDTO;
 import entradas.clients.EventosClient.LugarFeignDTO;
@@ -68,6 +70,9 @@ class EntradaServiceImplTest {
     @Mock
     private VentasClient ventasClient;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private EntradaServiceImpl service;
 
     private static final String ID_ENTRADA = "e0000000-0000-4000-8000-000000000001";
@@ -83,7 +88,8 @@ class EntradaServiceImplTest {
         reset(entradaRepository, devolucionRepository, entradaMapper, eventosClient, ventasClient);
         service = new EntradaServiceImpl(
                 entradaRepository, devolucionRepository, entradaMapper,
-                eventosClient, ventasClient, mock(ValidacionAccesoRepository.class), 72L);
+                eventosClient, ventasClient, mock(ValidacionAccesoRepository.class),
+                eventPublisher, 72L);
     }
 
     private Entrada entradaVendida() {
@@ -443,6 +449,14 @@ class EntradaServiceImplTest {
         assertEquals("DEVUELTA", d.getEntrada().getEstado());
         assertEquals("APROBADA", d.getEstado());
         verify(ventasClient).liberarCupo(eq(ID_EVENTO), any(VentasClient.LiberarCupoBody.class));
+
+        ArgumentCaptor<entradas.messaging.DevolucionAprobadaEvent> evento =
+                ArgumentCaptor.forClass(entradas.messaging.DevolucionAprobadaEvent.class);
+        verify(eventPublisher).publishEvent(evento.capture());
+        assertEquals(ID_DEVOLUCION, evento.getValue().devolucionId());
+        assertEquals(ID_ENTRADA, evento.getValue().entradaId());
+        assertEquals(ID_CLIENTE, evento.getValue().clienteId());
+        assertEquals(ID_EVENTO, evento.getValue().eventoId());
     }
 
     @Test
@@ -470,6 +484,8 @@ class EntradaServiceImplTest {
 
         assertThrows(BusinessConflictException.class,
                 () -> service.aprobarDevolucion(ID_DEVOLUCION));
+        verify(eventPublisher, never())
+                .publishEvent(any(entradas.messaging.DevolucionAprobadaEvent.class));
     }
 
     // ---------- rechazarDevolucion ----------
