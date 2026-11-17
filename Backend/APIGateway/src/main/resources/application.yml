@@ -216,7 +216,7 @@ spring:
 # Orígenes FE (E1-GW-03). Override: TICKETYA_CORS_ORIGINS=http://a,http://b
 ticketya:
   cors:
-    allowed-origins: ${TICKETYA_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000}
+    allowed-origins: ${TICKETYA_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost,http://127.0.0.1}
 
 # JWT — misma secret que msvc-usuarios al emitir tokens (E2-SEC / emisión E1 liviana)
 # Mín. 32 chars (HS256). Override: JWT_SECRET

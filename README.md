@@ -15,7 +15,7 @@ Documentación formal de entrega: `Backend/docs/`.
 
 ## Levantar el stack completo (Docker)
 
-Requisitos: Docker con Compose v2. Puertos libres: `3000`, `8080`–`8086`, `3307`–`3311`, `6380`,`8025`,`5672`,`15672` `27018`.
+Requisitos: Docker con Compose v2. Puertos libres: `80`, `3000`, `8080`–`8086`, `3307`–`3311`, `6380`,`8025`,`5672`,`15672` `27018`.
 No hace falta crear ni copiar ningún `.env` para el backend (los valores por defecto están en los compose); solo si se quiere cambiar algo, copiar la raíz `.env.example` a `.env`. El `.env` del frontend ya está versionado en `Frontend/.env`.
 
 ```bash
@@ -33,9 +33,52 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/        # fronten
 curl -s http://localhost:8080/api/eventos                              # gateway → 200 con eventos
 ```
 
-- Frontend: http://localhost:3000 — Gateway: http://localhost:8080 (el browser habla solo con el gateway).
+- Frontend: http://localhost:3000 (y también http://localhost en el puerto 80, si está libre) — Gateway: http://localhost:8080 (el browser habla solo con el gateway).
 - Bajar: `docker compose down`. Reiniciar desde cero (borra las bases): `docker compose down -v`.
 - Hay un único `Backend/infrastructure/mysql/*/init.sql` por base y solo corre en el primer arranque de cada volumen. Si cambia el esquema (por ejemplo al traer cambios nuevos del repo), recrear las bases con `docker compose down -v && docker compose up -d --build`.
+
+# Servicios del proyecto
+
+## Servicios publicados
+
+| Puerto | Qué lo usa | Quién lo consume |
+|---|---|---|
+| **8080** | `APIGateway` (ms-gateway) | El frontend (`VITE_API_BASE_URL`), Nginx del front (`/api/` → `ms-gateway:8080`), curl/Postman. Es el **único punto de entrada** al backend |
+| **8081** | `msvc-usuarios` (ms-usuarios) | Gateway (rutas `auth`, `usuarios`);  |
+| **8082** | `msvc-eventos` (ms-eventos) | Gateway (`eventos`, `lugares`, `sectores`, `participantes`, `organizadores`) |
+| **8083** | `msvc-ventas` (ms-ventas) | Gateway (`reservas`, `compras`, `pagos`, `reportes`, disponibilidad, fila virtual) |
+| **8084** | `msvc-entradas` (ms-entradas) | Gateway (`entradas`, `devoluciones`, validaciones QR) |
+| **8085** | `msvc-preferencias` (ms-preferencias) | Gateway (`preferencias`, `recomendaciones`, `clientes`) |
+| **8086** | `msvc-notificaciones` (ms-notificaciones) | Gateway (`notificaciones`) |
+| **3000** | `ms-frontend` (Nginx) | El usuario/browser: http://localhost o  http://localhost:3000 |
+| **5173** | Vite dev server (`npm run dev`) | Alternativa al front de Docker, solo en desarrollo local |
+| **3307** | MySQL de usuarios | Solo `msvc-usuarios`  |
+| **3308** | MySQL de eventos | Solo `msvc-eventos` |
+| **3309** | MySQL de ventas | Solo `msvc-ventas` |
+| **3310** | MySQL de entradas | Solo `msvc-entradas` |
+| **3311** | MySQL de notificaciones | Solo `msvc-notificaciones` |
+| **27018** | MongoDB de preferencias (27017 interno) | Solo `msvc-preferencias` |
+| **6380** | Redis de ventas (6379 interno) | Solo `msvc-ventas` (fila virtual / locks) |
+| **5672** | RabbitMQ (AMQP) | `msvc-eventos`, `msvc-ventas`, `msvc-preferencias`, `msvc-notificaciones` (publican/consumen en `eventos.exchange`) |
+| **15672** | RabbitMQ Management UI | Interfaz web para inspeccionar colas (`ticketya` / `ticketya_dev`) |
+| **1025** | MailHog SMTP | `msvc-notificaciones` (envío de emails de prueba) |
+| **8025** | MailHog Web UI | Para ver los emails enviados |
+
+## Puertos internos (solo dentro de la red Docker)
+
+| Puerto | Servicio |
+|---|---|
+| `80` | Nginx del frontend (`ms-frontend:80`, mapeado a 3000) |
+| `3306` | Las 5 instancias MySQL escuchan acá; cada una se publica en su puerto propio (3307–3311) |
+| `27017` | MongoDB interno (publicado en 27018) |
+| `6379` | Redis interno (publicado en 6380) |
+
+## Resumen servicios
+
+- **Entrada web:** `80` o `3000` (front Nginx) o `5173` (Vite dev) → **`8080`** (gateway) → **`8081–8086`** (msvc).
+- **Datos:** `3307–3311` (MySQL por servicio), `27018` (Mongo), `6380` (Redis).
+- **Infra compartida:** `5672`/`15672` (RabbitMQ), `1025`/`8025` (MailHog).
+
 
 ### Usuarios demo
 
