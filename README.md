@@ -15,7 +15,7 @@ Documentación formal de entrega: `Backend/docs/`.
 
 ## Levantar el stack completo (Docker)
 
-Requisitos: Docker con Compose v2. Puertos libres: `3000`, `8080`–`8086`, `3307`–`3311`, `6380`, `27018`.
+Requisitos: Docker con Compose v2. Puertos libres: `3000`, `8080`–`8086`, `3307`–`3311`, `6380`,`8025`,`5672`,`15672` `27018`.
 No hace falta crear ni copiar ningún `.env` para el backend (los valores por defecto están en los compose); solo si se quiere cambiar algo, copiar la raíz `.env.example` a `.env`. El `.env` del frontend ya está versionado en `Frontend/.env`.
 
 ```bash
