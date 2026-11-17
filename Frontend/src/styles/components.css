@@ -1,0 +1,154 @@
+/* =========================
+   COMPONENTS
+========================= */
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: var(--radius-sm);
+  font-weight: var(--typography-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--fonts-mono);
+  font-size: var(--typography-text-sm);
+  cursor: pointer;
+  transition: all var(--animation-fast);
+  text-decoration: none;
+  border: none;
+}
+
+.btn-primary {
+  background: transparent;
+  border: 1px solid var(--colors-primary);
+  color: var(--colors-primary);
+}
+
+.btn-primary:hover {
+  background: var(--colors-primary);
+  color: #000;
+  box-shadow: 0 0 20px var(--colors-primary);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  /*  background: rgba(255, 255, 255, 0.05); */
+  border: 1px solid var(--colors-border);
+  color: var(--colors-text);
+}
+
+.btn-secondary:hover {
+  /* background: rgba(255, 255, 255, 0.1); */
+  border-color: var(--colors-text);
+}
+
+/* CTA / nav no cableado al BE: visible pero sin flujo */
+.btn:disabled,
+button:disabled.is-gated-off,
+.is-gated-off {
+  opacity: 0.45;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  box-shadow: none !important;
+  transform: none !important;
+  filter: grayscale(0.35);
+  text-decoration: none;
+}
+
+a.is-gated-off,
+span.is-gated-off {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary.is-gated-off,
+.btn.is-gated-off {
+  background: transparent !important;
+  border-color: var(--colors-border, #666) !important;
+  color: var(--colors-text-muted, #888) !important;
+}
+
+.soporte-card__cta.is-gated-off {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.35);
+}
+
+.nav-links .is-gated-off,
+.mobile-links .is-gated-off {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+/* Section Headers */
+.section-header {
+
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  /* gap: var(--spacing-xs); */
+  /* Reduced gap */
+}
+
+.section-header>*:last-child {
+  margin-bottom: 0;
+}
+
+.section-header h1,
+.section-header h2,
+.section-header h3 {
+  margin-bottom: 0;
+  /* Remove default margin to let gap handle it */
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-group label {
+  display: block;
+  font-family: var(--fonts-mono);
+  font-size: var(--typography-text-xs);
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--colors-textMuted);
+  margin-bottom: var(--spacing-xs);
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  background: var(--colors-surface);
+  border: 1px solid var(--colors-border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  color: var(--colors-text);
+  font-family: var(--fonts-body);
+  font-size: var(--typography-baseSize);
+  transition: all var(--animation-fast);
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--colors-primary);
+  background: var(--colors-surfaceHover);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--colors-primary) 20%, transparent);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* Botón a todo el ancho (auth) */
+.btn--full {
+  width: 100%;
+}

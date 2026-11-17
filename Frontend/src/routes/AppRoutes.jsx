@@ -1,35 +1,77 @@
-import { Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
+import { Route, Routes } from 'react-router-dom'
 
-import Home from '../pages/HomePage/Home'
-import EventosPage from '../pages/EventosPage/EventosPage'
-import EventoDetallePage from '../pages/EventoDetallePage/EventoDetallePage'
-import CheckoutPage from '../pages/CheckoutPage/CheckoutPage'
-import MisEntradasPage from '../pages/MisEntradasPage/MisEntradasPage'
-import EntradaDetallePage from '../pages/EntradaDetallePage/EntradaDetallePage'
-import LoginPage from '../pages/LoginPage/LogInPage'
-import SoportePage from '../pages/SoportePage/SoportePage'
-import DevolucionPage from '../pages/SoportePage/DevolucionPage'
-import TransferenciaPage from '../pages/SoportePage/TransferenciaPage'
-import GestionPage from '../pages/GestionPage/GestionPage'
-import GestionEventosPage from '../pages/GestionPage/GestionEventosPage'
-import GestionEventoNuevoPage from '../pages/GestionPage/GestionEventoNuevoPage'
-import GestionEventoEditarPage from '../pages/GestionPage/GestionEventoEditarPage'
-import GestionEventoReportesPage from '../pages/GestionPage/GestionEventoReportesPage'
-import GestionUsuariosPage from '../pages/GestionPage/GestionUsuariosPage'
-import GestionLugaresPage from '../pages/GestionPage/GestionLugaresPage'
-import GestionLugarFormPage from '../pages/GestionPage/GestionLugarFormPage'
-import GestionParticipantesPage from '../pages/GestionPage/GestionParticipantesPage'
-import OrganizerAccountPage from '../pages/CuentaRolesPage/OrganizerAccountPage'
-import PerfilPage from '../pages/PerfilPage/PerfilPage'
-import GestionVentasPage from '../pages/GestionPage/GestionVentasPage'
-import GestionEntradaDetallePage from '../pages/GestionPage/GestionEntradaDetallePage'
-import AccesoPage from '../pages/AccesoPage/AccesoPage'
-import AccesoScanPage from '../pages/AccesoPage/AccesoScanPage'
-import NotificacionesPage from '../pages/NotificacionesPage/NotificacionesPage'
-import ForbiddenPage from '../pages/ForbiddenPage/ForbiddenPage'
-import NotFoundPage from '../pages/NotFoundPage/NotFoundPage'
 import ProtectedRoute from './ProtectedRoute'
+import RouteFallback from '../components/layout/RouteFallback'
 import { ROLES } from '../auth/roles'
+
+// Rutas con code splitting: cada pantalla pesada (gestión, checkout, acceso)
+// se descarga recién cuando se navega a ella.
+const Home = lazy(() => import('../pages/HomePage/Home'))
+const EventosPage = lazy(() => import('../pages/EventosPage/EventosPage'))
+const EventoDetallePage = lazy(() => import('../pages/EventoDetallePage/EventoDetallePage'))
+const CheckoutPage = lazy(() => import('../pages/CheckoutPage/CheckoutPage'))
+const MisEntradasPage = lazy(() => import('../pages/MisEntradasPage/MisEntradasPage'))
+const EntradaDetallePage = lazy(() => import('../pages/EntradaDetallePage/EntradaDetallePage'))
+const LoginPage = lazy(() => import('../pages/LoginPage/LogInPage'))
+const SoportePage = lazy(() => import('../pages/SoportePage/SoportePage'))
+const DevolucionPage = lazy(() => import('../pages/SoportePage/DevolucionPage'))
+const TransferenciaPage = lazy(() => import('../pages/SoportePage/TransferenciaPage'))
+const GestionPage = lazy(() => import('../pages/GestionPage/GestionPage'))
+const GestionEventosPage = lazy(() => import('../pages/GestionPage/GestionEventosPage'))
+const GestionEventoNuevoPage = lazy(() => import('../pages/GestionPage/GestionEventoNuevoPage'))
+const GestionEventoEditarPage = lazy(() => import('../pages/GestionPage/GestionEventoEditarPage'))
+const GestionEventoReportesPage = lazy(() => import('../pages/GestionPage/GestionEventoReportesPage'))
+const GestionUsuariosPage = lazy(() => import('../pages/GestionPage/GestionUsuariosPage'))
+const GestionLugaresPage = lazy(() => import('../pages/GestionPage/GestionLugaresPage'))
+const GestionLugarFormPage = lazy(() => import('../pages/GestionPage/GestionLugarFormPage'))
+const GestionParticipantesPage = lazy(() => import('../pages/GestionPage/GestionParticipantesPage'))
+const OrganizerAccountPage = lazy(() => import('../pages/CuentaRolesPage/OrganizerAccountPage'))
+const PerfilPage = lazy(() => import('../pages/PerfilPage/PerfilPage'))
+const GestionVentasPage = lazy(() => import('../pages/GestionPage/GestionVentasPage'))
+const GestionEntradaDetallePage = lazy(() => import('../pages/GestionPage/GestionEntradaDetallePage'))
+const AccesoPage = lazy(() => import('../pages/AccesoPage/AccesoPage'))
+const AccesoScanPage = lazy(() => import('../pages/AccesoPage/AccesoScanPage'))
+const NotificacionesPage = lazy(() => import('../pages/NotificacionesPage/NotificacionesPage'))
+const ForbiddenPage = lazy(() => import('../pages/ForbiddenPage/ForbiddenPage'))
+const NotFoundPage = lazy(() => import('../pages/NotFoundPage/NotFoundPage'))
+
+const GESTION_ROLES = [ROLES.ADMIN, ROLES.ORGANIZADOR]
+
+/** Configuración única de rutas: path + elemento + auth/roles. */
+const ROUTES = [
+  { path: '/', element: <Home /> },
+  { path: '/eventos', element: <EventosPage />, auth: true },
+  { path: '/eventos/:eventoId', element: <EventoDetallePage /> },
+  { path: '/login', element: <LoginPage /> },
+  { path: '/cuenta/organizador', element: <OrganizerAccountPage /> },
+  { path: '/soporte', element: <SoportePage /> },
+  { path: '/sin-permiso', element: <ForbiddenPage /> },
+
+  { path: '/eventos/:eventoId/comprar', element: <CheckoutPage />, auth: true },
+  { path: '/perfil', element: <PerfilPage />, auth: true },
+  { path: '/mis-entradas', element: <MisEntradasPage />, auth: true },
+  { path: '/notificaciones', element: <NotificacionesPage />, auth: true },
+  { path: '/mis-entradas/:entradaId', element: <EntradaDetallePage />, auth: true },
+  { path: '/soporte/devolucion', element: <DevolucionPage />, auth: true },
+  { path: '/soporte/transferencia', element: <TransferenciaPage />, auth: true },
+
+  { path: '/gestion', element: <GestionPage />, auth: true, roles: GESTION_ROLES },
+  { path: '/gestion/eventos', element: <GestionEventosPage />, auth: true, roles: GESTION_ROLES },
+  { path: '/gestion/eventos/nuevo', element: <GestionEventoNuevoPage />, auth: true, roles: GESTION_ROLES },
+  { path: '/gestion/eventos/:eventoId/editar', element: <GestionEventoEditarPage />, auth: true, roles: GESTION_ROLES },
+  { path: '/gestion/eventos/:eventoId/reportes', element: <GestionEventoReportesPage />, auth: true, roles: GESTION_ROLES },
+  { path: '/gestion/lugares', element: <GestionLugaresPage />, auth: true, roles: [ROLES.ADMIN] },
+  { path: '/gestion/lugares/nuevo', element: <GestionLugarFormPage />, auth: true, roles: [ROLES.ADMIN] },
+  { path: '/gestion/lugares/:lugarId', element: <GestionLugarFormPage />, auth: true, roles: [ROLES.ADMIN] },
+  { path: '/gestion/participantes', element: <GestionParticipantesPage />, auth: true, roles: [ROLES.ADMIN] },
+  { path: '/gestion/usuarios', element: <GestionUsuariosPage />, auth: true, roles: [ROLES.ADMIN] },
+  { path: '/gestion/ventas', element: <GestionVentasPage />, auth: true, roles: [ROLES.ADMIN] },
+  { path: '/gestion/entradas/:entradaId', element: <GestionEntradaDetallePage />, auth: true, roles: [ROLES.ADMIN] },
+
+  { path: '/acceso', element: <AccesoPage />, auth: true, roles: [ROLES.ACCESO] },
+  { path: '/acceso/scan', element: <AccesoScanPage />, auth: true, roles: [ROLES.ACCESO] },
+]
 
 /**
  * Mapa front cliente TicketYa → API Gateway :8080
@@ -37,195 +79,20 @@ import { ROLES } from '../auth/roles'
  */
 const AppRoutes = () => {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-            <Route
-              path="/eventos"
-              element={
-                <ProtectedRoute>
-                  <EventosPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/eventos/:eventoId" element={<EventoDetallePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/cuenta/organizador" element={<OrganizerAccountPage />} />
-            <Route path="/soporte" element={<SoportePage />} />
-            <Route path="/sin-permiso" element={<ForbiddenPage />} />
-
-      <Route
-        path="/eventos/:eventoId/comprar"
-        element={
-          <ProtectedRoute>
-            <CheckoutPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/perfil"
-        element={
-          <ProtectedRoute>
-            <PerfilPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/mis-entradas"
-        element={
-          <ProtectedRoute>
-            <MisEntradasPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/notificaciones"
-        element={
-          <ProtectedRoute>
-            <NotificacionesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/mis-entradas/:entradaId"
-        element={
-          <ProtectedRoute>
-            <EntradaDetallePage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/soporte/devolucion"
-        element={
-          <ProtectedRoute>
-            <DevolucionPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/soporte/transferencia"
-        element={
-          <ProtectedRoute>
-            <TransferenciaPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/gestion"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
-            <GestionPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/eventos"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
-            <GestionEventosPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/eventos/nuevo"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
-            <GestionEventoNuevoPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/eventos/:eventoId/editar"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
-            <GestionEventoEditarPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/eventos/:eventoId/reportes"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN, ROLES.ORGANIZADOR]}>
-            <GestionEventoReportesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/lugares"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionLugaresPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/lugares/nuevo"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionLugarFormPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/lugares/:lugarId"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionLugarFormPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/participantes"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionParticipantesPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/usuarios"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionUsuariosPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/ventas"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionVentasPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/gestion/entradas/:entradaId"
-        element={
-          <ProtectedRoute roles={[ROLES.ADMIN]}>
-            <GestionEntradaDetallePage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/acceso"
-        element={
-          <ProtectedRoute roles={[ROLES.ACCESO]}>
-            <AccesoPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/acceso/scan"
-        element={
-          <ProtectedRoute roles={[ROLES.ACCESO]}>
-            <AccesoScanPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+    <Suspense fallback={<RouteFallback />}>
+      <Routes>
+        {ROUTES.map(({ path, element, auth, roles }) => (
+          <Route
+            key={path}
+            path={path}
+            element={
+              auth ? <ProtectedRoute roles={roles}>{element}</ProtectedRoute> : element
+            }
+          />
+        ))}
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
+    </Suspense>
   )
 }
 

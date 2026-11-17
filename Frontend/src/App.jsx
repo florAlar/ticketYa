@@ -1,10 +1,10 @@
 import Layout from './components/layout/Layout'
 import AppRoutes from './routes/AppRoutes'
+import ErrorBoundary from './components/ui/ErrorBoundary'
 
 import ThemeProvider from './providers/ThemeProvider'
 import SiteProvider from './providers/SiteProvider'
 import AuthProvider from './providers/AuthProvider'
-import './styles/global.css'
 
 /**
  * Árbol de app TicketYa (cliente → gateway :8080).
@@ -13,15 +13,17 @@ import './styles/global.css'
  */
 function App() {
   return (
-    <SiteProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <Layout>
-            <AppRoutes />
-          </Layout>
-        </AuthProvider>
-      </ThemeProvider>
-    </SiteProvider>
+    <ErrorBoundary>
+      <SiteProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </AuthProvider>
+        </ThemeProvider>
+      </SiteProvider>
+    </ErrorBoundary>
   )
 }
 

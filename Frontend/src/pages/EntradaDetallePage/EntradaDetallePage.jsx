@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { getEntrada } from '../../api/entradas'
+import { formatFecha } from '../../lib/format'
 import {
   crearSolicitudEntrada,
   listSolicitudesEntrada,
@@ -14,53 +16,41 @@ import {
 } from '../../domain/devolucion'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import '../MisEntradasPage/MisEntradasPage.css'
-
-function formatFecha(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleString('es-AR', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    })
-  } catch {
-    return iso
-  }
-}
 
 /** Detalle + QR + gestión reclamo/devolución. */
 const EntradaDetallePage = () => {
   const { entradaId } = useParams()
   const { user, token } = useAuth()
-  const [entrada, setEntrada] = useState(null)
-  const [solicitudes, setSolicitudes] = useState([])
-  const [status, setStatus] = useState('loading')
-  const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [tipo, setTipo] = useState(DEVOLUCION_TIPOS.DEVOLUCION)
   const [motivo, setMotivo] = useState('')
   const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    setStatus('loading')
-    setError('')
-    try {
+  const load = useCallback(
+    async (signal) => {
       const [ent, sols] = await Promise.all([
-        getEntrada(entradaId, user, { token }),
-        listSolicitudesEntrada(entradaId, user, { token }),
+        getEntrada(entradaId, user, { token, signal }),
+        listSolicitudesEntrada(entradaId, user, { token, signal }),
       ])
-      setEntrada(ent)
-      setSolicitudes(Array.isArray(sols) ? sols : [])
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudo cargar la entrada')
-      setStatus('error')
-    }
-  }, [entradaId, user, token])
+      return {
+        entrada: ent,
+        solicitudes: Array.isArray(sols) ? sols : [],
+      }
+    },
+    [entradaId, user, token]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, status, error: loadError, reload } = useAsync(
+    load,
+    [entradaId, user?.id, token],
+    { enabled: Boolean(user?.id && entradaId) }
+  )
+
+  const entrada = data?.entrada || null
+  const solicitudes = useMemo(() => data?.solicitudes || [], [data])
 
   const pendiente = useMemo(
     () => solicitudes.some((s) => s.estado === 'PENDIENTE'),
@@ -90,7 +80,7 @@ const EntradaDetallePage = () => {
       )
       setMotivo('')
       setMsg('Solicitud enviada. Un administrador la revisará.')
-      await load()
+      await reload()
     } catch (err) {
       setError(err.message || 'No se pudo enviar')
     } finally {
@@ -110,17 +100,15 @@ const EntradaDetallePage = () => {
       </header>
 
       {status === 'loading' && (
-        <p className="mis-entradas-page__muted">Cargando…</p>
+        <LoadingState label="Cargando entrada…" />
       )}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
       {error && <p className="mis-entradas-page__error">{error}</p>}
       {msg && <p className="mis-entradas-page__ok">{msg}</p>}
 
-      {status === 'ok' && entrada && (
+      {status === 'success' && entrada && (
         <>
-          <div
-            className="mis-entradas-card"
-            style={{ flexDirection: 'column', alignItems: 'stretch' }}
-          >
+          <div className="mis-entradas-card mis-entradas-card--stack">
             <p>
               <strong>Estado:</strong>{' '}
               {ENTRADA_ESTADO_LABELS[entrada.estado] || entrada.estado}
@@ -153,32 +141,12 @@ const EntradaDetallePage = () => {
             ) : null}
 
             {mostrarQr ? (
-              <div
-                className="entrada-qr-box"
-                aria-label="Código QR de la entrada"
-                style={{
-                  marginTop: '1rem',
-                  padding: '1.25rem',
-                  borderRadius: 12,
-                  border: '1px dashed var(--colors-border, #ccc)',
-                  textAlign: 'center',
-                  fontFamily: 'ui-monospace, monospace',
-                  wordBreak: 'break-all',
-                }}
-              >
-                <p
-                  style={{
-                    margin: '0 0 0.5rem',
-                    fontSize: '0.8rem',
-                    opacity: 0.7,
-                  }}
-                >
-                  Código QR
-                </p>
-                <p style={{ margin: 0, fontWeight: 600 }}>{entrada.codigoQR}</p>
+              <div className="entrada-qr-box" aria-label="Código QR de la entrada">
+                <p className="entrada-qr-box__label">Código QR</p>
+                <p className="entrada-qr-box__code">{entrada.codigoQR}</p>
               </div>
             ) : cancelada ? (
-              <div style={{ marginTop: '1rem' }}>
+              <div className="entrada-detalle__notice">
                 <p className="mis-entradas-page__badge mis-entradas-page__badge--cancel">
                   Evento cancelado
                 </p>
@@ -190,8 +158,7 @@ const EntradaDetallePage = () => {
               </div>
             ) : (
               <p
-                className="mis-entradas-page__muted"
-                style={{ marginTop: '1rem' }}
+                className="mis-entradas-page__muted entrada-detalle__notice"
                 role="status"
               >
                 Esta entrada no tiene QR de ingreso (estado{' '}
@@ -205,17 +172,17 @@ const EntradaDetallePage = () => {
           </div>
 
           {!cancelada && (
-          <section className="entrada-gestion" style={{ marginTop: '1.5rem' }}>
-            <h2 className="mis-entradas-page__title" style={{ fontSize: '1.15rem' }}>
+          <section className="entrada-gestion">
+            <h2 className="mis-entradas-page__title mis-entradas-page__title--sub">
               Reclamo / devolución
             </h2>
 
             {solicitudes.length > 0 && (
-              <ul className="mis-entradas-list" style={{ marginBottom: '1rem' }}>
+              <ul className="mis-entradas-list mis-entradas-list--spaced">
                 {solicitudes.map((s) => (
                   <li key={s.id} className="mis-entradas-card">
                     <div className="mis-entradas-card__body">
-                      <h2 style={{ fontSize: '1rem' }}>
+                      <h2 className="mis-entradas-page__title--sm">
                         {DEVOLUCION_TIPO_LABELS[s.tipo] || s.tipo}
                       </h2>
                       <p className="mis-entradas-page__muted">
@@ -232,7 +199,7 @@ const EntradaDetallePage = () => {
             )}
 
             {puedeGestionar ? (
-              <form className="mis-entradas-card" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem' }} onSubmit={onSubmit}>
+              <form className="mis-entradas-card mis-entradas-card--form" onSubmit={onSubmit}>
                 <p className="mis-entradas-page__muted">
                   Devolución: hasta 72 h antes del evento. Reclamo: error de
                   datos / problema con la entrada.

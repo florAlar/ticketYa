@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import useAsync from '../../hooks/useAsync'
 import { listLugares } from '../../api/lugares'
 import { describirSector } from '../../domain/lugar'
 import { urlMapaLugar } from '../../domain/evento'
+import { ErrorState, LoadingState } from '../ui/AsyncState'
 
 /**
  * Lugar y sectores de un evento (LUG-04).
@@ -23,28 +25,18 @@ const EventoLugarSectores = ({
   disabled = false,
   isAdmin = false,
 }) => {
-  const [lugares, setLugares] = useState([])
-  const [estado, setEstado] = useState('loading')
-  const [error, setError] = useState('')
   const [filtro, setFiltro] = useState('')
 
-  useEffect(() => {
-    let vivo = true
-    listLugares({}, { token })
-      .then((data) => {
-        if (!vivo) return
-        setLugares(Array.isArray(data) ? data : [])
-        setEstado('ok')
-      })
-      .catch((err) => {
-        if (!vivo) return
-        setError(err.message || 'No se pudieron cargar los lugares')
-        setEstado('error')
-      })
-    return () => {
-      vivo = false
-    }
-  }, [token])
+  const {
+    data: lugares = [],
+    status: estado,
+    error: loadError,
+    reload,
+  } = useAsync(
+    (signal) => listLugares({}, { token, signal }),
+    [token],
+    { enabled: Boolean(token) }
+  )
 
   const elegido = useMemo(
     () => lugares.find((l) => l.id === idLugar) || null,
@@ -69,14 +61,12 @@ const EventoLugarSectores = ({
       <fieldset className="gestion-fieldset">
         <legend>Lugar {publishing ? '*' : '(se elige para publicar)'}</legend>
 
-        {estado === 'loading' && <p className="gestion-card__muted">Cargando lugares…</p>}
+        {estado === 'loading' && <LoadingState label="Cargando lugares…" />}
         {estado === 'error' && (
-          <p className="gestion-error" role="alert">
-            {error}
-          </p>
+          <ErrorState error={loadError} onRetry={reload} />
         )}
 
-        {estado === 'ok' && (
+        {estado === 'success' && (
           <>
             <div className="gestion-form__row">
               <div className="form-group">
@@ -145,14 +135,14 @@ const EventoLugarSectores = ({
         {!idLugar && (
           <p className="gestion-card__muted">Elegí un lugar para ver sus sectores.</p>
         )}
-        {idLugar && rows.length === 0 && estado === 'ok' && (
+        {idLugar && rows.length === 0 && estado === 'success' && (
           <p className="gestion-card__muted">
             Este lugar todavía no tiene sectores: el administrador tiene que cargarlos.
           </p>
         )}
         {rows.length > 0 && (
           <>
-            <p className="gestion-card__muted" style={{ marginBottom: '0.75rem' }}>
+            <p className="gestion-card__muted gestion-hint--spaced">
               Marcá los sectores que se venden en este evento y poné su precio. El cupo es opcional:
               vacío vende todo el sector. Los sectores numerados se venden completos y el cliente
               elige su asiento. Nombre y layout los define el lugar.

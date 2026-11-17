@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import {
   listColaAdminVentas,
   marcarReintegroEntradaCancelada,
@@ -13,30 +14,14 @@ import {
 import { ENTRADA_ESTADO_LABELS } from '../../domain/entrada'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import { formatFecha, formatMoney } from '../../lib/format'
 import '../GestionPage/GestionPage.css'
 
-function formatFecha(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleString('es-AR', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    })
-  } catch {
-    return iso
-  }
-}
-
-function formatMoney(n) {
-  try {
-    return new Intl.NumberFormat('es-AR', {
-      style: 'currency',
-      currency: 'ARS',
-      maximumFractionDigits: 0,
-    }).format(n ?? 0)
-  } catch {
-    return `$${n ?? 0}`
-  }
+const COLA_VACIA = {
+  devoluciones: [],
+  eventosCancelados: [],
+  entradasEventosCancelados: [],
 }
 
 /**
@@ -47,35 +32,29 @@ function formatMoney(n) {
  */
 const GestionVentasPage = () => {
   const { user, token } = useAuth()
-  const [cola, setCola] = useState({
-    devoluciones: [],
-    eventosCancelados: [],
-    entradasEventosCancelados: [],
-  })
-  const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
 
-  const load = useCallback(async () => {
-    setStatus('loading')
-    setError('')
-    try {
-      const data = await listColaAdminVentas(user, { token })
-      setCola({
+  const load = useCallback(
+    async (signal) => {
+      const data = await listColaAdminVentas(user, { token, signal })
+      return {
         devoluciones: data?.devoluciones || [],
         eventosCancelados: data?.eventosCancelados || [],
         entradasEventosCancelados: data?.entradasEventosCancelados || [],
-      })
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudo cargar')
-      setStatus('error')
-    }
-  }, [user, token])
+      }
+    },
+    [user, token]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const {
+    data: cola = COLA_VACIA,
+    status,
+    error: loadError,
+    reload,
+  } = useAsync(load, [user?.id, token], {
+    enabled: Boolean(user?.id && token),
+  })
 
   const entradasPorEvento = useMemo(() => {
     const map = new Map()
@@ -107,7 +86,7 @@ const GestionVentasPage = () => {
     setError('')
     try {
       await resolverDevolucion(id, estado, user, { token })
-      await load()
+      await reload()
     } catch (err) {
       setError(err.message || 'No se pudo resolver')
     } finally {
@@ -124,7 +103,7 @@ const GestionVentasPage = () => {
         token,
         idEvento,
       })
-      await load()
+      await reload()
     } catch (err) {
       setError(err.message || 'No se pudo marcar reintegro')
     } finally {
@@ -133,7 +112,7 @@ const GestionVentasPage = () => {
   }
 
   const empty =
-    status === 'ok' &&
+    status === 'success' &&
     cola.devoluciones.length === 0 &&
     cola.entradasEventosCancelados.length === 0 &&
     cola.eventosCancelados.length === 0
@@ -158,19 +137,20 @@ const GestionVentasPage = () => {
         </p>
       </header>
 
-      <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
+      <div className="gestion-card__actions gestion-card__actions--spaced">
         <GateButton
           enabled={FEATURE.adminColaVentas}
           type="button"
           className="btn"
-          onClick={load}
+          onClick={reload}
         >
           Actualizar
         </GateButton>
       </div>
 
       {error && <p className="gestion-error">{error}</p>}
-      {status === 'loading' && <p className="gestion-card__muted">Cargando…</p>}
+      {status === 'loading' && <LoadingState label="Cargando cola…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
 
       {empty && (
         <div className="gestion-card">
@@ -183,8 +163,8 @@ const GestionVentasPage = () => {
       )}
 
       {cola.devoluciones.length > 0 && (
-        <section style={{ marginBottom: '2rem' }}>
-          <h2 className="gestion-page__title" style={{ fontSize: '1.15rem' }}>
+        <section className="gestion-section--spaced">
+          <h2 className="gestion-page__title gestion-section__title">
             Devoluciones y reclamos
           </h2>
           <ul className="gestion-event-list">
@@ -244,18 +224,18 @@ const GestionVentasPage = () => {
 
       {entradasPorEvento.length > 0 && (
         <section>
-          <h2 className="gestion-page__title" style={{ fontSize: '1.15rem' }}>
+          <h2 className="gestion-page__title gestion-section__title">
             Eventos cancelados — reintegro
           </h2>
           {entradasPorEvento.map(({ evento, entradas }) => (
-            <div key={evento.id} style={{ marginBottom: '1.25rem' }}>
-              <div className="gestion-card" style={{ marginBottom: '0.65rem' }}>
-                <h2 style={{ margin: 0, fontSize: '1.05rem' }}>{evento.nombre}</h2>
+            <div key={evento.id} className="gestion-event-group">
+              <div className="gestion-card gestion-card--spaced">
+                <h2 className="gestion-section__title">{evento.nombre}</h2>
                 <p className="gestion-card__muted">
                   {evento.id} · {formatFecha(evento.fechaInicio)} · CANCELADO ·{' '}
                   {entradas.length} entrada(s)
                 </p>
-                <div className="gestion-card__actions" style={{ marginTop: '0.65rem' }}>
+                <div className="gestion-card__actions gestion-card__actions--top">
                   <GateButton
                     enabled={FEATURE.adminReintegroEvento}
                     type="button"

@@ -32,7 +32,10 @@ export async function listMisSolicitudes(user, opts = {}) {
     await delay()
     raw = listDevolucionesByCliente(user.id)
   } else {
-    raw = await http('/api/devoluciones', { token: opts.token })
+    raw = await http('/api/devoluciones', {
+      token: opts.token,
+      signal: opts.signal,
+    })
   }
   const list = Array.isArray(raw) ? raw : raw?.content || raw?.items || []
   const normalized = list.map(normalizeDevolucion)
@@ -41,7 +44,7 @@ export async function listMisSolicitudes(user, opts = {}) {
   try {
     const entradas = opts.entradas
       ? opts.entradas
-      : await listMisEntradas(user, { token: opts.token })
+      : await listMisEntradas(user, { token: opts.token, signal: opts.signal })
     return mergeTramitesConCancelaciones(normalized, entradas)
   } catch {
     return normalized
@@ -136,7 +139,10 @@ export async function listSolicitudesEntrada(entradaId, user, opts = {}) {
     return listDevolucionesByEntrada(entradaId)
   }
 
-  const all = await http('/api/devoluciones', { token: opts.token })
+  const all = await http('/api/devoluciones', {
+    token: opts.token,
+    signal: opts.signal,
+  })
   const list = Array.isArray(all) ? all : all?.content || all?.items || []
   return list.filter((d) => String(d.idEntrada) === String(entradaId))
 }

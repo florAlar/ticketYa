@@ -32,7 +32,7 @@ export async function listUsuarios(user, opts = {}) {
     await delay()
     return listUsuariosAdmin()
   }
-  return http('/api/usuarios', { token: opts.token })
+  return http('/api/usuarios', { token: opts.token, signal: opts.signal })
 }
 
 /** GET /api/usuarios/{id} — ADMIN */
@@ -94,7 +94,7 @@ export async function updateUsuario(id, patch, user, opts = {}) {
  * Contrato back: no hay POST /usuarios/acceso; roles vía PUT .../roles.
  * Cuando el BE exponga alta de PERSONAL_ACCESO, cablear acá.
  */
-export async function createPersonalAcceso(payload, user, opts = {}) {
+export async function createPersonalAcceso(payload, user, _opts = {}) {
   requireAdmin(user)
   if (USE_MOCK) {
     await delay(350)
@@ -113,7 +113,7 @@ export async function createPersonalAcceso(payload, user, opts = {}) {
 /**
  * Asignar eventos a PERSONAL_ACCESO — solo mock (no está en endpoints-back).
  */
-export async function updateAccesoEventos(id, eventosAsignados, user, opts = {}) {
+export async function updateAccesoEventos(id, eventosAsignados, user, _opts = {}) {
   requireAdmin(user)
   if (USE_MOCK) {
     await delay()
@@ -135,7 +135,7 @@ export async function updateAccesoEventos(id, eventosAsignados, user, opts = {})
 /**
  * Eliminar usuario — solo mock (back no documenta DELETE /usuarios/{id}).
  */
-export async function removeUsuario(id, user, opts = {}) {
+export async function removeUsuario(id, user, _opts = {}) {
   requireAdmin(user)
   if (USE_MOCK) {
     await delay()

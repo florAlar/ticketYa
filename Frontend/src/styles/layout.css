@@ -1,0 +1,99 @@
+.layout-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--navbar-height);
+  /* Header height — controlled by navbar.height in theme.js */
+}
+
+/* Aire bajo el header fijo en páginas de contenido */
+.section-v-padding {
+  padding-top: 2.25rem;
+  padding-bottom: 2.5rem;
+}
+
+section {
+  scroll-margin-top: calc(var(--navbar-height, 88px) + 0.5rem);
+}
+/* =========================
+   LAYOUT UTILITIES
+========================= */
+.container {
+  max-width: var(--container-default);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+.container-wide {
+  max-width: var(--container-wide);
+  margin: 0 auto;
+  padding: 0 var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .container-wide {
+    max-width: none;
+    padding: 0;
+    /* Remove padding to let slider touch edges */
+    overflow-x: visible;
+  }
+}
+
+.container-slim {
+  max-width: var(--container-narrow);
+  margin: 0 auto;
+  padding: var(--spacing-xl) var(--spacing-md) 0;
+}
+
+.section-margin {
+  margin: 4rem 0;
+}
+
+.flex-center-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.align-right {
+  margin-left: auto;
+  align-self: center;
+}
+
+/* =========================
+   MOBILE LAYOUT
+========================= */
+@media (max-width: 768px) {
+  .main-content {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  /* El Hero ignora el padding para ser full-width */
+  .hero {
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px);
+    max-width: none;
+  }
+
+  /* Los contenedores mantienen su padding interno */
+  .container,
+  .container-wide,
+  .container-slim {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .paddingLayout {
+    padding: 20px;
+  }
+}

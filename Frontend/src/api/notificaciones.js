@@ -4,7 +4,7 @@ import { http } from './http'
  * Bandeja de notificaciones del usuario autenticado.
  * El gateway inyecta X-User-Id desde el JWT; el front solo manda el Bearer.
  */
-export async function listarMisNotificaciones({ token, page = 0, size = 20, leida } = {}) {
+export async function listarMisNotificaciones({ token, page = 0, size = 20, leida, signal } = {}) {
   const params = new URLSearchParams({
     page: String(page),
     size: String(size),
@@ -12,7 +12,7 @@ export async function listarMisNotificaciones({ token, page = 0, size = 20, leid
   if (leida !== undefined && leida !== null) {
     params.set('leida', String(leida))
   }
-  return http(`/api/notificaciones/me?${params.toString()}`, { token })
+  return http(`/api/notificaciones/me?${params.toString()}`, { token, signal })
 }
 
 export async function marcarNotificacionLeida(id, { token } = {}) {

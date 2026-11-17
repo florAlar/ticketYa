@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { listEventosGestion, patchEventoEstado } from '../../api/eventos'
 import {
   EVENTO_ESTADOS,
@@ -10,53 +11,35 @@ import {
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateLink from '../../components/ui/GateLink'
 import GateButton from '../../components/ui/GateButton'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import { formatFecha } from '../../lib/format'
 import './GestionPage.css'
-
-function formatFecha(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleString('es-AR', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    })
-  } catch {
-    return iso
-  }
-}
 
 const GestionEventosPage = () => {
   const { user, token, isAdmin, canManageAllEvents } = useAuth()
-  const [items, setItems] = useState([])
-  const [status, setStatus] = useState(
-    FEATURE.eventosGestion ? 'loading' : 'gated'
-  )
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
 
-  const load = useCallback(async () => {
-    if (!FEATURE.eventosGestion) {
-      setStatus('gated')
-      setItems([])
-      return
-    }
-    setStatus('loading')
-    setError('')
-    try {
+  const load = useCallback(
+    async (signal) => {
       const data = await listEventosGestion(user, {
         isAdmin: canManageAllEvents,
         token,
+        signal,
       })
-      setItems(Array.isArray(data) ? data : data?.content || data?.items || [])
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudo cargar')
-      setStatus('error')
-    }
-  }, [user, token, canManageAllEvents])
+      return Array.isArray(data) ? data : data?.content || data?.items || []
+    },
+    [user, token, canManageAllEvents]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const {
+    data: items = [],
+    status,
+    error: loadError,
+    reload,
+  } = useAsync(load, [user?.id, token, canManageAllEvents], {
+    enabled: FEATURE.eventosGestion,
+  })
 
   const onEstado = async (id, estado) => {
     const next = String(estado || '').toUpperCase()
@@ -76,7 +59,7 @@ const GestionEventosPage = () => {
         isAdmin: canManageAllEvents,
         token,
       })
-      await load()
+      await reload()
     } catch (err) {
       setError(err.message || 'No se pudo actualizar')
     } finally {
@@ -104,7 +87,7 @@ const GestionEventosPage = () => {
         </p>
       </header>
 
-      <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
+      <div className="gestion-card__actions gestion-card__actions--spaced">
         <GateLink
           enabled={FEATURE.eventosGestion}
           className="btn btn-primary"
@@ -117,22 +100,23 @@ const GestionEventosPage = () => {
           type="button"
           className="btn"
           disabled={status === 'loading'}
-          onClick={load}
+          onClick={reload}
         >
           Actualizar
         </GateButton>
       </div>
 
       {error && <p className="gestion-error">{error}</p>}
-      {status === 'loading' && <p className="gestion-card__muted">Cargando…</p>}
-      {status === 'gated' && (
+      {status === 'loading' && <LoadingState label="Cargando eventos…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
+      {!FEATURE.eventosGestion && (
         <div className="gestion-card">
           <p>Gestión de eventos no cableada al backend en esta build.</p>
           <p className="gestion-card__muted">{GATE_HINT}</p>
         </div>
       )}
 
-      {status === 'ok' && items.length === 0 && (
+      {FEATURE.eventosGestion && status === 'success' && items.length === 0 && (
         <div className="gestion-card">
           <p>No hay eventos en este alcance.</p>
           <GateLink

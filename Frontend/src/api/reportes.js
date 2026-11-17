@@ -15,5 +15,6 @@ export async function getReporteEvento(idEvento, opts = {}) {
   }
   return http(`/api/reportes/eventos/${encodeURIComponent(idEvento)}`, {
     token: opts.token,
+    signal: opts.signal,
   })
 }

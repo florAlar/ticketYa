@@ -63,7 +63,10 @@ export async function listColaAdminVentas(user, opts = {}) {
   }
 
   // Gateway real: pendientes de msvc-entradas
-  const devoluciones = await http('/api/devoluciones', { token: opts.token })
+  const devoluciones = await http('/api/devoluciones', {
+    token: opts.token,
+    signal: opts.signal,
+  })
   const list = Array.isArray(devoluciones)
     ? devoluciones
     : devoluciones?.content || devoluciones?.items || []

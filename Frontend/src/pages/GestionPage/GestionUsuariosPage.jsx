@@ -1,157 +1,34 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import {
-  createPersonalAcceso,
-  listUsuarios,
-  removeUsuario,
-  updateAccesoEventos,
-  updateUsuario,
-} from '../../api/usuarios'
-import { listEventosGestion } from '../../api/eventos'
-import { ROLE_LABELS, ROLES, normalizeRol } from '../../auth/roles'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import useUsuariosAdmin from './usuarios/useUsuariosAdmin'
+import AltaAccesoForm from './usuarios/AltaAccesoForm'
+import UsuarioRow from './usuarios/UsuarioRow'
 import '../GestionPage/GestionPage.css'
 
 const GestionUsuariosPage = () => {
   const { user, token } = useAuth()
-  const [items, setItems] = useState([])
-  const [eventos, setEventos] = useState([])
-  const [status, setStatus] = useState('loading')
-  const [error, setError] = useState('')
-  const [busyId, setBusyId] = useState(null)
-  const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState({
-    nombre: '',
-    email: '',
-    password: '',
-    eventosAsignados: [],
-  })
-
-  const load = useCallback(async () => {
-    if (!FEATURE.adminUsuariosListado) {
-      setStatus('gated')
-      setItems([])
-      setEventos([])
-      return
-    }
-    setStatus('loading')
-    setError('')
-    try {
-      const [users, evs] = await Promise.all([
-        listUsuarios(user, { token }),
-        listEventosGestion(user, { isAdmin: true, token }),
-      ])
-      setItems(Array.isArray(users) ? users : [])
-      setEventos(Array.isArray(evs) ? evs : [])
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudo cargar')
-      setStatus('error')
-    }
-  }, [user, token])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  const eventoOptions = useMemo(
-    () =>
-      eventos.map((e) => ({
-        id: e.id,
-        label: `${e.nombre} (${e.id})`,
-      })),
-    [eventos]
-  )
-
-  const onRol = async (id, rol) => {
-    if (!FEATURE.adminUsuariosListado) return
-    setBusyId(id)
-    setError('')
-    try {
-      await updateUsuario(id, { rol }, user, { token })
-      await load()
-    } catch (err) {
-      setError(err.message || 'No se pudo cambiar el rol')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const onActivo = async (id, activo) => {
-    if (!FEATURE.adminUsuariosListado) return
-    setBusyId(id)
-    setError('')
-    try {
-      await updateUsuario(id, { activo }, user, { token })
-      await load()
-    } catch (err) {
-      setError(err.message || 'No se pudo cambiar el estado')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const onDelete = async (id) => {
-    if (!FEATURE.adminUsuarios) return
-    if (!window.confirm('¿Eliminar este usuario? (personal de acceso no se desactiva)')) {
-      return
-    }
-    setBusyId(id)
-    setError('')
-    try {
-      await removeUsuario(id, user, { token })
-      await load()
-    } catch (err) {
-      setError(err.message || 'No se pudo eliminar')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const onToggleEvento = async (u, eventoId) => {
-    if (!FEATURE.adminUsuarios) return
-    const cur = new Set(u.eventosAsignados || [])
-    if (cur.has(eventoId)) cur.delete(eventoId)
-    else cur.add(eventoId)
-    setBusyId(u.id)
-    setError('')
-    try {
-      await updateAccesoEventos(u.id, [...cur], user, { token })
-      await load()
-    } catch (err) {
-      setError(err.message || 'No se pudo actualizar asignaciones')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const onCreate = async (e) => {
-    e.preventDefault()
-    if (!FEATURE.adminUsuarios) return
-    setError('')
-    setBusyId('create')
-    try {
-      await createPersonalAcceso(form, user, { token })
-      setForm({ nombre: '', email: '', password: '', eventosAsignados: [] })
-      setShowCreate(false)
-      await load()
-    } catch (err) {
-      setError(err.message || 'No se pudo crear')
-    } finally {
-      setBusyId(null)
-    }
-  }
-
-  const toggleFormEvento = (eventoId) => {
-    setForm((prev) => {
-      const set = new Set(prev.eventosAsignados)
-      if (set.has(eventoId)) set.delete(eventoId)
-      else set.add(eventoId)
-      return { ...prev, eventosAsignados: [...set] }
-    })
-  }
+  const {
+    items,
+    status,
+    error,
+    loadError,
+    reload,
+    busyId,
+    showCreate,
+    setShowCreate,
+    form,
+    setForm,
+    eventoOptions,
+    onRol,
+    onActivo,
+    onDelete,
+    onToggleEvento,
+    onCreate,
+    toggleFormEvento,
+  } = useUsuariosAdmin({ user, token })
 
   return (
     <section className="gestion-page container section-v-padding">
@@ -172,7 +49,7 @@ const GestionUsuariosPage = () => {
         </p>
       </header>
 
-      <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
+      <div className="gestion-card__actions gestion-card__actions--spaced">
         <GateButton
           enabled={FEATURE.adminUsuarios}
           type="button"
@@ -185,13 +62,13 @@ const GestionUsuariosPage = () => {
           enabled={FEATURE.adminUsuariosListado}
           type="button"
           className="btn"
-          onClick={load}
+          onClick={reload}
         >
           Actualizar
         </GateButton>
       </div>
 
-      {status === 'gated' && (
+      {!FEATURE.adminUsuariosListado && (
         <div className="gestion-card">
           <p>
             Gestión de usuarios no habilitada en el front: el alta de personal
@@ -206,159 +83,35 @@ const GestionUsuariosPage = () => {
       )}
 
       {error && <p className="gestion-error">{error}</p>}
-      {status === 'loading' && <p className="gestion-card__muted">Cargando…</p>}
+      {status === 'loading' && <LoadingState label="Cargando usuarios…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
 
       {showCreate && (
-        <form className="gestion-card gestion-form" onSubmit={onCreate}>
-          <h2 style={{ margin: 0, fontSize: '1.05rem' }}>Alta ACCESO</h2>
-          <div className="gestion-form__row">
-            <div className="form-group">
-              <label htmlFor="acc-nombre">Nombre</label>
-              <input
-                id="acc-nombre"
-                className="form-input"
-                value={form.nombre}
-                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="acc-email">Email</label>
-              <input
-                id="acc-email"
-                type="email"
-                className="form-input"
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="acc-pass">Contraseña</label>
-              <input
-                id="acc-pass"
-                type="text"
-                className="form-input"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                required
-              />
-            </div>
-          </div>
-          <p className="gestion-card__muted">Eventos asignados</p>
-          <div className="gestion-checks">
-            {eventoOptions.length === 0 && (
-              <span className="gestion-card__muted">No hay eventos en el store.</span>
-            )}
-            {eventoOptions.map((ev) => (
-              <label key={ev.id} className="gestion-check">
-                <input
-                  type="checkbox"
-                  checked={form.eventosAsignados.includes(ev.id)}
-                  onChange={() => toggleFormEvento(ev.id)}
-                />
-                {ev.label}
-              </label>
-            ))}
-          </div>
-          <button
-            type="submit"
-            className="btn btn-primary"
-            disabled={busyId === 'create'}
-          >
-            {busyId === 'create' ? 'Creando…' : 'Crear acceso'}
-          </button>
-        </form>
+        <AltaAccesoForm
+          form={form}
+          setForm={setForm}
+          eventoOptions={eventoOptions}
+          busyId={busyId}
+          onSubmit={onCreate}
+          onToggleEvento={toggleFormEvento}
+        />
       )}
 
-      {status === 'ok' && (
+      {status === 'success' && (
         <ul className="gestion-event-list">
-          {items.map((u) => {
-            const isAcceso = normalizeRol(u.rol) === ROLES.ACCESO
-            return (
-              <li key={u.id} className="gestion-event-row">
-                <div className="gestion-event-row__main">
-                  <h2>
-                    {u.nombre}{' '}
-                    <span className="gestion-card__muted">· {u.email}</span>
-                  </h2>
-                  <p className="gestion-card__muted">
-                    id: {u.id}
-                    {!u.activo && !isAcceso ? ' · DESACTIVADO' : ''}
-                  </p>
-                  <div className="gestion-form__row" style={{ marginTop: '0.5rem' }}>
-                    <div className="form-group">
-                      <label htmlFor={`rol-${u.id}`}>Rol</label>
-                      <select
-                        id={`rol-${u.id}`}
-                        className="form-input"
-                        value={normalizeRol(u.rol)}
-                        disabled={
-                          busyId === u.id || u.id === user?.id || !FEATURE.adminUsuariosListado
-                        }
-                        onChange={(e) => onRol(u.id, e.target.value)}
-                      >
-                        {Object.values(ROLES).map((r) => (
-                          <option key={r} value={r}>
-                            {ROLE_LABELS[r] || r}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {!isAcceso && (
-                      <div className="form-group">
-                        <label htmlFor={`act-${u.id}`}>Activo</label>
-                        <select
-                          id={`act-${u.id}`}
-                          className="form-input"
-                          value={u.activo ? '1' : '0'}
-                          disabled={
-                            busyId === u.id || u.id === user?.id || !FEATURE.adminUsuariosListado
-                          }
-                          onChange={(e) => onActivo(u.id, e.target.value === '1')}
-                        >
-                          <option value="1">Sí</option>
-                          <option value="0">No</option>
-                        </select>
-                      </div>
-                    )}
-                  </div>
-
-                  {isAcceso && (
-                    <div style={{ marginTop: '0.65rem' }}>
-                      <p className="gestion-card__muted">Eventos asignados (scan)</p>
-                      <div className="gestion-checks">
-                        {eventoOptions.map((ev) => (
-                          <label key={ev.id} className="gestion-check">
-                            <input
-                              type="checkbox"
-                              checked={(u.eventosAsignados || []).includes(ev.id)}
-                              disabled={busyId === u.id || !FEATURE.adminUsuarios}
-                              onChange={() => onToggleEvento(u, ev.id)}
-                            />
-                            {ev.label}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div className="gestion-event-row__actions">
-                  {isAcceso && (
-                    <GateButton
-                      enabled={FEATURE.adminUsuarios}
-                      type="button"
-                      className="btn"
-                      disabled={busyId === u.id}
-                      onClick={() => onDelete(u.id)}
-                    >
-                      Eliminar
-                    </GateButton>
-                  )}
-                </div>
-              </li>
-            )
-          })}
+          {items.map((u) => (
+            <UsuarioRow
+              key={u.id}
+              usuario={u}
+              eventoOptions={eventoOptions}
+              busyId={busyId}
+              currentUserId={user?.id}
+              onRol={onRol}
+              onActivo={onActivo}
+              onToggleEvento={onToggleEvento}
+              onDelete={onDelete}
+            />
+          ))}
         </ul>
       )}
 

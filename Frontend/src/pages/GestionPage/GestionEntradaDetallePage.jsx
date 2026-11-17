@@ -1,22 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { getEntrada } from '../../api/entradas'
 import { ENTRADA_ESTADO_LABELS } from '../../domain/entrada'
+import { formatFecha } from '../../lib/format'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import '../MisEntradasPage/MisEntradasPage.css'
 import './GestionPage.css'
-
-function formatFecha(iso) {
-  if (!iso) return '—'
-  try {
-    return new Date(iso).toLocaleString('es-AR', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    })
-  } catch {
-    return iso
-  }
-}
 
 /**
  * Detalle de entrada para ADMIN (cola ventas / ops).
@@ -25,26 +16,17 @@ function formatFecha(iso) {
 const GestionEntradaDetallePage = () => {
   const { entradaId } = useParams()
   const { user, token } = useAuth()
-  const [entrada, setEntrada] = useState(null)
-  const [status, setStatus] = useState('loading')
-  const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    setStatus('loading')
-    setError('')
-    try {
-      const ent = await getEntrada(entradaId, user, { token })
-      setEntrada(ent)
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudo cargar la entrada')
-      setStatus('error')
-    }
-  }, [entradaId, user, token])
+  const load = useCallback(
+    (signal) => getEntrada(entradaId, user, { token, signal }),
+    [entradaId, user, token]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data: entrada, status, error, reload } = useAsync(
+    load,
+    [entradaId, user?.id, token],
+    { enabled: Boolean(user?.id && token) }
+  )
 
   return (
     <section className="mis-entradas-page container-slim section-v-padding">
@@ -62,16 +44,11 @@ const GestionEntradaDetallePage = () => {
         </p>
       </header>
 
-      {status === 'loading' && (
-        <p className="mis-entradas-page__muted">Cargando…</p>
-      )}
-      {error && <p className="mis-entradas-page__error">{error}</p>}
+      {status === 'loading' && <LoadingState label="Cargando entrada…" />}
+      {status === 'error' && <ErrorState error={error} onRetry={reload} />}
 
-      {status === 'ok' && entrada && (
-        <div
-          className="mis-entradas-card"
-          style={{ flexDirection: 'column', alignItems: 'stretch' }}
-        >
+      {status === 'success' && entrada && (
+        <div className="mis-entradas-card mis-entradas-card--stack">
           <p>
             <strong>Estado:</strong>{' '}
             {ENTRADA_ESTADO_LABELS[entrada.estado] || entrada.estado}
@@ -103,22 +80,9 @@ const GestionEntradaDetallePage = () => {
           <p>
             <strong>Emisión:</strong> {formatFecha(entrada.fechaEmision)}
           </p>
-          <div
-            className="entrada-qr-box"
-            style={{
-              marginTop: '1rem',
-              padding: '1.25rem',
-              borderRadius: 12,
-              border: '1px dashed var(--colors-border, #ccc)',
-              textAlign: 'center',
-              fontFamily: 'ui-monospace, monospace',
-              wordBreak: 'break-all',
-            }}
-          >
-            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', opacity: 0.7 }}>
-              Código QR
-            </p>
-            <p style={{ margin: 0, fontWeight: 600 }}>{entrada.codigoQR}</p>
+          <div className="entrada-qr-box">
+            <p className="entrada-qr-box__label">Código QR</p>
+            <p className="entrada-qr-box__code">{entrada.codigoQR}</p>
           </div>
         </div>
       )}

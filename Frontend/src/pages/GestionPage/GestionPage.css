@@ -312,3 +312,53 @@
 .reporte-tabla tfoot th {
   border-top: 2px solid rgba(128, 128, 128, 0.5);
 }
+
+/* Utilidades de layout del panel (evitan estilos inline) */
+.gestion-card__actions--tight {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.gestion-card__actions--spaced {
+  margin-bottom: 1rem;
+}
+
+.gestion-card__actions--top {
+  margin-top: 0.65rem;
+}
+
+.gestion-section {
+  margin-top: 1rem;
+}
+
+.gestion-section--spaced {
+  margin-bottom: 2rem;
+}
+
+.gestion-section__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.gestion-card--spaced {
+  margin-bottom: 1rem;
+}
+
+.gestion-event-group {
+  margin-bottom: 1.25rem;
+}
+
+.gestion-form__row--compact {
+  margin-top: 0.5rem;
+}
+
+.gestion-user__asignaciones {
+  margin-top: 0.65rem;
+}
+
+.gestion-hint--spaced {
+  margin-bottom: 0.75rem;
+}
+
+.gestion-hint--top {
+  margin-top: 0.35rem;
+}

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import useAsync from '../../../hooks/useAsync'
 import { listEventos, getDisponibilidadBatch } from '../../../api/eventos'
 import {
   normalizeDisponibilidadDto,
@@ -41,75 +42,35 @@ const EventList = ({
   const controlled = itemsProp !== undefined
   const key = useMemo(() => filterKey(filter), [filter])
 
-  const [remote, setRemote] = useState({
-    key,
-    items: [],
-    status: 'loading',
-    error: '',
-  })
-
-  // Reset al cambiar el filtro (patrón React: ajustar estado en render)
-  if (!controlled && remote.key !== key) {
-    setRemote({ key, items: [], status: 'loading', error: '' })
-  }
-
-  useEffect(() => {
-    if (controlled) return undefined
-
-    let cancelled = false
-    const activeKey = key
-
-    ;(async () => {
+  const {
+    data: remote,
+    status: remoteStatus,
+    error: remoteError,
+    reload,
+  } = useAsync(
+    async (signal) => {
+      const data = await listEventos(filter || {}, { signal })
+      const list = Array.isArray(data)
+        ? data
+        : data?.content || data?.items || []
       try {
-        const data = await listEventos(filter || {})
-        if (cancelled) return
-        const list = Array.isArray(data)
-          ? data
-          : data?.content || data?.items || []
-        let withCupo = list
-        try {
-          const ids = list.map((e) => e.id).filter(Boolean)
-          if (ids.length) {
-            const batch = await getDisponibilidadBatch(ids)
-            if (cancelled) return
-            withCupo = mergeCupos(list, batch)
-          }
-        } catch (err) {
-          // catálogo igual se muestra sin badge si batch falla (jar/ruta vieja)
-          if (typeof console !== 'undefined') {
-            console.warn('[EventList] batch disponibilidad falló:', err?.message || err)
-          }
-          withCupo = list
-        }
-        if (cancelled) return
-        setRemote((prev) =>
-          prev.key !== activeKey
-            ? prev
-            : { key: activeKey, items: withCupo, status: 'success', error: '' }
-        )
+        const ids = list.map((e) => e.id).filter(Boolean)
+        if (!ids.length) return list
+        const batch = await getDisponibilidadBatch(ids, { signal })
+        return mergeCupos(list, batch)
       } catch (err) {
-        if (cancelled) return
-        setRemote((prev) =>
-          prev.key !== activeKey
-            ? prev
-            : {
-                key: activeKey,
-                items: [],
-                status: 'error',
-                error: err.message || 'Error al cargar eventos',
-              }
-        )
+        if (err?.name === 'AbortError') throw err
+        // El catálogo se muestra sin badge si la disponibilidad falla.
+        return list
       }
-    })()
+    },
+    [key],
+    { enabled: !controlled }
+  )
 
-    return () => {
-      cancelled = true
-    }
-  }, [controlled, key, filter])
-
-  const items = controlled ? itemsProp : remote.items
-  const status = controlled ? 'success' : remote.status
-  const error = remote.error
+  const items = controlled ? itemsProp : remote || []
+  const status = controlled ? 'success' : remoteStatus
+  const error = remoteError?.message || ''
   const Card = resolveCard(card)
   const layoutClass =
     layout === 'row'
@@ -122,7 +83,14 @@ const EventList = ({
     return <p className="event-list__status">Cargando…</p>
   }
   if (status === 'error') {
-    return <p className="event-list__status event-list__status--error">{error}</p>
+    return (
+      <p className="event-list__status event-list__status--error">
+        {error || 'Error al cargar eventos'}{' '}
+        <button type="button" className="btn btn--ghost" onClick={reload}>
+          Reintentar
+        </button>
+      </p>
+    )
   }
   if (!items?.length) {
     return <p className="event-list__status">No hay eventos.</p>

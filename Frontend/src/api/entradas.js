@@ -54,6 +54,7 @@ export async function listMisEntradas(user, opts = {}) {
   const data = await http('/api/entradas', {
     method: 'GET',
     token: opts.token,
+    signal: opts.signal,
   })
   return Array.isArray(data) ? data.map(normalizeEntrada) : []
 }
@@ -85,6 +86,7 @@ export async function getEntrada(entradaId, user, opts = {}) {
   const data = await http(`/api/entradas/${entradaId}`, {
     method: 'GET',
     token: opts.token,
+    signal: opts.signal,
   })
   return normalizeEntrada(data)
 }

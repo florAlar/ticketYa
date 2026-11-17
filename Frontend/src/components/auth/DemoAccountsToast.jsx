@@ -2,26 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DEMO_ACCOUNTS, ROLE_LABELS } from '../../auth/roles'
 import { USE_MOCK } from '../../api/config'
+import {
+  DEMO_TOAST_REOPEN_EVENT,
+  clearDemoToastDismissed,
+  dismissDemoToast,
+  wasDemoToastDismissed,
+} from '../../auth/demoToast'
 import './DemoAccountsToast.css'
-
-const DISMISS_KEY = 'ticketya_demo_toast_dismissed'
-export const DEMO_TOAST_REOPEN_EVENT = 'ticketya:demo-toast-reopen'
-
-function wasDismissed() {
-  try {
-    return sessionStorage.getItem(DISMISS_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
-function clearDismissed() {
-  try {
-    sessionStorage.removeItem(DISMISS_KEY)
-  } catch {
-    /* ignore */
-  }
-}
 
 /**
  * Toast flotante con cuentas demo/seed (portal → body).
@@ -31,11 +18,11 @@ function clearDismissed() {
  */
 export default function DemoAccountsToast() {
   const [open, setOpen] = useState(true)
-  const [visible, setVisible] = useState(() => !wasDismissed())
+  const [visible, setVisible] = useState(() => !wasDemoToastDismissed())
 
   useEffect(() => {
     const onReopen = () => {
-      clearDismissed()
+      clearDemoToastDismissed()
       setVisible(true)
       setOpen(true)
     }
@@ -47,11 +34,7 @@ export default function DemoAccountsToast() {
     e?.stopPropagation?.()
     setVisible(false)
     setOpen(false)
-    try {
-      sessionStorage.setItem(DISMISS_KEY, '1')
-    } catch {
-      /* ignore */
-    }
+    dismissDemoToast()
   }, [])
 
   const toggle = useCallback((e) => {
@@ -117,12 +100,4 @@ export default function DemoAccountsToast() {
     </aside>,
     document.body
   )
-}
-
-/** Dispara reaparición del toast (p. ej. link en LoginPage). */
-export function reopenDemoAccountsToast() {
-  clearDismissed()
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(DEMO_TOAST_REOPEN_EVENT))
-  }
 }

@@ -1,4 +1,5 @@
 import { BANNER_IMAGES } from '../../../assets/img/banners'
+import { formatMoney } from '../../../lib/format'
 
 function pad(n) {
   return String(n).padStart(2, '0')
@@ -43,10 +44,5 @@ export function formatEventoFecha(iso) {
 }
 
 export function formatPrecioDesde(n) {
-  if (n == null || n === '') return ''
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    maximumFractionDigits: 0,
-  }).format(n)
+  return formatMoney(n, { fallback: '' })
 }

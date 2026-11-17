@@ -139,3 +139,64 @@
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+/* Utilidades del detalle de entrada / devoluciones */
+.mis-entradas-section {
+  margin-top: 1rem;
+}
+
+.mis-entradas-page__title--sub {
+  font-size: 1.15rem;
+}
+
+.mis-entradas-page__title--sm {
+  font-size: 1rem;
+}
+
+.mis-entradas-card--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.mis-entradas-card--form {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.mis-entradas-list--spaced {
+  margin-bottom: 1rem;
+}
+
+.mis-entradas-devo-toggle {
+  margin-top: 1.75rem;
+}
+
+.entrada-gestion {
+  margin-top: 1.5rem;
+}
+
+.entrada-detalle__notice {
+  margin-top: 1rem;
+}
+
+.entrada-qr-box {
+  margin-top: 1rem;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px dashed var(--colors-border, #ccc);
+  text-align: center;
+  font-family: var(--fonts-mono, ui-monospace, monospace);
+  word-break: break-all;
+}
+
+.entrada-qr-box__label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.entrada-qr-box__code {
+  margin: 0;
+  font-weight: 600;
+}

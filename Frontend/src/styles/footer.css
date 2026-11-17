@@ -1,0 +1,112 @@
+/* Footer.css */
+.site-footer {
+  width: 100%;
+  padding: var(--spacing-lg) 0;
+  background: transparent;
+  background-color: transparent;
+  color: var(--colors-text);
+  margin-top: auto;
+  position: relative;
+  z-index: 2;
+}
+
+.footer-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .footer-content {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+}
+
+.footer-left {
+  text-align: center;
+}
+
+@media (min-width: 768px) {
+  .footer-left {
+    text-align: left;
+  }
+}
+
+.footer-copy {
+  color: var(--colors-textMuted);
+  margin: 0;
+  background: transparent;
+}
+
+.footer-love {
+  color: var(--colors-textMuted);
+  margin: 0.2rem 0 0 0;
+  background: transparent;
+}
+
+.footer-right {
+  display: flex;
+  align-items: center;
+  background: transparent;
+}
+
+.footer-links {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}
+
+.separator {
+  color: var(--colors-textMuted);
+}
+
+.footer-links li a {
+  color: var(--colors-textMuted);
+  text-decoration: none;
+  transition: color 0.3s;
+  background: transparent;
+}
+
+.footer-links li a:hover {
+  color: var(--colors-primary);
+}
+
+/* Login: footer transparente sobre el fondo de la página */
+.layout-wrapper:has(.auth-page) {
+  background: transparent;
+}
+
+.layout-wrapper:has(.auth-page) .main-content {
+  background: transparent;
+}
+
+.layout-wrapper:has(.auth-page) .auth-page {
+  min-height: calc(100vh - var(--navbar-height, 72px));
+  /* el fondo llega hasta el borde inferior (debajo del footer) */
+  margin-bottom: calc(-1 * (var(--spacing-lg, 2rem) * 2 + 3rem));
+  padding-bottom: calc(var(--spacing-lg, 2rem) * 2 + 4rem);
+}
+
+.layout-wrapper:has(.auth-page) .site-footer {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.layout-wrapper:has(.auth-page) .footer-love,
+.layout-wrapper:has(.auth-page) .footer-copy,
+.layout-wrapper:has(.auth-page) .separator,
+.layout-wrapper:has(.auth-page) .footer-links li a {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.layout-wrapper:has(.auth-page) .footer-links li a:hover {
+  color: #fff;
+}

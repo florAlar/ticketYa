@@ -16,13 +16,19 @@ export async function listLugares(filter = {}, opts = {}) {
   if (USE_MOCK) sinMock()
   const ciudad = String(filter.ciudad || '').trim()
   const qs = ciudad ? `?ciudad=${encodeURIComponent(ciudad)}` : ''
-  return http(`/api/lugares${qs}`, { token: opts.token })
+  return http(`/api/lugares${qs}`, {
+    token: opts.token,
+    signal: opts.signal,
+  })
 }
 
 /** GET /api/lugares/{id} — incluye sectores */
 export async function getLugar(id, opts = {}) {
   if (USE_MOCK) sinMock()
-  return http(`/api/lugares/${encodeURIComponent(id)}`, { token: opts.token })
+  return http(`/api/lugares/${encodeURIComponent(id)}`, {
+    token: opts.token,
+    signal: opts.signal,
+  })
 }
 
 /** POST /api/lugares */

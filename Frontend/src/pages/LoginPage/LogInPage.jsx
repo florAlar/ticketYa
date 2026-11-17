@@ -4,10 +4,10 @@ import { FaStar } from 'react-icons/fa'
 import useAuth from '../../hooks/useAuth'
 import LoginForm from '../../components/auth/LoginForm'
 import RegisterForm from '../../components/auth/RegisterForm'
-import DemoAccountsToast, {
-  reopenDemoAccountsToast,
-} from '../../components/auth/DemoAccountsToast'
-import heroCrowd from '../../assets/img/people-crowd-concert-audience-show-lights-stage-performance-event-entertainment-nightclub-performing-arts-live-performance-rock-concert-musical-theatre-1033034-3875179764.jpg'
+import DemoAccountsToast from '../../components/auth/DemoAccountsToast'
+import RouteFallback from '../../components/layout/RouteFallback'
+import { reopenDemoAccountsToast } from '../../auth/demoToast'
+import heroCrowd from '../../assets/img/people-crowd-concert-audience-show-lights-stage-performance-event-entertainment-nightclub-performing-arts-live-performance-rock-concert-musical-theatre-1033034-3875179764.webp'
 import './LoginPage.css'
 
 /**
@@ -15,7 +15,7 @@ import './LoginPage.css'
  * Registro público = solo CLIENTE. Org/admin/acceso: guía aparte.
  */
 const LoginPage = () => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, initializing } = useAuth()
   const [params, setParams] = useSearchParams()
   const tab = params.get('tab') === 'register' ? 'register' : 'login'
 
@@ -29,6 +29,10 @@ const LoginPage = () => {
     if (next === 'register') nextParams.set('tab', 'register')
     else nextParams.delete('tab')
     setParams(nextParams)
+  }
+
+  if (initializing) {
+    return <RouteFallback />
   }
 
   if (isAuthenticated) {

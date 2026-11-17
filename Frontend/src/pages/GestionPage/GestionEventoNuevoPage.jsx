@@ -1,128 +1,32 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import { createEvento, syncEventoParticipantes } from '../../api/eventos'
-import {
-  EVENTO_ESTADOS,
-  EVENTO_ESTADO_LABELS,
-  EVENTO_TIPOS,
-  EVENTO_TIPO_LABELS,
-  rowsDeLugar,
-  validateEventoGestionForm,
-} from '../../domain/evento'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
 import EventoLugarSectores from '../../components/gestion/EventoLugarSectores'
-import EventoParticipantesFields, {
-  newTeloneroRow,
-} from '../../components/gestion/EventoParticipantesFields'
+import EventoParticipantesFields from '../../components/gestion/EventoParticipantesFields'
+import useEventoNuevoForm from './evento/useEventoNuevoForm'
+import EventoNuevoDatosForm from './evento/EventoNuevoDatosForm'
 import './GestionPage.css'
-
-const initialForm = {
-  nombre: '',
-  descripcion: '',
-  tipo: EVENTO_TIPOS.RECITAL,
-  fechaInicio: '',
-  estado: EVENTO_ESTADOS.BORRADOR,
-  esAltaDemanda: false,
-  destacado: false,
-  principal: { id: null, nombre: '' },
-  idLugar: '',
-  imagenUrl: '',
-}
 
 const GestionEventoNuevoPage = () => {
   const { user, token, isAdmin } = useAuth()
-  const navigate = useNavigate()
-  const [form, setForm] = useState(initialForm)
-  const [sectores, setSectores] = useState([])
-  const [teloneros, setTeloneros] = useState([])
-  const [status, setStatus] = useState('idle')
-  const [error, setError] = useState('')
-
-  const onChange = (e) => {
-    const { name, value, type, checked } = e.target
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
-
-  // Los sectores los define el lugar: acá solo se elige cuáles se venden y su precio/cupo.
-  const onRowChange = (id, field, value) => {
-    setSectores((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)))
-  }
-
-  const onElegirLugar = (lugar) => {
-    setForm((prev) => ({ ...prev, idLugar: lugar?.id || '' }))
-    setSectores(lugar ? rowsDeLugar(lugar) : [])
-  }
-
-  const onSubmit = async (e) => {
-    e.preventDefault()
-    if (!FEATURE.eventosGestion) return
-    setError('')
-    setStatus('loading')
-    try {
-      const wantsPublish =
-        String(form.estado || '').toUpperCase() === EVENTO_ESTADOS.PUBLICADO
-      const mode = wantsPublish ? 'publicacion' : 'borrador'
-      const check = validateEventoGestionForm(
-        {
-          ...form,
-          principalId: form.principal?.id,
-          principal: form.principal,
-          teloneros,
-        },
-        sectores,
-        mode
-      )
-      if (!check.ok) {
-        setError(check.error)
-        setStatus('error')
-        return
-      }
-
-      const payload = {
-        ...form,
-        estado: wantsPublish ? EVENTO_ESTADOS.PUBLICADO : EVENTO_ESTADOS.BORRADOR,
-        esAltaDemanda: false,
-        fechaInicio: form.fechaInicio ? form.fechaInicio : null,
-        idLugar: form.idLugar || undefined,
-        // solo id + precio (+ cupo si se cargó): nombre, tipo y layout los define el lugar
-        sectores: check.sectores.map((s) => ({ ...s, precio: s.precio == null ? 0 : s.precio })),
-      }
-      delete payload.principal
-      delete payload.principalId
-      delete payload.principalNombre
-      delete payload.participantes
-      delete payload.teloneros
-
-      const created = await createEvento(payload, user, { token })
-      await syncEventoParticipantes(
-        created.id,
-        {
-          principalId: form.principal?.id,
-          principalNombre: form.principal?.nombre,
-          teloneros,
-        },
-        { token }
-      )
-      setStatus('ok')
-      navigate('/gestion/eventos', {
-        replace: true,
-        state: { createdId: created.id },
-      })
-    } catch (err) {
-      setStatus('error')
-      setError(err.message || 'No se pudo crear')
-    }
-  }
-
-  const loading = status === 'loading'
-  const gated = !FEATURE.eventosGestion
-  const publishing =
-    String(form.estado || '').toUpperCase() === EVENTO_ESTADOS.PUBLICADO
+  const {
+    form,
+    sectores,
+    teloneros,
+    error,
+    loading,
+    publishing,
+    gated,
+    onChange,
+    onRowChange,
+    onElegirLugar,
+    onPrincipalChange,
+    onTeloneroChange,
+    onAddTelonero,
+    onRemoveTelonero,
+    onSubmit,
+  } = useEventoNuevoForm({ user, token })
 
   return (
     <section className="gestion-page container-slim section-v-padding">
@@ -147,114 +51,30 @@ const GestionEventoNuevoPage = () => {
 
       {gated ? (
         <div className="gestion-card">
-          <p>Alta de eventos no disponible: backend de eventos en mock o no cableado.</p>
+          <p>
+            Alta de eventos no disponible: backend de eventos en mock o no
+            cableado.
+          </p>
           <Link className="btn" to="/gestion/eventos">
             ← Volver al listado
           </Link>
         </div>
       ) : (
         <form className="gestion-form gestion-card" onSubmit={onSubmit} noValidate>
-          <div className="form-group">
-            <label htmlFor="nombre">Nombre *</label>
-            <input
-              id="nombre"
-              name="nombre"
-              className="form-input"
-              value={form.nombre}
-              onChange={onChange}
-              required
-              disabled={loading}
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="descripcion">Descripción</label>
-            <textarea
-              id="descripcion"
-              name="descripcion"
-              className="form-textarea"
-              rows={3}
-              value={form.descripcion}
-              onChange={onChange}
-              disabled={loading}
-            />
-          </div>
-
-          <div className="gestion-form__row">
-            <div className="form-group">
-              <label htmlFor="tipo">Tipo de evento</label>
-              <select
-                id="tipo"
-                name="tipo"
-                className="form-input"
-                value={form.tipo}
-                onChange={onChange}
-                disabled={loading}
-              >
-                {Object.values(EVENTO_TIPOS).map((t) => (
-                  <option key={t} value={t}>
-                    {EVENTO_TIPO_LABELS[t] || t}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label htmlFor="estado">Al guardar como</label>
-              <select
-                id="estado"
-                name="estado"
-                className="form-input"
-                value={form.estado}
-                onChange={onChange}
-                disabled={loading}
-              >
-                {[EVENTO_ESTADOS.BORRADOR, EVENTO_ESTADOS.PUBLICADO].map((s) => (
-                  <option key={s} value={s}>
-                    {EVENTO_ESTADO_LABELS[s]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="fechaInicio">
-              Fecha y hora {publishing ? '*' : '(obligatoria al publicar)'}
-            </label>
-            <input
-              id="fechaInicio"
-              name="fechaInicio"
-              type="datetime-local"
-              className="form-input"
-              value={form.fechaInicio}
-              onChange={onChange}
-              disabled={loading}
-            />
-            <p className="gestion-card__muted" style={{ marginTop: '0.35rem' }}>
-              En borrador podés dejarla vacía y completarla después. Al publicar
-              es obligatoria.
-            </p>
-          </div>
+          <EventoNuevoDatosForm
+            form={form}
+            loading={loading}
+            publishing={publishing}
+            onChange={onChange}
+          />
 
           <EventoParticipantesFields
             principal={form.principal}
-            onPrincipalChange={(v) =>
-              setForm((prev) => ({ ...prev, principal: v }))
-            }
+            onPrincipalChange={onPrincipalChange}
             teloneros={teloneros}
-            onTeloneroChange={(key, value) =>
-              setTeloneros((prev) =>
-                prev.map((t) =>
-                  t.key === key
-                    ? { ...t, id: value?.id || null, nombre: value?.nombre || '' }
-                    : t
-                )
-              )
-            }
-            onAddTelonero={() => setTeloneros((prev) => [...prev, newTeloneroRow()])}
-            onRemoveTelonero={(key) =>
-              setTeloneros((prev) => prev.filter((t) => t.key !== key))
-            }
+            onTeloneroChange={onTeloneroChange}
+            onAddTelonero={onAddTelonero}
+            onRemoveTelonero={onRemoveTelonero}
             token={token}
             disabled={loading}
           />
@@ -269,42 +89,6 @@ const GestionEventoNuevoPage = () => {
             disabled={loading}
             isAdmin={isAdmin}
           />
-
-          <div className="gestion-checks">
-            <label className="gestion-check">
-              <input
-                type="checkbox"
-                name="esAltaDemanda"
-                checked={form.esAltaDemanda}
-                onChange={onChange}
-                disabled={loading || true}
-                title="Fila virtual E2 — no cableada"
-              />
-              Alta demanda (fila virtual — no disponible aún)
-            </label>
-            <label className="gestion-check">
-              <input
-                type="checkbox"
-                name="destacado"
-                checked={form.destacado}
-                onChange={onChange}
-                disabled={loading}
-              />
-              Destacado en home
-            </label>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="imagenUrl">URL imagen (opcional)</label>
-            <input
-              id="imagenUrl"
-              name="imagenUrl"
-              className="form-input"
-              value={form.imagenUrl}
-              onChange={onChange}
-              disabled={loading}
-            />
-          </div>
 
           {error && <p className="gestion-error">{error}</p>}
 

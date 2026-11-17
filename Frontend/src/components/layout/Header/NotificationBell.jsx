@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { HiOutlineBell } from 'react-icons/hi'
 import useAuth from '../../../hooks/useAuth'
+import useAsync from '../../../hooks/useAsync'
 import { FEATURE } from '../../../config/featureGates'
 import {
   listarMisNotificaciones,
@@ -18,55 +19,47 @@ const DROPDOWN_SIZE = 6
 
 export default function NotificationBell() {
   const { isAuthenticated, token } = useAuth()
-  const [noLeidas, setNoLeidas] = useState(0)
   const [open, setOpen] = useState(false)
-  const [items, setItems] = useState([])
-  const [status, setStatus] = useState('idle')
-  const [error, setError] = useState('')
   const wrapperRef = useRef(null)
+  const enabled = FEATURE.notificaciones && isAuthenticated && Boolean(token)
 
-  const loadCount = useCallback(async () => {
-    if (!isAuthenticated || !token) return
-    try {
-      const data = await listarMisNotificaciones({ token, page: 0, size: 1 })
-      setNoLeidas(Number(data?.noLeidas) || 0)
-    } catch {
-      /* silencioso: la campanita no debe romper el header */
-    }
-  }, [isAuthenticated, token])
+  const countQuery = useAsync(
+    async (signal) => {
+      const data = await listarMisNotificaciones({ token, page: 0, size: 1, signal })
+      return Number(data?.noLeidas) || 0
+    },
+    [token],
+    { enabled }
+  )
 
-  const loadItems = useCallback(async () => {
-    if (!isAuthenticated || !token) return
-    setStatus('loading')
-    setError('')
-    try {
+  const itemsQuery = useAsync(
+    async (signal) => {
       const data = await listarMisNotificaciones({
         token,
         page: 0,
         size: DROPDOWN_SIZE,
+        signal,
       })
-      setItems(Array.isArray(data?.content) ? data.content : [])
-      setNoLeidas(Number(data?.noLeidas) || 0)
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudieron cargar las notificaciones')
-      setStatus('error')
-    }
-  }, [isAuthenticated, token])
+      return {
+        items: Array.isArray(data?.content) ? data.content : [],
+        noLeidas: Number(data?.noLeidas) || 0,
+      }
+    },
+    [token],
+    { enabled: enabled && open }
+  )
 
+  // Polling del contador sin setState sincrónico en el effect: la carga inicial
+  // la hace useAsync y el intervalo solo dispara recargas.
+  const reloadCount = countQuery.reload
   useEffect(() => {
-    if (!isAuthenticated || !token) {
-      setNoLeidas(0)
-      return undefined
-    }
-    loadCount()
-    const id = window.setInterval(loadCount, POLL_MS)
+    if (!enabled) return undefined
+    const id = window.setInterval(() => reloadCount(), POLL_MS)
     return () => window.clearInterval(id)
-  }, [isAuthenticated, token, loadCount])
+  }, [enabled, reloadCount])
 
   useEffect(() => {
     if (!open) return undefined
-    loadItems()
     const onPointerDown = (event) => {
       if (!wrapperRef.current?.contains(event.target)) setOpen(false)
     }
@@ -79,24 +72,38 @@ export default function NotificationBell() {
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
     }
-  }, [open, loadItems])
+  }, [open])
 
   const markRead = async (notificacion) => {
     if (notificacion.leida) return
     try {
       await marcarNotificacionLeida(notificacion.id, { token })
-      setItems((prev) =>
-        prev.map((n) => (n.id === notificacion.id ? { ...n, leida: true } : n))
+      itemsQuery.setData((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: prev.items.map((n) =>
+                n.id === notificacion.id ? { ...n, leida: true } : n
+              ),
+            }
+          : prev
       )
-      setNoLeidas((prev) => Math.max(0, prev - 1))
+      countQuery.setData((prev) => Math.max(0, Number(prev || 0) - 1))
     } catch {
       /* se puede reintentar desde la bandeja */
     }
   }
 
-  if (!FEATURE.notificaciones || !isAuthenticated) {
+  if (!enabled) {
     return null
   }
+
+  const items = itemsQuery.data?.items || []
+  const noLeidas = Number(
+    countQuery.data ?? itemsQuery.data?.noLeidas ?? 0
+  )
+  const status = open ? itemsQuery.status : 'idle'
+  const error = itemsQuery.error?.message || ''
 
   return (
     <div className="notification-bell" ref={wrapperRef}>
@@ -105,7 +112,7 @@ export default function NotificationBell() {
         className="notification-bell__button"
         aria-label={`Notificaciones${noLeidas ? `: ${noLeidas} sin leer` : ''}`}
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen((value) => !value)}
       >
         <HiOutlineBell aria-hidden />
         {noLeidas > 0 && (
@@ -131,7 +138,7 @@ export default function NotificationBell() {
             <p className="notification-bell__error">{error}</p>
           )}
 
-          {status === 'ok' && items.length === 0 && (
+          {status === 'success' && items.length === 0 && (
             <p className="notification-bell__muted">
               No tenés notificaciones todavía.
             </p>

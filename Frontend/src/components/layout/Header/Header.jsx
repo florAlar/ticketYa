@@ -6,7 +6,6 @@ import HamburgerButton from './HamburgerButton'
 import MobileMenu from './MobileMenu'
 import NotificationBell from './NotificationBell'
 import SearchBar from './SearchBar'
-import '../../../styles/global.css'
 
 const SCROLL_THRESHOLD = 50
 

@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { getReporteEvento } from '../../api/reportes'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import './GestionPage.css'
 
 const MENSAJES_ERROR = {
@@ -44,31 +46,21 @@ const GestionEventoReportesPage = () => {
   const { eventoId } = useParams()
   const { token } = useAuth()
   const wired = FEATURE.reportes
-  const [reporte, setReporte] = useState(null)
-  const [error, setError] = useState('')
-  const [cargando, setCargando] = useState(wired)
 
-  useEffect(() => {
-    if (!wired) return undefined
-    let vivo = true
-    getReporteEvento(eventoId, { token })
-      .then((data) => {
-        if (!vivo) return
-        setReporte(data)
-        setError('')
-      })
-      .catch((err) => {
-        if (!vivo) return
-        setReporte(null)
-        setError(MENSAJES_ERROR[err.status] || err.message || 'No se pudo cargar el reporte')
-      })
-      .finally(() => {
-        if (vivo) setCargando(false)
-      })
-    return () => {
-      vivo = false
-    }
-  }, [eventoId, token, wired])
+  const load = useCallback(
+    (signal) => getReporteEvento(eventoId, { token, signal }),
+    [eventoId, token]
+  )
+
+  const {
+    data: reporte,
+    status,
+    error,
+    reload,
+  } = useAsync(load, [eventoId, token], { enabled: wired })
+
+  const errorMessage =
+    MENSAJES_ERROR[error?.status] || error?.message || ''
 
   const t = reporte?.total
   const moneda = reporte?.moneda
@@ -99,8 +91,10 @@ const GestionEventoReportesPage = () => {
         </div>
       )}
 
-      {wired && cargando && <p className="gestion-card__muted">Cargando reporte…</p>}
-      {wired && error && <p className="gestion-error" role="alert">{error}</p>}
+      {wired && status === 'loading' && <LoadingState label="Cargando reporte…" />}
+      {wired && status === 'error' && (
+        <ErrorState message={errorMessage} onRetry={reload} />
+      )}
 
       {reporte && t && (
         <>

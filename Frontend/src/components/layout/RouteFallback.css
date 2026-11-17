@@ -1,0 +1,29 @@
+.route-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  min-height: 40vh;
+  color: var(--colors-text-muted, inherit);
+}
+
+.route-fallback__spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: route-fallback-spin 0.8s linear infinite;
+}
+
+@keyframes route-fallback-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-fallback__spinner {
+    animation-duration: 2.4s;
+  }
+}

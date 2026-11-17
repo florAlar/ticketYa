@@ -1,9 +1,8 @@
 import { Link } from 'react-router-dom'
 import { FaStar } from 'react-icons/fa'
-import DemoAccountsToast, {
-  reopenDemoAccountsToast,
-} from '../../components/auth/DemoAccountsToast'
-import heroCrowd from '../../assets/img/people-crowd-concert-audience-show-lights-stage-performance-event-entertainment-nightclub-performing-arts-live-performance-rock-concert-musical-theatre-1033034-3875179764.jpg'
+import DemoAccountsToast from '../../components/auth/DemoAccountsToast'
+import { reopenDemoAccountsToast } from '../../auth/demoToast'
+import heroCrowd from '../../assets/img/people-crowd-concert-audience-show-lights-stage-performance-event-entertainment-nightclub-performing-arts-live-performance-rock-concert-musical-theatre-1033034-3875179764.webp'
 import '../LoginPage/LoginPage.css'
 import './CuentaRolesPage.css'
 

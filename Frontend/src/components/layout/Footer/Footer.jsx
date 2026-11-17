@@ -2,7 +2,6 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import useSite from '../../../hooks/useSite'
 import useAuth from '../../../hooks/useAuth'
-import '../../../styles/global.css'
 
 const Footer = () => {
   const { siteInfo } = useSite()

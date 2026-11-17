@@ -1,6 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import AuthContext from '../context/AuthContext'
 import * as authApi from '../api/auth'
+import { AUTH_EXPIRED_EVENT } from '../api/http'
 import {
   ROLES,
   canBuyTickets,
@@ -16,6 +17,14 @@ import {
 const TOKEN_KEY = 'ticketya_token'
 const USER_KEY = 'ticketya_user'
 
+function readStoredToken() {
+  try {
+    return localStorage.getItem(TOKEN_KEY)
+  } catch {
+    return null
+  }
+}
+
 function readStoredUser() {
   try {
     const raw = JSON.parse(localStorage.getItem(USER_KEY) || 'null')
@@ -27,8 +36,11 @@ function readStoredUser() {
 }
 
 export default function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY))
+  const [token, setToken] = useState(readStoredToken)
   const [user, setUser] = useState(readStoredUser)
+  // Si hay token guardado, validamos la sesión contra /usuarios/me antes de
+  // dejar pasar a rutas protegidas (evita tokens vencidos "fantasma").
+  const [initializing, setInitializing] = useState(() => Boolean(readStoredToken()))
 
   const persist = useCallback((nextToken, nextUser) => {
     const normalized = nextUser
@@ -36,11 +48,55 @@ export default function AuthProvider({ children }) {
       : null
     setToken(nextToken)
     setUser(normalized)
-    if (nextToken) localStorage.setItem(TOKEN_KEY, nextToken)
-    else localStorage.removeItem(TOKEN_KEY)
-    if (normalized) localStorage.setItem(USER_KEY, JSON.stringify(normalized))
-    else localStorage.removeItem(USER_KEY)
+    setInitializing(false)
+    try {
+      if (nextToken) localStorage.setItem(TOKEN_KEY, nextToken)
+      else localStorage.removeItem(TOKEN_KEY)
+      if (normalized) localStorage.setItem(USER_KEY, JSON.stringify(normalized))
+      else localStorage.removeItem(USER_KEY)
+    } catch {
+      /* storage lleno o bloqueado: la sesión sigue en memoria */
+    }
   }, [])
+
+  // Rehidratación: token presente → confirmar identidad y rol reales.
+  useEffect(() => {
+    if (!token) return undefined
+
+    let cancelled = false
+
+    ;(async () => {
+      try {
+        const me = await authApi.getMe({ token })
+        if (!cancelled) {
+          persist(token, me)
+          setInitializing(false)
+        }
+      } catch (err) {
+        if (cancelled) return
+        // Token inválido/expirado → limpiar. Error de red → mantener sesión
+        // local para no expulsar al usuario si el gateway está caído.
+        if (err?.status === 401 || err?.status === 403) {
+          persist(null, null)
+        }
+        setInitializing(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [token, persist])
+
+  // Un 401 en cualquier request autenticada cierra la sesión de forma global.
+  useEffect(() => {
+    const onExpired = () => {
+      persist(null, null)
+      setInitializing(false)
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, onExpired)
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired)
+  }, [persist])
 
   const login = useCallback(
     async (credentials) => {
@@ -93,6 +149,7 @@ export default function AuthProvider({ children }) {
       token,
       user,
       rol,
+      initializing,
       isAuthenticated: Boolean(token),
       isAdmin: rol === ROLES.ADMIN,
       isOrganizador: rol === ROLES.ORGANIZADOR,
@@ -110,7 +167,7 @@ export default function AuthProvider({ children }) {
       logout,
       updateUser,
     }
-  }, [token, user, login, register, logout, updateUser])
+  }, [token, user, initializing, login, register, logout, updateUser])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

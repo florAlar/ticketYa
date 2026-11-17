@@ -1,0 +1,159 @@
+/* =========================
+   RESET & BASE
+========================= */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Fallback light TicketYa (antes de CssVariables / si falla el provider) */
+:root {
+  color-scheme: light;
+  --colors-primary: #E91E8C;
+  --colors-secondary: #7C3AED;
+  --colors-accent: #F472B6;
+  --colors-background: #FFFFFF;
+  --colors-surface: #F7F7FA;
+  --colors-surfaceAlt: #EEEEF2;
+  --colors-surfaceHover: rgba(233, 30, 140, 0.08);
+  --colors-text: #1A1A1A;
+  --colors-textSecondary: #4B4B4B;
+  --colors-textMuted: #7B7B7B;
+  --colors-border: rgba(0, 0, 0, 0.1);
+  --colors-danger: #c0392b;
+  --colors-surface-alt: var(--colors-surfaceAlt);
+  --colors-text-muted: var(--colors-textMuted);
+  --colors-headerBg: #121212;
+  --colors-headerText: #F5F5F5;
+  --colors-headerBorder: rgba(255, 255, 255, 0.08);
+  --fonts-body: Inter, system-ui, sans-serif;
+  --fonts-title: Oxanium, Inter, sans-serif;
+  --fonts-mono: "Share Tech Mono", monospace;
+  --typography-baseSize: 16px;
+  --typography-lineHeight-normal: 1.5;
+  --navbar-height: 88px;
+  --zIndex-header: 1000;
+  --shadows-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+html {
+  font-size: var(--typography-baseSize);
+  /* Map base size to theme.js specification */
+}
+
+body {
+  margin: 0;
+  font-family: var(--fonts-body);
+  background: var(--colors-background);
+  min-height: 100vh;
+  color: var(--colors-text);
+  line-height: var(--typography-lineHeight-normal);
+  font-size: var(--typography-baseSize);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+/* =========================
+   TYPOGRAPHY SYSTEM
+========================= */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0 0 0;
+  line-height: var(--typography-lineHeight-tight);
+  font-weight: var(--typography-weight-semibold);
+}
+
+/* 
+h1
+ {
+  font-family: var(--fonts-title);
+  font-size: var(--typography-h1);
+}
+ */
+h2 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h2);
+}
+
+h3 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h3);
+
+}
+
+h4 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h4);
+}
+
+h5 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h5);
+}
+
+h6 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h6);
+}
+
+.text-display {
+  font-family: var(--fonts-title);
+  font-size: clamp(3rem, 10vw, 6rem);
+  font-weight: 700;
+  transform: scaleY(1.1);
+  text-transform: uppercase;
+  /* font-size: var(--typography-h1); */
+  color: white;
+  margin: 0;
+  line-height: 0.7;
+  /* letter-spacing: -0.02em; */
+  text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+
+.text-h1 {
+  font-family: var(--fonts-mono);
+  font-size: var(--typography-h1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.text-h2 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h2);
+  font-weight: var(--typography-weight-semibold);
+}
+
+.text-h3 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h3);
+
+}
+
+.text-h4 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h4);
+  font-weight: var(--typography-weight-semibold);
+}
+
+.text-h5 {
+  font-family: var(--fonts-body);
+  font-size: var(--typography-h5);
+  font-weight: var(--typography-weight-semibold);
+}
+
+.text-label {
+  font-family: var(--fonts-mono);
+  font-size: var(--typography-text-xs);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--colors-textMuted);
+}
+
+.text-muted {
+  color: var(--colors-textMuted);
+}

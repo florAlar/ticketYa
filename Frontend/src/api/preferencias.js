@@ -1,8 +1,8 @@
 import { http } from './http'
 
 /** Preferencias de notificación (msvc-preferencias, Mongo). */
-export async function getNotificacionesPreferencias({ token } = {}) {
-  return http('/api/preferencias/me/notificaciones', { token })
+export async function getNotificacionesPreferencias({ token, signal } = {}) {
+  return http('/api/preferencias/me/notificaciones', { token, signal })
 }
 
 export async function putNotificacionesPreferencias(body, { token } = {}) {
@@ -14,8 +14,8 @@ export async function putNotificacionesPreferencias(body, { token } = {}) {
 }
 
 /** Preferencias explícitas del cliente: categorías, ciudades, artistas y rango. */
-export async function getPreferencias({ token } = {}) {
-  return http('/api/preferencias/me', { token })
+export async function getPreferencias({ token, signal } = {}) {
+  return http('/api/preferencias/me', { token, signal })
 }
 
 export async function putPreferencias(body, { token } = {}) {
@@ -36,18 +36,19 @@ export async function putArtistasFavoritos(artistas, { token } = {}) {
 }
 
 /** Recomendaciones personalizadas (requiere JWT). */
-export async function getRecomendacionesMe({ token, limit = 10 } = {}) {
+export async function getRecomendacionesMe({ token, limit = 10, signal } = {}) {
   const data = await http(
     `/api/recomendaciones/me?limit=${encodeURIComponent(limit)}`,
-    { token }
+    { token, signal }
   )
   return Array.isArray(data) ? data : []
 }
 
 /** Eventos similares a uno dado (público). */
-export async function getRecomendacionesEvento(eventoId, { limit = 6 } = {}) {
+export async function getRecomendacionesEvento(eventoId, { limit = 6, signal } = {}) {
   const data = await http(
-    `/api/eventos/${encodeURIComponent(eventoId)}/recomendaciones?limit=${encodeURIComponent(limit)}`
+    `/api/eventos/${encodeURIComponent(eventoId)}/recomendaciones?limit=${encodeURIComponent(limit)}`,
+    { signal }
   )
   return Array.isArray(data) ? data : []
 }
@@ -55,10 +56,10 @@ export async function getRecomendacionesEvento(eventoId, { limit = 6 } = {}) {
 /** Historial de compras del cliente (dueño o ADMIN). */
 export async function getHistorialCliente(
   idCliente,
-  { token, page = 0, size = 10 } = {}
+  { token, page = 0, size = 10, signal } = {}
 ) {
   return http(
     `/api/clientes/${encodeURIComponent(idCliente)}/historial?page=${encodeURIComponent(page)}&size=${encodeURIComponent(size)}`,
-    { token }
+    { token, signal }
   )
 }

@@ -1,81 +1,81 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getHistorialCliente } from '../../api/preferencias'
 import { formatPrecioDesde } from '../home/events/eventFormat'
+import { formatFechaCorta } from '../../lib/format'
+import useAsync from '../../hooks/useAsync'
+import { ErrorState, LoadingState } from '../ui/AsyncState'
 
 const PAGE_SIZE = 5
-
-function formatFecha(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return new Intl.DateTimeFormat('es-AR', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  }).format(d)
-}
+const MORE_VACIO = { key: '', items: [], page: 0, total: 0, loading: false, error: '' }
 
 /** “Mi historial” — GET /api/clientes/{id}/historial (dueño o ADMIN). */
 const HistorialCliente = ({ idCliente, token }) => {
-  const [items, setItems] = useState([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(0)
-  const [status, setStatus] = useState('loading')
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState('')
+  const enabled = Boolean(idCliente && token)
+  const queryKey = `${idCliente || ''}|${token || ''}`
 
-  useEffect(() => {
-    if (!idCliente || !token) {
-      setItems([])
-      setTotal(0)
-      setStatus('ok')
-      return undefined
-    }
-    let cancelled = false
-    setStatus('loading')
-    setError('')
-    setItems([])
-    setPage(0)
-    getHistorialCliente(idCliente, { token, page: 0, size: PAGE_SIZE })
-      .then((data) => {
-        if (cancelled) return
-        setItems(Array.isArray(data?.content) ? data.content : [])
-        setTotal(Number(data?.totalElements || 0))
-        setStatus('ok')
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err.message || 'No se pudo cargar tu historial')
-        setStatus('error')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [idCliente, token])
+  const {
+    data,
+    status: queryStatus,
+    error: loadError,
+    reload,
+  } = useAsync(
+    (signal) =>
+      getHistorialCliente(idCliente, {
+        token,
+        page: 0,
+        size: PAGE_SIZE,
+        signal,
+      }),
+    [idCliente, token],
+    { enabled }
+  )
+
+  // Páginas extra (Ver más) se acumulan aparte de la página 0 del hook.
+  const [more, setMore] = useState(MORE_VACIO)
+  if (more.key !== queryKey) {
+    setMore({ ...MORE_VACIO, key: queryKey })
+  }
+
+  const baseItems = useMemo(() => data?.content || [], [data])
+  const items = useMemo(() => {
+    if (more.items.length === 0) return baseItems
+    const seen = new Set(baseItems.map((i) => i.id))
+    return [...baseItems, ...more.items.filter((i) => !seen.has(i.id))]
+  }, [baseItems, more.items])
+
+  const total = Math.max(
+    Number(data?.totalElements || 0),
+    Number(more.total || 0)
+  )
+  const page = Math.max(Number(data?.page ?? 0), more.page)
+  const status = enabled ? queryStatus : 'success'
+  const error = more.error || ''
 
   const cargarMas = async () => {
-    if (loadingMore || !idCliente || !token) return
-    setLoadingMore(true)
-    setError('')
+    if (more.loading || !idCliente || !token) return
+    setMore((prev) => ({ ...prev, loading: true, error: '' }))
     try {
       const nextPage = page + 1
-      const data = await getHistorialCliente(idCliente, {
+      const next = await getHistorialCliente(idCliente, {
         token,
         page: nextPage,
         size: PAGE_SIZE,
       })
-      const nuevos = Array.isArray(data?.content) ? data.content : []
-      setItems((prev) => {
-        const seen = new Set(prev.map((i) => i.id))
-        return [...prev, ...nuevos.filter((i) => !seen.has(i.id))]
-      })
-      setTotal(Number(data?.totalElements || 0))
-      setPage(nextPage)
+      const nuevos = Array.isArray(next?.content) ? next.content : []
+      setMore((prev) => ({
+        ...prev,
+        items: [...prev.items, ...nuevos],
+        page: nextPage,
+        total: Number(next?.totalElements || prev.total),
+        loading: false,
+      }))
     } catch (err) {
-      setError(err.message || 'No se pudo cargar más historial')
-    } finally {
-      setLoadingMore(false)
+      setMore((prev) => ({
+        ...prev,
+        loading: false,
+        error: err.message || 'No se pudo cargar más historial',
+      }))
     }
   }
 
@@ -86,19 +86,18 @@ const HistorialCliente = ({ idCliente, token }) => {
         Tus compras registradas. También alimentan las recomendaciones.
       </p>
 
-      {status === 'loading' && (
-        <p className="perfil-page__muted">Cargando historial…</p>
-      )}
+      {status === 'loading' && <LoadingState label="Cargando historial…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
       {error && <p className="perfil-page__error">{error}</p>}
 
-      {status === 'ok' && items.length === 0 && (
+      {status === 'success' && items.length === 0 && (
         <p className="perfil-page__muted">
           Todavía no registramos compras tuyas. Cuando compres una entrada, va a
           aparecer acá.
         </p>
       )}
 
-      {status === 'ok' && items.length > 0 && (
+      {status === 'success' && items.length > 0 && (
         <ul className="pref-historial">
           {items.map((item) => (
             <li key={item.id || `${item.idEvento}-${item.fechaCompra}`} className="pref-historial__item">
@@ -125,9 +124,9 @@ const HistorialCliente = ({ idCliente, token }) => {
                 {[item.categoria, item.ciudad].filter(Boolean).join(' · ')}
               </p>
               <p className="pref-historial__meta">
-                Compra: {formatFecha(item.fechaCompra)}
+                Compra: {formatFechaCorta(item.fechaCompra)}
                 {item.fechaEvento
-                  ? ` · Evento: ${formatFecha(item.fechaEvento)}`
+                  ? ` · Evento: ${formatFechaCorta(item.fechaEvento)}`
                   : ''}
               </p>
             </li>
@@ -135,15 +134,15 @@ const HistorialCliente = ({ idCliente, token }) => {
         </ul>
       )}
 
-      {status === 'ok' && items.length < total && (
+      {status === 'success' && items.length < total && (
         <div className="perfil-card__actions">
           <button
             type="button"
             className="btn btn-secondary"
             onClick={cargarMas}
-            disabled={loadingMore}
+            disabled={more.loading}
           >
-            {loadingMore ? 'Cargando…' : 'Ver más'}
+            {more.loading ? 'Cargando…' : 'Ver más'}
           </button>
         </div>
       )}

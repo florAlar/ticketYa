@@ -114,7 +114,7 @@ function unwrapEventosList(data) {
  * Default BE: PUBLICADO+AGOTADO. `incluirSuspendidos` → estado=TODOS + FE deja PUBLICADO|SUSPENDIDO|AGOTADO.
  * `q` y `esAltaDemanda` se aplican en cliente (BE listar aún no los expone).
  */
-export async function listEventos(filter = {}) {
+export async function listEventos(filter = {}, opts = {}) {
   if (USE_MOCK) {
     await delay()
     let list = applyFilter(listCatalogoPublico(), filter)
@@ -140,7 +140,9 @@ export async function listEventos(filter = {}) {
   if (incluirSuspendidos && !serverFilter.estado) {
     serverFilter.estado = 'TODOS'
   }
-  const data = await http(`/api/eventos${toQuery(serverFilter)}`)
+  const data = await http(`/api/eventos${toQuery(serverFilter)}`, {
+    signal: opts.signal,
+  })
   let list = unwrapEventosList(data)
   // post-filtro FE para campos no cableados en listar BE
   if (q || alta === true || alta === 'true') {
@@ -168,7 +170,7 @@ export async function getEvento(id, opts = {}) {
     }
     return toEventoDetalleDto(found)
   }
-  return http(`/api/eventos/${id}`, { token: opts.token })
+  return http(`/api/eventos/${id}`, { token: opts.token, signal: opts.signal })
 }
 
 /**
@@ -176,7 +178,7 @@ export async function getEvento(id, opts = {}) {
  * ORGANIZADOR: GET /api/organizadores/me/eventos
  * ADMIN: GET /api/eventos
  */
-export async function listEventosGestion(user, { isAdmin, token } = {}) {
+export async function listEventosGestion(user, { isAdmin, token, signal } = {}) {
   if (USE_MOCK) {
     await delay()
     if (!user) {
@@ -187,10 +189,16 @@ export async function listEventosGestion(user, { isAdmin, token } = {}) {
     return listGestionForUser(user, { isAdmin })
   }
   if (isAdmin) {
-    const data = await http(`/api/eventos${toQuery({ size: 200, estado: 'TODOS' })}`, { token })
+    const data = await http(
+      `/api/eventos${toQuery({ size: 200, estado: 'TODOS' })}`,
+      { token, signal }
+    )
     return unwrapEventosList(data)
   }
-  return http('/api/organizadores/me/eventos', { token })
+  return http('/api/organizadores/me/eventos', {
+    token,
+    signal,
+  })
 }
 
 /** POST /api/eventos — crear borrador (ORGANIZADOR) */
@@ -475,7 +483,10 @@ export async function getDisponibilidadEvento(id, opts = {}) {
     await delay(120)
     return mockDisponibilidadItem(id)
   }
-  return http(`/api/eventos/${id}/disponibilidad`, { token: opts.token })
+  return http(`/api/eventos/${id}/disponibilidad`, {
+    token: opts.token,
+    signal: opts.signal,
+  })
 }
 
 /**
@@ -506,6 +517,7 @@ export async function getDisponibilidadBatch(ids, opts = {}) {
   return http(`/api/eventos/disponibilidad?${qs}`, {
     method: 'GET',
     token: opts.token,
+    signal: opts.signal,
   })
 }
 

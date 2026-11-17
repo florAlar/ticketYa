@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { getMe, patchMe } from '../../api/auth'
+import { isAbortError } from '../../api/http'
 import { ROLE_LABELS, normalizeRol } from '../../auth/roles'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import PreferenciasForm from '../../components/preferencias/PreferenciasForm'
 import HistorialCliente from '../../components/preferencias/HistorialCliente'
 import './PerfilPage.css'
@@ -29,44 +32,44 @@ function formFromProfile(p) {
 const PerfilPage = () => {
   const { token, user, updateUser, isCliente } = useAuth()
 
-  const [profile, setProfile] = useState(null)
-  const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    setStatus('loading')
-    setError('')
-    try {
-      const me = await getMe({ token })
-      const next = me || user
-      if (!next) {
-        throw new Error('No se pudo cargar el perfil')
+  const load = useCallback(
+    async (signal) => {
+      try {
+        const me = await getMe({ token, signal })
+        const next = me || user
+        if (!next) throw new Error('No se pudo cargar el perfil')
+        if (me) updateUser(me)
+        return next
+      } catch (err) {
+        if (isAbortError(err)) throw err
+        // Sin red, se usa la sesión local para no bloquear el perfil.
+        if (user) return user
+        throw err
       }
-      setProfile(next)
-      setForm(formFromProfile(next))
-      if (me) updateUser(me)
-      setStatus('ok')
-    } catch (err) {
-      if (user) {
-        setProfile(user)
-        setForm(formFromProfile(user))
-        setStatus('ok')
-        setError('')
-        return
-      }
-      setError(err.message || 'No se pudo cargar el perfil')
-      setStatus('error')
-    }
-  }, [token, user, updateUser])
+    },
+    [token, user, updateUser]
+  )
 
-  useEffect(() => {
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  const {
+    data: profile,
+    status,
+    error: loadError,
+    reload,
+    setData: setProfile,
+  } = useAsync(load, [token], { enabled: Boolean(token) })
+
+  // El formulario se inicializa desde el perfil la primera vez que llega.
+  const [formFor, setFormFor] = useState(null)
+  if (profile && formFor !== profile.id && !editing) {
+    setFormFor(profile.id)
+    setForm(formFromProfile(profile))
+  }
 
   const onChange = (e) => {
     const { name, value } = e.target
@@ -200,12 +203,13 @@ const PerfilPage = () => {
       </header>
 
       {status === 'loading' && (
-        <p className="perfil-page__muted">Cargando…</p>
+        <LoadingState label="Cargando perfil…" />
       )}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
       {error && <p className="perfil-page__error">{error}</p>}
       {msg && <p className="perfil-page__ok">{msg}</p>}
 
-      {status === 'ok' && profile && !editing && (
+      {status === 'success' && profile && !editing && (
         <div
           className={
             isCliente
@@ -220,7 +224,7 @@ const PerfilPage = () => {
         </div>
       )}
 
-      {status === 'ok' && profile && !editing && FEATURE.preferencias && (
+      {status === 'success' && profile && !editing && FEATURE.preferencias && (
         <section className="perfil-prefs-section">
           <div className="perfil-prefs-head">
             <h2 className="perfil-prefs-head__title">
@@ -240,7 +244,7 @@ const PerfilPage = () => {
         </section>
       )}
 
-      {status === 'ok' && profile && editing && (
+      {status === 'success' && profile && editing && (
         <form
           className="perfil-card perfil-card--datos perfil-card--edit"
           onSubmit={onSubmit}

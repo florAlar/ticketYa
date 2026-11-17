@@ -19,7 +19,10 @@ export async function listarParticipantes(filter = {}, opts = {}) {
   if (String(filter.q || '').trim()) params.set('q', String(filter.q).trim())
   if (filter.tipo) params.set('tipo', filter.tipo)
   const qs = params.toString()
-  const data = await http(`/api/participantes${qs ? `?${qs}` : ''}`, { token: opts.token })
+  const data = await http(`/api/participantes${qs ? `?${qs}` : ''}`, {
+    token: opts.token,
+    signal: opts.signal,
+  })
   return Array.isArray(data) ? data : []
 }
 

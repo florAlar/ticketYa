@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getPreferencias, putPreferencias } from '../../api/preferencias'
 import { listEventos } from '../../api/eventos'
 import { EVENTO_TIPOS, EVENTO_TIPO_LABELS } from '../../domain/evento'
+import useAsync from '../../hooks/useAsync'
+import { ErrorState, LoadingState } from '../ui/AsyncState'
 import TagInput from './TagInput'
 import ArtistaFavoritosPicker from './ArtistaFavoritosPicker'
 
@@ -36,59 +38,41 @@ function toForm(prefs) {
 /** Formulario “Mis preferencias” — GET/PUT /api/preferencias/me. */
 const PreferenciasForm = ({ token }) => {
   const [form, setForm] = useState(toForm(null))
-  const [status, setStatus] = useState('loading')
+  const [syncedToken, setSyncedToken] = useState(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
-  const [ciudadesSugeridas, setCiudadesSugeridas] = useState([])
 
-  useEffect(() => {
-    if (!token) {
-      setStatus('error')
-      setError('Iniciá sesión para guardar tus preferencias.')
-      return undefined
-    }
-    let cancelled = false
-    setStatus('loading')
-    setError('')
-    getPreferencias({ token })
-      .then((prefs) => {
-        if (cancelled) return
-        setForm(toForm(prefs))
-        setStatus('ok')
-      })
-      .catch((err) => {
-        if (cancelled) return
-        setError(err.message || 'No se pudieron cargar tus preferencias')
-        setStatus('error')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [token])
+  const prefsQuery = useAsync(
+    (signal) => getPreferencias({ token, signal }),
+    [token],
+    { enabled: Boolean(token) }
+  )
 
-  useEffect(() => {
-    let cancelled = false
-    listEventos({ size: 200 })
-      .then((list) => {
-        if (cancelled) return
-        const ciudades = [
-          ...new Set(
-            (list || [])
-              .map((e) => e?.lugar?.ciudad)
-              .filter(Boolean)
-              .map((c) => String(c).trim())
-          ),
-        ].sort((a, b) => a.localeCompare(b, 'es'))
-        setCiudadesSugeridas(ciudades)
-      })
-      .catch(() => {
-        /* las sugerencias son opcionales */
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const citiesQuery = useAsync(
+    (signal) => listEventos({ size: 200 }, { signal }),
+    [],
+    { enabled: Boolean(token) }
+  )
+
+  // Inicializa el formulario cuando llegan las preferencias y no pisa
+  // cambios del usuario en revalidaciones.
+  if (prefsQuery.isSuccess && syncedToken !== token) {
+    setSyncedToken(token)
+    setForm(toForm(prefsQuery.data))
+  }
+
+  const ciudadesSugeridas = useMemo(() => {
+    const list = citiesQuery.data || []
+    return [
+      ...new Set(
+        list
+          .map((e) => e?.lugar?.ciudad)
+          .filter(Boolean)
+          .map((c) => String(c).trim())
+      ),
+    ].sort((a, b) => a.localeCompare(b, 'es'))
+  }, [citiesQuery.data])
 
   const toggleCategoria = (tipo) => {
     setForm((prev) => ({
@@ -153,13 +137,21 @@ const PreferenciasForm = ({ token }) => {
         recomendarte eventos.
       </p>
 
-      {status === 'loading' && (
-        <p className="perfil-page__muted">Cargando preferencias…</p>
+      {!token && (
+        <p className="perfil-page__error">
+          Iniciá sesión para guardar tus preferencias.
+        </p>
+      )}
+      {token && prefsQuery.status === 'loading' && (
+        <LoadingState label="Cargando preferencias…" />
+      )}
+      {token && prefsQuery.status === 'error' && (
+        <ErrorState error={prefsQuery.error} onRetry={prefsQuery.reload} />
       )}
       {error && <p className="perfil-page__error">{error}</p>}
       {msg && <p className="perfil-page__ok">{msg}</p>}
 
-      {status === 'ok' && (
+      {prefsQuery.status === 'success' && (
         <form className="pref-form" onSubmit={onSubmit} noValidate>
           <fieldset className="pref-fieldset">
             <legend>Tipos de evento</legend>

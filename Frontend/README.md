@@ -51,19 +51,30 @@ docker compose up -d --build
 ```
 src/
   api/           # facades + mock/* (LS) — misma forma que el gateway
-  auth/          # roles CLIENTE | ORGANIZADOR | ADMIN | ACCESO
-  components/    # layout (Header/Footer), home (Hero, EventList/cards), auth
-  config/        # site.js (brand/footer), theme.js (tokens light/dark)
+  auth/          # roles CLIENTE | ORGANIZADOR | ADMIN | ACCESO + helpers de demo
+  components/    # layout (Header/Footer), home (Hero, EventList/cards), auth, ui
+  config/        # site.js (brand/footer), theme.js (tokens light/dark), featureGates
   context/       # Auth, Site, Theme
-  domain/        # shapes de referencia (evento, entrada, compra, …)
-  hooks/         # useAuth, useSite, useTheme
-  pages/         # pantallas por ruta de negocio
+  domain/        # shapes + reglas (evento/ dividido en constants, sectores, mappers, disponibilidad)
+  hooks/         # useAuth, useSite, useTheme, useAsync
+  lib/           # formateadores compartidos (fechas, moneda)
+  pages/         # pantallas por ruta + hooks/componentes locales de cada flujo
   providers/     # Site → Theme → Auth
   routes/        # AppRoutes + ProtectedRoute (única fuente de rutas)
-  styles/        # global.css
+  styles/        # global.css (índice) → base, layout, components, header, footer
 ```
 
 Rutas vivas: solo `src/routes/AppRoutes.jsx` (Home, eventos, checkout, mis-entradas, soporte, gestión, acceso, login, 404).
+
+## Capas de datos y estados
+
+- `src/api/http.js` centraliza `fetch`: timeout, `AbortSignal`, `ApiError` uniforme y evento global `ticketya:auth-expired` ante 401. `AuthProvider` escucha ese evento y limpia la sesión.
+- `src/hooks/useAsync.js` resuelve carga/error/cancelación/recarga y evita condiciones de carrera cuando cambian los parámetros de la ruta. Las pantallas ya no repiten `useEffect + setLoading`.
+- `src/providers/AuthProvider.jsx` rehidrata la sesión con `GET /usuarios/me` antes de habilitar rutas protegidas.
+- `src/lib/format.js` es la única fuente para fecha/hora y moneda (`formatFecha`, `formatMoney`).
+- `src/components/ui/AsyncState.jsx` y `ErrorBoundary.jsx` estandarizan estados de carga, error, vacío y la red de seguridad de render.
+- Las rutas usan `React.lazy` + `Suspense`, y las imágenes de `src/assets/img` se sirven en WebP para reducir el peso inicial.
+
 
 ## Capas que se conservan a propósito
 

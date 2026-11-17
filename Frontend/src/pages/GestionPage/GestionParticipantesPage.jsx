@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import {
   actualizarParticipante,
   crearParticipanteAdmin,
@@ -16,6 +17,7 @@ import {
 } from '../../domain/participante'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import './GestionPage.css'
 
 /**
@@ -27,36 +29,29 @@ import './GestionPage.css'
 const GestionParticipantesPage = () => {
   const { token } = useAuth()
   const wired = FEATURE.participantes
-  const [items, setItems] = useState([])
   const [q, setQ] = useState('')
   const [tipo, setTipo] = useState('')
   const [filtro, setFiltro] = useState({ q: '', tipo: '' })
-  const [status, setStatus] = useState(wired ? 'loading' : 'gated')
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [form, setForm] = useState(null) // null = cerrado; { id?, ...campos }
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    if (!wired) {
-      setStatus('gated')
-      return
-    }
-    setStatus('loading')
-    setError('')
-    try {
-      setItems(await listarParticipantes(filtro, { token }))
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudieron cargar los participantes')
-      setStatus('error')
-    }
-  }, [wired, filtro, token])
+  const load = useCallback(
+    async (signal) => {
+      const data = await listarParticipantes(filtro, { token, signal })
+      return Array.isArray(data) ? data : []
+    },
+    [filtro, token]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const {
+    data: items = [],
+    status,
+    error: loadError,
+    reload,
+  } = useAsync(load, [filtro, token], { enabled: wired })
 
   const onBuscar = (e) => {
     e.preventDefault()
@@ -83,7 +78,7 @@ const GestionParticipantesPage = () => {
         setAviso(`«${payload.nombre}» creado.`)
       }
       setForm(null)
-      await load()
+      await reload()
     } catch (err) {
       setError(
         err.status === 409
@@ -103,7 +98,7 @@ const GestionParticipantesPage = () => {
     try {
       await eliminarParticipante(p.id, { token })
       setAviso(`«${p.nombre}» eliminado.`)
-      await load()
+      await reload()
     } catch (err) {
       setError(
         err.status === 409
@@ -136,7 +131,7 @@ const GestionParticipantesPage = () => {
         </p>
       </header>
 
-      <div className="gestion-card__actions" style={{ marginBottom: '1rem' }}>
+      <div className="gestion-card__actions gestion-card__actions--spaced">
         <GateButton
           enabled={wired}
           type="button"
@@ -151,7 +146,7 @@ const GestionParticipantesPage = () => {
       </div>
 
       {wired && form && (
-        <form className="gestion-card" onSubmit={onGuardar} style={{ marginBottom: '1rem' }}>
+        <form className="gestion-card gestion-card--spaced" onSubmit={onGuardar}>
           <h2>{form.id ? 'Editar participante' : 'Nuevo participante'}</h2>
           <div className="form-group">
             <label htmlFor="par-nombre">Nombre *</label>
@@ -196,7 +191,7 @@ const GestionParticipantesPage = () => {
       )}
 
       {wired && (
-        <form className="gestion-card" onSubmit={onBuscar} style={{ marginBottom: '1rem' }}>
+        <form className="gestion-card gestion-card--spaced" onSubmit={onBuscar}>
           <div className="form-group">
             <label htmlFor="filtro-q">Buscar por nombre</label>
             <input
@@ -244,16 +239,17 @@ const GestionParticipantesPage = () => {
         </form>
       )}
 
-      {status === 'gated' && (
+      {!wired && (
         <div className="gestion-card">
           <p>La gestión de participantes necesita el backend real: no hay versión mock.</p>
         </div>
       )}
-      {status === 'loading' && <p className="gestion-card__muted">Cargando participantes…</p>}
+      {status === 'loading' && <LoadingState label="Cargando participantes…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
       {aviso && <p className="gestion-card__muted" role="status">✔ {aviso}</p>}
       {error && <p className="gestion-error" role="alert">{error}</p>}
 
-      {status === 'ok' && items.length === 0 && (
+      {wired && status === 'success' && items.length === 0 && (
         <div className="gestion-card">
           <p>
             {filtro.q || filtro.tipo
@@ -263,7 +259,7 @@ const GestionParticipantesPage = () => {
         </div>
       )}
 
-      {status === 'ok' && items.length > 0 && (
+      {status === 'success' && items.length > 0 && (
         <ul className="gestion-event-list">
           {items.map((p) => (
             <li key={p.id} className="gestion-event-row">

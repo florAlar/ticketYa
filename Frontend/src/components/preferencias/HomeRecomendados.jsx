@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { FEATURE } from '../../config/featureGates'
 import { getRecomendacionesMe } from '../../api/preferencias'
 import RecomendacionesBlock from './RecomendacionesBlock'
@@ -11,29 +11,13 @@ import RecomendacionesBlock from './RecomendacionesBlock'
  */
 const HomeRecomendados = () => {
   const { isAuthenticated, token } = useAuth()
-  const [items, setItems] = useState([])
-  const [status, setStatus] = useState('idle')
+  const enabled = isAuthenticated && FEATURE.recomendaciones && Boolean(token)
 
-  useEffect(() => {
-    if (!isAuthenticated || !FEATURE.recomendaciones || !token) {
-      return undefined
-    }
-    let cancelled = false
-    getRecomendacionesMe({ token, limit: 8 })
-      .then((data) => {
-        if (cancelled) return
-        setItems(Array.isArray(data) ? data : [])
-        setStatus('ok')
-      })
-      .catch(() => {
-        if (cancelled) return
-        setItems([])
-        setStatus('error')
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [isAuthenticated, token])
+  const { data: items = [], status } = useAsync(
+    (signal) => getRecomendacionesMe({ token, limit: 8, signal }),
+    [token],
+    { enabled }
+  )
 
   if (!isAuthenticated || !FEATURE.recomendaciones) return null
 
@@ -47,7 +31,7 @@ const HomeRecomendados = () => {
     )
   }
 
-  if (status !== 'ok' || items.length === 0) return null
+  if (status !== 'success' || items.length === 0) return null
 
   return (
     <RecomendacionesBlock

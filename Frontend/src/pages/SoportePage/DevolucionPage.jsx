@@ -1,23 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { listMisEntradas } from '../../api/entradas'
 import { crearSolicitudEntrada } from '../../api/soporteCliente'
 import { ENTRADA_ESTADOS } from '../../domain/entrada'
 import { DEVOLUCION_TIPOS } from '../../domain/devolucion'
+import { formatFecha } from '../../lib/format'
+import { EmptyState, ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import './SoportePage.css'
-
-function formatFecha(iso) {
-  if (!iso) return ''
-  try {
-    return new Date(iso).toLocaleString('es-AR', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    })
-  } catch {
-    return iso
-  }
-}
 
 /** Formulario real: devolución / reclamo desde soporte o preselección ?entrada= */
 const DevolucionPage = () => {
@@ -26,51 +17,52 @@ const DevolucionPage = () => {
   const [params] = useSearchParams()
   const pre = params.get('entrada') || ''
 
-  const [entradas, setEntradas] = useState([])
   const [entradaId, setEntradaId] = useState(pre)
   const [tipo, setTipo] = useState(DEVOLUCION_TIPOS.DEVOLUCION)
   const [motivo, setMotivo] = useState('')
-  const [status, setStatus] = useState('loading')
   const [sending, setSending] = useState(false)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
 
-  const load = useCallback(async () => {
-    setStatus('loading')
-    setError('')
-    try {
-      const list = await listMisEntradas(user, { token })
-      const vendidas = (Array.isArray(list) ? list : []).filter(
+  const load = useCallback(
+    async (signal) => {
+      const list = await listMisEntradas(user, { token, signal })
+      return (Array.isArray(list) ? list : []).filter(
         (e) => e.estado === ENTRADA_ESTADOS.VENDIDA
       )
-      setEntradas(vendidas)
-      if (pre && vendidas.some((e) => e.id === pre)) setEntradaId(pre)
-      else if (!pre && vendidas[0]) setEntradaId(vendidas[0].id)
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudieron cargar tus entradas')
-      setStatus('error')
-    }
-  }, [user, token, pre])
+    },
+    [user, token]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const {
+    data: entradas = [],
+    status,
+    error: loadError,
+    reload,
+  } = useAsync(load, [user?.id, token], {
+    enabled: Boolean(user?.id && token),
+  })
+
+  const selectedId = useMemo(() => {
+    if (entradas.some((e) => e.id === entradaId)) return entradaId
+    if (pre && entradas.some((e) => e.id === pre)) return pre
+    return entradas[0]?.id || ''
+  }, [entradas, entradaId, pre])
 
   const selected = useMemo(
-    () => entradas.find((e) => e.id === entradaId),
-    [entradas, entradaId]
+    () => entradas.find((e) => e.id === selectedId),
+    [entradas, selectedId]
   )
 
   const onSubmit = async (e) => {
     e.preventDefault()
-    if (!entradaId) return
+    if (!selectedId) return
     setSending(true)
     setError('')
     setOk('')
     try {
       const sol = await crearSolicitudEntrada(
-        { idEntrada: entradaId, tipo, motivo },
+        { idEntrada: selectedId, tipo, motivo },
         user,
         { token }
       )
@@ -97,25 +89,30 @@ const DevolucionPage = () => {
         desde el panel de ventas.
       </p>
 
-      {status === 'loading' && <p>Cargando tus entradas…</p>}
+      {status === 'loading' && <LoadingState label="Cargando tus entradas…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
       {error && <p className="soporte-error">{error}</p>}
       {ok && <p className="soporte-ok">{ok}</p>}
 
-      {status === 'ok' && entradas.length === 0 && (
-        <p>
-          No tenés entradas válidas para gestionar.{' '}
-          <Link to="/mis-entradas">Ver mis entradas</Link>
-        </p>
+      {status === 'success' && entradas.length === 0 && (
+        <EmptyState
+          title="No tenés entradas válidas para gestionar."
+          action={
+            <Link className="btn" to="/mis-entradas">
+              Ver mis entradas
+            </Link>
+          }
+        />
       )}
 
-      {status === 'ok' && entradas.length > 0 && (
+      {status === 'success' && entradas.length > 0 && (
         <form className="soporte-form" onSubmit={onSubmit}>
           <div className="form-group">
             <label htmlFor="entradaId">Entrada</label>
             <select
               id="entradaId"
               className="form-input"
-              value={entradaId}
+              value={selectedId}
               onChange={(e) => setEntradaId(e.target.value)}
               required
               disabled={sending}
@@ -169,7 +166,7 @@ const DevolucionPage = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={sending || !entradaId}
+            disabled={sending || !selectedId}
           >
             {sending ? 'Enviando…' : 'Enviar solicitud'}
           </button>

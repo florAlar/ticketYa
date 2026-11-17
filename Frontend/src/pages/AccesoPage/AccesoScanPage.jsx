@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { validarIngreso } from '../../api/entradas'
 import { listEventos } from '../../api/eventos'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
@@ -16,7 +17,6 @@ import '../GestionPage/GestionPage.css'
 const AccesoScanPage = () => {
   const { user, token } = useAuth()
   const wired = FEATURE.accesoScan
-  const [eventos, setEventos] = useState([])
   const [idEvento, setIdEvento] = useState('')
   const [codigo, setCodigo] = useState('')
   const [msg, setMsg] = useState('')
@@ -24,19 +24,11 @@ const AccesoScanPage = () => {
   const [entrada, setEntrada] = useState(null)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
-    let vivo = true
-    listEventos()
-      .then((list) => {
-        if (vivo) setEventos(Array.isArray(list) ? list : [])
-      })
-      .catch(() => {
-        if (vivo) setEventos([])
-      })
-    return () => {
-      vivo = false
-    }
-  }, [])
+  const { data: eventos = [] } = useAsync(
+    (signal) => listEventos({}, { signal }),
+    [],
+    { enabled: wired }
+  )
 
   const onSubmit = async (e) => {
     e.preventDefault()

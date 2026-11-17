@@ -138,3 +138,9 @@
 .evento-similares .event-section__head {
   margin-bottom: 0.9rem;
 }
+
+/* Badge de cupo inline dentro del título del sector */
+.evento-cupo-badge--inline {
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}

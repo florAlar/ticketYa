@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useAsync from '../../hooks/useAsync'
 import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
+import { isAbortError } from '../../api/http'
+import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import {
   formatEventoFecha,
   formatPrecioDesde,
@@ -31,40 +34,34 @@ const EventoDetallePage = () => {
   const { eventoId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
-  const [evento, setEvento] = useState(null)
-  const [disponibilidad, setDisponibilidad] = useState(null)
-  const [status, setStatus] = useState('loading')
-  const [error, setError] = useState('')
 
-  const load = useCallback(async () => {
-    setStatus('loading')
-    setError('')
-    try {
-      const data = await getEvento(eventoId)
-      let disp = null
+  const load = useCallback(
+    async (signal) => {
+      const data = await getEvento(eventoId, { signal })
+      let disp
       try {
         disp = normalizeDisponibilidadDto(
-          await getDisponibilidadEvento(eventoId)
+          await getDisponibilidadEvento(eventoId, { signal })
         )
-      } catch {
+      } catch (err) {
+        if (isAbortError(err)) throw err
         disp = normalizeDisponibilidadDto({
           idEvento: eventoId,
           disponibleTotal: 0,
           sectores: [],
         })
       }
-      setDisponibilidad(disp)
-      setEvento(withCupoResumen(data, disp))
-      setStatus('ok')
-    } catch (err) {
-      setError(err.message || 'No se pudo cargar el evento')
-      setStatus('error')
-    }
-  }, [eventoId])
+      return {
+        evento: withCupoResumen(data, disp),
+        disponibilidad: disp,
+      }
+    },
+    [eventoId]
+  )
 
-  useEffect(() => {
-    load()
-  }, [load])
+  const { data, status, error, reload } = useAsync(load, [eventoId])
+  const evento = data?.evento || null
+  const disponibilidad = data?.disponibilidad || null
 
   const sectores = useMemo(
     () => evento?.sectores || evento?.lugar?.sectores || [],
@@ -105,10 +102,10 @@ const EventoDetallePage = () => {
         <Link to="/eventos">← Volver al listado</Link>
       </p>
 
-      {status === 'loading' && <p>Cargando evento…</p>}
-      {error && <p className="evento-detalle-page__error">{error}</p>}
+      {status === 'loading' && <LoadingState label="Cargando evento…" />}
+      {status === 'error' && <ErrorState error={error} onRetry={reload} />}
 
-      {status === 'ok' && evento && (
+      {status === 'success' && evento && (
         <>
           <div className="evento-detalle-page__media">
             <img src={imagenEvento(evento)} alt="" />
@@ -212,12 +209,11 @@ const EventoDetallePage = () => {
                           {s.nombre}
                           {nivelLabel && (
                             <span
-                              className={`evento-cupo-badge ${
+                              className={`evento-cupo-badge evento-cupo-badge--inline ${
                                 sectorAgotado
                                   ? 'evento-cupo-badge--agotado'
                                   : 'evento-cupo-badge--aviso'
                               }`}
-                              style={{ marginLeft: '0.5rem', verticalAlign: 'middle' }}
                             >
                               {nivelLabel}
                             </span>
