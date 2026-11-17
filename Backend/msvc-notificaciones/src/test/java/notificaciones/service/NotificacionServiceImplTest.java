@@ -114,10 +114,15 @@ class NotificacionServiceImplTest {
         verify(notificacionRepository, times(2)).save(captor.capture());
         assertEquals(List.of("PUSH", "EMAIL"),
                 captor.getAllValues().stream().map(Notificacion::getCanal).toList());
-        assertEquals("EventoCancelado:PUSH:" + EVENTO_ID,
+        assertEquals("EventoCancelado:PUSH:" + EVENTO_ID + ":m-1",
                 captor.getAllValues().get(0).getClaveIdempotencia());
-        assertEquals("EventoCancelado:EMAIL:" + EVENTO_ID,
+        assertEquals("EventoCancelado:EMAIL:" + EVENTO_ID + ":m-1",
                 captor.getAllValues().get(1).getClaveIdempotencia());
+        assertEquals(
+                captor.getAllValues().get(0).getClaveMensaje(),
+                captor.getAllValues().get(1).getClaveMensaje());
+        assertEquals("EventoCancelado:" + EVENTO_ID + ":m-1",
+                captor.getAllValues().get(0).getClaveMensaje());
         assertEquals("demo@ticketya.com", captor.getAllValues().get(1).getDestinatario());
     }
 
@@ -146,9 +151,9 @@ class NotificacionServiceImplTest {
         when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("EventoCancelado", "PUSH"))
                 .thenReturn(Optional.of(plantilla));
         when(notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
-                CLIENTE_1, "EventoCancelado:PUSH:" + EVENTO_ID)).thenReturn(true);
+                CLIENTE_1, "EventoCancelado:PUSH:" + EVENTO_ID + ":m-1")).thenReturn(true);
         when(notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
-                CLIENTE_2, "EventoCancelado:PUSH:" + EVENTO_ID)).thenReturn(false);
+                CLIENTE_2, "EventoCancelado:PUSH:" + EVENTO_ID + ":m-1")).thenReturn(false);
         when(notificacionRepository.save(any(Notificacion.class)))
                 .thenAnswer(i -> i.getArgument(0));
 
@@ -157,6 +162,48 @@ class NotificacionServiceImplTest {
         ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
         verify(notificacionRepository, times(1)).save(captor.capture());
         assertEquals(CLIENTE_2, captor.getValue().getIdUsuario());
+    }
+
+    @Test
+    void procesarEvento_distintosMensajesDelMismoEvento_creanAvisosSeparados() {
+        when(ventasClient.clientesAprobadosPorEvento(EVENTO_ID)).thenReturn(List.of(CLIENTE_1));
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("EventoCancelado", "PUSH"))
+                .thenReturn(Optional.of(plantilla));
+        when(notificacionRepository.save(any(Notificacion.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        service.procesarEvento(evento("EventoCancelado", "m-1"));
+        service.procesarEvento(evento("EventoCancelado", "m-2"));
+
+        ArgumentCaptor<Notificacion> captor = ArgumentCaptor.forClass(Notificacion.class);
+        verify(notificacionRepository, times(2)).save(captor.capture());
+        assertEquals(
+                List.of(
+                        "EventoCancelado:PUSH:" + EVENTO_ID + ":m-1",
+                        "EventoCancelado:PUSH:" + EVENTO_ID + ":m-2"),
+                captor.getAllValues().stream()
+                        .map(Notificacion::getClaveIdempotencia)
+                        .toList());
+        assertEquals(
+                List.of(
+                        "EventoCancelado:" + EVENTO_ID + ":m-1",
+                        "EventoCancelado:" + EVENTO_ID + ":m-2"),
+                captor.getAllValues().stream()
+                        .map(Notificacion::getClaveMensaje)
+                        .toList());
+    }
+
+    @Test
+    void procesarEvento_mismoMensajeReintentado_noDuplica() {
+        when(ventasClient.clientesAprobadosPorEvento(EVENTO_ID)).thenReturn(List.of(CLIENTE_1));
+        when(plantillaRepository.findFirstByTipoEventoAndCanalAndActivaTrue("EventoCancelado", "PUSH"))
+                .thenReturn(Optional.of(plantilla));
+        when(notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
+                CLIENTE_1, "EventoCancelado:PUSH:" + EVENTO_ID + ":m-1")).thenReturn(true);
+
+        service.procesarEvento(evento("EventoCancelado", "m-1"));
+
+        verify(notificacionRepository, never()).save(any(Notificacion.class));
     }
 
     @Test
@@ -243,6 +290,7 @@ class NotificacionServiceImplTest {
         assertEquals("EMAIL", n.getCanal());
         assertEquals(EVENTO_ID, n.getIdEventoOrigen());
         assertEquals("CompraConfirmada:EMAIL:" + COMPRA_ID, n.getClaveIdempotencia());
+        assertEquals("CompraConfirmada:" + COMPRA_ID, n.getClaveMensaje());
         assertEquals("demo@ticketya.com", n.getDestinatario());
         assertEquals("Compra " + COMPRA_ID + " por 2", n.getContenido());
     }
@@ -289,6 +337,7 @@ class NotificacionServiceImplTest {
         assertEquals("PUSH", n.getCanal());
         assertEquals("PENDIENTE", n.getEstado());
         assertTrue(!n.getLeida());
+        assertTrue(n.getClaveMensaje().startsWith("ADMIN:"));
     }
 
     private static PlantillaNotificacion plantilla(
@@ -304,8 +353,12 @@ class NotificacionServiceImplTest {
     }
 
     private EventoCambioDTO evento(String tipo) {
+        return evento(tipo, "m-1");
+    }
+
+    private EventoCambioDTO evento(String tipo, String messageId) {
         return new EventoCambioDTO(
-                "m-1", EVENTO_ID, tipo, "Rock", LocalDateTime.of(2026, 12, 20, 21, 0), null,
+                messageId, EVENTO_ID, tipo, "Rock", LocalDateTime.of(2026, 12, 20, 21, 0), null,
                 Instant.parse("2026-11-13T19:20:00Z"));
     }
 

@@ -91,6 +91,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         }
 
         LocalDateTime ahora = LocalDateTime.now(ZoneOffset.UTC);
+        String claveMensaje = claveMensaje(evento.tipo(), evento.eventoId(), evento.messageId());
         int creadas = 0;
         for (String canal : CANALES_EVENTO) {
             Optional<PlantillaNotificacion> plantillaOpt = plantillaRepository
@@ -100,7 +101,8 @@ public class NotificacionServiceImpl implements NotificacionService {
                 continue;
             }
             PlantillaNotificacion plantilla = plantillaOpt.get();
-            String clave = claveIdempotencia(evento.tipo(), canal, evento.eventoId());
+            String clave = claveIdempotencia(
+                    evento.tipo(), canal, evento.eventoId(), evento.messageId());
             for (String idCliente : clientes) {
                 if (idCliente == null || idCliente.isBlank()) {
                     continue;
@@ -111,8 +113,8 @@ public class NotificacionServiceImpl implements NotificacionService {
                 if (!permiteNotificar(idCliente, plantilla.getCanal(), evento.tipo())) {
                     continue;
                 }
-                notificacionRepository.save(
-                        nuevaNotificacion(idCliente, evento, plantilla, clave, ahora));
+                notificacionRepository.save(nuevaNotificacion(
+                        idCliente, evento, plantilla, clave, claveMensaje, ahora));
                 creadas++;
             }
         }
@@ -147,6 +149,8 @@ public class NotificacionServiceImpl implements NotificacionService {
         }
 
         LocalDateTime ahora = LocalDateTime.now(ZoneOffset.UTC);
+        String claveMensaje =
+                claveMensaje(TIPO_ARTISTA_FAVORITO, evento.eventoId(), evento.messageId());
         int creadas = 0;
         for (String canal : CANALES_EVENTO) {
             Optional<PlantillaNotificacion> plantillaOpt = plantillaRepository
@@ -156,7 +160,8 @@ public class NotificacionServiceImpl implements NotificacionService {
                 continue;
             }
             PlantillaNotificacion plantilla = plantillaOpt.get();
-            String clave = claveIdempotencia(TIPO_ARTISTA_FAVORITO, canal, evento.eventoId());
+            String clave = claveIdempotencia(
+                    TIPO_ARTISTA_FAVORITO, canal, evento.eventoId(), evento.messageId());
             for (String idCliente : clientes) {
                 if (idCliente == null || idCliente.isBlank()) {
                     continue;
@@ -167,8 +172,8 @@ public class NotificacionServiceImpl implements NotificacionService {
                 if (!permiteNotificar(idCliente, plantilla.getCanal(), TIPO_ARTISTA_FAVORITO)) {
                     continue;
                 }
-                notificacionRepository.save(
-                        nuevaNotificacion(idCliente, evento, plantilla, clave, ahora));
+                notificacionRepository.save(nuevaNotificacion(
+                        idCliente, evento, plantilla, clave, claveMensaje, ahora));
                 creadas++;
             }
         }
@@ -188,7 +193,7 @@ public class NotificacionServiceImpl implements NotificacionService {
             return;
         }
         // La compra es el origen de la idempotencia: un cliente puede comprar dos veces el mismo evento.
-        String clave = claveIdempotencia(TIPO_COMPRA_CONFIRMADA, CANAL_EMAIL, compra.compraId());
+        String clave = claveIdempotencia(TIPO_COMPRA_CONFIRMADA, CANAL_EMAIL, compra.compraId(), null);
         if (notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
                 compra.clienteId(), clave)) {
             log.debug("Compra {} ya notificada al cliente {}", compra.compraId(), compra.clienteId());
@@ -212,7 +217,12 @@ public class NotificacionServiceImpl implements NotificacionService {
         valores.put("moneda", compra.moneda() == null ? "" : compra.moneda());
 
         Notificacion n = nuevaNotificacion(
-                compra.clienteId(), plantilla, compra.eventoId(), clave, valores);
+                compra.clienteId(),
+                plantilla,
+                compra.eventoId(),
+                clave,
+                claveMensaje(TIPO_COMPRA_CONFIRMADA, compra.compraId(), null),
+                valores);
         notificacionRepository.save(n);
         log.info("Compra {} confirmada: notificación {} creada para cliente {}",
                 compra.compraId(), n.getIdNotificacion(), compra.clienteId());
@@ -230,6 +240,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         n.setIdEventoOrigen(request.getIdEventoOrigen());
         n.setTipo(request.getTipo());
         n.setCanal(request.getCanal().toUpperCase(Locale.ROOT));
+        n.setClaveMensaje("ADMIN:" + n.getIdNotificacion());
         n.setAsunto(request.getAsunto());
         n.setContenido(request.getContenido());
         n.setFechaCreacion(request.getFechaCreacion() == null
@@ -259,6 +270,7 @@ public class NotificacionServiceImpl implements NotificacionService {
             EventoCambioDTO evento,
             PlantillaNotificacion plantilla,
             String clave,
+            String claveMensaje,
             LocalDateTime ahora) {
         Map<String, String> valores = new LinkedHashMap<>();
         valores.put("evento", evento.nombre());
@@ -266,7 +278,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         valores.put("ciudad", evento.ciudad());
         valores.put("cambios", evento.cambios());
         return nuevaNotificacion(
-                idCliente, plantilla, evento.eventoId(), clave, valores, ahora);
+                idCliente, plantilla, evento.eventoId(), clave, claveMensaje, valores, ahora);
     }
 
     private Notificacion nuevaNotificacion(
@@ -274,9 +286,16 @@ public class NotificacionServiceImpl implements NotificacionService {
             PlantillaNotificacion plantilla,
             String idEvento,
             String clave,
+            String claveMensaje,
             Map<String, String> valores) {
         return nuevaNotificacion(
-                idCliente, plantilla, idEvento, clave, valores, LocalDateTime.now(ZoneOffset.UTC));
+                idCliente,
+                plantilla,
+                idEvento,
+                clave,
+                claveMensaje,
+                valores,
+                LocalDateTime.now(ZoneOffset.UTC));
     }
 
     private Notificacion nuevaNotificacion(
@@ -284,6 +303,7 @@ public class NotificacionServiceImpl implements NotificacionService {
             PlantillaNotificacion plantilla,
             String idEvento,
             String clave,
+            String claveMensaje,
             Map<String, String> valores,
             LocalDateTime ahora) {
         Notificacion n = new Notificacion();
@@ -291,6 +311,7 @@ public class NotificacionServiceImpl implements NotificacionService {
         n.setIdUsuario(idCliente);
         n.setIdEventoOrigen(idEvento);
         n.setClaveIdempotencia(clave);
+        n.setClaveMensaje(claveMensaje);
         n.setPlantilla(plantilla);
         n.setTipo(plantilla.getTipoEvento());
         n.setCanal(plantilla.getCanal());
@@ -335,8 +356,31 @@ public class NotificacionServiceImpl implements NotificacionService {
         }
     }
 
-    private static String claveIdempotencia(String tipo, String canal, String origen) {
-        return tipo + ":" + canal + ":" + (origen == null ? "" : origen);
+    private static String claveIdempotencia(
+            String tipo, String canal, String origen, String ocurrencia) {
+        StringBuilder clave = new StringBuilder(tipo)
+                .append(':')
+                .append(canal)
+                .append(':')
+                .append(origen == null ? "" : origen);
+        if (ocurrencia != null && !ocurrencia.isBlank()) {
+            clave.append(':').append(ocurrencia);
+        }
+        return clave.toString();
+    }
+
+    /**
+     * Identidad del mensaje sin el canal. Las filas PUSH y EMAIL del mismo aviso comparten esta
+     * clave y la bandeja las muestra como una sola entrada.
+     */
+    private static String claveMensaje(String tipo, String origen, String ocurrencia) {
+        StringBuilder clave = new StringBuilder(tipo)
+                .append(':')
+                .append(origen == null ? "" : origen);
+        if (ocurrencia != null && !ocurrencia.isBlank()) {
+            clave.append(':').append(ocurrencia);
+        }
+        return clave.toString();
     }
 
     private static String render(String plantilla, Map<String, String> valores) {

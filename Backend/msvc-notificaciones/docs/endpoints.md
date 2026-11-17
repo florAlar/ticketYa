@@ -40,7 +40,9 @@ lock `SKIP LOCKED`, registra `intento_envio` y pasa a `ENVIADA`/`FALLIDA` (3 int
 `PUSH` usa `MockPushProvider` (sin Firebase). `EMAIL` usa SMTP real: en Docker Compose apunta a
 **MailHog** (`http://localhost:8025`) con `TICKETYA_NOTIF_EMAIL_PROVIDER=smtp`; sin esa variable usa
 `MockEmailProvider`. Los avisos de evento se generan por **ambos canales** si hay plantilla activa
-para cada uno; la compra usa solo EMAIL. El destinatario se resuelve con `GET /usuarios/{id}` y se
+para cada uno; la compra usa solo EMAIL. La bandeja `GET /notificaciones/me` devuelve **una sola
+entrada por mensaje** (fila `PUSH` representativa + `canales: ["PUSH","EMAIL"]`) y `noLeidas` cuenta
+mensajes, no entregas. El destinatario se resuelve con `GET /usuarios/{id}` y se
 guarda en `notificacion.destinatario`; si falla, se usa `TICKETYA_NOTIF_EMAIL_DESTINO_DEFAULT`.
 
 ### Enrutamiento gateway (relacionado)
