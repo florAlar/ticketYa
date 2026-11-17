@@ -120,3 +120,8 @@ Si el msvc necesita DB, levantar antes solo el servicio de datos del compose cor
 | `docs/` | Entrega formal (índice en `docs/README.md`) |
 
 Front del monorepo: ver README raíz y `Frontend/README.md`.
+
+## IMPORTANTE
+Las colas en RabbitMQ suelen tardar en crearse aprox (2-3 min) POR LO TANTO esperar para recibir las notificaciones.
+Ídem para el sistema de preferencias, suele tardar unos minutos hasta que MongoDB cargue por completo.
+Al entrar a MailHog procurar que este "Connected". No hace falta tocar nada más. Es un simulador SMTP, cualquier mail usado/registrado en el sistema las notificaciones por email llegará ahí mismo.
