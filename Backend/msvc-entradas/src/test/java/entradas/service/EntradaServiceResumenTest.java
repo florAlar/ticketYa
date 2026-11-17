@@ -31,7 +31,8 @@ class EntradaServiceResumenTest {
     void setUp() {
         repo = mock(EntradaRepository.class);
         service = new EntradaServiceImpl(repo, mock(DevolucionRepository.class), new EntradaMapper(),
-                mock(EventosClient.class), mock(VentasClient.class), mock(ValidacionAccesoRepository.class), 72L);
+                mock(EventosClient.class), mock(VentasClient.class), mock(ValidacionAccesoRepository.class),
+                mock(org.springframework.context.ApplicationEventPublisher.class), 72L);
     }
 
     @Test

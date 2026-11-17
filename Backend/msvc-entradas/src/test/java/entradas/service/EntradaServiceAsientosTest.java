@@ -50,7 +50,8 @@ class EntradaServiceAsientosTest {
         ventasClient = mock(VentasClient.class);
         service = new EntradaServiceImpl(
                 entradaRepository, devolucionRepository, new EntradaMapper(),
-                mock(EventosClient.class), ventasClient, mock(ValidacionAccesoRepository.class), 72L);
+                mock(EventosClient.class), ventasClient, mock(ValidacionAccesoRepository.class),
+                mock(org.springframework.context.ApplicationEventPublisher.class), 72L);
         when(entradaRepository.findByIdCompra(ID_COMPRA)).thenReturn(new ArrayList<>());
         when(entradaRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
     }

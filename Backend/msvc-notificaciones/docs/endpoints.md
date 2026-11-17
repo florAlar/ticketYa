@@ -30,6 +30,7 @@ del cliente. Las preferencias de canal viven en `msvc-preferencias` (`/preferenc
 | `evento.modificado` | `EventoModificado` | compradores APROBADOS (PUSH + EMAIL) |
 | `evento.publicado` | `EventoPublicado` | artistas favoritos + ciudad (PUSH + EMAIL) |
 | `compra.confirmada` | `CompraConfirmada` | cliente de la compra (EMAIL) |
+| `devolucion.aprobada` | `DevolucionAprobada` | cliente dueño de la entrada devuelta (PUSH + EMAIL) |
 
 Contrato completo en `Backend/specs/comunicacion.md`.
 
@@ -39,8 +40,8 @@ Job `@Scheduled` (30 s, configurable con `TICKETYA_NOTIF_ENVIO_INTERVALO_MS`): t
 lock `SKIP LOCKED`, registra `intento_envio` y pasa a `ENVIADA`/`FALLIDA` (3 intentos).
 `PUSH` usa `MockPushProvider` (sin Firebase). `EMAIL` usa SMTP real: en Docker Compose apunta a
 **MailHog** (`http://localhost:8025`) con `TICKETYA_NOTIF_EMAIL_PROVIDER=smtp`; sin esa variable usa
-`MockEmailProvider`. Los avisos de evento se generan por **ambos canales** si hay plantilla activa
-para cada uno; la compra usa solo EMAIL. La bandeja `GET /notificaciones/me` devuelve **una sola
+`MockEmailProvider`. Los avisos de evento y la devolución aprobada se generan por **ambos canales**
+si hay plantilla activa para cada uno; la compra usa solo EMAIL. La bandeja `GET /notificaciones/me` devuelve **una sola
 entrada por mensaje** (fila `PUSH` representativa + `canales: ["PUSH","EMAIL"]`) y `noLeidas` cuenta
 mensajes, no entregas. El destinatario se resuelve con `GET /usuarios/{id}` y se
 guarda en `notificacion.destinatario`; si falla, se usa `TICKETYA_NOTIF_EMAIL_DESTINO_DEFAULT`.

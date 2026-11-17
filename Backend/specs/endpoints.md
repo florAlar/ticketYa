@@ -280,8 +280,8 @@ Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio v
 Las preferencias de canal viven en msvc-preferencias (`/preferencias/me/notificaciones`).
 
 Eventos broker (no REST): `CompraConfirmada` (`compra.confirmada`); `EventoCancelado`, `EventoSuspendido`,
-`EventoModificado`, `EventoPublicado` (`evento.*`). Contrato en `specs/comunicacion.md`.
-Pendiente: `DevolucionAprobada` (requiere productor en msvc-entradas).
+`EventoModificado`, `EventoPublicado` (`evento.*`); `DevolucionAprobada` (`devolucion.aprobada`, PUSH + EMAIL
+al cliente dueño). Contrato en `specs/comunicacion.md`.
 
 ## 5. resumen
 

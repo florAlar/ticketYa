@@ -70,7 +70,7 @@ prefDb.preferencias_clientes.updateOne(
         push: true,
         email: true,
         tipos: ['CompraConfirmada', 'EventoCancelado', 'EventoSuspendido', 'EventoModificado',
-                'NuevoEventoArtistaFavorito']
+                'NuevoEventoArtistaFavorito', 'DevolucionAprobada']
       },
       fechaActualizacion: ISODate('2026-10-01T12:00:00.000Z')
     }

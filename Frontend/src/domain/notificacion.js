@@ -4,6 +4,7 @@ export const NOTIFICACION_TIPO_LABELS = {
   EventoSuspendido: 'Evento suspendido',
   EventoModificado: 'Evento modificado',
   NuevoEventoArtistaFavorito: 'Artista favorito',
+  DevolucionAprobada: 'Devolución aprobada',
 }
 
 export const NOTIFICACION_CANAL_LABELS = {
