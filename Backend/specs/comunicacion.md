@@ -40,17 +40,19 @@ Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Exchange comparti
 |---|---|---|---|
 | `notificaciones.eventos` | `evento.#` | `evento.cancelado`, `evento.suspendido`, `evento.modificado`, `evento.publicado` | `notificaciones.eventos.dlq` |
 | `notificaciones.compras` | `compra.#` | `compra.confirmada` | `notificaciones.compras.dlq` |
+| `notificaciones.devoluciones` | `devolucion.#` | `devolucion.aprobada` | `notificaciones.devoluciones.dlq` |
 
 Semántica **at-least-once**; `messageId` identifica la ocurrencia y sirve para deduplicar
 reentregas. La deduplicación es por (`idUsuario`, `clave_idempotencia`), donde la clave es
 `tipo:canal:eventoId:messageId` para eventos (el mismo mensaje no se duplica al reintentar, pero dos
-modificaciones distintas del mismo evento sí generan avisos separados) y
-`CompraConfirmada:EMAIL:compraId` para compras (permite dos compras del mismo evento).
+modificaciones distintas del mismo evento sí generan avisos separados),
+`CompraConfirmada:EMAIL:compraId` para compras (permite dos compras del mismo evento) y
+`DevolucionAprobada:<canal>:<devolucionId>` para devoluciones (una devolución se aprueba una sola vez).
 
-Las filas `PUSH` y `EMAIL` de un mismo mensaje comparten `clave_mensaje` (`tipo:eventoId:messageId`
-o `CompraConfirmada:compraId`). La bandeja `GET /notificaciones/me` muestra **una sola entrada por
-mensaje** (prefiere la fila PUSH y expone `canales` con todos los canales usados); el envío sigue
-siendo dual.
+Las filas `PUSH` y `EMAIL` de un mismo mensaje comparten `clave_mensaje` (`tipo:eventoId:messageId`,
+`CompraConfirmada:compraId` o `DevolucionAprobada:devolucionId`). La bandeja
+`GET /notificaciones/me` muestra **una sola entrada por mensaje** (prefiere la fila PUSH y expone
+`canales` con todos los canales usados); el envío sigue siendo dual.
 
 ### Contrato `evento.#` (msvc-eventos)
 
@@ -102,6 +104,25 @@ Se publica después del commit (`@TransactionalEventListener(AFTER_COMMIT)`) al 
 }
 ```
 
+### Contrato `devolucion.aprobada` (msvc-entradas)
+
+Se publica después del commit (`@TransactionalEventListener(AFTER_COMMIT)`) al aprobarse una
+devolución (`POST /devoluciones/{id}/aprobacion`). Si falla la liberación de cupo en ventas, la
+aprobación hace rollback y **no** se publica.
+
+```json
+{
+  "messageId": "uuid",
+  "devolucionId": "uuid",
+  "entradaId": "uuid",
+  "clienteId": "uuid",
+  "eventoId": "uuid",
+  "monto": 95000.00,
+  "moneda": "ARS",
+  "occurredAt": "2026-11-17T12:00:00Z"
+}
+```
+
 ### Fan-out y matching
 
 ```
@@ -116,6 +137,9 @@ msvc-eventos --evento.publicado--> notificaciones.eventos --+
                                                                  un artista y vive en la ciudad
 
 msvc-ventas --compra.confirmada--> notificaciones.compras --> una notificación EMAIL por compra
+
+msvc-entradas --devolucion.aprobada--> notificaciones.devoluciones --> PUSH + EMAIL al cliente dueño
+                                                                       de la entrada devuelta
 ```
 
 Antes de crear cada aviso, notificaciones consulta `GET /preferencias/clientes/{id}/notificaciones`
@@ -138,7 +162,6 @@ Un job `@Scheduled` (30 s por defecto) toma hasta 50 notificaciones `PENDIENTE` 
 ### Resto de efectos de dominio
 
 - Fila virtual / tokens temporales: apoyo Redis en msvc-ventas (E2).
-- `DevolucionAprobada`: pendiente (requiere productor en msvc-entradas).
 
 
 ## Headers de correlación / idempotencia

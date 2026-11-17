@@ -134,6 +134,7 @@ sequenceDiagram
     participant GW as API Gateway
     participant N as msvc-entradas
     participant V as msvc-ventas
+    participant NO as msvc-notificaciones
 
     C->>GW: POST /api/entradas/{id}/devoluciones
     GW->>N: solicitar devolución
@@ -147,7 +148,9 @@ sequenceDiagram
     V->>V: SELECT cupo_sector FOR UPDATE (vendida -= 1, disponible += 1)
     V-->>N: 200
     N-->>A: devolución APROBADA
-    Note over N,V: Si ventas falla, la aprobación hace rollback local
+    N-)NO: devolucion.aprobada (tras commit)
+    NO->>NO: PUSH + EMAIL al cliente dueño de la entrada
+    Note over N,V: Si ventas falla, la aprobación hace rollback local y no se publica el aviso
 ```
 
 ## 5. Entrada numerada (asiento concreto)

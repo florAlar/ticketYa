@@ -18,6 +18,7 @@ import notificaciones.dto.NotificacionRequestDTO;
 import notificaciones.entity.Notificacion;
 import notificaciones.entity.PlantillaNotificacion;
 import notificaciones.messaging.CompraConfirmadaDTO;
+import notificaciones.messaging.DevolucionAprobadaDTO;
 import notificaciones.messaging.EventoCambioDTO;
 import notificaciones.observability.Bitacora;
 import notificaciones.repository.NotificacionRepository;
@@ -38,6 +39,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     static final String TIPO_EVENTO_PUBLICADO = "EventoPublicado";
     static final String TIPO_ARTISTA_FAVORITO = "NuevoEventoArtistaFavorito";
     static final String TIPO_COMPRA_CONFIRMADA = "CompraConfirmada";
+    static final String TIPO_DEVOLUCION_APROBADA = "DevolucionAprobada";
 
     static final String CANAL_PUSH = "PUSH";
     static final String CANAL_EMAIL = "EMAIL";
@@ -45,6 +47,9 @@ public class NotificacionServiceImpl implements NotificacionService {
 
     /** Canales que se intentan para avisos de evento (si hay plantilla activa para cada uno). */
     static final List<String> CANALES_EVENTO = List.of(CANAL_PUSH, CANAL_EMAIL);
+
+    /** Canales que se intentan para la devolución aprobada (envío dual, como los avisos de evento). */
+    static final List<String> CANALES_DEVOLUCION = List.of(CANAL_PUSH, CANAL_EMAIL);
 
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
@@ -226,6 +231,63 @@ public class NotificacionServiceImpl implements NotificacionService {
         notificacionRepository.save(n);
         log.info("Compra {} confirmada: notificación {} creada para cliente {}",
                 compra.compraId(), n.getIdNotificacion(), compra.clienteId());
+    }
+
+    @Override
+    @Transactional
+    public void procesarDevolucionAprobada(DevolucionAprobadaDTO devolucion) {
+        if (devolucion == null
+                || devolucion.clienteId() == null
+                || devolucion.clienteId().isBlank()
+                || devolucion.devolucionId() == null
+                || devolucion.devolucionId().isBlank()) {
+            log.warn("Devolución aprobada incompleta, se ignora: {}", devolucion);
+            return;
+        }
+
+        Map<String, String> valores = new LinkedHashMap<>();
+        valores.put("devolucionId", devolucion.devolucionId());
+        valores.put("entradaId", devolucion.entradaId());
+        valores.put("eventoId", devolucion.eventoId());
+        valores.put("monto", devolucion.monto() == null ? "?" : devolucion.monto().toPlainString());
+        valores.put("moneda", devolucion.moneda() == null ? "" : devolucion.moneda());
+
+        String claveMensaje =
+                claveMensaje(TIPO_DEVOLUCION_APROBADA, devolucion.devolucionId(), null);
+        int creadas = 0;
+        for (String canal : CANALES_DEVOLUCION) {
+            Optional<PlantillaNotificacion> plantillaOpt = plantillaRepository
+                    .findFirstByTipoEventoAndCanalAndActivaTrue(TIPO_DEVOLUCION_APROBADA, canal);
+            if (plantillaOpt.isEmpty()) {
+                log.debug("Sin plantilla activa para {} y canal {}",
+                        TIPO_DEVOLUCION_APROBADA, canal);
+                continue;
+            }
+            PlantillaNotificacion plantilla = plantillaOpt.get();
+            String clave = claveIdempotencia(
+                    TIPO_DEVOLUCION_APROBADA, canal, devolucion.devolucionId(), null);
+            if (notificacionRepository.existsByIdUsuarioAndClaveIdempotencia(
+                    devolucion.clienteId(), clave)) {
+                continue;
+            }
+            if (!permiteNotificar(
+                    devolucion.clienteId(), plantilla.getCanal(), TIPO_DEVOLUCION_APROBADA)) {
+                log.info("Cliente {} prefiere no recibir {} por {}",
+                        devolucion.clienteId(), TIPO_DEVOLUCION_APROBADA, plantilla.getCanal());
+                continue;
+            }
+            Notificacion n = nuevaNotificacion(
+                    devolucion.clienteId(),
+                    plantilla,
+                    devolucion.eventoId(),
+                    clave,
+                    claveMensaje,
+                    valores);
+            notificacionRepository.save(n);
+            creadas++;
+        }
+        log.info("Devolución {} aprobada: {} notificación(es) creada(s) para cliente {} (canales {})",
+                devolucion.devolucionId(), creadas, devolucion.clienteId(), CANALES_DEVOLUCION);
     }
 
     @Override

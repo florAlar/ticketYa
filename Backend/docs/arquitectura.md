@@ -57,7 +57,7 @@ Reglas de la arquitectura:
 - El navegador habla **solo con el gateway**; nunca con un microservicio directo.
 - **Una base de datos por microservicio.** No se comparten entidades ni tablas; las referencias entre servicios son lógicas (UUID sin FK física). Ver `modelo-datos.md`.
 - Comunicación **REST síncrona** (OpenFeign) entre microservicios para el flujo de E1.
-- **Broker RabbitMQ** para eventos de dominio (E2): `msvc-eventos` publica `EventoCancelado`, `EventoSuspendido`, `EventoModificado` y `EventoPublicado`; `msvc-ventas` publica `CompraConfirmada`; `msvc-notificaciones` los consume, genera avisos push/email y los entrega con un job y `intento_envio`. El email sale por SMTP (MailHog en local). Contrato en `specs/comunicacion.md`.
+- **Broker RabbitMQ** para eventos de dominio (E2): `msvc-eventos` publica `EventoCancelado`, `EventoSuspendido`, `EventoModificado` y `EventoPublicado`; `msvc-ventas` publica `CompraConfirmada`; `msvc-entradas` publica `DevolucionAprobada`; `msvc-notificaciones` los consume, genera avisos push/email y los entrega con un job y `intento_envio`. El email sale por SMTP (MailHog en local). Contrato en `specs/comunicacion.md`.
 - Cada servicio es un proyecto Maven independiente con su `Dockerfile` y su `docker-compose.yml`; `Backend/docker-compose.yml` los integra con `include`.
 
 ## 2. Responsabilidades
@@ -68,7 +68,7 @@ Reglas de la arquitectura:
 | **msvc-usuarios** | 8081 | MySQL | Cuentas, login/registro, roles, perfil |
 | **msvc-eventos** | 8082 | MySQL | Eventos, **lugares** (con latitud/longitud opcionales) y sus **sectores** (los carga el ADMIN), participantes, precio y cupo de cada sector por evento, publicación, estados y búsqueda. Los asientos son virtuales: no hay tabla de asientos |
 | **msvc-ventas** | 8083 | MySQL + Redis | Disponibilidad y cupos, reservas temporales, compras, pagos (mock), emisión de entradas, anti doble venta y **reportes del organizador** (ventas, ocupación y recaudación) |
-| **msvc-entradas** | 8084 | MySQL | Entradas con QR único, devoluciones, reintegro por cancelación y **control de acceso**: validación del QR en la puerta (un QR ingresa una sola vez) con auditoría de intentos |
+| **msvc-entradas** | 8084 | MySQL | Entradas con QR único, devoluciones, reintegro por cancelación y **control de acceso**: validación del QR en la puerta (un QR ingresa una sola vez) con auditoría de intentos. Publica `DevolucionAprobada` al broker |
 | msvc-preferencias | 8085 | MongoDB | *(E2)* preferencias (categorías, ciudades, artistas), preferencias de canal de notificación y matching artista + ciudad |
 | msvc-notificaciones | 8086 | MySQL | *(E2)* bandeja de avisos, plantillas, entrega push/email (adaptadores mock) y registro de intentos |
 

@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import entradas.clients.EventosClient;
@@ -36,6 +37,7 @@ import entradas.exception.BusinessConflictException;
 import entradas.exception.ForbiddenException;
 import entradas.exception.ResourceNotFoundException;
 import entradas.mapper.EntradaMapper;
+import entradas.messaging.DevolucionAprobadaEvent;
 import entradas.repository.DevolucionRepository;
 import entradas.repository.EntradaRepository;
 import entradas.repository.ValidacionAccesoRepository;
@@ -76,6 +78,7 @@ public class EntradaServiceImpl implements EntradaService {
         private final EventosClient eventosClient;
         private final VentasClient ventasClient;
         private final ValidacionAccesoRepository validacionAccesoRepository;
+                private final ApplicationEventPublisher eventPublisher;
                 private final long plazoDevolucionHoras;
 
                 public EntradaServiceImpl(
@@ -85,6 +88,7 @@ public class EntradaServiceImpl implements EntradaService {
                         EventosClient eventosClient,
                         VentasClient ventasClient,
                         ValidacionAccesoRepository validacionAccesoRepository,
+                        ApplicationEventPublisher eventPublisher,
                         @Value("${ticketya.entradas.plazo-devolucion-horas:72}") long plazoDevolucionHoras) {
                     this.entradaRepository = entradaRepository;
                     this.devolucionRepository = devolucionRepository;
@@ -92,6 +96,7 @@ public class EntradaServiceImpl implements EntradaService {
                     this.eventosClient = eventosClient;
                     this.ventasClient = ventasClient;
                     this.validacionAccesoRepository = validacionAccesoRepository;
+                    this.eventPublisher = eventPublisher;
                     this.plazoDevolucionHoras = plazoDevolucionHoras;
                 }
 
@@ -259,6 +264,13 @@ public class EntradaServiceImpl implements EntradaService {
                 liberarCupoVentasFailHard(entrada);
                 Bitacora.registrar("DEVOLUCION_APROBADA", null, d.getIdDevolucion(),
                         "entrada=" + entrada.getIdEntrada() + " monto=" + d.getMonto());
+                // Aviso al cliente: el listener AFTER_COMMIT publica devolucion.aprobada
+                eventPublisher.publishEvent(new DevolucionAprobadaEvent(
+                        d.getIdDevolucion(),
+                        entrada.getIdEntrada(),
+                        entrada.getIdCliente(),
+                        entrada.getIdEvento(),
+                        d.getMonto()));
                 return entradaMapper.toDevolucion(d);
             }
 

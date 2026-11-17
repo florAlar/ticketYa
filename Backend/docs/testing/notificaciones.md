@@ -1,7 +1,8 @@
 # Testing completo — notificaciones (E2-NOT)
 
 Guía para verificar el backend de notificaciones de punta a punta:
-compra confirmada, cancelación/suspensión/modificación de evento y artista favorito + ciudad.
+compra confirmada, cancelación/suspensión/modificación de evento, artista favorito + ciudad y
+devolución aprobada.
 
 > Atajo: si querés empezar de cero con datos seed nuevos, desde `Backend/`:
 > `docker compose down -v && docker compose up -d --build`
@@ -23,6 +24,7 @@ Verificar:
 curl http://localhost:8080/                       # api gateway ok!
 curl -u ticketya:ticketya_dev http://localhost:15672/api/queues/%2F/notificaciones.eventos
 curl -u ticketya:ticketya_dev http://localhost:15672/api/queues/%2F/notificaciones.compras
+curl -u ticketya:ticketya_dev http://localhost:15672/api/queues/%2F/notificaciones.devoluciones
 ```
 
 La segunda y tercera consulta deben devolver la cola (si el servicio todavía está arrancando,
@@ -41,18 +43,24 @@ curl -s http://localhost:8025/api/v2/messages | head -c 300
 ```bash
 cd Backend
 
-(cd msvc-notificaciones && mvn test)   # 36 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP
+(cd msvc-notificaciones && mvn test)   # 42 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP
 (cd msvc-eventos        && mvn test)   # 193 tests: publicación/modificación/cancelación
 (cd msvc-ventas         && mvn test)   # 161 tests: compra/pago + evento compra.confirmada
+(cd msvc-entradas       && mvn test)   # 85 tests: entradas/QR/devoluciones + evento devolucion.aprobada
 (cd msvc-preferencias   && mvn test)   # 12 tests: preferencias + matching
 (cd APIGateway          && mvn test)   # 44 tests: autorización de /api/notificaciones
 ```
+
+> `MsvcNotificacionesApplicationTests.contextLoads` necesita MySQL en `localhost:3311`; sin la base
+> levanta el error de dialecto de Hibernate. Los tests unitarios restantes corren sin Docker.
 
 Cobertura específica de esta feature:
 
 | Test | Qué fija |
 |---|---|
-| `NotificacionServiceImplTest` | cancelación, suspensión, modificación, artista favorito, compra, preferencias de canal, idempotencia por canal + `messageId`, **dual PUSH + EMAIL con una sola entrada de bandeja** |
+| `NotificacionServiceImplTest` | cancelación, suspensión, modificación, artista favorito, compra, devolución aprobada, preferencias de canal, idempotencia por canal + `messageId`, **dual PUSH + EMAIL con una sola entrada de bandeja** |
+| `DevolucionAprobadaContratoTest` | contrato de wire `devolucion.aprobada` (entradas → notificaciones) |
+| `DevolucionEventPublisherTest` | routing key `devolucion.aprobada`, exchange y contrato publicado por msvc-entradas |
 | `NotificacionEnvioServiceTest` | `PENDIENTE → ENVIADA/FALLIDA`, reintentos, máximo, canal sin proveedor |
 | `SmtpEmailProviderTest` | envío SMTP al email resuelto y fallback al destinatario por defecto |
 | `NotificacionControllerTest` | bandeja agrupada por mensaje (PUSH + EMAIL → una entrada), `noLeidas` por mensaje, marcar leída actualiza ambos canales |
@@ -347,7 +355,42 @@ Los dos envíos se ven en los logs y el email en MailHog.
 
 ---
 
-## 6. Prueba aislada de consumidores (sin pasar por las APIs)
+## 6. Escenario D — Devolución aprobada
+
+El seed deja una devolución **PENDIENTE** sobre la entrada Metallica del cliente demo
+(`aa000000-0000-4000-8000-000000000011`, entrada `aa000000-0000-4000-8000-000000000001`).
+Aprobarla como ADMIN debe generar el aviso al cliente por PUSH + EMAIL.
+
+```bash
+# 6.1 Aprobar la devolución pendiente (TOKEN_ADM)
+curl -s -X POST "$GATEWAY/api/devoluciones/aa000000-0000-4000-8000-000000000011/aprobacion" \
+  -H "Authorization: Bearer $TOKEN_ADM" | python3 -m json.tool
+```
+
+Esperado: `estado=APROBADA`, `idEntrada=aa000000-0000-4000-8000-000000000001`,
+`monto=95000.00` y `idCliente=b0000000-0000-4000-8000-000000000001`.
+
+Esperar el job de envío (30 s por defecto) y consultar con `TOKEN_CLI`:
+
+```bash
+curl -s "$GATEWAY/api/notificaciones/me?page=0&size=20" \
+  -H "Authorization: Bearer $TOKEN_CLI" | python3 -m json.tool
+```
+
+Esperado: **una sola** notificación `tipo=DevolucionAprobada`, `canales: ["PUSH","EMAIL"]`,
+`estado=ENVIADA`, `idEventoOrigen=d0000000-0000-4000-8000-000000000001` y contenido con
+“95000.00 ARS”. En MailHog aparece el correo “Devolución aprobada” para `demo@ticketya.com`.
+
+La idempotencia es por canal y devolución:
+`DevolucionAprobada:PUSH:<devolucionId>` y `DevolucionAprobada:EMAIL:<devolucionId>`.
+Reentregar el mismo mensaje de Rabbit no debe duplicar la notificación.
+
+> Si la devolución ya fue aprobada en una corrida anterior, usar otra entrada con devolución
+> PENDIENTE o reiniciar datos con `docker compose down -v`.
+
+---
+
+## 7. Prueba aislada de consumidores (sin pasar por las APIs)
 
 Útil para probar idempotencia y DLQ rápido. Publicar directo en Rabbit:
 
@@ -384,9 +427,26 @@ Para `evento.publicado` cambiá `routing_key` y el payload:
 
 Repetir el mismo `compraId` no debe duplicar la notificación.
 
+Para la devolución aprobada, publicar con `routing_key: devolucion.aprobada` y este payload:
+
+```json
+{
+  "messageId": "test-dev-1",
+  "devolucionId": "aa000000-0000-4000-8000-000000000011",
+  "entradaId": "aa000000-0000-4000-8000-000000000001",
+  "clienteId": "b0000000-0000-4000-8000-000000000001",
+  "eventoId": "d0000000-0000-4000-8000-000000000001",
+  "monto": 95000.00,
+  "moneda": "ARS",
+  "occurredAt": "2026-11-17T12:00:00Z"
+}
+```
+
+Repetir el mismo `devolucionId` no debe duplicar la notificación.
+
 ---
 
-## 7. Front (campanita y bandeja)
+## 8. Front (campanita y bandeja)
 
 Con el stack levantado, abrí <http://localhost:3000> y logueate con
 `demo@ticketya.com` / `demo1234`.
@@ -407,7 +467,7 @@ docker compose build ms-frontend
 docker compose up -d --no-deps --force-recreate ms-frontend
 ```
 
-## 8. Verificación en base, logs y colas
+## 9. Verificación en base, logs y colas
 
 ```bash
 # Notificaciones e intentos
@@ -418,18 +478,20 @@ docker compose exec -T db-mysql-notificaciones mysql -uticketya -pticketya_dev n
   FROM intento_envio ORDER BY fecha_intento DESC LIMIT 20;"
 
 # Logs del consumidor y del job
-docker compose logs -f ms-notificaciones | grep -E "PUSH-MOCK|EMAIL-MOCK|notificación|Evento publicado|Compra confirmada"
+docker compose logs -f ms-notificaciones | grep -E "PUSH-MOCK|EMAIL-MOCK|notificación|Evento publicado|Compra confirmada|Devolución"
 
 # Colas
 curl -s -u ticketya:ticketya_dev http://localhost:15672/api/queues/%2F/notificaciones.eventos | python3 -m json.tool
 curl -s -u ticketya:ticketya_dev http://localhost:15672/api/queues/%2F/notificaciones.compras | python3 -m json.tool
+curl -s -u ticketya:ticketya_dev http://localhost:15672/api/queues/%2F/notificaciones.devoluciones | python3 -m json.tool
 ```
 
-También podés mirar `notificaciones.eventos.dlq` y `notificaciones.compras.dlq` en el panel de Rabbit.
+También podés mirar `notificaciones.eventos.dlq`, `notificaciones.compras.dlq` y
+`notificaciones.devoluciones.dlq` en el panel de Rabbit.
 
 ---
 
-## 9. Migración en volúmenes existentes
+## 10. Migración en volúmenes existentes
 
 Si **no** hiciste `down -v`, el esquema viejo no tiene `leida`, `fecha_lectura` ni
 `clave_idempotencia`/`clave_mensaje`. Aplicar una vez desde `Backend/`:
@@ -450,17 +512,31 @@ docker compose exec -T db-mysql-notificaciones \
 docker compose exec -T db-mysql-notificaciones \
   mysql -uroot -proot_dev notificaciones \
   < infrastructure/mysql/notificaciones/migrations/05-clave-mensaje.sql
+
+docker compose exec -T db-mysql-notificaciones \
+  mysql -uroot -proot_dev notificaciones \
+  < infrastructure/mysql/notificaciones/migrations/06-plantillas-devolucion-aprobada.sql
 ```
 
 Es idempotente: se puede correr varias veces.
 
 Para MongoDB, si el volumen ya existía, el documento seed no tendrá `notificaciones`, pero el
 servicio devuelve defaults (`push=true`, `email=true`, `tipos=[]`); el matching de artistas/ciudad
-sigue funcionando porque `artistas` y `ciudades` ya estaban en el seed.
+sigue funcionando porque `artistas` y `ciudades` ya estaban en el seed. Si el documento **sí** tiene
+una lista de `tipos` (como el cliente demo) hay que agregar `DevolucionAprobada` o el consumidor
+respetará la preferencia y no creará el aviso:
+
+```bash
+docker compose exec -T db-mongo-preferencias \
+  mongosh -u ticketya -p mongo_dev --authenticationDatabase admin preferencias --eval '
+    db.preferencias_clientes.updateMany(
+      { "notificaciones.tipos.0": { $exists: true } },
+      { $addToSet: { "notificaciones.tipos": "DevolucionAprobada" } })'
+```
 
 ---
 
-## 10. Checklist de aceptación
+## 11. Checklist de aceptación
 
 - [ ] `CompraConfirmada` aparece como `EMAIL` y pasa a `ENVIADA` con `fecha_envio`.
 - [ ] El correo se ve en MailHog (`localhost:8025`) con destino `demo@ticketya.com`.
@@ -469,6 +545,7 @@ sigue funcionando porque `artistas` y `ciudades` ya estaban en el seed.
 - [ ] `EventoSuspendido` y `EventoModificado` aparecen para el mismo cliente.
 - [ ] `NuevoEventoArtistaFavorito` aparece **una sola vez** con `canales: ["PUSH","EMAIL"]` para el cliente demo al publicar
       Metallica en Buenos Aires.
+- [ ] `DevolucionAprobada` aparece **una sola vez** con `canales: ["PUSH","EMAIL"]` al aprobar una devolución, con el monto en el contenido y el correo en MailHog.
 - [ ] `GET /api/notificaciones/me` devuelve `noLeidas` y `PATCH .../leida` lo baja.
 - [ ] `intento_envio` tiene filas `OK` por cada envío.
 - [ ] Reenviar el mismo mensaje de Rabbit no duplica la notificación.
