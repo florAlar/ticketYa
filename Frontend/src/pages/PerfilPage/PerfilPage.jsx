@@ -227,13 +227,15 @@ const PerfilPage = () => {
               Gustos y recomendaciones
             </h2>
             <p className="perfil-page__muted">
-              Cargá tus tipos de evento, ciudades y artistas favoritos. Se
-              combinan con tus compras para sugerirte eventos.
+              Cargá tus tipos de evento, ciudades y artistas favoritos.
+              {isCliente && ' Se combinan con tus compras para sugerirte eventos.'}
             </p>
           </div>
           <div className="perfil-prefs">
             <PreferenciasForm token={token} />
-            <HistorialCliente idCliente={user?.id} token={token} />
+            {isCliente && (
+              <HistorialCliente idCliente={user?.id} token={token} />
+            )}
           </div>
         </section>
       )}

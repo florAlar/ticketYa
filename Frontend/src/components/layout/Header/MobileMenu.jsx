@@ -1,9 +1,10 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { HiX, HiOutlineUser, HiOutlineBell } from 'react-icons/hi'
 import useAuth from '../../../hooks/useAuth'
 import { FEATURE } from '../../../config/featureGates'
 
 const MobileMenu = ({ open, close }) => {
+  const navigate = useNavigate()
   const {
     isAuthenticated,
     user,
@@ -13,9 +14,10 @@ const MobileMenu = ({ open, close }) => {
     isAcceso,
   } = useAuth()
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     close()
+    navigate('/', { replace: true })
   }
 
   return (

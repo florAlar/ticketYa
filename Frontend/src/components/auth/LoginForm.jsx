@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import { homePathForRole } from '../../auth/roles'
 
 const initial = { email: '', password: '' }
 
@@ -17,7 +16,6 @@ function validate(values) {
 const LoginForm = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
   const [form, setForm] = useState(initial)
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
@@ -48,18 +46,13 @@ const LoginForm = () => {
 
     try {
       setStatus('loading')
-      const sessionUser = await login({
+      await login({
         email: form.email.trim(),
         password: form.password,
       })
       setStatus('success')
-      // Si venía de una ruta protegida, respetar next; si no, home por rol
-      const nextParam = params.get('next')
-      if (nextParam) {
-        navigate(nextParam, { replace: true })
-      } else {
-        navigate(homePathForRole(sessionUser?.rol), { replace: true })
-      }
+      // Siempre se redirige al inicio tras iniciar sesión
+      navigate('/', { replace: true })
     } catch (err) {
       setStatus('error')
       setApiError(err.message || 'No se pudo iniciar sesión')

@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { HiOutlineUser } from 'react-icons/hi'
 import useAuth from '../../../hooks/useAuth'
 
 const DesktopNav = () => {
+  const navigate = useNavigate()
   const {
     isAuthenticated,
     user,
@@ -11,6 +12,11 @@ const DesktopNav = () => {
     canScanAccess,
     isAcceso,
   } = useAuth()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate('/', { replace: true })
+  }
 
   const accountTitle = user?.nombre
     ? `${user.nombre}${user.rol ? ` (${user.rol})` : ''}`
@@ -46,7 +52,7 @@ const DesktopNav = () => {
               </NavLink>
             </li>
             <li>
-              <button type="button" className="nav-logout" onClick={logout}>
+              <button type="button" className="nav-logout" onClick={handleLogout}>
                 Salir
               </button>
             </li>

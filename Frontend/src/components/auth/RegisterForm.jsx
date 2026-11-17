@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 
 const initial = {
@@ -30,7 +30,6 @@ function validate(values) {
 const RegisterForm = () => {
   const { register } = useAuth()
   const navigate = useNavigate()
-  const [params] = useSearchParams()
   const [form, setForm] = useState(initial)
   const [errors, setErrors] = useState({})
   const [touched, setTouched] = useState({})
@@ -67,8 +66,8 @@ const RegisterForm = () => {
         password: form.password,
       })
       setStatus('success')
-      const next = params.get('next') || '/'
-      navigate(next, { replace: true })
+      // Siempre se redirige al inicio tras registrarse
+      navigate('/', { replace: true })
     } catch (err) {
       setStatus('error')
       setApiError(err.message || 'No se pudo crear la cuenta')

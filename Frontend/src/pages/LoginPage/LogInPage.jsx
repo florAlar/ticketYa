@@ -32,8 +32,7 @@ const LoginPage = () => {
   }
 
   if (isAuthenticated) {
-    const next = params.get('next') || '/'
-    return <Navigate to={next} replace />
+    return <Navigate to="/" replace />
   }
 
   return (
