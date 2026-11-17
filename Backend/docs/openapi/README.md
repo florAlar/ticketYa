@@ -10,7 +10,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | `msvc-eventos.json` | Contrato de eventos/lugares/participantes (27 ops / 17 paths) |
 | `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador (21 ops / 19 paths, 23 schemas) |
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
-| `openapi-bundle.json` | Bundle consolidado: metadatos + los 4 specs bajo la clave `specs` |
+| `msvc-preferencias.json` | Contrato de preferencias, historial y recomendaciones (13 ops / 11 paths, 11 schemas) |
+| `openapi-bundle.json` | Bundle consolidado: metadatos + los 5 specs bajo la clave `specs` |
 
 > **Actualizado 2026-11-10:** los specs incluyen los asientos virtuales (`filas`/`asientosPorFila` en sectores; `asientos` en `POST /reservas`, `POST /eventos/{id}/cupos/liberacion` y `POST /entradas/emision`; `asientosOcupados` en disponibilidad; `fila`/`asiento` en la entrada).
 >
@@ -25,6 +26,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
 
 > **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.
+>
+> **Actualizado 2026-11-16 (E2-PRE):** nuevo `msvc-preferencias.json` con preferencias, artistas, historial, recomendaciones propias/similares y backfill interno (`X-Internal-Token`). `openapi-bundle.json` regenerado con 5 specs.
 
 ## Regeneración (tras cambios en anotaciones)
 
@@ -40,6 +43,7 @@ curl -s http://localhost:8081/v3/api-docs -o docs/openapi/msvc-usuarios.json   #
 curl -s http://localhost:8082/v3/api-docs -o docs/openapi/msvc-eventos.json     # puerto 8082
 curl -s http://localhost:8083/v3/api-docs -o docs/openapi/msvc-ventas.json      # puerto 8083
 curl -s http://localhost:8084/v3/api-docs -o docs/openapi/msvc-entradas.json    # puerto 8084
+curl -s http://localhost:8085/v3/api-docs -o docs/openapi/msvc-preferencias.json # puerto 8085
 
 # 3. Reconstruir el bundle consolidado
 python3 - <<'PY'
@@ -71,6 +75,7 @@ Cada microservicio sirve su propia UI (no hay agregación en el gateway):
 | eventos (8082) | `http://localhost:8082/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
 | ventas (8083) | `http://localhost:8083/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
 | entradas (8084) | `http://localhost:8084/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
+| preferencias (8085) | `http://localhost:8085/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
 
 Comandos rápidos:
 
@@ -79,6 +84,7 @@ curl -s -o /dev/null -w 'usuarios  -> %{http_code}\n' http://localhost:8081/swag
 curl -s -o /dev/null -w 'eventos   -> %{http_code}\n' http://localhost:8082/swagger-ui/index.html
 curl -s -o /dev/null -w 'ventas    -> %{http_code}\n' http://localhost:8083/swagger-ui/index.html
 curl -s -o /dev/null -w 'entradas  -> %{http_code}\n' http://localhost:8084/swagger-ui/index.html
+curl -s -o /dev/null -w 'preferencias -> %{http_code}\n' http://localhost:8085/swagger-ui/index.html
 ```
 
 Todos deben devolver **200**.

@@ -156,7 +156,8 @@ public class EventoServiceImpl implements EventoService {
                 LocalDate fechaHasta,
                 String orden,
                 int page,
-                int size) {
+                int size,
+                boolean incluirParticipantes) {
 
             int safePage = Math.max(page, 0);
             int safeSize = size <= 0 ? 20 : Math.min(size, 200);
@@ -190,6 +191,16 @@ public class EventoServiceImpl implements EventoService {
         List<EventoResponseDTO> content = eventos.stream()
                 .map(e -> eventoMapper.toCatalogo(e, minPrecios.get(e.getId())))
                 .collect(Collectors.toList());
+
+        if (incluirParticipantes && !content.isEmpty()) {
+            Map<String, List<String>> artistas = artistasPorEvento(
+                    eventos.stream().map(Evento::getId).toList());
+            content.forEach(dto -> {
+                if (dto != null) {
+                    dto.setArtistas(artistas.getOrDefault(dto.getId(), List.of()));
+                }
+            });
+        }
 
         if ("precio".equalsIgnoreCase(blankToNull(orden))) {
             content.sort((a, b) -> {
@@ -1259,6 +1270,22 @@ public class EventoServiceImpl implements EventoService {
         }
         for (Object[] row : precioSectorRepository.minPrecioByEventoIds(ids)) {
             map.put((String) row[0], (BigDecimal) row[1]);
+        }
+        return map;
+    }
+
+    /** Nombres de artistas por evento en una sola query (catálogo con incluirParticipantes). */
+    private Map<String, List<String>> artistasPorEvento(List<String> ids) {
+        Map<String, List<String>> map = new HashMap<>();
+        if (ids == null || ids.isEmpty()) {
+            return map;
+        }
+        for (Object[] row : eventoParticipanteRepository.findArtistasByEventoIds(ids)) {
+            String idEvento = (String) row[0];
+            String nombre = (String) row[1];
+            if (idEvento != null && nombre != null && !nombre.isBlank()) {
+                map.computeIfAbsent(idEvento, k -> new ArrayList<>()).add(nombre);
+            }
         }
         return map;
     }

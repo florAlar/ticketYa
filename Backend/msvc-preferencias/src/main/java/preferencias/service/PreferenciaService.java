@@ -12,6 +12,9 @@ public interface PreferenciaService {
 
     PreferenciaResponseDTO actualizar(String idCliente, PreferenciaRequestDTO request);
 
+    /** Actualiza solo los artistas favoritos, sin pisar categorías/ciudades/rango. */
+    PreferenciaResponseDTO actualizarArtistas(String idCliente, List<String> artistas);
+
     NotificacionesPreferenciasDTO obtenerNotificaciones(String idCliente);
 
     NotificacionesPreferenciasDTO actualizarNotificaciones(

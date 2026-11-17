@@ -1,3 +1,6 @@
+include:
+  - path: ../infrastructure/rabbitmq/docker-compose.yml
+
 services:
 
   ms-preferencias:
@@ -10,8 +13,17 @@ services:
       SPRING_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@db-mongo-preferencias:27017/preferencias?authSource=admin
       # Compatibilidad con la variable vieja (Spring Boot < 4)
       SPRING_DATA_MONGODB_URI: mongodb://ticketya:${MONGO_PASSWORD:-mongo_dev}@db-mongo-preferencias:27017/preferencias?authSource=admin
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: ticketya
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-ticketya_dev}
+      TICKETYA_URI_EVENTOS: http://ms-eventos:8082
+      TICKETYA_URI_VENTAS: http://ms-ventas:8083
+      TICKETYA_INTERNAL_TOKEN: ${TICKETYA_INTERNAL_TOKEN:-ticketya_dev_internal}
     depends_on:
       db-mongo-preferencias:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   db-mongo-preferencias:

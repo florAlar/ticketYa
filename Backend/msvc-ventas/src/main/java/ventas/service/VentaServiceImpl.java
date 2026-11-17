@@ -487,6 +487,28 @@ public class VentaServiceImpl implements VentaService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<ventas.dto.CompraInternaDTO> listarComprasInternas(
+            java.time.LocalDate desde, java.time.LocalDate hasta) {
+        java.time.LocalDateTime d = desde != null ? desde.atStartOfDay() : null;
+        java.time.LocalDateTime h = hasta != null ? hasta.atTime(java.time.LocalTime.MAX) : null;
+        return compraRepository.findComprasInternas(EST_COMPRA_APROBADA, d, h).stream()
+                .map(row -> {
+                    ventas.dto.CompraInternaDTO dto = new ventas.dto.CompraInternaDTO();
+                    dto.setIdCompra((String) row[0]);
+                    dto.setIdCliente((String) row[1]);
+                    dto.setIdEvento((String) row[2]);
+                    dto.setFechaCompra((java.time.LocalDateTime) row[3]);
+                    dto.setTotal((BigDecimal) row[4]);
+                    dto.setMoneda((String) row[5]);
+                    Number cantidad = (Number) row[6];
+                    dto.setCantidadEntradas(cantidad == null ? 0 : cantidad.intValue());
+                    return dto;
+                })
+                .toList();
+    }
+
+    @Override
     @Transactional
     public PagoResponseDTO iniciarPago(String idCliente, String idCompra, PagoCreateRequestDTO request) {
         Compra compra = requireCompraPropia(idCliente, idCompra);

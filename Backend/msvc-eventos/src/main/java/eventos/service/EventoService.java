@@ -20,6 +20,27 @@ import java.util.List;
 
 public interface EventoService {
 
+    default PageResponseDTO<EventoResponseDTO> buscar(
+            String tipo,
+            String ciudad,
+            String organizador,
+            String participante,
+            String estado,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            String orden,
+            int page,
+            int size) {
+        return buscar(
+                tipo, ciudad, organizador, participante, estado,
+                fechaDesde, fechaHasta, orden, page, size, false);
+    }
+
+    /**
+     * Catálogo paginado.
+     *
+     * @param incluirParticipantes si es true completa {@code artistas} en cada evento (batch, sin N+1)
+     */
     PageResponseDTO<EventoResponseDTO> buscar(
             String tipo,
             String ciudad,
@@ -30,7 +51,8 @@ public interface EventoService {
             LocalDate fechaHasta,
             String orden,
             int page,
-            int size);
+            int size,
+            boolean incluirParticipantes);
 
     EventoDetalleResponseDTO obtenerPorId(String id);
 

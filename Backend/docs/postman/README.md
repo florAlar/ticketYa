@@ -4,10 +4,14 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 193 requests en 12 carpetas, con tests en español, captura de IDs y auto-login |
-| `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados) |
+| `TicketYa-E1.postman_collection.json` | 200 requests en 13 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados, `internalToken`) |
 
-**Última corrida verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (stack local completo; las carpetas 10 y 11 corren sin reiniciar datos).
+**Actualizado 2026-11-16:** se agregó la carpeta `12 Preferencias, historial y recomendaciones`
+(7 requests: preferencias, artistas, historial, recomendaciones propias/similares y backfill).
+La verificación funcional de esos endpoints se hizo contra el stack real (200/401/403/404
+según corresponda); la corrida Newman completa queda pendiente.
+**Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos.
 
 ## Requisitos
 
@@ -21,7 +25,7 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 1. Importar los dos archivos `.json`.
 2. Elegir el environment **TicketYa local**.
-3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 11**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones).
+3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 12**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones). La carpeta 12 usa `{{userId}}` y `{{eventoSeedId}}`.
 
 ### Por consola (sin instalar nada)
 
@@ -44,8 +48,11 @@ No hace falta loguearse a mano. Un script *pre-request* de la colección hace lo
 | `token_org` | `org@ticketya.com` / `org1234` | ORGANIZADOR |
 | `token_admin` | `admin@ticketya.com` / `admin1234` | ADMIN |
 | `token_acceso` | `acceso@ticketya.com` / `acceso1234` | PERSONAL_ACCESO |
+| `internalToken` | — | Token compartido para `/internas/**` (default `ticketya_dev_internal`) |
 
 Cada request declara en su descripción el rol que usa y el status esperado.
+Los endpoints internos (`POST /internas/backfill`, `GET /internas/compras`) no pasan por el
+gateway y exigen `X-Internal-Token`.
 
 **Autenticación:** el gateway exige JWT (`Authorization: Bearer <token>`) fuera de las rutas
 públicas. La colección se loguea sola por rol y manda el `Bearer` en cada request, así que corre
@@ -68,6 +75,7 @@ identidad sale siempre del token verificado.
 | 09 Asientos numerados | 23 | reserva de un asiento concreto (Platea numerada del evento seed), `asientosOcupados` en disponibilidad (RESERVADO → VENDIDO), errores 409/400, entrada con fila y número, devolución que libera el asiento y pago rechazado que libera el asiento |
 | 10 Control de acceso QR | 19 | cliente compra una entrada y el personal de acceso la valida: ingreso aceptado, QR repetido (YA_USADA), QR de otro evento, QR inexistente, roles y auditoría de intentos |
 | 11 Reportes del organizador | 9 | reporte completo, ventas, sectores, ocupación y recaudación como organizador dueño y ADMIN (con las identidades aritméticas: vigentes y neta), 403 para cliente y personal de acceso, 401 sin token y 404 |
+| 12 Preferencias, historial y recomendaciones | 7 | preferencias propias, actualización, artistas favoritos, historial del cliente, recomendaciones propias (JWT), eventos similares (público) y backfill interno con `X-Internal-Token` |
 
 ## Flujo de negocio que recorre
 

@@ -1,5 +1,36 @@
+import { BANNER_IMAGES } from '../../../assets/img/banners'
+
 function pad(n) {
   return String(n).padStart(2, '0')
+}
+
+function hashEvento(value) {
+  let hash = 0
+  const text = String(value || '')
+  for (let i = 0; i < text.length; i++) {
+    hash = (hash * 31 + text.charCodeAt(i)) | 0
+  }
+  return Math.abs(hash)
+}
+
+/**
+ * Imagen de la card/detalle. El backend no expone imagenUrl (null): se usa un
+ * banner estático del pool según el tipo, elegido de forma determinística por
+ * evento para que las cards no queden todas iguales.
+ */
+export function imagenEvento(evento) {
+  if (evento?.imagenUrl) return evento.imagenUrl
+  const tipo = String(evento?.tipo || '').toUpperCase()
+  const pools = {
+    RECITAL: [BANNER_IMAGES[0], BANNER_IMAGES[2], BANNER_IMAGES[3], BANNER_IMAGES[4]],
+    FESTIVAL: [BANNER_IMAGES[0], BANNER_IMAGES[1], BANNER_IMAGES[3]],
+    DEPORTE: [BANNER_IMAGES[5], BANNER_IMAGES[1]],
+    TEATRO: [BANNER_IMAGES[4], BANNER_IMAGES[3]],
+    CONFERENCIA: [BANNER_IMAGES[4], BANNER_IMAGES[3]],
+  }
+  const pool = pools[tipo] || BANNER_IMAGES
+  const key = evento?.id || evento?.nombre || tipo
+  return pool[hashEvento(key) % pool.length]
 }
 
 /** Fecha corta es-AR para cards */

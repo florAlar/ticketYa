@@ -3,6 +3,7 @@ import {
   createParticipante,
   listParticipantes,
 } from '../../api/eventos'
+import './ArtistaAutocomplete.css'
 
 /**
  * Autocomplete de artista del catálogo.
@@ -19,6 +20,7 @@ export default function ArtistaAutocomplete({
   required,
   excludeIds = [],
   placeholder = 'Buscar artista…',
+  allowCreate = true,
 }) {
   const autoId = useId()
   const inputId = id || autoId
@@ -107,7 +109,7 @@ export default function ArtistaAutocomplete({
     setOpen(true)
   }
 
-  const canCreate = (() => {
+  const canCreate = allowCreate && (() => {
     const n = String(query || '').trim()
     if (n.length < 2) return false
     if (value?.id) return false
@@ -188,7 +190,9 @@ export default function ArtistaAutocomplete({
       )}
       {!selected && query.trim() && (
         <p className="gestion-card__muted artista-ac__hint artista-ac__hint--warn">
-          Elegí un resultado o creá el artista para guardar el id.
+          {allowCreate
+            ? 'Elegí un resultado o creá el artista para guardar el id.'
+            : 'Elegí un resultado del catálogo o agregá el nombre como texto.'}
         </p>
       )}
 

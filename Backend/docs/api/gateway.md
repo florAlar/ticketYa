@@ -36,7 +36,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 23 | `clientes-preferencias` | 62 | `/api/clientes`, `/api/clientes/**` | — | ms-preferencias:8085 | 1 | — |
 | 24 | `notificaciones` | 70 | `/api/notificaciones`, `/api/notificaciones/**` | — | ms-notificaciones:8086 | 1 | — |
 
-**Rutas todavía sin implementar:** `/api/eventos/{id}/fila/**`, `/api/eventos/{id}/recomendaciones`, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**` y `/api/notificaciones/**` se rutean pero sus microservicios destino no los implementan todavía (pendientes de E2). `/api/reportes/**` y `/api/eventos/{id}/validaciones` ya están implementados.
+**Rutas todavía sin implementar:** `/api/eventos/{id}/fila/**` (fila virtual) se rutea pero su microservicio destino no la implementa todavía. Preferencias, recomendaciones, historial, notificaciones, reportes y validaciones ya están implementados.
 
 ---
 
@@ -55,7 +55,7 @@ El filtro `gateway.filter.JwtAuthenticationFilter` las deja pasar sin validar to
 | `/api/eventos/{id}/participantes` | GET | Elenco de un evento (público) |
 | `/api/eventos/disponibilidad` | GET | Batch disponibilidad comercial (público) |
 | `/api/eventos/{id}/disponibilidad` | GET | Disponibilidad de un evento (público) |
-| `/api/recomendaciones` y subpaths | GET | Recomendaciones (público) |
+| `/api/eventos/{id}/recomendaciones` | GET | Eventos similares (público) |
 | `/swagger-ui`, `/v3/api-docs`, `/swagger-ui.html`, `/webjars/`, `/api-docs` | — | Documentación OpenAPI de cada msvc (directo, no vía gateway) |
 | `/` | GET | Smoke del gateway |
 
@@ -73,9 +73,9 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 
 | Rol | Paths permitidos | Nota |
 |-----|------------------|------|
-| `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila GET, `/api/preferencias/**`, `/api/clientes/**`, `GET /api/eventos/**` | El msvc filtra recursos por `X-User-Id` |
-| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
-| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), compras propias (self-service) | Validación de ingreso en evento |
+| `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila GET, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**`, `GET /api/eventos/**` | El msvc filtra recursos por `X-User-Id` |
+| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, `/api/preferencias/**`, `/api/recomendaciones/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
+| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), `/api/preferencias/**`, `/api/recomendaciones/**`, compras propias (self-service) | Validación de ingreso en evento |
 | `ADMIN` | Todo | Short-circuit en `hasPermission` |
 
 ### 3.2 Exclusivas de ADMIN (403 para cualquier otro rol)

@@ -99,6 +99,55 @@ class JwtAuthenticationFilterTest {
         assertNotNull(filter);
     }
 
+    @Test
+    void recomendacionesDeEvento_sinToken_esPublica() throws Exception {
+        when(request.getRequestURI())
+                .thenReturn("/api/eventos/d0000000-0000-4000-8000-000000000001/recomendaciones");
+        when(request.getMethod()).thenReturn("GET");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(any(), any());
+    }
+
+    @Test
+    void recomendacionesMe_sinToken_devuelve401() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/recomendaciones/me");
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("Authorization")).thenReturn(null);
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(response).setStatus(eq(401));
+        verify(filterChain, never()).doFilter(any(), any());
+    }
+
+    @Test
+    void recomendacionesMe_conTokenCliente_pasaFiltro() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/recomendaciones/me");
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("Authorization")).thenReturn("Bearer token.cliente");
+        when(jwtUtil.validateToken("token.cliente")).thenReturn(true);
+        when(jwtUtil.extractRoles("token.cliente")).thenReturn(List.of("CLIENTE"));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(any(), any());
+    }
+
+    @Test
+    void preferenciasMe_conTokenOrganizador_pasaFiltro() throws Exception {
+        when(request.getRequestURI()).thenReturn("/api/preferencias/me");
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getHeader("Authorization")).thenReturn("Bearer token.org");
+        when(jwtUtil.validateToken("token.org")).thenReturn(true);
+        when(jwtUtil.extractRoles("token.org")).thenReturn(List.of("ORGANIZADOR"));
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(any(), any());
+    }
+
     /**
      * El JWT es obligatorio: sin Bearer el request se rechaza, aunque el cliente mande
      * headers X-User-* (no hay modo "identificación por encabezado").

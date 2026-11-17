@@ -53,7 +53,12 @@ public class PreferenciaServiceImpl implements PreferenciaService {
                 doc.setCiudades(limpiar(request.getCiudades()));
             }
             if (request.getRangoPrecio() != null) {
-                doc.setRangoPrecio(request.getRangoPrecio());
+                // Un rango sin mínimo ni máximo equivale a “sin límite”: se limpia.
+                doc.setRangoPrecio(
+                        request.getRangoPrecio().getMin() == null
+                                        && request.getRangoPrecio().getMax() == null
+                                ? null
+                                : request.getRangoPrecio());
             }
             if (request.getArtistas() != null) {
                 doc.setArtistas(limpiar(request.getArtistas()));
@@ -79,6 +84,24 @@ public class PreferenciaServiceImpl implements PreferenciaService {
         PreferenciasCliente guardado = repository.save(doc);
         Bitacora.registrar("PREFERENCIAS_ACTUALIZADAS", idCliente, idCliente, "artistas="
                 + guardado.getArtistas().size() + " ciudades=" + guardado.getCiudades().size());
+        return toResponse(guardado);
+    }
+
+    @Override
+    public PreferenciaResponseDTO actualizarArtistas(String idCliente, List<String> artistas) {
+        if (artistas == null) {
+            throw new IllegalArgumentException("artistas es obligatorio");
+        }
+        PreferenciasCliente doc = repository.findByIdCliente(idCliente)
+                .orElseGet(() -> nuevo(idCliente));
+        doc.setArtistas(limpiar(artistas));
+        doc.setFechaActualizacion(Instant.now());
+        PreferenciasCliente guardado = repository.save(doc);
+        Bitacora.registrar(
+                "PREFERENCIAS_ARTISTAS_ACTUALIZADOS",
+                idCliente,
+                idCliente,
+                "artistas=" + guardado.getArtistas().size());
         return toResponse(guardado);
     }
 

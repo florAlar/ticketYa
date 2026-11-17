@@ -56,6 +56,13 @@ public interface VentaService {
      */
     List<String> listarClientesAprobadosPorEvento(String idEvento);
 
+    /**
+     * Compras aprobadas con datos mínimos para el historial de preferencias.
+     * Uso interno (backfill); no se expone por el gateway.
+     */
+    List<ventas.dto.CompraInternaDTO> listarComprasInternas(
+            java.time.LocalDate desde, java.time.LocalDate hasta);
+
     PagoResponseDTO iniciarPago(String idCliente, String idCompra, PagoCreateRequestDTO request);
 
     List<PagoResponseDTO> listarPagos(String idCliente, String idCompra);

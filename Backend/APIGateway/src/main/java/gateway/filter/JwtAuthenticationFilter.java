@@ -140,9 +140,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         if ("GET".equalsIgnoreCase(method)
-                && (path.equals("/api/recomendaciones")
-                        || path.startsWith("/api/recomendaciones/")
-                        || path.matches("/api/eventos/[^/]+/recomendaciones")
+                && (path.matches("/api/eventos/[^/]+/recomendaciones")
                         || path.equals("/api/eventos/disponibilidad")
                         || path.matches("/api/eventos/[^/]+/disponibilidad"))) {
             return true;
@@ -218,6 +216,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private boolean roleAllows(String path, String method, String rol) {
         // Bandeja propia de notificaciones: cualquier rol autenticado; el msvc valida dueño/ADMIN.
         if (path.startsWith("/api/notificaciones")) {
+            return true;
+        }
+        // Preferencias y recomendaciones propias: cualquier rol autenticado (un ORG/ACCESO
+        // también puede comprar y tener gustos). El msvc filtra por X-User-Id.
+        if (path.startsWith("/api/preferencias") || path.startsWith("/api/recomendaciones")) {
             return true;
         }
         return switch (rol) {

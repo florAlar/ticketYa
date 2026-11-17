@@ -223,18 +223,22 @@ Servicio: msvc-entradas | Prefijos: /entradas, /devoluciones + /eventos/{idEvent
 
 Servicio: msvc-preferencias-recomendaciones | Prefijos: /preferencias, /recomendaciones, /clientes + /eventos/{id}/recomendaciones
 
-- GET /preferencias/me — Consultar preferencias propias
-- PUT /preferencias/me — Actualizar preferencias (categorías, ciudad, rangoPrecio, etc.)
-- GET /preferencias/me/artistas — Consultar artistas favoritos
-- PUT /preferencias/me/artistas — Actualizar artistas favoritos
-- GET /recomendaciones/me — Eventos recomendados (?limit=)
-- GET /eventos/{id}/recomendaciones — Eventos similares (público)
+- GET /preferencias/me — Consultar preferencias propias (categorías/tipos, ciudades, artistas, rango)
+- PUT /preferencias/me — Actualizar preferencias
+- PUT /preferencias/me/artistas — Actualizar solo artistas favoritos
+- GET /preferencias/me/notificaciones — Canales y tipos habilitados
+- PUT /preferencias/me/notificaciones — Actualizar canales/tipos
+- GET /recomendaciones/me?limit=10 — Eventos recomendados (JWT)
+- GET /eventos/{id}/recomendaciones?limit=6 — Eventos similares (público)
 
 Solape de prefijo: /eventos/{id}/recomendaciones → msvc-preferencias (no eventos).
 
-- GET /clientes/{id}/historial — Historial del cliente (CLIENTE dueño / ADMIN)
+- GET /clientes/{id}/historial?page=&size= — Historial de compras (CLIENTE dueño / ADMIN)
 
-Ingesta async típica: CompraConfirmada, EntradaValidada (no REST entre msvcs).
+UI: Home → “Recomendados para vos”; detalle → “Eventos similares”; perfil → “Mis preferencias” + “Mi historial”.
+
+Ingesta async: `compra.confirmada` → cola `preferencias.compras` (idempotente por `idCompra`).
+Backfill de compras viejas: `POST /internas/backfill` (interno, `X-Internal-Token`, fuera del gateway).
 
 ## notificaciones — email/push y admin de envíos
 

@@ -70,4 +70,26 @@ public interface CompraRepository extends JpaRepository<Compra, String> {
     long contarPorEventoYEstado(@Param("idEvento") String idEvento, @Param("estado") String estado);
 
     List<Compra> findByEstadoAndEmisionEstadoOrderByFechaCompraAsc(String estado, String emisionEstado);
+
+    /**
+     * Backfill del historial (msvc-preferencias): compras en un estado con cliente, evento,
+     * fecha, importe y cantidad de entradas. Uso interno, no expuesto por el gateway.
+     */
+    @Query(
+            """
+            SELECT c.idCompra, c.idCliente, r.idEvento, c.fechaCompra, c.total, c.moneda,
+                   COALESCE(SUM(d.cantidad), 0)
+            FROM Compra c
+              JOIN c.reserva r
+              LEFT JOIN DetalleReserva d ON d.reserva = r
+            WHERE c.estado = :estado
+              AND (:desde IS NULL OR c.fechaCompra >= :desde)
+              AND (:hasta IS NULL OR c.fechaCompra <= :hasta)
+            GROUP BY c.idCompra, c.idCliente, r.idEvento, c.fechaCompra, c.total, c.moneda
+            ORDER BY c.fechaCompra ASC
+            """)
+    List<Object[]> findComprasInternas(
+            @Param("estado") String estado,
+            @Param("desde") java.time.LocalDateTime desde,
+            @Param("hasta") java.time.LocalDateTime hasta);
 }

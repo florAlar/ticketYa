@@ -8915,6 +8915,236 @@
           ]
         }
       ]
+    },
+    {
+      "name": "12 Preferencias, historial y recomendaciones",
+      "description": "Preferencias del cliente, historial de compras y recomendaciones (E2-PRE-02/03). La ingesta es asíncrona por RabbitMQ; 12.07 ejecuta el backfill de compras existentes.",
+      "item": [
+        {
+          "name": "12.01 Preferencias propias → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/preferencias/me",
+            "description": "Rol: CLIENTE · Esperado: 200 · Devuelve defaults si el cliente no tiene documento."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('idCliente', function () { pm.expect(b.idCliente).to.eql(pm.environment.get('userId')); });",
+                  "pm.test('Listas presentes', function () { pm.expect(b.artistas).to.be.an('array'); pm.expect(b.ciudades).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12.02 Actualizar preferencias → 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/preferencias/me",
+            "description": "Rol: CLIENTE · Esperado: 200 · Categorías, ciudades, artistas y rango de precio.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"categorias\": [\"RECITAL\"], \"ciudades\": [\"Buenos Aires\"], \"artistas\": [\"Metallica\", \"Iron Maiden\"], \"rangoPrecio\": {\"min\": 20000, \"max\": 300000, \"moneda\": \"ARS\"}}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Artistas guardados', function () { pm.expect(b.artistas).to.include('Metallica'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12.03 Actualizar artistas favoritos → 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/preferencias/me/artistas",
+            "description": "Rol: CLIENTE · Esperado: 200 · Solo actualiza artistas.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"artistas\": [\"Metallica\", \"Gojira\"]}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Artistas', function () { pm.expect(pm.response.json().artistas).to.include('Gojira'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12.04 Historial propio → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/clientes/{{userId}}/historial?page=0&size=20",
+            "description": "Rol: CLIENTE dueño · Esperado: 200 · Compras ordenadas por fechaCompra desc."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Página', function () { pm.expect(b).to.have.property('content'); pm.expect(b.content).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12.05 Recomendaciones propias → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/recomendaciones/me?limit=10",
+            "description": "Rol: CLIENTE · Esperado: 200 · Híbrido preferencias + co-compra + fallback."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Array de eventos', function () { pm.expect(b).to.be.an('array'); });",
+                  "pm.test('Cada evento tiene id y motivo', function () { b.forEach(e => { pm.expect(e).to.have.property('id'); pm.expect(e).to.have.property('motivo'); }); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12.06 Eventos similares (público) → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoSeedId}}/recomendaciones?limit=6",
+            "description": "Público · Esperado: 200 · Co-compra y contenido; excluye el evento fuente.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Array', function () { pm.expect(b).to.be.an('array'); });",
+                  "pm.test('No incluye el evento fuente', function () { pm.expect(b.some(e => e.id === pm.environment.get('eventoSeedId'))).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "12.07 Backfill interno (directo, sin gateway)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Internal-Token",
+                "value": "{{internalToken}}"
+              }
+            ],
+            "url": "http://localhost:8085/internas/backfill",
+            "description": "Interno · Esperado: 200 · Importa compras aprobadas de ventas. Idempotente. Requiere el header X-Internal-Token (variable internalToken).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Resultado', function () { pm.expect(b).to.have.property('procesadas'); pm.expect(b).to.have.property('errores'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

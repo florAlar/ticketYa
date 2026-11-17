@@ -3,6 +3,8 @@ package eventos.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -47,4 +49,11 @@ public class EventoResponseDTO {
 
     @Schema(description = "Alta demanda", example = "false")
     private boolean esAltaDemanda;
+
+    /**
+     * Nombres de artistas/participantes. Solo se completa con {@code incluirParticipantes=true}
+     * (lo usa msvc-preferencias para el scoring de recomendaciones).
+     */
+    @Schema(description = "Artistas/participantes (opcional, incluirParticipantes=true)")
+    private List<String> artistas = new ArrayList<>();
 }
