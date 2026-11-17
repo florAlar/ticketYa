@@ -8,7 +8,7 @@ import {
 } from '../../components/home/events/eventFormat'
 
 /** Card de compra: evento, cupo, asientos y botón de pago. */
-export default function CheckoutTicket({ checkout, eventoId, isAuthenticated }) {
+export default function CheckoutTicket({ checkout, isAuthenticated }) {
   const {
     evento,
     disponibilidad,
@@ -154,11 +154,7 @@ export default function CheckoutTicket({ checkout, eventoId, isAuthenticated }) 
       {!isAuthenticated && (
         <p className="checkout-page__muted">
           Tenés que{' '}
-          <Link
-            to={`/login?next=${encodeURIComponent(
-              `/eventos/${eventoId}/comprar?sector=${sector.id}`
-            )}`}
-          >
+          <Link to="/login">
             iniciar sesión
           </Link>
           .

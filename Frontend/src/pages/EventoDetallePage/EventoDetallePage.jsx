@@ -90,7 +90,7 @@ const EventoDetallePage = () => {
   const irComprar = (sectorId) => {
     const path = `/eventos/${eventoId}/comprar?sector=${encodeURIComponent(sectorId)}`
     if (!isAuthenticated) {
-      navigate(`/login?next=${encodeURIComponent(path)}`)
+      navigate('/login')
       return
     }
     navigate(path)

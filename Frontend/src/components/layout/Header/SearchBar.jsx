@@ -4,7 +4,7 @@ import useAuth from '../../../hooks/useAuth'
 
 /**
  * Barra de búsqueda por palabra → /eventos?q=…
- * Catálogo es JWT: sin sesión manda a login con ?next=.
+ * Catálogo es JWT: sin sesión manda a login.
  * No hay link «Eventos» en el nav; la búsqueda es el acceso.
  *
  * Input no controlado: la URL es la única fuente de verdad. `key` remonta el
@@ -23,7 +23,7 @@ const SearchBar = () => {
       ? `/eventos?q=${encodeURIComponent(value)}`
       : '/eventos'
     if (!isAuthenticated) {
-      navigate(`/login?next=${encodeURIComponent(catalog)}`)
+      navigate('/login')
       return
     }
     navigate(catalog)

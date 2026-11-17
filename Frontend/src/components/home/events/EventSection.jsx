@@ -5,10 +5,7 @@ import useAuth from '../../../hooks/useAuth'
 /** Bloque título mínimo + lista (filter + card + layout). */
 const EventSection = ({ title, filter, layout, card, linkToAll }) => {
   const { isAuthenticated } = useAuth()
-  const moreTo =
-    linkToAll && !isAuthenticated
-      ? `/login?next=${encodeURIComponent(linkToAll)}`
-      : linkToAll
+  const moreTo = linkToAll && !isAuthenticated ? '/login' : linkToAll
 
   return (
     <section className="event-section container">

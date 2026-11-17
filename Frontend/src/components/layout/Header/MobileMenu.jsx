@@ -17,7 +17,8 @@ const MobileMenu = ({ open, close }) => {
   const handleLogout = async () => {
     await logout()
     close()
-    navigate('/', { replace: true })
+    // Al salir siempre volvemos al login limpio (sin ?next=).
+    navigate('/login', { replace: true })
   }
 
   return (

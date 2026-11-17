@@ -15,7 +15,8 @@ const DesktopNav = () => {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/', { replace: true })
+    // Al salir siempre volvemos al login limpio (sin ?next=).
+    navigate('/login', { replace: true })
   }
 
   const accountTitle = user?.nombre

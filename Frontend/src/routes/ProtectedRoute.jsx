@@ -5,7 +5,7 @@ import RouteFallback from '../components/layout/RouteFallback'
 
 /**
  * Rutas que requieren sesión y, opcionalmente, uno de `roles`.
- * Sin sesión → /login?next=
+ * Sin sesión → /login
  * Con sesión pero rol incorrecto → /sin-permiso
  *
  * Mock de paneles en front; ms-usuarios + gateway validan de verdad después.
@@ -22,12 +22,7 @@ const ProtectedRoute = ({ children, roles }) => {
   }
 
   if (!isAuthenticated) {
-    return (
-      <Navigate
-        to={`/login?next=${encodeURIComponent(next)}`}
-        replace
-      />
-    )
+    return <Navigate to="/login" replace />
   }
 
   if (Array.isArray(roles) && roles.length > 0) {

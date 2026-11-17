@@ -50,7 +50,6 @@ const CheckoutPage = () => {
       {status === 'success' && evento && sector && success?.eventoId !== eventoId && (
         <CheckoutTicket
           checkout={checkout}
-          eventoId={eventoId}
           isAuthenticated={isAuthenticated}
         />
       )}
