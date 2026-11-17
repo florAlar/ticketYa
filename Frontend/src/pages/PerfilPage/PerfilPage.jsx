@@ -5,6 +5,8 @@ import { getMe, patchMe } from '../../api/auth'
 import { ROLE_LABELS, normalizeRol } from '../../auth/roles'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import PreferenciasForm from '../../components/preferencias/PreferenciasForm'
+import HistorialCliente from '../../components/preferencias/HistorialCliente'
 import './PerfilPage.css'
 
 function emptyForm() {
@@ -216,6 +218,24 @@ const PerfilPage = () => {
             <div className="perfil-layout__side">{orgCard}</div>
           )}
         </div>
+      )}
+
+      {status === 'ok' && profile && !editing && FEATURE.preferencias && (
+        <section className="perfil-prefs-section">
+          <div className="perfil-prefs-head">
+            <h2 className="perfil-prefs-head__title">
+              Gustos y recomendaciones
+            </h2>
+            <p className="perfil-page__muted">
+              Cargá tus tipos de evento, ciudades y artistas favoritos. Se
+              combinan con tus compras para sugerirte eventos.
+            </p>
+          </div>
+          <div className="perfil-prefs">
+            <PreferenciasForm token={token} />
+            <HistorialCliente idCliente={user?.id} token={token} />
+          </div>
+        </section>
       )}
 
       {status === 'ok' && profile && editing && (

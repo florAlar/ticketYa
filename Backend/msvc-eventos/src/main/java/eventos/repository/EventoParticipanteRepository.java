@@ -33,4 +33,14 @@ public interface EventoParticipanteRepository extends JpaRepository<EventoPartic
             where ep.evento.id in :ids
             """)
     List<String> findEventoIdsWithParticipantes(@Param("ids") List<String> ids);
+
+    /** Catálogo con artistas: pares [idEvento, nombreParticipante] sin N+1. */
+    @Query(
+            """
+            select ep.evento.id, ep.participante.nombre
+            from EventoParticipante ep
+            where ep.evento.id in :ids
+            order by ep.evento.id asc, ep.orden asc
+            """)
+    List<Object[]> findArtistasByEventoIds(@Param("ids") List<String> ids);
 }

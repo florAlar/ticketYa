@@ -117,3 +117,12 @@ Errores: 400 si el sector numerado no trae asientos, un asiento no existe en el 
 - `/api/eventos/{id}/disponibilidad` → ventas (order 10)
 - `/api/reservas/**`, `/api/compras/**`, `/api/pagos/**` → ventas
 - Headers: `Authorization` (GW) → `X-User-Id`; `Idempotency-Key`
+
+### Endpoints internos (Feign, fuera del gateway)
+
+- `GET /compras/evento/{idEvento}` — ids de clientes con compra aprobada (notificaciones).
+- `GET /internas/compras?desde=&hasta=` — compras `APROBADA` con `idCompra`, `idCliente`,
+  `idEvento`, `fechaCompra`, `total`, `moneda` y `cantidadEntradas`. Uso: backfill del
+  historial en `msvc-preferencias` (`POST /internas/backfill`).
+  El path `/internas/**` **no** está expuesto por el gateway y exige `X-Internal-Token`
+  (`TICKETYA_INTERNAL_TOKEN`, default `ticketya_dev_internal`).

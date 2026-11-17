@@ -71,7 +71,9 @@ public class EventoController {
             description = """
                     Catálogo paginado. Sin `estado` devuelve los visibles (PUBLICADO + AGOTADO).
                     `estado` exacto filtra por ese estado; `TODOS`/`ALL`/`*` devuelve todos
-                    (uso de gestión). Endpoint público a través del gateway.
+                    (uso de gestión). `incluirParticipantes=true` completa `artistas` en cada
+                    evento (lo usa msvc-preferencias para recomendaciones).
+                    Endpoint público a través del gateway.
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Página de eventos"),
@@ -99,7 +101,9 @@ public class EventoController {
                 @Parameter(description = "Página (0-based)", example = "0")
                 @RequestParam(required = false, defaultValue = "0") int page,
                 @Parameter(description = "Tamaño de página", example = "20")
-                @RequestParam(required = false, defaultValue = "20") int size) {
+                @RequestParam(required = false, defaultValue = "20") int size,
+                @Parameter(description = "Completar artistas/participantes de cada evento", example = "false")
+                @RequestParam(required = false, defaultValue = "false") boolean incluirParticipantes) {
             return eventoService.buscar(
                     tipo,
                     ciudad,
@@ -110,7 +114,8 @@ public class EventoController {
                     fechaHasta,
                     orden,
                     page,
-                    size);
+                    size,
+                    incluirParticipantes);
         }
 
     @Operation(

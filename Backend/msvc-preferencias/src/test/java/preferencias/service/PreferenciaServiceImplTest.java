@@ -2,6 +2,7 @@ package preferencias.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import preferencias.document.PreferenciasCliente;
 import preferencias.document.NotificacionesPreferencias;
+import preferencias.document.RangoPrecio;
 import preferencias.dto.MatchingClientesRequestDTO;
 import preferencias.dto.NotificacionesPreferenciasDTO;
 import preferencias.dto.PreferenciaRequestDTO;
@@ -68,6 +70,45 @@ class PreferenciaServiceImplTest {
         assertEquals(List.of("Buenos Aires"), dto.getCiudades());
         assertFalse(dto.getNotificaciones().getPush());
         assertEquals(List.of("EventoCancelado"), dto.getNotificaciones().getTipos());
+    }
+
+    @Test
+    void actualizar_rangoSinMinimoNiMaximo_limpiaElRango() {
+        PreferenciasCliente doc = new PreferenciasCliente();
+        doc.setIdCliente("cli-1");
+        RangoPrecio anterior = new RangoPrecio();
+        anterior.setMin(new java.math.BigDecimal("20000"));
+        anterior.setMax(new java.math.BigDecimal("300000"));
+        doc.setRangoPrecio(anterior);
+        when(repository.findByIdCliente("cli-1")).thenReturn(Optional.of(doc));
+        when(repository.save(any(PreferenciasCliente.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        PreferenciaRequestDTO request = new PreferenciaRequestDTO();
+        request.setRangoPrecio(new RangoPrecio());
+
+        PreferenciaResponseDTO dto = service.actualizar("cli-1", request);
+
+        assertNull(dto.getRangoPrecio());
+    }
+
+    @Test
+    void actualizarArtistas_conservaCategoriasYCiudades() {
+        PreferenciasCliente doc = new PreferenciasCliente();
+        doc.setIdCliente("cli-1");
+        doc.setCategorias(List.of("RECITAL"));
+        doc.setCiudades(List.of("Buenos Aires"));
+        doc.setArtistas(List.of("Viejo"));
+        when(repository.findByIdCliente("cli-1")).thenReturn(Optional.of(doc));
+        when(repository.save(any(PreferenciasCliente.class)))
+                .thenAnswer(i -> i.getArgument(0));
+
+        PreferenciaResponseDTO dto = service.actualizarArtistas(
+                "cli-1", List.of(" Metallica ", "metallica", ""));
+
+        assertEquals(List.of("Metallica", "metallica"), dto.getArtistas());
+        assertEquals(List.of("RECITAL"), dto.getCategorias());
+        assertEquals(List.of("Buenos Aires"), dto.getCiudades());
     }
 
     @Test

@@ -5,8 +5,10 @@ import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
 import {
   formatEventoFecha,
   formatPrecioDesde,
+  imagenEvento,
 } from '../../components/home/events/eventFormat'
 import EventoCupoBadge from '../../components/home/events/EventoCupoBadge'
+import EventosSimilares from '../../components/preferencias/EventosSimilares'
 import { sectorTieneLayout } from '../../domain/asiento'
 import {
   EVENTO_ESTADOS,
@@ -108,22 +110,17 @@ const EventoDetallePage = () => {
 
       {status === 'ok' && evento && (
         <>
-          {evento.imagenUrl && (
-            <div className="evento-detalle-page__media">
-              <img src={evento.imagenUrl} alt="" />
-              <EventoCupoBadge evento={evento} className="evento-detalle-page__cupo" />
-            </div>
-          )}
+          <div className="evento-detalle-page__media">
+            <img src={imagenEvento(evento)} alt="" />
+            <EventoCupoBadge evento={evento} className="evento-detalle-page__cupo" />
+          </div>
 
           <header className="evento-detalle-page__head">
             <p className="evento-detalle-page__meta">
               {EVENTO_TIPO_LABELS[evento.tipo] || evento.tipo}
               {evento.estado ? ` · ${evento.estado}` : ''}
             </p>
-            <h1>
-              {evento.nombre}{' '}
-              {!evento.imagenUrl && <EventoCupoBadge evento={evento} />}
-            </h1>
+            <h1>{evento.nombre}</h1>
             {evento.cupo && !evento.cupo.agotado && evento.cupo.nivelCupoLabel && (
               <p className="evento-detalle-page__cupo-line">
                 {evento.cupo.nivelCupoLabel}
@@ -267,6 +264,8 @@ const EventoDetallePage = () => {
               </ul>
             )}
           </section>
+
+          <EventosSimilares key={eventoId} eventoId={eventoId} />
         </>
       )}
     </section>

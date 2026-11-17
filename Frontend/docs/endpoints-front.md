@@ -107,7 +107,7 @@ Admin pendientes reales: `GET /api/devoluciones`.
 
 ---
 
-## 5. Preferencias / notificaciones (implementado)
+## 5. Preferencias / notificaciones / recomendaciones (implementado)
 
 | Método | Endpoint | Uso |
 |---|---|---|
@@ -115,9 +115,18 @@ Admin pendientes reales: `GET /api/devoluciones`.
 | PATCH | `/api/notificaciones/me/{id}/leida` | Marcar una notificación como leída |
 | GET | `/api/preferencias/me/notificaciones` | Canales `push`/`email` en la bandeja |
 | PUT | `/api/preferencias/me/notificaciones` | Guardar canales desde la bandeja |
+| GET | `/api/preferencias/me` | Preferencias explícitas en “Mis preferencias” |
+| PUT | `/api/preferencias/me` | Guardar tipos, ciudades, artistas y rango de precio |
+| PUT | `/api/preferencias/me/artistas` | Atajo para artistas favoritos |
+| GET | `/api/recomendaciones/me?limit=8` | “Recomendados para vos” en la home (JWT) |
+| GET | `/api/eventos/{id}/recomendaciones?limit=6` | “Eventos similares” en el detalle (público) |
+| GET | `/api/clientes/{id}/historial?page=&size=` | “Mi historial” en el perfil (dueño/ADMIN) |
 
 Componentes: `NotificationBell` en el header (badge + últimas 6) y `NotificacionesPage`
 (`/notificaciones`, protegida). Polling de la campanita cada 45 s. Gate: `FEATURE.notificaciones`.
+Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `PreferenciasForm`,
+`HistorialCliente` y `RecomendacionesBlock`; gates `FEATURE.preferencias` y
+`FEATURE.recomendaciones`.
 
 ---
 
@@ -126,10 +135,10 @@ Componentes: `NotificationBell` en el header (badge + últimas 6) y `Notificacio
 | Ruta front | Endpoints |
 |---|---|
 | `/login` | POST `/api/auth/login`, `/api/auth/register` |
-| `/perfil` | GET/PATCH `/api/usuarios/me` |
-| `/` | GET `/api/eventos` (secciones home) |
+| `/perfil` | GET/PATCH `/api/usuarios/me` · GET/PUT `/api/preferencias/me` · GET `/api/clientes/{id}/historial` |
+| `/` | GET `/api/eventos` (secciones home) · GET `/api/recomendaciones/me` (logueado) |
 | `/eventos` | JWT · sidebar filtros · GET `/api/eventos` (+ batch disponibilidad) |
-| `/eventos/:id` | GET `/api/eventos/{id}` |
+| `/eventos/:id` | GET `/api/eventos/{id}` · GET `/api/eventos/{id}/recomendaciones` |
 | `/eventos/:id/comprar` | GET `/api/eventos/{id}/disponibilidad` → POST `/api/reservas` → POST `/api/compras` → POST `/api/compras/{id}/pagos` (sector numerado: selector de asientos) |
 | `/mis-entradas` | GET `/api/entradas` |
 | `/mis-entradas/:id` | GET `/api/entradas/{id}` |
@@ -158,6 +167,7 @@ Componentes: `NotificationBell` en el header (badge + últimas 6) y `Notificacio
 | `ventasCliente.js` | compras, reservas |
 | `ventas.js` | cola admin UI + resolución devoluciones |
 | `soporteCliente.js` | alta/listado devoluciones cliente |
+| `preferencias.js` | preferencias, artistas, recomendaciones propias/similares e historial |
 | `http.js` | fetch gateway |
 | `mock/*` | LS solo si `USE_MOCK` |
 

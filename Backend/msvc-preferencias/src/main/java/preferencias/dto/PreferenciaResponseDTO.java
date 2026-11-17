@@ -1,5 +1,6 @@
 package preferencias.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.List;
 import lombok.Getter;
@@ -8,6 +9,7 @@ import preferencias.document.RangoPrecio;
 
 @Getter
 @Setter
+@Schema(name = "Preferencia", description = "Preferencias del cliente")
 public class PreferenciaResponseDTO {
 
     private String idCliente;

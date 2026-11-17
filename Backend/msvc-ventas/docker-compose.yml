@@ -21,6 +21,7 @@ services:
       SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-ticketya_dev}
       TICKETYA_URI_EVENTOS: http://ms-eventos:8082
       TICKETYA_URI_ENTRADAS: http://ms-entradas:8084
+      TICKETYA_INTERNAL_TOKEN: ${TICKETYA_INTERNAL_TOKEN:-ticketya_dev_internal}
     depends_on:
       db-mysql-ventas:
         condition: service_healthy

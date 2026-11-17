@@ -61,6 +61,39 @@ curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/entradas   #
 
 Gateway sin `Bearer` en rutas privadas → 401. El JWT es obligatorio (no hay flag); ver README raíz.
 
+## Preferencias, historial y recomendaciones (E2-PRE)
+
+Con el stack arriba y el `TOKEN` del smoke:
+
+```bash
+# Preferencias propias (crea defaults si no existe)
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/preferencias/me
+
+# Actualizar artistas favoritos
+curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"artistas":["Metallica","Iron Maiden"]}' \
+  http://localhost:8080/api/preferencias/me/artistas
+
+# Historial (dueño o ADMIN)
+curl -s -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/clientes/b0000000-0000-4000-8000-000000000001/historial
+
+# Recomendaciones propias (JWT) y similares a un evento (público)
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/recomendaciones/me?limit=10
+curl -s "http://localhost:8080/api/eventos/d0000000-0000-4000-8000-000000000001/recomendaciones?limit=6"
+```
+
+- La ingesta es asíncrona: al aprobar una compra, `compra.confirmada` llega a la cola
+  `preferencias.compras` y se guarda en `interacciones_eventos` (idempotente por `idCompra`).
+- Compras viejas del seed de MySQL: `./scripts/backfill-preferencias.sh` (idempotente).
+  El script envía `X-Internal-Token` (`TICKETYA_INTERNAL_TOKEN`, default `ticketya_dev_internal`).
+- Volumen de Mongo ya creado: `./scripts/seed-preferencias.sh` aplica índices y seed de co-compra.
+- Detalle del algoritmo: `msvc-preferencias/docs/recomendaciones.md`.
+- Swagger del microservicio: `http://localhost:8085/swagger-ui/index.html`
+  (spec JSON en `Backend/docs/openapi/msvc-preferencias.json`).
+- Frontend: Home “Recomendados para vos”, detalle “Eventos similares” y perfil
+  “Mis preferencias” + “Mi historial”.
+
 ## Correr un msvc en local (sin imagen)
 
 Ejemplo notificaciones:

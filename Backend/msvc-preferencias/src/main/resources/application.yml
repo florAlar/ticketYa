@@ -7,6 +7,48 @@ spring:
   # Spring Boot 4: la conexión de Mongo vive en spring.mongodb.*
   mongodb:
     uri: ${SPRING_MONGODB_URI:${SPRING_DATA_MONGODB_URI:mongodb://ticketya:mongo_dev@localhost:27018/preferencias?authSource=admin}}
+  # Los índices declarados en los documentos se crean también en volúmenes existentes.
+  data:
+    mongodb:
+      auto-index-creation: ${TICKETYA_MONGO_AUTO_INDEX:true}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:ticketya}
+    password: ${SPRING_RABBITMQ_PASSWORD:ticketya_dev}
+    listener:
+      simple:
+        # Un mensaje con error va a la DLQ en lugar de reencolarse infinitamente.
+        default-requeue-rejected: false
+  cloud:
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 2000
+            readTimeout: 4000
+
+# msvc-eventos (Feign): enriquecimiento del historial y candidatos de recomendación.
+ticketya:
+  uri:
+    eventos: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
+    ventas: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+  interno:
+    # Token compartido para /internas/** (no expuesto por el gateway).
+    token: ${TICKETYA_INTERNAL_TOKEN:ticketya_dev_internal}
+  recomendaciones:
+    limite-similares: ${TICKETYA_RECS_LIMITE_SIMILARES:6}
+    limite-me: ${TICKETYA_RECS_LIMITE_ME:10}
+    limite-maximo: ${TICKETYA_RECS_LIMITE_MAXIMO:50}
+    candidatos-maximos: ${TICKETYA_RECS_CANDIDATOS_MAXIMOS:200}
+    pesos:
+      artista: ${TICKETYA_RECS_PESO_ARTISTA:3.0}
+      categoria: ${TICKETYA_RECS_PESO_CATEGORIA:2.0}
+      ciudad: ${TICKETYA_RECS_PESO_CIUDAD:2.0}
+      co-compra: ${TICKETYA_RECS_PESO_CO_COMPRA:1.0}
+      co-compra-tope: ${TICKETYA_RECS_CO_COMPRA_TOPE:5}
+      precio: ${TICKETYA_RECS_PESO_PRECIO:1.0}
+      demanda: ${TICKETYA_RECS_PESO_DEMANDA:0.5}
 
 # E2-NFR-03: correlation id en cada línea de log
 logging:

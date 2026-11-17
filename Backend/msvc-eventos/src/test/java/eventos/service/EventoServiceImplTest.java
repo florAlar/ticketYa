@@ -213,6 +213,22 @@ class EventoServiceImplTest {
         assertEquals(BigDecimal.valueOf(100), res.getContent().get(1).getPrecioDesde());
     }
 
+    @Test
+    void buscar_conIncluirParticipantes_completaArtistas() {
+        Evento e = evento("PUBLICADO", ORG_ID);
+        when(eventoRepository.buscar(any(), any(), any(), any(),
+                anyBoolean(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of(e)));
+        when(eventoMapper.toCatalogo(e, null)).thenReturn(dto(e));
+        when(eventoParticipanteRepository.findArtistasByEventoIds(List.of(EVENTO_ID)))
+                .thenReturn(List.<Object[]>of(new Object[] {EVENTO_ID, "Metallica"}));
+
+        var res = service.buscar(null, null, null, null, null, null, null, "fecha",
+                0, 20, true);
+
+        assertEquals(List.of("Metallica"), res.getContent().get(0).getArtistas());
+    }
+
     // ---------- obtenerPorId ----------
 
     @Test

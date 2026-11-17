@@ -52,15 +52,36 @@ Almacena el historial de interacciones de los clientes con eventos, mediante un 
 
 - `idCliente`: identificador del cliente.
 - `idEvento`: identificador del evento.
-- `tipo`: tipo de interacción (COMPRA, ASISTENCIA, etc.).
-- `categoria`: categoría del evento.
+- `tipo`: tipo de interacción (`COMPRA`, `ASISTENCIA`, `VISUALIZACION`, etc.).
+- `idCompra`: id de la compra origen en `msvc-ventas`. Clave de **idempotencia** de la
+  ingesta (`compra.confirmada` puede reentregarse).
+- `nombreEvento`, `categoria`, `ciudad`, `artistas[]`: **snapshot** del evento al momento
+  de la interacción (evita N+1 al mostrar el historial y permite recomendaciones si
+  eventos está caído).
 - `fechaEvento`: fecha del evento.
 - `fechaCompra`: fecha de compra, cuando corresponda.
 - `monto`: importe de la operación, cuando corresponda.
+- `cantidadEntradas`: cantidad comprada, cuando corresponda.
+
+### Índices
+
+`preferencias_clientes`:
+- único `{ idCliente: 1 }`.
+
+`interacciones_eventos`:
+- `{ idCliente: 1 }` y `{ idEvento: 1 }`.
+- `{ idCliente: 1, fechaEvento: -1 }` (historial).
+- único sparse `{ idCompra: 1 }` (idempotencia).
+- `{ idEvento: 1, tipo: 1 }` y `{ idCliente: 1, tipo: 1 }` (co-compra y recomendaciones).
 
 ### Criterios de diseño
 - Se utiliza un documento por cliente para sus preferencias.
 - El historial se almacena en documentos independientes para permitir un crecimiento sin arrays ilimitados.
 - `idCliente` e `idEvento` funcionan como referencias a otros microservicios, sin claves foráneas.
-- Se definirán índices sobre `idCliente` e `idEvento` para optimizar las consultas.
-- Las operaciones de consulta y actualización se implementarán mediante Spring Data MongoDB.
+- El snapshot del evento se denormaliza a propósito: el historial se lee sin llamadas
+  cruzadas y sobrevive a una caída de `msvc-eventos`.
+- Las operaciones de consulta y actualización se implementan con Spring Data MongoDB.
+- La co-compra (“quienes compraron X también compraron Y”) se calcula on-the-fly con dos
+  consultas. Para volumen alto se puede precomputar una colección de similitud.
+- `init.js` corre con el volumen nuevo; para un volumen existente se usa
+  `scripts/seed-preferencias.sh` (idempotente).

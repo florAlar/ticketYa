@@ -241,15 +241,31 @@ Servicio: msvc-preferencias-recomendaciones | Prefijos: /preferencias, /recomend
 - PUT /preferencias/me/notificaciones — Actualizar canales y tipos
 - POST /preferencias/clientes/matching — Interno (Feign de notificaciones): artistas + ciudad → ids de clientes
 - GET /preferencias/clientes/{idCliente}/notificaciones — Interno (Feign): preferencias de canal con defaults
-- PUT /preferencias/me/artistas — Actualizar artistas favoritos
-- GET /recomendaciones/me — Eventos recomendados (?limit=)
-- GET /eventos/{id}/recomendaciones — Eventos similares (público)
+- PUT /preferencias/me/artistas — Actualizar artistas favoritos (solo ese campo)
+- GET /recomendaciones/me?limit=10 — Eventos recomendados (JWT; preferencias + co-compra + fallback)
+- GET /eventos/{id}/recomendaciones?limit=6 — Eventos similares (público; 404 si el evento no existe)
 
 Solape de prefijo: /eventos/{id}/recomendaciones → msvc-preferencias (no eventos).
 
-- GET /clientes/{id}/historial — Historial del cliente (CLIENTE dueño / ADMIN)
+- GET /clientes/{id}/historial?page=0&size=20 — Historial de compras (CLIENTE dueño / ADMIN)
 
-Ingesta async típica: CompraConfirmada, EntradaValidada (no REST entre msvcs).
+Respuestas de recomendación: `EventoRecomendadoDTO` (evento ya armado: id, nombre, tipo,
+fechaInicio, lugar, precioDesde, artistas, motivo). Diccionario de motivos:
+“Quienes compraron este evento también compraron este”, “Porque te gusta <artista>”,
+“Clientes con tus mismos gustos también compraron este evento”, etc.
+
+Auth gateway: `/api/eventos/{id}/recomendaciones` es público; `/api/recomendaciones/**`
+requiere JWT (cualquier rol autenticado, el msvc filtra por `X-User-Id`). `/api/clientes/**`
+solo CLIENTE dueño o ADMIN.
+
+Ingesta async: `compra.confirmada` (`eventos.exchange`) → cola `preferencias.compras` →
+upsert idempotente por `idCompra`. Snapshot del evento vía Feign a `GET /eventos/{id}`.
+`EntradaValidada` queda preparado en el modelo (`tipo=ASISTENCIA`) pero no se consume aún.
+
+Backfill: `POST /internas/backfill` (interno, fuera del gateway) importa las compras
+aprobadas de ventas (`GET /internas/compras`). Ambos exigen `X-Internal-Token`
+(`TICKETYA_INTERNAL_TOKEN`, default `ticketya_dev_internal`). Script
+`scripts/backfill-preferencias.sh`.
 
 ## notificaciones — email/push y admin de envíos
 

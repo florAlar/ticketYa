@@ -1,5 +1,6 @@
 import Hero from '../../components/home/Hero/Hero'
 import EventSection from '../../components/home/events/EventSection'
+import HomeRecomendados from '../../components/preferencias/HomeRecomendados'
 import { homeSections } from './homeSections'
 import '../../components/home/events/events.css'
 
@@ -7,6 +8,7 @@ const Home = () => {
   return (
     <div className="home-page">
       <Hero />
+      <HomeRecomendados />
       {homeSections.map((section) => (
         <EventSection
           key={section.id}

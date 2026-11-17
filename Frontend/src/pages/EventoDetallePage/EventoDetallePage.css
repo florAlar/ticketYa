@@ -127,3 +127,14 @@
   color: var(--colors-primary, #e91e8c);
   font-size: 1.05rem;
 }
+
+/* Recomendaciones: eventos similares */
+.evento-similares {
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
+}
+
+.evento-similares .event-section__head {
+  margin-bottom: 0.9rem;
+}

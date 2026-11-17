@@ -31,6 +31,9 @@ ticketya:
   uri:
     eventos: ${TICKETYA_URI_EVENTOS:http://localhost:8082}
     entradas: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
+  interno:
+    # Token compartido para /internas/** (no expuesto por el gateway).
+    token: ${TICKETYA_INTERNAL_TOKEN:ticketya_dev_internal}
   ventas:
     reserva-ttl-minutes: ${TICKETYA_RESERVA_TTL_MINUTES:10}
     max-entradas-cliente-evento: ${TICKETYA_MAX_ENTRADAS:6}

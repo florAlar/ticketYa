@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-11",
+  "generatedAt": "2026-11-16",
   "generator": "springdoc-openapi-starter-webmvc-ui 3.2.0",
   "openapi": "3.1.0",
   "microservices": {
@@ -12,6 +12,11 @@
       "paths": 17,
       "operations": 27,
       "schemas": 19
+    },
+    "msvc-preferencias": {
+      "paths": 11,
+      "operations": 13,
+      "schemas": 11
     },
     "msvc-usuarios": {
       "paths": 10,
@@ -1061,7 +1066,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio unitario pagado",
-                "example": 95000
+                "example": 95000.0
               },
               "eventoNombre": {
                 "type": "string",
@@ -1163,7 +1168,7 @@
               "monto": {
                 "type": "number",
                 "description": "Monto a reembolsar",
-                "example": 95000
+                "example": 95000.0
               },
               "fechaSolicitud": {
                 "type": "string",
@@ -1227,7 +1232,7 @@
               "precioUnitario": {
                 "type": "number",
                 "description": "Precio unitario pagado",
-                "example": 95000
+                "example": 95000.0
               },
               "asientos": {
                 "type": [
@@ -1366,12 +1371,12 @@
               "montoDevuelto": {
                 "type": "number",
                 "description": "Suma de precios de las entradas DEVUELTA",
-                "example": 540000
+                "example": 540000.0
               },
               "montoAReintegrar": {
                 "type": "number",
                 "description": "Suma de precios de las entradas A_REINTEGRAR",
-                "example": 0
+                "example": 0.0
               }
             }
           },
@@ -3388,7 +3393,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio vigente",
-                "example": 25000
+                "example": 25000.0
               },
               "moneda": {
                 "type": "string",
@@ -3618,7 +3623,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio unitario en ARS",
-                "example": 25000
+                "example": 25000.0
               },
               "capacidadTotal": {
                 "type": "integer",
@@ -3715,7 +3720,7 @@
               "precioDesde": {
                 "type": "number",
                 "description": "Precio mínimo del evento",
-                "example": 25000
+                "example": 25000.0
               },
               "destacado": {
                 "type": "boolean",
@@ -3803,7 +3808,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio unitario",
-                "example": 25000
+                "example": 25000.0
               },
               "moneda": {
                 "type": "string",
@@ -3928,7 +3933,7 @@
               "precioDesde": {
                 "type": "number",
                 "description": "Precio mínimo del evento",
-                "example": 25000
+                "example": 25000.0
               },
               "destacado": {
                 "type": "boolean",
@@ -4042,6 +4047,879 @@
           "bearerAuth": {
             "type": "http",
             "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id, X-User-Email,\nX-User-Role y X-User-Roles a este microservicio.\n",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
+          }
+        }
+      }
+    },
+    "msvc-preferencias": {
+      "openapi": "3.1.0",
+      "info": {
+        "title": "TicketYa — Preferencias, historial y recomendaciones",
+        "description": "Preferencias explícitas del cliente (tipos de evento, ciudades,\nartistas, rango de precio), historial de compras ingerido desde\nRabbitMQ y recomendaciones híbridas (contenido + co-compra).\nEl API Gateway valida el JWT y propaga X-User-Id / X-User-Roles.\n",
+        "contact": {
+          "name": "Equipo TicketYa — TUDAi 2026",
+          "email": "equipo@ticketya.com.ar"
+        },
+        "license": {
+          "name": "Uso académico — TUDAi 2026"
+        },
+        "version": "1.0.0"
+      },
+      "servers": [
+        {
+          "url": "http://localhost:8085",
+          "description": "Local — directo al microservicio"
+        },
+        {
+          "url": "http://localhost:8080/api",
+          "description": "Local — vía API Gateway (StripPrefix=1)",
+          "x-gateway": true
+        },
+        {
+          "url": "https://ticketya.com.ar/api",
+          "description": "Producción — vía API Gateway",
+          "x-gateway": true
+        }
+      ],
+      "tags": [
+        {
+          "name": "Historial",
+          "description": "Compras registradas del cliente."
+        },
+        {
+          "name": "Preferencias",
+          "description": "Preferencias del cliente y matching interno."
+        },
+        {
+          "name": "Interno",
+          "description": "Operaciones internas entre microservicios."
+        },
+        {
+          "name": "Recomendaciones",
+          "description": "Eventos sugeridos por preferencias, historial y co-compra."
+        }
+      ],
+      "paths": {
+        "/preferencias/me": {
+          "get": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Consultar preferencias propias",
+            "description": "Devuelve defaults si el cliente todavía no tiene documento.",
+            "operationId": "obtenerPropias",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Preferencia"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "put": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Actualizar preferencias propias",
+            "description": "Categorías/tipos de evento, ciudades, artistas y rango de precio.",
+            "operationId": "actualizarPropias",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/PreferenciaRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Preferencia"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/preferencias/me/notificaciones": {
+          "get": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Consultar preferencias de notificación",
+            "operationId": "obtenerNotificaciones",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/NotificacionesPreferenciasDTO"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          },
+          "put": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Actualizar preferencias de notificación",
+            "operationId": "actualizarNotificaciones",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/NotificacionesPreferenciasDTO"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/NotificacionesPreferenciasDTO"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/preferencias/me/artistas": {
+          "put": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Actualizar artistas favoritos",
+            "description": "Actualiza solo artistas; no pisa categorías, ciudades ni rango.",
+            "operationId": "actualizarArtistas",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ArtistasRequest"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Preferencia"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/preferencias/clientes/matching": {
+          "post": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Matching interno por artista y ciudad",
+            "description": "Uso interno (Feign de msvc-notificaciones). No requiere identidad.",
+            "operationId": "clientesInteresados",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/MatchingClientesRequestDTO"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        },
+        "/internas/backfill": {
+          "post": {
+            "tags": [
+              "Interno"
+            ],
+            "summary": "Backfill de compras al historial",
+            "description": "Importa las compras APROBADAS de msvc-ventas y las upsertea por idCompra.\nIdempotente. Requiere X-Internal-Token; no está expuesto por el gateway.\n",
+            "operationId": "backfill",
+            "parameters": [
+              {
+                "name": "X-Internal-Token",
+                "in": "header",
+                "description": "Token compartido entre microservicios",
+                "required": true
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/BackfillResult"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        },
+        "/recomendaciones/me": {
+          "get": {
+            "tags": [
+              "Recomendaciones"
+            ],
+            "summary": "Recomendaciones propias",
+            "description": "Híbrido: preferencias explícitas (tipo, ciudad, artistas, rango de precio)\n+ co-compra (“quienes compraron X también compraron Y”) + fallback a próximos\neventos con alta demanda. Excluye eventos ya comprados.\n",
+            "operationId": "paraMi",
+            "parameters": [
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "limit",
+                "in": "query",
+                "required": false,
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 10
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventoRecomendado"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
+        "/preferencias/clientes/{idCliente}/notificaciones": {
+          "get": {
+            "tags": [
+              "Preferencias"
+            ],
+            "summary": "Preferencias de canal de un cliente (interno)",
+            "description": "Uso interno (Feign). Devuelve defaults si el cliente no tiene documento.",
+            "operationId": "notificacionesDeCliente",
+            "parameters": [
+              {
+                "name": "idCliente",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/NotificacionesPreferenciasDTO"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        },
+        "/preferencias": {
+          "get": {
+            "tags": [
+              "Preferencias"
+            ],
+            "operationId": "ok",
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/": {
+          "get": {
+            "tags": [
+              "Preferencias"
+            ],
+            "operationId": "ok_1",
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/eventos/{id}/recomendaciones": {
+          "get": {
+            "tags": [
+              "Recomendaciones"
+            ],
+            "summary": "Eventos similares a uno dado",
+            "description": "Público. Prioriza eventos comprados por clientes que compraron el evento\nfuente; si no hay señal, usa mismo artista, tipo y ciudad. Excluye el evento\nfuente. 404 si el evento no existe.\n",
+            "operationId": "similares",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "limit",
+                "in": "query",
+                "required": false,
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 6
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/EventoRecomendado"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "/clientes/{id}/historial": {
+          "get": {
+            "tags": [
+              "Historial"
+            ],
+            "summary": "Historial de compras del cliente",
+            "description": "Dueño (X-User-Id == id) o ADMIN. Paginado, orden fechaCompra desc.",
+            "operationId": "historial",
+            "parameters": [
+              {
+                "name": "id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "X-User-Id",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "X-User-Roles",
+                "in": "header",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                }
+              },
+              {
+                "name": "page",
+                "in": "query",
+                "required": false,
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 0
+                }
+              },
+              {
+                "name": "size",
+                "in": "query",
+                "required": false,
+                "schema": {
+                  "type": "integer",
+                  "format": "int32",
+                  "default": 20
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "OK",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Page"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        }
+      },
+      "components": {
+        "schemas": {
+          "NotificacionesPreferenciasDTO": {
+            "type": "object",
+            "properties": {
+              "push": {
+                "type": "boolean"
+              },
+              "email": {
+                "type": "boolean"
+              },
+              "tipos": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "PreferenciaRequest": {
+            "type": "object",
+            "description": "Preferencias editables del cliente",
+            "properties": {
+              "categorias": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "ciudades": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rangoPrecio": {
+                "$ref": "#/components/schemas/RangoPrecio"
+              },
+              "artistas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "notificaciones": {
+                "$ref": "#/components/schemas/NotificacionesPreferenciasDTO"
+              }
+            }
+          },
+          "RangoPrecio": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              },
+              "moneda": {
+                "type": "string"
+              }
+            }
+          },
+          "Preferencia": {
+            "type": "object",
+            "description": "Preferencias del cliente",
+            "properties": {
+              "idCliente": {
+                "type": "string"
+              },
+              "categorias": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "ciudades": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rangoPrecio": {
+                "$ref": "#/components/schemas/RangoPrecio"
+              },
+              "artistas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "notificaciones": {
+                "$ref": "#/components/schemas/NotificacionesPreferenciasDTO"
+              },
+              "fechaActualizacion": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "ArtistasRequest": {
+            "type": "object",
+            "description": "Artistas favoritos del cliente",
+            "properties": {
+              "artistas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "artistas"
+            ]
+          },
+          "MatchingClientesRequestDTO": {
+            "type": "object",
+            "properties": {
+              "ciudad": {
+                "type": "string"
+              },
+              "artistas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "BackfillResult": {
+            "type": "object",
+            "description": "Resumen del backfill de compras al historial",
+            "properties": {
+              "procesadas": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "insertadas": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "actualizadas": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "errores": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "detalleErrores": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "EventoRecomendado": {
+            "type": "object",
+            "description": "Evento sugerido con el motivo de la recomendación",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              },
+              "tipo": {
+                "type": "string"
+              },
+              "fechaInicio": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "lugar": {
+                "$ref": "#/components/schemas/LugarResumenDTO"
+              },
+              "imagenUrl": {
+                "type": "string"
+              },
+              "precioDesde": {
+                "type": "number"
+              },
+              "destacado": {
+                "type": "boolean"
+              },
+              "estado": {
+                "type": "string"
+              },
+              "esAltaDemanda": {
+                "type": "boolean"
+              },
+              "artistas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "motivo": {
+                "type": "string",
+                "description": "Motivo legible de la recomendación",
+                "example": "Porque te gusta Metallica"
+              }
+            }
+          },
+          "LugarResumenDTO": {
+            "type": "object",
+            "properties": {
+              "nombre": {
+                "type": "string"
+              },
+              "ciudad": {
+                "type": "string"
+              }
+            }
+          },
+          "HistorialItem": {
+            "type": "object",
+            "description": "Compra del cliente con snapshot del evento",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "tipo": {
+                "type": "string"
+              },
+              "idEvento": {
+                "type": "string"
+              },
+              "nombreEvento": {
+                "type": "string"
+              },
+              "categoria": {
+                "type": "string"
+              },
+              "ciudad": {
+                "type": "string"
+              },
+              "artistas": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "fechaEvento": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "fechaCompra": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "monto": {
+                "type": "number"
+              },
+              "cantidadEntradas": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          },
+          "Page": {
+            "type": "object",
+            "description": "Página de resultados",
+            "properties": {
+              "content": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HistorialItem"
+                }
+              },
+              "page": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "size": {
+                "type": "integer",
+                "format": "int32"
+              },
+              "totalElements": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "totalPages": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        },
+        "securitySchemes": {
+          "bearerAuth": {
+            "type": "http",
+            "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id,\nX-User-Email, X-User-Role y X-User-Roles.\n",
             "scheme": "bearer",
             "bearerFormat": "JWT"
           }
@@ -6467,7 +7345,7 @@
               "precioUnitario": {
                 "type": "number",
                 "description": "Precio unitario",
-                "example": 95000
+                "example": 95000.0
               },
               "asientos": {
                 "type": "array",
@@ -6517,7 +7395,7 @@
               "total": {
                 "type": "number",
                 "description": "Total de la reserva",
-                "example": 190000
+                "example": 190000.0
               },
               "detalles": {
                 "type": "array",
@@ -6571,7 +7449,7 @@
               "monto": {
                 "type": "number",
                 "description": "Importe pagado",
-                "example": 190000
+                "example": 190000.0
               },
               "estado": {
                 "type": "string",
@@ -6811,7 +7689,7 @@
               "total": {
                 "type": "number",
                 "description": "Importe total",
-                "example": 190000
+                "example": 190000.0
               },
               "moneda": {
                 "type": "string",
@@ -6941,22 +7819,22 @@
               "recaudacionBruta": {
                 "type": "number",
                 "description": "Recaudación bruta (compras aprobadas)",
-                "example": 21600000
+                "example": 21600000.0
               },
               "recaudacionDevuelta": {
                 "type": "number",
                 "description": "Monto de entradas devueltas",
-                "example": 1080000
+                "example": 1080000.0
               },
               "recaudacionAReintegrar": {
                 "type": "number",
                 "description": "Monto pendiente de reintegro por cancelación",
-                "example": 0
+                "example": 0.0
               },
               "recaudacionNeta": {
                 "type": "number",
                 "description": "Recaudación neta = bruta - devuelta - aReintegrar",
-                "example": 20520000
+                "example": 20520000.0
               }
             }
           },
