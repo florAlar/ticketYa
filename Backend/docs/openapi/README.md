@@ -23,6 +23,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
 >
+> **Actualizado 2026-11-20:** `msvc-eventos.json` y `openapi-bundle.json` corrigen `POST /lugares`: decía “Requiere ORGANIZADOR o ADMIN” y en realidad es **solo ADMIN** (lo revalida `LugarController` y lo fija `specs/endpoints.md`).
+>
 > **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
 
 > **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.

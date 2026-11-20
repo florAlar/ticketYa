@@ -96,7 +96,8 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/participantes/{id}` | PUT / PATCH / DELETE (PAR-01) |
 | `/api/notificaciones` | POST (alta administrativa de notificación) |
 | `/api/notificaciones/{id}/estado` | GET (estado de envío) |
-| Endpoints internos Feign (`/api/eventos/{id}/cupos`, `/cupos/liberacion`, `/reintegro-cancelacion`, `/entradas/resumen`, `/api/entradas/emision`, `/api/preferencias/clientes/matching`, `/api/preferencias/clientes/{id}/notificaciones`, `/api/compras/evento/{id}`) | POST / GET (invocados por Feign directo entre servicios; por gateway solo ADMIN) |
+| Endpoints internos Feign enrutados (`/api/eventos/{id}/cupos`, `/cupos/liberacion`, `/api/entradas/emision`, `/api/preferencias/clientes/matching`, `/api/preferencias/clientes/{id}/notificaciones`, `/api/compras/evento/{id}`) | POST / GET (invocados por Feign directo entre servicios; por gateway solo ADMIN) |
+| Endpoints internos **no enrutados** (`/api/eventos/{id}/reintegro-cancelacion`, `/api/eventos/{id}/entradas/resumen`) | — (uso exclusivo por Feign: el gateway no declara ruta; el catch-all `/api/eventos/**` los deriva a msvc-eventos, que responde 404) |
 
 ### 3.3 Notas de política
 
