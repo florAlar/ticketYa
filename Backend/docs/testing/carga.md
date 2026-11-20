@@ -34,6 +34,12 @@ Diseño: `Backend/specs/fila-virtual.md` §15. Antes de cada corrida: `cd Backen
 | `-JidSector` | — | UUID de un **sector general** (no numerado) con cupo suficiente |
 | `-Jcantidad` | 1 | Entradas por reserva |
 | `-Jcsv` | `usuarios.csv` | Pool `email,token` con un JWT firmado (HS256) por hilo |
+| `-JpollInterval` | 2000 | Intervalo del poll a `/fila/posicion` (ms) en el escenario B |
+| `-JpollMax` | 30 | Reintentos máximos del poll; agotarlos cuenta como error (timeout), no como éxito |
+| `-JadminThreads` | 0 | Hilos ADMIN en B: `0` = B1 (tanda automática), `1` = B2 (override manual) |
+| `-JadminToken` | — | JWT de ADMIN para B2 (el gateway y ventas verifican el rol) |
+| `-JadminPaso` | 25 | Incremento de `hastaPosicion` por tick del ADMIN en B2 |
+| `-JadminIntervalo` | 10000 | Intervalo del hilo ADMIN (ms) en B2 |
 
 El pool debe tener al menos `usuarios` filas y cumplir `iteraciones × cantidad ≤ 6` (límite `max-entradas-cliente-evento`). El token se firma con el secreto compartido gateway/usuarios; verificar claims contra un token real de login. **[NV]** Si algún servicio valida al usuario contra `msvc-usuarios`, los usuarios del pool deben existir.
 
@@ -64,15 +70,26 @@ jmeter -n -t Backend/docs/testing/carga/compra-normal.jmx \
 
 ## Resultados (con fila)
 
-**Pendiente de ejecución.** Requiere un evento `esAltaDemanda=true` y sector general. Comando previsto:
+**Pendiente de ejecución.** Requiere un evento `PUBLICADO` con `esAltaDemanda=true` y sector general. El plan `compra-con-fila.jmx` hace `ingreso → poll de posición → validación → reserva con tokenFila → compra → pago → verificación`, con `X-Correlation-Id: carga-fila-${__threadNum}` y sin `X-User-Id` (lo inyecta el gateway). Comandos previstos:
 
 ```bash
+# B1: tanda automática del job (default; adminThreads=0)
 jmeter -n -t Backend/docs/testing/carga/compra-con-fila.jmx \
   -JidEvento=<uuid> -JidSector=<uuid> \
   -Jusuarios=50 -Jramp=30 -Jduracion=300 \
   -l Backend/docs/testing/carga/resultados-fila.jtl \
   -e -o Backend/docs/testing/carga/report-fila
+
+# B2: override ADMIN (ventas con TICKETYA_FILA_AUTO_ENABLED=false)
+jmeter -n -t Backend/docs/testing/carga/compra-con-fila.jmx \
+  -JidEvento=<uuid> -JidSector=<uuid> \
+  -Jusuarios=50 -Jramp=30 -Jduracion=300 \
+  -JadminThreads=1 -JadminToken=<JWT_ADMIN> -JadminPaso=25 -JadminIntervalo=10000 \
+  -l Backend/docs/testing/carga/resultados-fila-admin.jtl \
+  -e -o Backend/docs/testing/carga/report-fila-admin
 ```
+
+Sin el hilo ADMIN en B2 la validación se traba: los clientes agotan `pollMax` y el plan lo cuenta como error. **[NV]** Forma de inyectar `TICKETYA_FILA_AUTO_*` en el contenedor de ventas del compose.
 
 | Métrica | B1 (tanda automática) | B2 (override ADMIN) |
 |---|---|---|
