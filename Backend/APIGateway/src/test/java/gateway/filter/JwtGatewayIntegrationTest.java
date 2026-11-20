@@ -242,6 +242,39 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
+    void fila_ingresoYPosicion_exigenJwtDeCliente() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+        for (String uri : new String[] {
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/ingreso",
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/posicion"}) {
+            MockHttpServletRequest conToken = new MockHttpServletRequest(
+                    uri.endsWith("ingreso") ? "POST" : "GET", uri);
+            conToken.addHeader("Authorization", "Bearer " + token);
+            Resultado r = ejecutar(conToken);
+            assertTrue(r.paso(), uri);
+            assertEquals(USER_ID, r.requestDownstream().getHeader("X-User-Id"), uri);
+
+            MockHttpServletRequest sinToken = new MockHttpServletRequest(
+                    uri.endsWith("ingreso") ? "POST" : "GET", uri);
+            assertEquals(401, ejecutar(sinToken).response.getStatus(), uri);
+        }
+    }
+
+    @Test
+    void fila_estadoEsPublico_yNoPropagaIdentidad() throws Exception {
+        MockHttpServletRequest req = get(
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/estado", null);
+        req.addHeader("X-User-Id", USER_ID);
+        req.addHeader("X-User-Role", "ADMIN");
+
+        Resultado r = ejecutar(req);
+
+        assertTrue(r.paso());
+        assertNull(r.requestDownstream().getHeader("X-User-Id"));
+        assertNull(r.requestDownstream().getHeader("X-User-Role"));
+    }
+
+    @Test
     void sinToken_devuelve401() throws Exception {
         Resultado r = ejecutar(get("/api/entradas", null));
 

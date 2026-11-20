@@ -145,6 +145,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         || path.matches("/api/eventos/[^/]+/disponibilidad"))) {
             return true;
         }
+        // E2-FILA-01: el estado general de la fila es público (no expone identidades).
+        if ("GET".equalsIgnoreCase(method) && path.matches("/api/eventos/[^/]+/fila/estado")) {
+            return true;
+        }
         return false;
     }
 

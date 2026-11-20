@@ -24,6 +24,8 @@ public interface EventosClient {
         private String id;
         private String nombre;
         private String estado;
+        /** FIL-01: el gate de reservas y la fila solo aplican a eventos de alta demanda. */
+        private Boolean esAltaDemanda;
         /** Para que un ORGANIZADOR solo consulte los reportes de sus propios eventos. */
         private String idOrganizador;
         private List<SectorFeignDTO> sectores = new ArrayList<>();

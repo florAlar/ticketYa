@@ -205,11 +205,11 @@ Definiciones: **vendidas** = unidades de compras APROBADAS; **vigentes** = vendi
 
 ### Fila virtual
 
-- POST /eventos/{id}/fila/ingreso — Ingresar a fila virtual (posición asignada en servidor)
-- GET /eventos/{id}/fila/posicion — Consultar posición/estado propio
-- POST /eventos/{id}/fila/validacion — Validar token temporal de acceso a compra
-- GET /eventos/{id}/fila/estado — Estado general de la venta/fila (público)
-- POST /eventos/{id}/fila/habilitacion — Habilitar tanda de clientes (ADMIN/Sistema)
+- POST /eventos/{id}/fila/ingreso — Ingresar a fila virtual (posición asignada en servidor). **FIL-01**: 201 primera vez, 200 reingreso; 409 `FILA_EVENTO_NO_ELEGIBLE` / `FILA_TURNO_USADO`; 503 `FILA_NO_DISPONIBLE`.
+- GET /eventos/{id}/fila/posicion — Consultar posición/estado propio. **FIL-01**: `EN_ESPERA` / `HABILITADO` / `CON_TOKEN` / `TURNO_USADO`; 404 si no ingresó.
+- POST /eventos/{id}/fila/validacion — Validar token temporal de acceso a compra (**FIL-03**, pendiente).
+- GET /eventos/{id}/fila/estado — Estado general de la venta/fila (público). **FIL-01**: sin identidades.
+- POST /eventos/{id}/fila/habilitacion — Habilitar tanda de clientes (ADMIN/Sistema; **FIL-02**, pendiente).
 
 ## entradas — emisión, QR, validación, devoluciones
 
