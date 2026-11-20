@@ -24,6 +24,16 @@ Backend/specs/
 | README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
 | Datos de prueba | listo | seeds en `Backend/infrastructure/` (ver `infrastructure/mysql/README.md`) |
 
+## Contenido adicional (segunda entrega)
+
+| Artefacto | Estado | Dónde |
+| --- | --- | --- |
+| Consistencia entre servicios y compensaciones (`ARQ-05`) | listo | [`consistencia-y-compensaciones.md`](./consistencia-y-compensaciones.md) |
+| Justificación de tecnologías y patrones (`ARQ-06`) | listo | [`decisiones-tecnologicas.md`](./decisiones-tecnologicas.md) |
+| Enrutado, rutas públicas y matriz RBAC del Gateway (`E2-SEC-02`) | listo | [`api/gateway.md`](./api/gateway.md) |
+| OpenAPI `msvc-notificaciones` (`API-04`) | listo | [`openapi/msvc-notificaciones.json`](./openapi/msvc-notificaciones.json) |
+| Verificación de notificaciones | listo | [`testing/notificaciones.md`](./testing/notificaciones.md) |
+
 ## Regla de oro
 
 1. Se discute y se acuerda en `specs/` (sobre todo `specs/reglas-de-negocio.md` y `specs/backlog.md`).  

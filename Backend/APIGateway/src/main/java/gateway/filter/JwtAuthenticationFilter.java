@@ -94,6 +94,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
+        // Solo el procesamiento del token queda dentro del try: una excepción del downstream
+        // (proxy, conexión rechazada) no debe convertirse en un 401 "token inválido".
+        String email;
+        String userId;
+        List<String> roles;
         try {
             if (!jwtUtil.validateToken(token)) {
                 log.warn("Invalid or expired token for path: {}", path);
@@ -102,36 +107,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String email = jwtUtil.extractEmail(token);
-            String userId = jwtUtil.extractUserId(token);
-            List<String> roles = jwtUtil.extractRoles(token);
-            String primaryRol = roles.isEmpty() ? null : roles.get(0);
-
-            log.debug("Token OK. User: {} (ID: {}), Roles: {}", email, userId, roles);
-
-            if (!hasPermission(path, method, roles)) {
-                log.warn("Access denied for user {} roles {} path: {}", email, roles, path);
-                writeError(response, HttpStatus.FORBIDDEN, "No autorizado",
-                        "No tiene permisos para acceder a este recurso");
-                return;
-            }
-
-            MutableRequest wrapper = new MutableRequest(request);
-            // La identidad sale SIEMPRE del token verificado. Si el token no trae un claim,
-            // el header se vacía: nunca se conserva el que mandó el cliente.
-            wrapper.putHeader(HDR_USER_ID, userId);
-            wrapper.putHeader(HDR_USER_EMAIL, email);
-            wrapper.putHeader(HDR_USER_ROLE, primaryRol);
-            wrapper.putHeader(HDR_USER_ROLES, roles.isEmpty() ? null : String.join(",", roles));
-            marcarComoGateway(wrapper, path);
-
-            filterChain.doFilter(wrapper, response);
-
+            email = jwtUtil.extractEmail(token);
+            userId = jwtUtil.extractUserId(token);
+            roles = jwtUtil.extractRoles(token);
         } catch (Exception e) {
             log.error("Error processing JWT: {}", e.getMessage());
             writeError(response, HttpStatus.UNAUTHORIZED, "No autenticado",
                     "Error al procesar el token");
+            return;
         }
+
+        String primaryRol = roles.isEmpty() ? null : roles.get(0);
+        log.debug("Token OK. User: {} (ID: {}), Roles: {}", email, userId, roles);
+
+        if (!hasPermission(path, method, roles)) {
+            log.warn("Access denied for user {} roles {} path: {}", email, roles, path);
+            writeError(response, HttpStatus.FORBIDDEN, "No autorizado",
+                    "No tiene permisos para acceder a este recurso");
+            return;
+        }
+
+        MutableRequest wrapper = new MutableRequest(request);
+        // La identidad sale SIEMPRE del token verificado. Si el token no trae un claim,
+        // el header se vacía: nunca se conserva el que mandó el cliente.
+        wrapper.putHeader(HDR_USER_ID, userId);
+        wrapper.putHeader(HDR_USER_EMAIL, email);
+        wrapper.putHeader(HDR_USER_ROLE, primaryRol);
+        wrapper.putHeader(HDR_USER_ROLES, roles.isEmpty() ? null : String.join(",", roles));
+        marcarComoGateway(wrapper, path);
+
+        filterChain.doFilter(wrapper, response);
     }
 
     private boolean isPublicPath(String path, String method) {
@@ -225,12 +230,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.matches("/api/eventos/[^/]+/fila/habilitacion") && "POST".equals(method)) {
             return true;
         }
+        // Notificaciones administrativas: alta manual y consulta de estado son solo ADMIN
+        // (la bandeja propia vive bajo /api/notificaciones/me/**).
+        if (path.equals("/api/notificaciones") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/notificaciones/[^/]+/estado") && "GET".equals(method)) {
+            return true;
+        }
+        // Endpoints internos (Feign entre msvcs): por el gateway solo se permiten a ADMIN.
+        if (path.matches("/api/eventos/[^/]+/cupos(/liberacion)?") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/eventos/[^/]+/reintegro-cancelacion") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/eventos/[^/]+/entradas/resumen") && "GET".equals(method)) {
+            return true;
+        }
+        if (path.equals("/api/entradas/emision") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.equals("/api/preferencias/clientes/matching") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/preferencias/clientes/[^/]+/notificaciones") && "GET".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/compras/evento/[^/]+") && "GET".equals(method)) {
+            return true;
+        }
         return false;
     }
 
     private boolean roleAllows(String path, String method, String rol) {
         // Bandeja propia de notificaciones: cualquier rol autenticado; el msvc valida dueño/ADMIN.
-        if (path.startsWith("/api/notificaciones")) {
+        if (isSelfPath(path, "/api/notificaciones/me")) {
             return true;
         }
         // Preferencias y recomendaciones propias: cualquier rol autenticado (un ORG/ACCESO
@@ -247,6 +282,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isOrganizadorAccess(String path, String method) {
+        // Control de acceso QR: ORGANIZADOR solo consulta validaciones (GET); escanear (POST) es PERSONAL_ACCESO/ADMIN.
+        if (path.matches("/api/eventos/[^/]+/validaciones")) {
+            return "GET".equals(method);
+        }
         if (path.startsWith("/api/eventos")
                 || path.startsWith("/api/lugares")
                 || path.startsWith("/api/sectores")
@@ -257,10 +296,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/reportes")) {
             return true;
         }
-        if (path.matches("/api/eventos/[^/]+/validaciones") && "GET".equals(method)) {
-            return true;
-        }
-        if (path.startsWith("/api/usuarios/me")) {
+        if (isSelfPath(path, "/api/usuarios/me")) {
             return true;
         }
         if (path.startsWith("/api/auth/")) {
@@ -274,7 +310,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isClienteAccess(String path, String method) {
-        if (path.startsWith("/api/usuarios/me") || path.startsWith("/api/auth/")) {
+        if (isSelfPath(path, "/api/usuarios/me") || path.startsWith("/api/auth/")) {
             return true;
         }
         if (isBuyerSelfService(path, method)) {
@@ -291,6 +327,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/preferencias") || path.startsWith("/api/clientes")) {
             return true;
         }
+        // Validaciones de acceso QR no son visibles para CLIENTE (solo ORGANIZADOR dueño / PERSONAL_ACCESO / ADMIN).
+        if (path.matches("/api/eventos/[^/]+/validaciones")) {
+            return false;
+        }
         if (path.startsWith("/api/eventos") && "GET".equals(method)) {
             return true;
         }
@@ -298,7 +338,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isAccesoAccess(String path, String method) {
-        if (path.startsWith("/api/usuarios/me") || path.startsWith("/api/auth/")) {
+        if (isSelfPath(path, "/api/usuarios/me") || path.startsWith("/api/auth/")) {
             return true;
         }
         if (path.matches("/api/eventos/[^/]+/validaciones")
@@ -310,6 +350,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         return false;
+    }
+
+    private static boolean isSelfPath(String path, String base) {
+        return base.equals(path) || path.startsWith(base + "/");
     }
 
     /**
@@ -373,21 +417,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         /** Un valor {@code null} vacía el header: el del cliente no se conserva. */
         void putHeader(String name, String value) {
+            String existente = claveCustom(name);
+            if (existente != null) {
+                custom.remove(existente);
+            }
             custom.put(name, value);
         }
 
         @Override
         public String getHeader(String name) {
-            if (custom.containsKey(name)) {
-                return custom.get(name);
+            String clave = claveCustom(name);
+            if (clave != null) {
+                return custom.get(clave);
             }
             return super.getHeader(name);
         }
 
         @Override
         public java.util.Enumeration<String> getHeaders(String name) {
-            if (custom.containsKey(name)) {
-                String v = custom.get(name);
+            String clave = claveCustom(name);
+            if (clave != null) {
+                String v = custom.get(clave);
                 return v == null
                         ? java.util.Collections.emptyEnumeration()
                         : java.util.Collections.enumeration(List.of(v));
@@ -400,10 +450,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             java.util.Set<String> names = new java.util.HashSet<>();
             java.util.Enumeration<String> original = super.getHeaderNames();
             while (original.hasMoreElements()) {
-                names.add(original.nextElement());
+                String nombre = original.nextElement();
+                // Un header del cliente que colisiona (en cualquier capitalización) con uno
+                // controlado por el gateway se descarta: evita duplicados tipo x-user-id.
+                if (claveCustom(nombre) == null) {
+                    names.add(nombre);
+                }
             }
             names.addAll(custom.keySet());
             return java.util.Collections.enumeration(names);
+        }
+
+        /** Búsqueda case-insensitive: los nombres de header HTTP no distinguen mayúsculas. */
+        private String claveCustom(String name) {
+            if (name == null) {
+                return null;
+            }
+            for (String clave : custom.keySet()) {
+                if (clave.equalsIgnoreCase(name)) {
+                    return clave;
+                }
+            }
+            return null;
         }
     }
 }

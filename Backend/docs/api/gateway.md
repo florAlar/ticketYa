@@ -74,9 +74,9 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 
 | Rol | Paths permitidos | Nota |
 |-----|------------------|------|
-| `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila (`POST .../fila/ingreso`, `GET .../fila/posicion`, `POST .../fila/validacion`), `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**`, `GET /api/eventos/**` | El msvc filtra recursos por `X-User-Id`; `GET .../fila/estado` es público y `POST .../fila/habilitacion` da 403 |
-| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, `/api/preferencias/**`, `/api/recomendaciones/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
-| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), `/api/preferencias/**`, `/api/recomendaciones/**`, compras propias (self-service) | Validación de ingreso en evento |
+| `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila (`POST .../fila/ingreso`, `GET .../fila/posicion`, `POST .../fila/validacion`), `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**`, `/api/notificaciones/me/**`, `GET /api/eventos/**` (excepto `/validaciones`) | El msvc filtra recursos por `X-User-Id`; `GET .../fila/estado` es público y `POST .../fila/habilitacion` da 403 |
+| `ORGANIZADOR` | `/api/eventos/**` (excepto `POST /api/eventos/{id}/validaciones`), `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
+| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Validación de ingreso en evento |
 | `ADMIN` | Todo | Short-circuit en `hasPermission` |
 
 ### 3.2 Exclusivas de ADMIN (403 para cualquier otro rol)
@@ -84,6 +84,7 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | Path | Método |
 |------|--------|
 | `/api/usuarios` | GET |
+| `/api/usuarios/{id}` | GET (fuera de `/api/usuarios/me`) |
 | `/api/usuarios/{id}/estado` | PATCH |
 | `/api/usuarios/{id}/roles` | GET / PUT / PATCH |
 | `/api/devoluciones/{id}/aprobacion` | POST |
@@ -92,13 +93,17 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/lugares/**`, `/api/sectores/**` | POST / PUT / PATCH / DELETE (alta, edición y baja de lugares y sectores; LUG-01/LUG-04) |
 | `/api/lugares/geocodificar` | GET (geocodificación de lugares por dirección y ciudad; LUG-03) |
 | `/api/eventos/{id}/fila/habilitacion` | POST (fijar la tanda; FIL-02. El msvc-ventas revalida `X-User-Role = ADMIN`) |
+| `/api/participantes/{id}` | PUT / PATCH / DELETE (PAR-01) |
+| `/api/notificaciones` | POST (alta administrativa de notificación) |
+| `/api/notificaciones/{id}/estado` | GET (estado de envío) |
+| Endpoints internos Feign (`/api/eventos/{id}/cupos`, `/cupos/liberacion`, `/reintegro-cancelacion`, `/entradas/resumen`, `/api/entradas/emision`, `/api/preferencias/clientes/matching`, `/api/preferencias/clientes/{id}/notificaciones`, `/api/compras/evento/{id}`) | POST / GET (invocados por Feign directo entre servicios; por gateway solo ADMIN) |
 
 ### 3.3 Notas de política
 
 - **Lugares:** `GET /api/lugares*` y `GET /api/eventos/{id}/sectores` requieren JWT (no están en la lista pública). Un `CLIENTE` recibe **403** en `/api/lugares`. El `ORGANIZADOR` solo los lee; alta, edición y baja de lugares y sectores son exclusivas de ADMIN (el backend lo revalida).  
 - **Self-service comprador:** `CLIENTE`, `ORGANIZADOR` y `PERSONAL_ACCESO` pueden usar `/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`; el msvc destino filtra por `X-User-Id` (recursos propios) o rechaza si no es dueño (403 del msvc).
 - **Organizador no es dueño automático:** el msvc-eventos revalida que el usuario sea dueño del evento o ADMIN en operaciones de escritura (`POST /eventos`, `PUT /eventos/{id}`, `DELETE /eventos/{id}`, `POST /eventos/{id}/publicacion`, etc.).
-- **Fila virtual (simplificación conocida):** el gateway restringe `POST .../fila/habilitacion` a ADMIN; para `ingreso`/`posicion`/`validacion` basta con estar autenticado (el catch-all de `/api/eventos/**` también alcanza a `ORGANIZADOR`). `GET .../fila/estado` es público. Ventas filtra por `X-User-Id`, así que un turno nunca es de otro cliente. Decisión y riesgo en `specs/fila-virtual.md` (D6, punto abierto 11).
+- **Fila virtual:** el gateway restringe `POST .../fila/habilitacion` a ADMIN y **sella todas las rutas `/api/eventos/*/fila/**` con `X-Internal-Token`**; `msvc-ventas` exige ese header, así que una llamada directa al `8083` con `X-User-Role: ADMIN` responde **401**. `GET .../fila/estado` es público a través del gateway. Ventas filtra por `X-User-Id`, así que un turno nunca es de otro cliente. Decisión y riesgo en `specs/fila-virtual.md` (D6, §8).
 
 ---
 

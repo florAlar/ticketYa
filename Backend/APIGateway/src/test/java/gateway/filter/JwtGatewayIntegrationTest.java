@@ -3,17 +3,20 @@ package gateway.filter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import gateway.util.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -142,6 +145,44 @@ class JwtGatewayIntegrationTest {
         fila.addHeader(JwtAuthenticationFilter.HDR_INTERNAL, "intruso");
         assertEquals(TOKEN_INTERNO, ejecutar(fila).requestDownstream()
                 .getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
+    }
+
+    @Test
+    void headersDelClienteEnMinusculas_noSobrevivenComoDuplicados() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+        MockHttpServletRequest req = get("/api/entradas", token);
+        req.addHeader("x-user-id", "00000000-0000-0000-0000-000000000000");
+        req.addHeader("x-user-role", "ADMIN");
+        req.addHeader("x-internal-token", "intruso");
+
+        HttpServletRequest down = ejecutar(req).requestDownstream();
+
+        assertEquals(USER_ID, down.getHeader("X-User-Id"));
+        assertEquals("CLIENTE", down.getHeader("X-User-Role"));
+        assertNull(down.getHeader("X-Internal-Token"));
+        assertEquals(1, contarHeader(down, "X-User-Id"));
+        assertEquals(1, contarHeader(down, "X-User-Role"));
+    }
+
+    @Test
+    void excepcionDelDownstream_noSeConvierteEn401() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+        MockHttpServletRequest req = get("/api/entradas", token);
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        FilterChain chain = (rq, rs) -> {
+            throw new IllegalStateException("proxy caído");
+        };
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil, TOKEN_INTERNO);
+
+        assertThrows(IllegalStateException.class,
+                () -> filter.doFilterInternal(req, res, chain));
+        assertEquals(200, res.getStatus());
+    }
+
+    private static long contarHeader(HttpServletRequest request, String name) {
+        return Collections.list(request.getHeaderNames()).stream()
+                .filter(n -> n.equalsIgnoreCase(name))
+                .count();
     }
 
     @Test
