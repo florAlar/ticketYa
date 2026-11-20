@@ -12,8 +12,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ventas.dto.FilaEstadoResponseDTO;
+import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
 import ventas.exception.FilaException;
+import ventas.exception.ForbiddenException;
 import ventas.redis.FilaRedisStore;
 
 /** FIL-01: lógica de ingreso/posición/estado con store y caché mockeados. */
@@ -118,6 +120,35 @@ class FilaServiceTest {
 
         FilaException e = assertThrows(FilaException.class, () -> service.posicion(EVENTO, USER));
         assertEquals("FILA_NO_INGRESADO", e.getCode());
+    }
+
+    @Test
+    void habilitacionAdmin_fijaTanda() {
+        when(eventos.obtener(EVENTO)).thenReturn(info());
+        when(store.resumen(EVENTO)).thenReturn(new FilaRedisStore.Resumen(200, 50, 40));
+        when(store.habilitar(EVENTO, 100)).thenReturn(100L);
+
+        FilaHabilitacionResponseDTO r = service.habilitar(EVENTO, 100, "ADMIN");
+
+        assertEquals(100, r.posicionHabilitadaHasta());
+        assertEquals("MANUAL", r.modo());
+    }
+
+    @Test
+    void habilitacionOtroRol_403() {
+        ForbiddenException e = assertThrows(ForbiddenException.class,
+                () -> service.habilitar(EVENTO, 100, "ORGANIZADOR"));
+        assertTrue(e.getMessage().contains("ADMIN"));
+    }
+
+    @Test
+    void habilitacionQueRetrocede_409() {
+        when(eventos.obtener(EVENTO)).thenReturn(info());
+        when(store.resumen(EVENTO)).thenReturn(new FilaRedisStore.Resumen(200, 50, 40));
+        when(store.habilitar(EVENTO, 20)).thenReturn(-1L);
+
+        FilaException e = assertThrows(FilaException.class, () -> service.habilitar(EVENTO, 20, "ADMIN"));
+        assertEquals("FILA_TANDA_NO_REDUCIBLE", e.getCode());
     }
 
     @Test

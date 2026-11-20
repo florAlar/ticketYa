@@ -214,6 +214,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.equals("/api/lugares/geocodificar")) {
             return true;
         }
+        // FIL-02: fijar la tanda es operación de ADMIN; ventas vuelve a verificar X-User-Role.
+        if (path.matches("/api/eventos/[^/]+/fila/habilitacion") && "POST".equals(method)) {
+            return true;
+        }
         return false;
     }
 

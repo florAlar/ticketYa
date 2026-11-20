@@ -27,7 +27,7 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 | GET /compras/{id}/pagos | **hecho** | |
 | POST /pagos/{id}/reintentos | **hecho** | Solo si pago RECHAZADO y se puede reabrir; tras rechazo con liberación de cupo suele exigir nueva reserva |
 | Reportes del organizador | **hecho** | E2-REP-01. `GET /reportes/eventos/{id}` (+ `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`). ORGANIZADOR dueño o ADMIN (403 otro rol; dueño verificado por Feign a eventos). Ventas y capacidad de la base de ventas; devueltas, usadas y a reintegrar por Feign a entradas (`GET /eventos/{id}/entradas/resumen`); si eventos o entradas fallan → 503. |
-| Fila virtual | en curso | FIL-01 (ingreso, posición, estado) hecho; FIL-02 (tandas) y FIL-03 (token + gate de reserva) pendientes. Ver sección abajo y `specs/fila-virtual.md`. |
+| Fila virtual | en curso | FIL-01 (ingreso, posición, estado) y FIL-02 (tandas) hechos; FIL-03 (token + gate de reserva) pendiente. Ver sección abajo y `specs/fila-virtual.md`. |
 
 ### Fila virtual (FIL-01)
 
@@ -39,7 +39,11 @@ Solo eventos `PUBLICADO` con `esAltaDemanda = true`; el flag se lee por Feign a 
 | `GET /eventos/{id}/fila/posicion` | CLIENTE (JWT) | 200 con `posicion`, `posicionHabilitadaHasta`, `delante`, `estado` (`EN_ESPERA`/`HABILITADO`/`CON_TOKEN`/`TURNO_USADO`); 404 `FILA_NO_INGRESADO` |
 | `GET /eventos/{id}/fila/estado` | **Público** (sin JWT, sin identidades) | 200 con `totalEnFila`, `posicionHabilitadaHasta`, `abierta` |
 
+| `POST /eventos/{id}/fila/habilitacion` | **ADMIN** (JWT; gateway y controller verifican el rol) | 200 `{idEvento, posicionHabilitadaHasta, modo:"MANUAL"}`; 400 si `hastaPosicion` < 1; 403 otro rol; 409 `FILA_TANDA_NO_REDUCIBLE` |
+
 `delante = max(0, posicion − posicionHabilitadaHasta)`: la posición es el turno inmutable asignado por un `INCR` atómico. Si Redis o msvc-eventos fallan sin dato en caché → **503 `FILA_NO_DISPONIBLE`** (fail-closed, nunca fallback a MySQL). El `code` viaja en el cuerpo de error (`GlobalExceptionHandler`). Config: `ticketya.fila.ttl-hours` (24), `token-ttl-minutes` (10) y el prefijo citado; las cuatro claves por evento comparten TTL. Tests: `FilaServiceTest`, `FilaControllerTest`, `FilaEventoCacheTest`, `FilaRedisStoreIT` (perfil `it`, Testcontainers) y gateway `JwtGatewayIntegrationTest`.
+
+**Tandas (FIL-02):** la tanda es acumulativa y nunca decrece; el ADMIN puede fijarla por encima del total con `habilitacion`. En paralelo, `FilaTandaScheduler` (`ticketya.fila.auto.*`) avanza cada `intervalo-ms` en `min(tamanio, max(0, SUM(cantidad_disponible) − activos))`, topeado por el último turno asignado (`seq`). Solo una instancia corre cada tick gracias al lock `fila:auto:lock` (NX + PX); un evento no PUBLICADO se omite y cualquier error de Redis/Feign se registra sin propagarse. Cada apertura queda en bitácora con `modo=AUTO|MANUAL`, tanda anterior y nueva.
 
 ### Estados
 

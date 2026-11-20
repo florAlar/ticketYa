@@ -2,9 +2,11 @@ package ventas.service;
 
 import org.springframework.stereotype.Service;
 import ventas.dto.FilaEstadoResponseDTO;
+import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaIngresoResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
 import ventas.exception.FilaException;
+import ventas.exception.ForbiddenException;
 import ventas.observability.Bitacora;
 import ventas.redis.FilaRedisStore;
 
@@ -62,6 +64,22 @@ public class FilaServiceImpl implements FilaService {
         if (!PUBLICADO.equals(info.estado()) || !info.altaDemanda()) {
             throw FilaException.eventoNoElegible();
         }
+    }
+
+    @Override
+    public FilaHabilitacionResponseDTO habilitar(String idEvento, Integer hastaPosicion, String rol) {
+        if (!"ADMIN".equals(rol)) {
+            throw new ForbiddenException("Solo ADMIN puede habilitar tandas");
+        }
+        validarElegible(eventos.obtener(idEvento));
+        long anterior = store.resumen(idEvento).tanda();
+        long nueva = store.habilitar(idEvento, hastaPosicion);
+        if (nueva < 0) {
+            throw FilaException.tandaNoReducible();
+        }
+        Bitacora.registrar("FILA_HABILITACION", "ADMIN", idEvento,
+                "modo=MANUAL anterior=" + anterior + " nueva=" + nueva);
+        return new FilaHabilitacionResponseDTO(idEvento, nueva, "MANUAL");
     }
 
     static long delante(long posicion, long tanda) {

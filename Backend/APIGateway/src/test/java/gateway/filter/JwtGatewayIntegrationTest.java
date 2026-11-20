@@ -275,6 +275,19 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
+    void fila_habilitacion_soloAdminEnElGateway() throws Exception {
+        String uri = "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/habilitacion";
+        for (String rol : new String[] {"CLIENTE", "ORGANIZADOR", "PERSONAL_ACCESO"}) {
+            MockHttpServletRequest req = new MockHttpServletRequest("POST", uri);
+            req.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, rol, 60_000));
+            assertEquals(403, ejecutar(req).response.getStatus(), rol);
+        }
+        MockHttpServletRequest admin = new MockHttpServletRequest("POST", uri);
+        admin.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, "ADMIN", 60_000));
+        assertTrue(ejecutar(admin).paso());
+    }
+
+    @Test
     void sinToken_devuelve401() throws Exception {
         Resultado r = ejecutar(get("/api/entradas", null));
 

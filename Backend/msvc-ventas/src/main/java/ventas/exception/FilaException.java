@@ -55,4 +55,9 @@ public class FilaException extends RuntimeException {
         return new FilaException("FILA_TURNO_USADO", HttpStatus.CONFLICT,
                 "El cliente ya consumió su turno en este evento");
     }
+
+    public static FilaException tandaNoReducible() {
+        return new FilaException("FILA_TANDA_NO_REDUCIBLE", HttpStatus.CONFLICT,
+                "La tanda no puede retroceder");
+    }
 }

@@ -8,17 +8,22 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import ventas.dto.FilaEstadoResponseDTO;
+import ventas.dto.FilaHabilitacionRequestDTO;
+import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaIngresoResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
+import ventas.exception.ForbiddenException;
 import ventas.exception.UnauthorizedException;
 import ventas.service.FilaService;
 
@@ -67,6 +72,28 @@ public class FilaController {
             @Parameter(description = "UUID del evento") @PathVariable String idEvento,
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId) {
         return filaService.posicion(idEvento, requireUser(userId));
+    }
+
+    @Operation(summary = "Habilitar tanda (override ADMIN)",
+            description = "Defensa en profundidad: el gateway también restringe este path a ADMIN.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Tanda fijada",
+                    content = @Content(schema = @Schema(implementation = FilaHabilitacionResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "hastaPosicion ausente o < 1"),
+            @ApiResponse(responseCode = "403", description = "El rol no es ADMIN"),
+            @ApiResponse(responseCode = "409", description = "FILA_TANDA_NO_REDUCIBLE o FILA_EVENTO_NO_ELEGIBLE"),
+            @ApiResponse(responseCode = "503", description = "FILA_NO_DISPONIBLE")
+    })
+    @PostMapping("/habilitacion")
+    public FilaHabilitacionResponseDTO habilitar(
+            @Parameter(description = "UUID del evento") @PathVariable String idEvento,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Role", required = false) String rol,
+            @Valid @RequestBody FilaHabilitacionRequestDTO body) {
+        if (!"ADMIN".equals(rol)) {
+            throw new ForbiddenException("Solo ADMIN puede habilitar tandas");
+        }
+        return filaService.habilitar(idEvento, body.hastaPosicion(), rol);
     }
 
     @Operation(summary = "Estado general de la fila",

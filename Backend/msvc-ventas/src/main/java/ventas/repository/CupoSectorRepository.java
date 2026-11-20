@@ -22,4 +22,8 @@ public interface CupoSectorRepository extends JpaRepository<CupoSector, String> 
     @Query("SELECT c FROM CupoSector c WHERE c.idEvento = :idEvento AND c.idSector = :idSector")
     Optional<CupoSector> findByEventoAndSectorForUpdate(
             @Param("idEvento") String idEvento, @Param("idSector") String idSector);
+
+    /** FIL-02: tope de cupo para el job de tandas; 0 si el evento aún no tiene cupos. */
+    @Query("SELECT COALESCE(SUM(c.cantidadDisponible), 0) FROM CupoSector c WHERE c.idEvento = :idEvento")
+    long sumarDisponible(@Param("idEvento") String idEvento);
 }

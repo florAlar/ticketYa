@@ -209,7 +209,7 @@ Definiciones: **vendidas** = unidades de compras APROBADAS; **vigentes** = vendi
 - GET /eventos/{id}/fila/posicion — Consultar posición/estado propio. **FIL-01**: `EN_ESPERA` / `HABILITADO` / `CON_TOKEN` / `TURNO_USADO`; 404 si no ingresó.
 - POST /eventos/{id}/fila/validacion — Validar token temporal de acceso a compra (**FIL-03**, pendiente).
 - GET /eventos/{id}/fila/estado — Estado general de la venta/fila (público). **FIL-01**: sin identidades.
-- POST /eventos/{id}/fila/habilitacion — Habilitar tanda de clientes (ADMIN/Sistema; **FIL-02**, pendiente).
+- POST /eventos/{id}/fila/habilitacion — Habilitar tanda de clientes (**FIL-02**): ADMIN (gateway + `X-User-Role` en ventas; 403 otro rol), body `{ "hastaPosicion": N }` con N ≥ 1 (400 si no), 200 con `modo: MANUAL`, 409 `FILA_TANDA_NO_REDUCIBLE` si retrocede. El Sistema abre tandas con el job automático (`modo: AUTO`).
 
 ## entradas — emisión, QR, validación, devoluciones
 

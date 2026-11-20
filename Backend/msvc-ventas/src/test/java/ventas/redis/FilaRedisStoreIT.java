@@ -40,7 +40,7 @@ class FilaRedisStoreIT {
                 new LettuceConnectionFactory(redis.getHost(), redis.getMappedPort(6379));
         factory.afterPropertiesSet();
         template = new StringRedisTemplate(factory);
-        store = new FilaRedisStore(template, "fila-it", 24, 10);
+        store = new FilaRedisStore(template, "fila-it", 24, 10, 8000);
     }
 
     @Test
@@ -118,6 +118,63 @@ class FilaRedisStoreIT {
         assertTrue(template.getExpire(store.seqKey(evento)) > 0);
         assertTrue(template.getExpire(store.tandaKey(evento)) > 0);
         assertTrue(template.getExpire(store.usadosKey(evento)) > 0);
+    }
+
+    @Test
+    void habilitacionConcurrente_elResultadoEsElValorMayor() throws Exception {
+        String evento = EVENTO + "-habilitar";
+        for (int i = 1; i <= 20; i++) {
+            store.ingresar(evento, "user-" + i);
+        }
+        ExecutorService pool = Executors.newFixedThreadPool(8);
+        CountDownLatch salida = new CountDownLatch(1);
+        List<Future<Long>> futures = new ArrayList<>();
+        try {
+            for (int i = 1; i <= 20; i++) {
+                final long pedido = i;
+                futures.add(pool.submit(() -> {
+                    salida.await();
+                    return store.habilitar(evento, pedido);
+                }));
+            }
+            salida.countDown();
+            long mayor = 0;
+            for (Future<Long> f : futures) {
+                mayor = Math.max(mayor, f.get(20, TimeUnit.SECONDS));
+            }
+            assertEquals(20, mayor);
+            assertEquals(20, store.resumen(evento).tanda());
+            assertEquals(-1, store.habilitar(evento, 19));
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void lockSoloLoObtieneUnaInstancia_ySeLiberaConComparacion() {
+        String instancia = "instancia-" + System.nanoTime();
+        String otra = "otra-" + System.nanoTime();
+
+        assertTrue(store.adquirirLock(instancia));
+        assertFalse(store.adquirirLock(otra));
+        store.liberarLock(otra); // no era suyo: no lo suelta
+        assertFalse(store.adquirirLock(otra));
+        store.liberarLock(instancia);
+        assertTrue(store.adquirirLock(otra));
+    }
+
+    @Test
+    void resumenIncluyeActivos() {
+        String evento = EVENTO + "-resumen";
+        store.ingresar(evento, "user-1");
+        store.ingresar(evento, "user-2");
+        store.habilitar(evento, 1);
+
+        FilaRedisStore.Resumen r = store.resumen(evento);
+
+        assertEquals(2, r.seq());
+        assertEquals(1, r.tanda());
+        assertEquals(1, r.activos());
     }
 
     @Test
