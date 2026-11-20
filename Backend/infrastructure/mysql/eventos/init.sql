@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS evento (
   id_lugar           CHAR(36)     NOT NULL,
   fecha_publicacion  DATETIME(3)  NULL,
   es_alta_demanda    TINYINT(1)   NOT NULL DEFAULT 0,
+  imagen_url         VARCHAR(500) NULL COMMENT 'portada: URL http(s) o ruta relativa que sirve el front; NULL = portada generada',
   PRIMARY KEY (id),
   KEY ix_evento_estado (estado),
   KEY ix_evento_tipo (tipo),
@@ -166,6 +167,17 @@ ON DUPLICATE KEY UPDATE
   id_lugar = VALUES(id_lugar),
   es_alta_demanda = VALUES(es_alta_demanda);
 
+-- Portadas demo: archivos en Frontend/public/img/eventos (los sirve el nginx del front).
+-- Solo los eventos que tienen una foto que les corresponde; el resto queda NULL y el front
+-- muestra una portada generada.
+UPDATE evento SET imagen_url = '/img/eventos/metallica.webp'     WHERE id = 'd0000000-0000-4000-8000-000000000001';
+UPDATE evento SET imagen_url = '/img/eventos/festival-crowd.webp' WHERE id = 'd0000000-0000-4000-8000-000000000003';
+UPDATE evento SET imagen_url = '/img/eventos/iron-maiden.webp'   WHERE id = 'd0000000-0000-4000-8000-000000000004';
+UPDATE evento SET imagen_url = '/img/eventos/rammstein.webp'     WHERE id = 'd0000000-0000-4000-8000-000000000005';
+UPDATE evento SET imagen_url = '/img/eventos/foo-fighters.webp'  WHERE id = 'd0000000-0000-4000-8000-000000000006';
+UPDATE evento SET imagen_url = '/img/eventos/festival-crowd.webp' WHERE id = 'd0000000-0000-4000-8000-00000000000b';
+UPDATE evento SET imagen_url = '/img/eventos/tool.webp'          WHERE id = 'd0000000-0000-4000-8000-00000000000d';
+
 INSERT INTO precio_sector (id, id_evento, id_sector, precio, moneda, activo) VALUES
   ('e0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000011', 95000.00, 'ARS', 1),
   ('e0000000-0000-4000-8000-000000000002', 'd0000000-0000-4000-8000-000000000001', 'c0000000-0000-4000-8000-000000000012', 180000.00, 'ARS', 1),
@@ -239,3 +251,127 @@ INSERT INTO evento_participante (id_evento, id_participante, rol, orden) VALUES
   ('d0000000-0000-4000-8000-00000000000e', 'p0000000-0000-4000-8000-000000000010', 'PRINCIPAL', 0),
   ('d0000000-0000-4000-8000-00000000000e', 'p0000000-0000-4000-8000-000000000011', 'PRINCIPAL', 1)
 ON DUPLICATE KEY UPDATE rol = VALUES(rol), orden = VALUES(orden);
+
+-- Bandas del hero de la home: Ghost, Turmion Kätilöt y Red Hot Chili Peppers.
+INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio, fecha_fin, estado, id_lugar, fecha_publicacion, es_alta_demanda) VALUES
+  ('d0000000-0000-4000-8000-00000000000f', 'b0000000-0000-4000-8000-000000000002',
+   'Ghost — Skeletour Latinoamérica', 'Rock teatral y liturgia pesada: la gira de Ghost llega con su puesta completa.', 'RECITAL',
+   '2027-09-12 21:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000003', '2026-10-18 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000010', 'b0000000-0000-4000-8000-000000000002',
+   'Turmion Kätilöt — Industrial Metal Night', 'Industrial metal finlandés: riffs pesados, electrónica y un show a puro ritual.', 'RECITAL',
+   '2027-10-17 20:30:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000002', '2026-10-18 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000011', 'b0000000-0000-4000-8000-000000000002',
+   'Red Hot Chili Peppers — Unlimited Love Tour', 'Funk rock californiano a estadio lleno, con todos sus clásicos.', 'RECITAL',
+   '2027-11-20 21:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000001', '2026-10-20 12:00:00.000', 1)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion), tipo = VALUES(tipo),
+  fecha_inicio = VALUES(fecha_inicio), estado = VALUES(estado), id_lugar = VALUES(id_lugar), es_alta_demanda = VALUES(es_alta_demanda);
+
+UPDATE evento SET imagen_url = '/img/eventos/ghost.webp'                  WHERE id = 'd0000000-0000-4000-8000-00000000000f';
+UPDATE evento SET imagen_url = '/img/eventos/turmion-katilot.webp'         WHERE id = 'd0000000-0000-4000-8000-000000000010';
+UPDATE evento SET imagen_url = '/img/eventos/red-hot-chili-peppers.webp'  WHERE id = 'd0000000-0000-4000-8000-000000000011';
+UPDATE evento SET imagen_url = '/img/eventos/slipknot.webp'               WHERE id = 'd0000000-0000-4000-8000-00000000000a';
+
+INSERT INTO precio_sector (id, id_evento, id_sector, precio, moneda, activo) VALUES
+  ('e0000000-0000-4000-8000-00000000001c', 'd0000000-0000-4000-8000-00000000000f', 'c0000000-0000-4000-8000-000000000015', 98000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000001d', 'd0000000-0000-4000-8000-00000000000f', 'c0000000-0000-4000-8000-000000000016', 175000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000001e', 'd0000000-0000-4000-8000-000000000010', 'c0000000-0000-4000-8000-000000000013', 82000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000001f', 'd0000000-0000-4000-8000-000000000010', 'c0000000-0000-4000-8000-000000000014', 150000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000020', 'd0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000011', 130000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000021', 'd0000000-0000-4000-8000-000000000011', 'c0000000-0000-4000-8000-000000000012', 230000.00, 'ARS', 1)
+ON DUPLICATE KEY UPDATE precio = VALUES(precio), activo = VALUES(activo);
+
+INSERT INTO participante (id, nombre, tipo, descripcion) VALUES
+  ('p0000000-0000-4000-8000-000000000013', 'Turmion Kätilöt', 'BANDA', 'Industrial metal'),
+  ('p0000000-0000-4000-8000-000000000014', 'Red Hot Chili Peppers', 'BANDA', 'Funk rock')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), tipo = VALUES(tipo), descripcion = VALUES(descripcion);
+
+INSERT INTO evento_participante (id_evento, id_participante, rol, orden) VALUES
+  ('d0000000-0000-4000-8000-00000000000f', 'p0000000-0000-4000-8000-000000000006', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000010', 'p0000000-0000-4000-8000-000000000013', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000011', 'p0000000-0000-4000-8000-000000000014', 'PRINCIPAL', 0)
+ON DUPLICATE KEY UPDATE rol = VALUES(rol), orden = VALUES(orden);
+
+-- Eventos deportivos del hero: Boca (Superclásico), Dakar, MotoGP y UFC (la Fórmula 1 ya existía).
+INSERT INTO lugar (id, nombre, direccion, ciudad, latitud, longitud, capacidad_total) VALUES
+  ('c0000000-0000-4000-8000-000000000004', 'La Bombonera', 'Brandsen 805', 'Buenos Aires', -34.635600, -58.364700, 50000),
+  ('c0000000-0000-4000-8000-000000000005', 'Autódromo Termas de Río Hondo', 'Ruta 9 km 1015', 'Santiago del Estero', -27.481700, -64.934200, 50000),
+  ('c0000000-0000-4000-8000-000000000006', 'Movistar Arena', 'Humboldt 450', 'Buenos Aires', -34.593100, -58.447800, 15000),
+  ('c0000000-0000-4000-8000-000000000007', 'Campamento Base Dakar', 'Zona de largada', 'Riad', 24.713600, 46.675300, 20000)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), direccion = VALUES(direccion), ciudad = VALUES(ciudad), latitud = VALUES(latitud), longitud = VALUES(longitud), capacidad_total = VALUES(capacidad_total);
+
+INSERT INTO sector (id, id_lugar, nombre, capacidad, tipo, es_numerado, filas, asientos_por_fila) VALUES
+  ('c0000000-0000-4000-8000-000000000017', 'c0000000-0000-4000-8000-000000000004', 'Popular', 30000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-000000000018', 'c0000000-0000-4000-8000-000000000004', 'Platea', 20000, 'PLATEA', 1, 80, 250),
+  ('c0000000-0000-4000-8000-000000000019', 'c0000000-0000-4000-8000-000000000005', 'Tribuna general', 40000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-00000000001a', 'c0000000-0000-4000-8000-000000000005', 'Tribuna preferencial', 10000, 'PLATEA', 1, 40, 250),
+  ('c0000000-0000-4000-8000-00000000001b', 'c0000000-0000-4000-8000-000000000006', 'Cancha', 6000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-00000000001c', 'c0000000-0000-4000-8000-000000000006', 'Platea', 9000, 'PLATEA', 1, 36, 250),
+  ('c0000000-0000-4000-8000-00000000001d', 'c0000000-0000-4000-8000-000000000007', 'General', 15000, 'GENERAL', 0, NULL, NULL),
+  ('c0000000-0000-4000-8000-00000000001e', 'c0000000-0000-4000-8000-000000000007', 'VIP', 5000, 'PLATEA', 1, 20, 250)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), capacidad = VALUES(capacidad), tipo = VALUES(tipo),
+  filas = VALUES(filas), asientos_por_fila = VALUES(asientos_por_fila);
+
+INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio, fecha_fin, estado, id_lugar, fecha_publicacion, es_alta_demanda) VALUES
+  ('d0000000-0000-4000-8000-000000000012', 'b0000000-0000-4000-8000-000000000002',
+   'Boca Juniors vs River Plate — Superclásico', 'El clásico más grande del fútbol argentino, en La Bombonera.', 'DEPORTE',
+   '2027-08-29 17:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000004', '2026-10-22 12:00:00.000', 1),
+  ('d0000000-0000-4000-8000-000000000013', 'b0000000-0000-4000-8000-000000000002',
+   'Dakar Rally — Largada y Prólogo', 'La largada del rally más duro del mundo: autos, motos y camiones en el desierto.', 'DEPORTE',
+   '2028-01-12 10:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000007', '2026-10-22 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000014', 'b0000000-0000-4000-8000-000000000002',
+   'MotoGP — Gran Premio de Argentina', 'La máxima categoría del motociclismo en Termas de Río Hondo.', 'DEPORTE',
+   '2027-04-02 14:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000005', '2026-10-24 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000015', 'b0000000-0000-4000-8000-000000000002',
+   'UFC Fight Night — Buenos Aires', 'Una noche de artes marciales mixtas con las mejores peleas del octágono.', 'DEPORTE',
+   '2027-09-18 20:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000006', '2026-10-24 12:00:00.000', 0)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion), tipo = VALUES(tipo),
+  fecha_inicio = VALUES(fecha_inicio), estado = VALUES(estado), id_lugar = VALUES(id_lugar), es_alta_demanda = VALUES(es_alta_demanda);
+
+UPDATE evento SET imagen_url = '/img/eventos/formula-1.webp'    WHERE id = 'd0000000-0000-4000-8000-000000000008';
+UPDATE evento SET imagen_url = '/img/eventos/boca-vs-river.webp' WHERE id = 'd0000000-0000-4000-8000-000000000012';
+UPDATE evento SET imagen_url = '/img/eventos/dakar-rally.webp'  WHERE id = 'd0000000-0000-4000-8000-000000000013';
+UPDATE evento SET imagen_url = '/img/eventos/motogp.webp'       WHERE id = 'd0000000-0000-4000-8000-000000000014';
+UPDATE evento SET imagen_url = '/img/eventos/ufc.webp'          WHERE id = 'd0000000-0000-4000-8000-000000000015';
+
+INSERT INTO precio_sector (id, id_evento, id_sector, precio, moneda, activo) VALUES
+  ('e0000000-0000-4000-8000-000000000022', 'd0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000017', 60000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000023', 'd0000000-0000-4000-8000-000000000012', 'c0000000-0000-4000-8000-000000000018', 140000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000024', 'd0000000-0000-4000-8000-000000000013', 'c0000000-0000-4000-8000-00000000001d', 70000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000025', 'd0000000-0000-4000-8000-000000000013', 'c0000000-0000-4000-8000-00000000001e', 160000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000026', 'd0000000-0000-4000-8000-000000000014', 'c0000000-0000-4000-8000-000000000019', 80000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000027', 'd0000000-0000-4000-8000-000000000014', 'c0000000-0000-4000-8000-00000000001a', 180000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000028', 'd0000000-0000-4000-8000-000000000015', 'c0000000-0000-4000-8000-00000000001b', 90000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000029', 'd0000000-0000-4000-8000-000000000015', 'c0000000-0000-4000-8000-00000000001c', 170000.00, 'ARS', 1)
+ON DUPLICATE KEY UPDATE precio = VALUES(precio), activo = VALUES(activo);
+
+INSERT INTO participante (id, nombre, tipo, descripcion) VALUES
+  ('p0000000-0000-4000-8000-000000000015', 'Boca Juniors', 'EQUIPO', 'Fútbol argentino'),
+  ('p0000000-0000-4000-8000-000000000016', 'River Plate', 'EQUIPO', 'Fútbol argentino'),
+  ('p0000000-0000-4000-8000-000000000017', 'Dakar Rally', 'ORGANIZACION', 'Rally raid'),
+  ('p0000000-0000-4000-8000-000000000018', 'MotoGP', 'ORGANIZACION', 'Motociclismo de velocidad'),
+  ('p0000000-0000-4000-8000-000000000019', 'UFC', 'ORGANIZACION', 'Artes marciales mixtas')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), tipo = VALUES(tipo), descripcion = VALUES(descripcion);
+
+INSERT INTO evento_participante (id_evento, id_participante, rol, orden) VALUES
+  ('d0000000-0000-4000-8000-000000000012', 'p0000000-0000-4000-8000-000000000015', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000012', 'p0000000-0000-4000-8000-000000000016', 'PRINCIPAL', 1),
+  ('d0000000-0000-4000-8000-000000000013', 'p0000000-0000-4000-8000-000000000017', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000014', 'p0000000-0000-4000-8000-000000000018', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000015', 'p0000000-0000-4000-8000-000000000019', 'PRINCIPAL', 0)
+ON DUPLICATE KEY UPDATE rol = VALUES(rol), orden = VALUES(orden);
+
+
+-- Portadas externas (URL absoluta; evento.imagen_url admite http/https) para los eventos sin foto propia.
+-- Fotos de Wikimedia Commons (licencia libre).
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/Coldplay_at_Craven_Park_Stadium_Stage_View%2C_Kingston_upon_Hull_18-08-2025.jpg/1280px-Coldplay_at_Craven_Park_Stadium_Stage_View%2C_Kingston_upon_Hull_18-08-2025.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000007';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/df/Oasis-band-concert-Montreal-Canada-Aug2002.jpg/1280px-Oasis-band-concert-Montreal-Canada-Aug2002.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000000c';
+UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Basketball_arena_match_sport_game_lakers_tribune_fans-1223638.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000009';
+UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/6/69/Khalifa_Stadium%2C_Doha%2C_Brazil_vs_Argentina_%282010%29.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000000e';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/UEFA_Champions_League_Final_Cardiff_2017_adjusted.jpg/1280px-UEFA_Champions_League_Final_Cardiff_2017_adjusted.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000002';

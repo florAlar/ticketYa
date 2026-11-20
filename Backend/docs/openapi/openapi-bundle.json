@@ -1066,7 +1066,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio unitario pagado",
-                "example": 95000.0
+                "example": 95000
               },
               "eventoNombre": {
                 "type": "string",
@@ -1168,7 +1168,7 @@
               "monto": {
                 "type": "number",
                 "description": "Monto a reembolsar",
-                "example": 95000.0
+                "example": 95000
               },
               "fechaSolicitud": {
                 "type": "string",
@@ -1232,7 +1232,7 @@
               "precioUnitario": {
                 "type": "number",
                 "description": "Precio unitario pagado",
-                "example": 95000.0
+                "example": 95000
               },
               "asientos": {
                 "type": [
@@ -1371,12 +1371,12 @@
               "montoDevuelto": {
                 "type": "number",
                 "description": "Suma de precios de las entradas DEVUELTA",
-                "example": 540000.0
+                "example": 540000
               },
               "montoAReintegrar": {
                 "type": "number",
                 "description": "Suma de precios de las entradas A_REINTEGRAR",
-                "example": 0.0
+                "example": 0
               }
             }
           },
@@ -3393,7 +3393,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio vigente",
-                "example": 25000.0
+                "example": 25000
               },
               "moneda": {
                 "type": "string",
@@ -3592,6 +3592,11 @@
                 "description": "Marca de alta demanda",
                 "example": false
               },
+              "imagenUrl": {
+                "type": "string",
+                "description": "URL de la imagen de portada: http(s) absoluta o ruta relativa que empieza con '/' (máx. 500). En PUT, cadena vacía = quitar la imagen; ausente = no se toca",
+                "example": "https://ejemplo.com/portada.jpg"
+              },
               "idLugar": {
                 "type": "string",
                 "description": "UUID de un lugar existente (los lugares los crea el ADMIN). Obligatorio para publicar; un borrador puede quedar sin lugar (queda en 'Por definir')",
@@ -3623,7 +3628,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio unitario en ARS",
-                "example": 25000.0
+                "example": 25000
               },
               "capacidadTotal": {
                 "type": "integer",
@@ -3720,7 +3725,7 @@
               "precioDesde": {
                 "type": "number",
                 "description": "Precio mínimo del evento",
-                "example": 25000.0
+                "example": 25000
               },
               "destacado": {
                 "type": "boolean",
@@ -3808,7 +3813,7 @@
               "precio": {
                 "type": "number",
                 "description": "Precio unitario",
-                "example": 25000.0
+                "example": 25000
               },
               "moneda": {
                 "type": "string",
@@ -3933,7 +3938,7 @@
               "precioDesde": {
                 "type": "number",
                 "description": "Precio mínimo del evento",
-                "example": 25000.0
+                "example": 25000
               },
               "destacado": {
                 "type": "boolean",
@@ -7263,8 +7268,8 @@
               }
             ],
             "responses": {
-              "201": {
-                "description": "Primera entrada",
+              "200": {
+                "description": "Reingreso con la misma posición",
                 "content": {
                   "*/*": {
                     "schema": {
@@ -7280,8 +7285,8 @@
                   }
                 }
               },
-              "200": {
-                "description": "Reingreso con la misma posición",
+              "201": {
+                "description": "Primera entrada",
                 "content": {
                   "*/*": {
                     "schema": {
@@ -7930,7 +7935,7 @@
               "precioUnitario": {
                 "type": "number",
                 "description": "Precio unitario",
-                "example": 95000.0
+                "example": 95000
               },
               "asientos": {
                 "type": "array",
@@ -7980,7 +7985,7 @@
               "total": {
                 "type": "number",
                 "description": "Total de la reserva",
-                "example": 190000.0
+                "example": 190000
               },
               "detalles": {
                 "type": "array",
@@ -8034,7 +8039,7 @@
               "monto": {
                 "type": "number",
                 "description": "Importe pagado",
-                "example": 190000.0
+                "example": 190000
               },
               "estado": {
                 "type": "string",
@@ -8274,7 +8279,7 @@
               "total": {
                 "type": "number",
                 "description": "Importe total",
-                "example": 190000.0
+                "example": 190000
               },
               "moneda": {
                 "type": "string",
@@ -8404,22 +8409,22 @@
               "recaudacionBruta": {
                 "type": "number",
                 "description": "Recaudación bruta (compras aprobadas)",
-                "example": 21600000.0
+                "example": 21600000
               },
               "recaudacionDevuelta": {
                 "type": "number",
                 "description": "Monto de entradas devueltas",
-                "example": 1080000.0
+                "example": 1080000
               },
               "recaudacionAReintegrar": {
                 "type": "number",
                 "description": "Monto pendiente de reintegro por cancelación",
-                "example": 0.0
+                "example": 0
               },
               "recaudacionNeta": {
                 "type": "number",
                 "description": "Recaudación neta = bruta - devuelta - aReintegrar",
-                "example": 20520000.0
+                "example": 20520000
               }
             }
           },

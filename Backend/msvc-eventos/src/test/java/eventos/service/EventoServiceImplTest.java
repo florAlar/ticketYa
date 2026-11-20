@@ -306,6 +306,86 @@ class EventoServiceImplTest {
     }
 
     @Test
+    void crear_conImagenUrl_laGuardaRecortada() {
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Evento");
+        req.setEstado("BORRADOR");
+        req.setIdLugar(LUGAR_ID);
+        req.setImagenUrl("  https://ejemplo.com/portada.jpg ");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        org.mockito.ArgumentCaptor<Evento> captor = org.mockito.ArgumentCaptor.forClass(Evento.class);
+
+        service.crear(req, ORG_ID);
+
+        verify(eventoRepository).save(captor.capture());
+        assertEquals("https://ejemplo.com/portada.jpg", captor.getValue().getImagenUrl());
+    }
+
+    @Test
+    void crear_imagenUrlRelativa_ok_yVaciaQuedaNull() {
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Evento");
+        req.setIdLugar(LUGAR_ID);
+        req.setImagenUrl("/img/eventos/x.webp");
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        org.mockito.ArgumentCaptor<Evento> captor = org.mockito.ArgumentCaptor.forClass(Evento.class);
+
+        service.crear(req, ORG_ID);
+        req.setImagenUrl("   ");
+        service.crear(req, ORG_ID);
+
+        verify(eventoRepository, times(2)).save(captor.capture());
+        assertEquals("/img/eventos/x.webp", captor.getAllValues().get(0).getImagenUrl());
+        assertNull(captor.getAllValues().get(1).getImagenUrl());
+    }
+
+    @Test
+    void crear_imagenUrlInvalida_throws() {
+        for (String mala : new String[] {"javascript:alert(1)", "ftp://x/y.jpg", "//evil.com/x.jpg", "portada.jpg"}) {
+            EventoRequestDTO req = new EventoRequestDTO();
+            req.setNombre("Evento");
+            req.setIdLugar(LUGAR_ID);
+            req.setImagenUrl(mala);
+            when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+
+            assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID), mala);
+        }
+    }
+
+    @Test
+    void crear_imagenUrlDemasiadoLarga_throws() {
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setNombre("Evento");
+        req.setIdLugar(LUGAR_ID);
+        req.setImagenUrl("https://x.com/" + "a".repeat(500));
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+
+        assertThrows(IllegalArgumentException.class, () -> service.crear(req, ORG_ID));
+    }
+
+    @Test
+    void actualizar_imagenUrl_cambiaYVaciaLaQuita() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setImagenUrl("/img/eventos/a.webp");
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+        assertEquals("/img/eventos/a.webp", evento.getImagenUrl());
+
+        req.setImagenUrl("");
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+        assertNull(evento.getImagenUrl());
+
+        // ausente (null) no la toca
+        evento.setImagenUrl("/img/eventos/b.webp");
+        service.actualizar(EVENTO_ID, new EventoRequestDTO(), ORG_ID, "ORGANIZADOR");
+        assertEquals("/img/eventos/b.webp", evento.getImagenUrl());
+    }
+
+    @Test
     void crear_null_throws() {
         assertThrows(IllegalArgumentException.class, () -> service.crear(null, ORG_ID));
     }

@@ -62,6 +62,7 @@ erDiagram
         VARCHAR estado
         DATETIME fecha_publicacion
         BOOL es_alta_demanda
+        VARCHAR imagen_url
     }
     PRECIO_SECTOR {
         CHAR36 id PK
