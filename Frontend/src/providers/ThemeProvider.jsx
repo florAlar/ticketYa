@@ -17,6 +17,15 @@ function getInitialTheme() {
     // Descartar legacy
     localStorage.removeItem(LEGACY_THEME_KEY);
 
+    // Sin elección guardada: respetar la preferencia del sistema operativo.
+    if (
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-color-scheme: dark)").matches &&
+        themes.dark
+    ) {
+        return "dark";
+    }
+
     return defaultTheme; // light
 }
 
@@ -36,6 +45,8 @@ export default function ThemeProvider({ children }) {
         theme,
         themeName,
         setTheme: setThemeName,
+        toggleTheme: () =>
+            setThemeName((prev) => (prev === "dark" ? "light" : "dark")),
         themes,
     };
 

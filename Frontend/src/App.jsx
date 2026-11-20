@@ -5,6 +5,8 @@ import ErrorBoundary from './components/ui/ErrorBoundary'
 import ThemeProvider from './providers/ThemeProvider'
 import SiteProvider from './providers/SiteProvider'
 import AuthProvider from './providers/AuthProvider'
+import ConfirmProvider from './components/ui/ConfirmProvider'
+import AppToaster from './components/ui/AppToaster'
 
 /**
  * Árbol de app TicketYa (cliente → gateway :8080).
@@ -17,9 +19,12 @@ function App() {
       <SiteProvider>
         <ThemeProvider>
           <AuthProvider>
-            <Layout>
-              <AppRoutes />
-            </Layout>
+            <ConfirmProvider>
+              <Layout>
+                <AppRoutes />
+              </Layout>
+            </ConfirmProvider>
+            <AppToaster />
           </AuthProvider>
         </ThemeProvider>
       </SiteProvider>

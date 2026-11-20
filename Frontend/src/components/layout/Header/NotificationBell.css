@@ -22,8 +22,8 @@
 
 .notification-bell__button:hover,
 .notification-bell__button[aria-expanded='true'] {
-  color: var(--colors-primary);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--colors-headerText);
+  background: color-mix(in srgb, var(--colors-headerText) 10%, transparent);
 }
 
 .notification-bell__badge {
@@ -34,9 +34,9 @@
   height: 1.1rem;
   padding: 0 0.28rem;
   border-radius: 999px;
-  background: var(--colors-primary, #e91e8c);
-  color: #fff;
-  font-size: 0.68rem;
+  background: var(--colors-headerText);
+  color: var(--colors-headerBg);
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.1rem;
   text-align: center;
@@ -78,7 +78,7 @@
 
 .notification-bell__head a,
 .notification-bell__foot a {
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
   font-size: 0.82rem;
   text-decoration: none;
 }
@@ -105,7 +105,7 @@
 }
 
 .notification-bell__error {
-  color: #b91c1c;
+  color: var(--tone-danger);
 }
 
 .notification-bell__list {
@@ -133,12 +133,12 @@
 }
 
 .notification-bell__item:hover {
-  background: rgba(233, 30, 140, 0.06);
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
 }
 
 .notification-bell__item.is-unread {
-  background: rgba(233, 30, 140, 0.09);
-  box-shadow: inset 3px 0 0 var(--colors-primary, #e91e8c);
+  background: color-mix(in srgb, var(--brand) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--colors-primary);
 }
 
 .notification-bell__item-top {
@@ -149,15 +149,15 @@
 }
 
 .notification-bell__type {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
 }
 
 .notification-bell__date {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--colors-textMuted, #7b7b7b);
   white-space: nowrap;
 }

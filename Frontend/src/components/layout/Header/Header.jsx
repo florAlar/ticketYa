@@ -4,7 +4,7 @@ import Logo from './Logo'
 import DesktopNav from './DesktopNav'
 import HamburgerButton from './HamburgerButton'
 import MobileMenu from './MobileMenu'
-import NotificationBell from './NotificationBell'
+import HeaderActions from './HeaderActions'
 import SearchBar from './SearchBar'
 
 const SCROLL_THRESHOLD = 50
@@ -31,8 +31,8 @@ const Header = () => {
 
         <div className="header-right">
           <SearchBar />
-          <NotificationBell />
           <DesktopNav />
+          <HeaderActions />
           <HamburgerButton toggle={toggleMenu} />
         </div>
       </div>

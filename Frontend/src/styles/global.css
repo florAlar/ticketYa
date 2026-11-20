@@ -1,8 +1,12 @@
 /* Índice de estilos globales.
    El orden importa: base → layout → componentes → header/footer.
    Los estilos de página/componente se importan desde cada módulo. */
+@import './palette.css';
 @import './base.css';
+@import './tokens.css';
 @import './layout.css';
 @import './components.css';
+@import './ui.css';
+@import './ui-extra.css';
 @import './header.css';
 @import './footer.css';
