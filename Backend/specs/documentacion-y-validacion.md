@@ -1,7 +1,7 @@
 # Documentación y Validación — Especificación de trabajo (E1)
 
-> **Versión:** 1.1 · **Fecha:** 2026-11-08 · **Alcance:** Entrega 1 (E1)
-> **Estado:** decisiones y alcance ratificados (§3) — bloqueada solo por las aprobaciones de `pom.xml` (§5 A-01/A-02/A-03) y por la salida de Plan mode (P0.1 escribe build en disco)
+> **Versión:** 1.3 · **Fecha:** 2026-11-20 · **Alcance:** Entrega 1 (E1), con estado de E2 anotado
+> **Estado:** E1 ejecutada y cerrada. El documento se conserva como registro de la línea “Documentación y Validación”; §1 se actualizó al 2026-11-20 con el estado real de E2.
 > **Ruta definitiva:** `Backend/specs/documentacion-y-validacion.md`
 > **Artefactos de entrega:** `Backend/docs/`
 
@@ -61,14 +61,17 @@ más el gateway documentado como capa de ruteo/RBAC, más 6 endpoints smoke `GET
 - Prueba de concurrencia sobre el mecanismo real anti doble venta (cupo de sector).
 - Colección Postman de E1 y user stories E1 (E2 en alto nivel).
 
-### Excluido (queda para tandas posteriores)
+### Excluido de la tanda E1 (estado actualizado al 2026-11-20)
 
-- `msvc-preferencias` y `msvc-notificaciones` (sin API de negocio en E1).
-- Endpoints E2 diseñados en `specs/endpoints.md` pero **no implementados**: fila virtual,
-  validaciones de acceso QR, reportes, recomendaciones, transferencias.
-- Diagramas de secuencia (compra OK / pago rechazado / reserva vencida) → tanda posterior.
-- Pruebas de integración entre microservicios, seguridad y carga (consigna E2 §F).
-- Newman / CI. No requerido en esta tanda.
+- `msvc-preferencias` y `msvc-notificaciones`: **ya implementados** (E2-PRE-01…03 y E2-NOT-01/02), con OpenAPI y docs propias.
+- Endpoints E2 que estaban diseñados y hoy están implementados: fila virtual (E2-FILA-01/02),
+  validaciones de acceso QR (E2-ACC-01), reportes (E2-REP-01) y recomendaciones (E2-PRE-02).
+  **Transferencia de entradas sigue sin API** (solo shell en el front; ver `reglas-de-negocio.md:271`).
+- Diagramas de secuencia (compra OK / pago rechazado / reserva vencida): **hechos** en
+  `specs/diagramas/diagramas-secuencia.md`.
+- Pruebas de integración entre microservicios, seguridad y carga (consigna E2 §F): seguridad **hecha**
+  (E2-TST-02); integración **parcial** (E2-TST-01) y carga **parcial** (E2-TST-03: humo OK, falta 25/50/100).
+- Newman / CI: sigue fuera de alcance.
 
 ---
 
@@ -144,7 +147,7 @@ ACEPTACIÓN: ...
 | D-13 | Estilo OpenAPI (A-01b) | **O2 — anotaciones aditivas** en controladores/DTOs (solo agrega líneas, no cambia lógica) |
 | D-14 | Alcance de cobertura (§9.2) | **Ratificado**: 90 % LINE sobre lógica (`service`, `redis`, `queue`, `mapper`, `util`, `filter`); excluye `dto`, `entity`, `config`, `exception`, `clients`, `*Application` |
 | D-15 | Toolchain Maven (A-04) | **M1**: builds con `docker run … maven:3.9-eclipse-temurin-17`; sin cambios en el repo |
-| D-16 | Concurrencia (R-05) | Se valida el **último cupo de sector** (comportamiento real del negocio); asiento numerado queda como deuda E2. **Actualizado 2026-11-10:** el asiento numerado ya está implementado (asientos virtuales, ver backlog §6.7); la concurrencia de un mismo asiento se prueba con `ReservaAsientoConcurrenciaTest` (unitario, lock emulado). Sigue pendiente su IT con MySQL real (SEAT-06). |
+| D-16 | Concurrencia (R-05) | Se valida el **último cupo de sector** (comportamiento real del negocio); asiento numerado queda como deuda E2. **Actualizado 2026-11-10:** el asiento numerado ya está implementado (asientos virtuales, ver backlog §6.7); la concurrencia de un mismo asiento se prueba con `ReservaAsientoConcurrenciaTest` (unitario, lock emulado) y su IT con MySQL real **hecho** (`AsientoReservadoConcurrenciaIT`, SEAT-06). |
 
 ---
 
@@ -873,7 +876,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 | R-02 | Maven 3.8.7 < 3.9 requerido | Build/tests pueden fallar | A-04 (Docker Maven 3.9) |
 | R-03 | 90 % de cobertura sobre módulo completo es inviable | Gate en rojo permanente | Ratificar alcance/exclusiones §9.2 |
 | R-04 | Código sin `Clock` inyectado | Tests de TTL dependen de fechas relativas | Fechas con margen amplio + stubs; no se modifica código |
-| R-05 | Concurrencia real no es por asiento (solo cupo de sector) | La consigna menciona "mismo asiento" | **Aceptado (D-16)**: se prueba "último cupo de sector"; el asiento numerado queda como deuda E2 documentada. **Mitigado 2026-11-10:** asiento numerado implementado + test de concurrencia por asiento (unitario); falta IT con MySQL real |
+| R-05 | Concurrencia real no es por asiento (solo cupo de sector) | La consigna menciona "mismo asiento" | **Aceptado (D-16)**: se prueba "último cupo de sector"; el asiento numerado queda como deuda E2 documentada. **Mitigado 2026-11-10:** asiento numerado implementado + test de concurrencia por asiento (unitario); **IT con MySQL real hecho** (`AsientoReservadoConcurrenciaIT`, SEAT-06) |
 | R-06 | IT Testcontainers requiere Docker + red | P4.2 puede no correr en otro entorno | Perfil `-Pit` separado; `mvn test` nunca depende de Docker |
 | R-07 | Auto-login Postman depende de seeds intactos | Colección frágil tras reseeds | `README` indica reseed y variables por environment |
 | R-08 | Documentar 62 endpoints a mano puede desincronizarse | Spec obsoleta | Bundle regenerable por script + verificación de conteo en P2.2 |
@@ -887,8 +890,8 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 3. **A-04**: M1 — Docker Maven 3.9+ sin cambios en el repo.
 4. **R-05**: la concurrencia valida el "último cupo de sector"; asiento numerado = deuda E2 *(superado el 2026-11-10: ver changelog 1.2)*.
 
-**Pendiente real para arrancar:** aprobación de las modificaciones de `pom.xml`
-(A-01 springdoc, A-02 JaCoCo, A-03 Testcontainers) y salir de Plan mode para ejecutar P0.1.
+**Estado:** las aprobaciones A-01/A-02/A-03 y la ejecución de P0.1 quedaron cerradas; el
+registro de ejecución está en §17.
 
 ---
 
@@ -899,6 +902,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 | 1.0 | 2026-11-08 | Versión inicial con decisiones cerradas, fases, matrices de test y aprobaciones |
 | 1.1 | 2026-11-08 | Ratificados D-13 (O2), D-14 (alcance cobertura), D-15 (M1) y D-16 (concurrencia por cupo de sector) |
 | 1.2 | 2026-11-10 | D-16/R-05 actualizados: asientos virtuales en sectores numerados implementados (eventos, ventas, entradas, frontend). Cambia el contrato de `POST /reservas` (`asientos`), `GET /eventos/{id}/disponibilidad` (`asientosOcupados`), `POST /entradas/emision` (`asientos`), `POST /eventos/{id}/cupos/liberacion` (`asientos`) y los sectores (`filas`, `asientosPorFila`). El bundle OpenAPI y la colección Postman requieren regeneración/ampliación (SEAT-04) |
+| 1.3 | 2026-11-20 | §1 actualizado: los endpoints E2 que figuraban como no implementados ya están hechos (fila, QR, reportes, recomendaciones); preferencias y notificaciones implementados; estado real de tests E2 (integración y carga parciales). Se elimina el estado de “bloqueada por Plan mode” |
 
 ---
 

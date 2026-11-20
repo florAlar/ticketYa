@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. Implementación pendiente; **no se ejecutó nada**: ni Maven, ni Docker, ni JMeter, ni los scripts Lua |
+| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-04 en backend (2026-11-19) y pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` sigue **parcial** (humo OK; falta la corrida formal 25/50/100). |
 | **Fecha** | 2026-11-19 |
 | **Destino en el repo** | `Backend/specs/fila-virtual.md` (commit `0a`) |
 | **Servicio principal** | `msvc-ventas` (+ un ajuste en `APIGateway`) |
@@ -32,7 +32,7 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 - Gate en `crearReserva` para eventos con `esAltaDemanda = true`.
 - Pantalla de fila en el SPA: estado público, turno propio con polling, validación del token y override ADMIN (2026-11-20).
 - Tests unitarios, de integración con Redis real y de concurrencia.
-- Prueba de carga con informe (E2-TST-03).
+- Prueba de carga con informe (E2-TST-03) — **parcial**: corrida humo de 5 usuarios OK; falta la formal 25/50/100 y completar `docs/testing/carga.md`.
 
 **No incluye**
 
@@ -44,6 +44,8 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 ## 2. Estado de partida (chequeo único backlog ↔ código)
 
 Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs.
+
+> **Registro histórico (2026-11-19).** La tabla refleja el estado previo a la implementación. Hoy `E2-FILA-01` (FIL-01…FIL-04), `API-04` (fila en OpenAPI), `DOC-MS-VEN` (sección `/fila`), el contrato de `specs/endpoints.md` y las reglas de `specs/reglas-de-negocio.md` están actualizados. Solo `E2-TST-03` sigue parcial (corrida humo con JMeter; falta la formal 25/50/100).
 
 | Entrada | Backlog / doc | Código real | Resultado |
 |---|---|---|---|
@@ -57,7 +59,7 @@ Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs
 | Reglas de negocio | `specs/reglas-de-negocio.md:42` "pendiente E2"; decisión 16 abierta en `:265` | Sin implementación | **[V]** coincide |
 | `E2-TST-03` | `backlog.md:242` pendiente; la consigna lo exige (`consigna.md:73,159-163,171`) | Sin informe ni `.jmx` versionado | **[V]** entregable en cero |
 
-**Inconsistencias fuera de alcance (`0b`, opcional, no incluido):** el resumen de `backlog.md:377-390,419` marca como pendientes E2-PRE, E2-NOT e HIG que ya están hechos; `docs/openapi/README.md:120` lista `/reportes` como no implementado; `README.md:89` y `Frontend/README.md:32,47` dicen que QR, reportes y preferencias están apagados aunque `featureGates.js:58,64,67,73` los tiene activos; `specs/microservicios.md` y `specs/arquitectura.md` siguen en lenguaje de "scaffold".
+**Estado de las inconsistencias detectadas (actualizado 2026-11-20):** ya resueltas — `docs/openapi/README.md` documenta fila y reportes; `specs/microservicios.md` y `specs/arquitectura.md` reflejan el estado implementado; `specs/documentacion-y-validacion.md` y `specs/reglas-de-negocio.md` ya no marcan fila, preferencias ni notificaciones como pendientes. Siguen fuera de alcance de esta spec: el resumen histórico de `backlog.md:377-390,419` conserva filas anteriores a E2-PRE/E2-NOT, y `README.md` / `Frontend/README.md` aún presentan como apagados algunos flujos que `featureGates.js` tiene activos.
 
 ## 3. Decisiones de diseño
 
@@ -759,7 +761,7 @@ git diff --check && git status --short
 ## 19. No verificado y supuestos
 
 - **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests, 0 fallos/errores) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
-- **[NV]** Docker, JMeter y los scripts Lua contra Redis real: no hay corrida de carga ni IT de Testcontainers ejecutado (los IT se omiten sin Docker). `E2-TST-03` sigue `parcial` y no se inventaron métricas.
+- **[V parcial]** Docker y JMeter: se ejecutó la corrida humo de 5 usuarios (0 % error) con JMeter 5.6.3 y el IT de Redis de la fila con Docker (`-Pit`). `E2-TST-03` sigue `parcial`: falta la corrida formal 25/50/100, la verificación de evicción de Redis y completar `docs/testing/carga.md`; no se inventaron métricas.
 - **[NV]** Configuración real de Redis (`maxmemory`, evicción, persistencia): la política `volatile-lru` con 256 MB proviene de una revisión del plan, no de una lectura del repo.
 - **[NV]** Credenciales de MySQL, forma de inyectar `TICKETYA_FILA_AUTO_*` al contenedor de ventas del compose y endpoint de health.
 - **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.

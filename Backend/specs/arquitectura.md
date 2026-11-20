@@ -14,12 +14,19 @@
 
 Árbol completo del repo (capas, carpetas y rol de cada una): [estructura.md](./estructura.md).
 
-- **Microservicios:** `api-gateway`, `msvc-usuarios`, `msvc-eventos`, `msvc-ventas`, `msvc-entradas` y `msvc-preferencias`. Contienen la lógica de negocio, controladores, servicios, repositorios y modelos. (segun lo que veniamos trabajando en la materia previamente)
+- **Microservicios:** `APIGateway`, `msvc-usuarios`, `msvc-eventos`, `msvc-ventas`, `msvc-entradas`, `msvc-preferencias` y `msvc-notificaciones`. Contienen la lógica de negocio, controladores, servicios, repositorios y modelos.
 - **Infrastructure:** contiene los recursos de inicialización y configuración de las bases de datos, separados de la lógica de cada microservicio.
     - `mysql/*/init.sql`: inicializa estructuras o datos SQL de cada microservicio.
     - `mongo/*/init.js`: inicializa colecciones e índices de MongoDB.
     - `redis/*/redis.conf`: define la configuración de Redis.
     - `docker-compose.yml`: integra los Compose individuales para levantar todo el entorno.
+
+## Estado de implementación
+
+- E1 y E2 implementados, salvo la extensión CLIENTE → ORGANIZADOR (X-ORG-01) y la transferencia de entradas, que no tienen API.
+- Seguridad: JWT emitido por `msvc-usuarios` y validado en `APIGateway`; autorización por rol en cada endpoint.
+- Comunicación: REST con OpenFeign para el flujo transaccional y RabbitMQ para eventos de dominio; Redis en ventas para stock, idempotencia y fila virtual.
+- Detalle de responsabilidades y estado por feature: [microservicios.md](./microservicios.md) y [backlog.md](./backlog.md).
 
 ## Dockerfile y Docker Compose
 
@@ -44,7 +51,7 @@ Define cómo se levantan y conectan los contenedores.
 
 ### Servicios del entorno completo
 
-- Los cinco microservicios.
+- Los seis microservicios.
 - El API Gateway.
 - MySQL: una instancia independiente por cada microservicio relacional.
 - MongoDB: utilizado por preferencias.
