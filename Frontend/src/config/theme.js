@@ -12,9 +12,9 @@ const themes = {
 
         colors: {
 
-                    primary: "#E91E8C",
-                    secondary: "#A78BFA",
-                    accent: "#F472B6",
+                    primary: "var(--brand)",
+                    secondary: "var(--brand-light)",
+                    accent: "var(--brand-3)",
 
                     background: "#050505",
                     surface: "#151515",
@@ -32,9 +32,9 @@ const themes = {
                     error: "#EF4444",
                     info: "#3B82F6",
 
-                    headerBg: "#0A0A0A",
-                    headerText: "#F5F5F5",
-                    headerBorder: "rgba(255,255,255,.1)"
+                    headerBg: "#171717",
+                    headerText: "#F2F2F2",
+                    headerBorder: "rgba(255,255,255,.10)"
 
                 },
 
@@ -50,11 +50,11 @@ const themes = {
 
             baseSize: "16px",
 
-            h1: "4rem",
-            h2: "3rem",
-            h3: "2.25rem",
-            h4: "1.75rem",
-            h5: "1.25rem",
+            h1: "2.5rem",
+            h2: "1.875rem",
+            h3: "1.5rem",
+            h4: "1.25rem",
+            h5: "1.1rem",
             h6: "1rem",
 
             text: {
@@ -193,14 +193,14 @@ const themes = {
 
         colors: {
 
-                    primary: "#E91E8C",
-                    secondary: "#7C3AED",
-                    accent: "#F472B6",
+                    primary: "var(--brand)",
+                    secondary: "var(--brand-3)",
+                    accent: "var(--brand-3)",
 
                     background: "#FFFFFF",
                     surface: "#F7F7FA",
                     surfaceAlt: "#EEEEF2",
-                    surfaceHover: "rgba(233, 30, 140, 0.08)",
+                    surfaceHover: "color-mix(in srgb, var(--brand) 8%, transparent)",
 
                     text: "#1A1A1A",
                     textSecondary: "#4B4B4B",
@@ -214,9 +214,9 @@ const themes = {
                     info: "#2563EB",
 
                     /* chrome UI (header / search) */
-                    headerBg: "#121212",
-                    headerText: "#F5F5F5",
-                    headerBorder: "rgba(255,255,255,.08)"
+                    headerBg: "#FFFFFF",
+                    headerText: "#1F1F1F",
+                    headerBorder: "rgba(0,0,0,.09)"
 
                 },
 
@@ -232,11 +232,11 @@ const themes = {
 
             baseSize: "16px",
 
-            h1: "4rem",
-            h2: "3rem",
-            h3: "2.25rem",
-            h4: "1.75rem",
-            h5: "1.25rem",
+            h1: "2.5rem",
+            h2: "1.875rem",
+            h3: "1.5rem",
+            h4: "1.25rem",
+            h5: "1.1rem",
             h6: "1rem",
 
             text: {

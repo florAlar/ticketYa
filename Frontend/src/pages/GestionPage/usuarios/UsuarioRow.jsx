@@ -1,8 +1,9 @@
-import GateButton from '../../../components/ui/GateButton'
+import { useState } from 'react'
 import { ROLE_LABELS, ROLES, normalizeRol } from '../../../auth/roles'
 import { FEATURE } from '../../../config/featureGates'
+import { RowMenu } from '../../../components/gestion/gestionUi'
 
-/** Fila de usuario con rol, estado y eventos asignados. */
+/** Fila de la tabla de usuarios: rol y estado editables; el personal de acceso suma sus eventos asignados. */
 export default function UsuarioRow({
   usuario: u,
   eventoOptions,
@@ -13,57 +14,79 @@ export default function UsuarioRow({
   onToggleEvento,
   onDelete,
 }) {
+  const [abierto, setAbierto] = useState(false)
   const isAcceso = normalizeRol(u.rol) === ROLES.ACCESO
   const self = u.id === currentUserId
   const disabled = busyId === u.id || self
+  const asignados = (u.eventosAsignados || []).length
 
   return (
-    <li className="gestion-event-row">
-      <div className="gestion-event-row__main">
-        <h2>
-          {u.nombre} <span className="gestion-card__muted">· {u.email}</span>
-        </h2>
-        <p className="gestion-card__muted">
-          id: {u.id}
-          {!u.activo && !isAcceso ? ' · DESACTIVADO' : ''}
-        </p>
-        <div className="gestion-form__row gestion-form__row--compact">
-          <div className="form-group">
-            <label htmlFor={`rol-${u.id}`}>Rol</label>
-            <select
-              id={`rol-${u.id}`}
-              className="form-input"
-              value={normalizeRol(u.rol)}
-              disabled={disabled || !FEATURE.adminUsuariosListado}
-              onChange={(e) => onRol(u.id, e.target.value)}
-            >
-              {Object.values(ROLES).map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABELS[r] || r}
-                </option>
-              ))}
-            </select>
+    <>
+      <tr>
+        <td>
+          <div className="g-cell-main">
+            <strong>{u.nombre}</strong>
+            <span>
+              {u.email}
+              {self ? ' · vos' : ''}
+            </span>
           </div>
-          {!isAcceso && (
-            <div className="form-group">
-              <label htmlFor={`act-${u.id}`}>Activo</label>
-              <select
-                id={`act-${u.id}`}
-                className="form-input"
-                value={u.activo ? '1' : '0'}
-                disabled={disabled || !FEATURE.adminUsuariosListado}
-                onChange={(e) => onActivo(u.id, e.target.value === '1')}
-              >
-                <option value="1">Sí</option>
-                <option value="0">No</option>
-              </select>
-            </div>
+        </td>
+        <td>
+          <select
+            aria-label={`Rol de ${u.nombre}`}
+            className="form-input"
+            value={normalizeRol(u.rol)}
+            disabled={disabled || !FEATURE.adminUsuariosListado}
+            onChange={(e) => onRol(u.id, e.target.value)}
+          >
+            {Object.values(ROLES).map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r] || r}
+              </option>
+            ))}
+          </select>
+        </td>
+        <td>
+          {isAcceso ? (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setAbierto((v) => !v)}>
+              {abierto ? 'Ocultar eventos' : `Eventos asignados (${asignados})`}
+            </button>
+          ) : (
+            <select
+              aria-label={`Estado de ${u.nombre}`}
+              className="form-input"
+              value={u.activo ? '1' : '0'}
+              disabled={disabled || !FEATURE.adminUsuariosListado}
+              onChange={(e) => onActivo(u.id, e.target.value === '1')}
+            >
+              <option value="1">Activo</option>
+              <option value="0">Desactivado</option>
+            </select>
           )}
-        </div>
-
-        {isAcceso && (
-          <div className="gestion-user__asignaciones">
-            <p className="gestion-card__muted">Eventos asignados (scan)</p>
+        </td>
+        <td className="is-actions">
+          {isAcceso && (
+            <RowMenu
+              label={`Acciones de ${u.nombre}`}
+              items={[
+                {
+                  label: 'Eliminar cuenta',
+                  danger: true,
+                  disabled: busyId === u.id || !FEATURE.adminUsuarios,
+                  onClick: () => onDelete(u.id),
+                },
+              ]}
+            />
+          )}
+        </td>
+      </tr>
+      {isAcceso && abierto && (
+        <tr className="g-subrow">
+          <td colSpan={4}>
+            <p className="g-muted" style={{ margin: '0 0 0.5rem' }}>
+              Eventos donde puede escanear entradas
+            </p>
             <div className="gestion-checks">
               {eventoOptions.map((ev) => (
                 <label key={ev.id} className="gestion-check">
@@ -77,22 +100,9 @@ export default function UsuarioRow({
                 </label>
               ))}
             </div>
-          </div>
-        )}
-      </div>
-      <div className="gestion-event-row__actions">
-        {isAcceso && (
-          <GateButton
-            enabled={FEATURE.adminUsuarios}
-            type="button"
-            className="btn"
-            disabled={busyId === u.id}
-            onClick={() => onDelete(u.id)}
-          >
-            Eliminar
-          </GateButton>
-        )}
-      </div>
-    </li>
+          </td>
+        </tr>
+      )}
+    </>
   )
 }

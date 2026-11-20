@@ -5,8 +5,8 @@
   gap: 0.65rem;
   padding: 1rem 1.1rem;
   border: 1px solid var(--colors-border, #d6d6d6);
-  border-radius: 12px;
-  background: var(--colors-surface, #fff);
+  border-radius: var(--radius-lg, 20px);
+  background: var(--card-bg, var(--colors-surface, #fff));
   color: var(--colors-text, inherit);
 }
 
@@ -22,7 +22,26 @@
 }
 
 .async-state--empty {
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2.5rem 1.25rem;
   border-style: dashed;
+  background: var(--grad-brand-soft);
+}
+
+.async-state--empty .async-state__actions { justify-content: center; margin-top: 0.4rem; }
+
+.async-state__icon {
+  display: grid;
+  place-items: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  border-radius: 50%;
+  font-size: 1.7rem;
+  color: var(--on-brand);
+  background: var(--colors-primary);
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--brand) 30%, transparent);
 }
 
 .async-state__title {

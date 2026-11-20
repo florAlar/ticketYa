@@ -1,25 +1,26 @@
 import { Link } from 'react-router-dom'
-import { formatEventoFecha, formatPrecioDesde, imagenEvento } from '../eventFormat'
-import EventoCupoBadge from '../EventoCupoBadge'
+import { HiOutlineLocationMarker } from 'react-icons/hi'
+import { formatEventoFecha, partesNombre } from '../eventFormat'
+import EventCardMedia from './EventCardMedia'
 
-/** Card estándar (filas horizontales / listados) */
+/** Card estándar (grillas y listados) */
 const EventCardStandard = ({ evento }) => {
   if (!evento) return null
+  const { artista, titulo } = partesNombre(evento.nombre)
+  const lugar = evento.lugar?.nombre
+    ? `${evento.lugar.nombre}${evento.lugar.ciudad ? ` · ${evento.lugar.ciudad}` : ''}`
+    : evento.lugar?.ciudad
   return (
     <Link to={`/eventos/${evento.id}`} className="event-card event-card--standard">
-      <div className="event-card__media">
-        <img src={imagenEvento(evento)} alt="" loading="lazy" />
-        <EventoCupoBadge evento={evento} className="event-card__cupo" />
-      </div>
+      <EventCardMedia evento={evento} />
       <div className="event-card__body">
-        <p className="event-card__tipo">{evento.tipo}</p>
-        <h3 className="event-card__title">{evento.nombre}</h3>
+        {artista && <p className="event-card__tipo">{artista}</p>}
+        <h3 className="event-card__title">{titulo}</h3>
         <p className="event-card__meta">{formatEventoFecha(evento.fechaInicio)}</p>
-        <p className="event-card__meta">
-          {evento.lugar?.ciudad || evento.lugar?.nombre}
-        </p>
-        {evento.precioDesde != null && (
-          <p className="event-card__price">{formatPrecioDesde(evento.precioDesde)}</p>
+        {lugar && (
+          <p className="event-card__meta event-card__meta--lugar">
+            <HiOutlineLocationMarker aria-hidden /> <span>{lugar}</span>
+          </p>
         )}
       </div>
     </Link>

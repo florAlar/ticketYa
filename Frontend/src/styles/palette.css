@@ -1,0 +1,18 @@
+/* =========================================================
+   PALETA DE MARCA — ÚNICO LUGAR donde se definen los colores de la identidad.
+   Para cambiar el color de toda la plataforma, editá solo estas variables:
+   todo lo demás (config/theme.js, tokens, botones, badges, hero, cards…) las usa.
+   Idea: las luces de un recital — violeta profundo y fucsia eléctrico.
+========================================================= */
+:root {
+  --brand: #8b3dff;        /* violeta: color principal (botones, links, acentos) */
+  --brand-2: #ff1ad9;      /* fucsia eléctrico: segundo color del degradé de los botones principales */
+  --brand-3: #b44cff;      /* violeta claro: acento / secundario en modo claro */
+  --brand-light: #d39bff;  /* secundario en modo oscuro y brillos */
+  --brand-tint: #f1cfff;   /* texto claro sobre fotos oscuras (etiquetas, links) */
+  --brand-deep: #6d28d9;   /* texto de marca sobre fondo claro (contraste AA) */
+  --brand-amber: #7e22ce;  /* tono para etiquetas "violeta" sobre fondo claro */
+  --brand-dark: #3b0f8c;   /* telón de apertura */
+  --brand-ink: #ffffff;    /* texto sobre fondos de marca (botones, pastillas activas) */
+  --bolt: #ffc21a;         /* rayito de "alta demanda" (amarillo, fuera de la identidad) */
+}

@@ -80,11 +80,7 @@ const HistorialCliente = ({ idCliente, token }) => {
   }
 
   return (
-    <article className="perfil-card pref-card">
-      <h2 className="perfil-card__heading">Mi historial</h2>
-      <p className="perfil-page__muted">
-        Tus compras registradas. También alimentan las recomendaciones.
-      </p>
+    <div className="pref-embed">
 
       {status === 'loading' && <LoadingState label="Cargando historial…" />}
       {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
@@ -92,8 +88,7 @@ const HistorialCliente = ({ idCliente, token }) => {
 
       {status === 'success' && items.length === 0 && (
         <p className="perfil-page__muted">
-          Todavía no registramos compras tuyas. Cuando compres una entrada, va a
-          aparecer acá.
+          Todavía no registramos compras tuyas.
         </p>
       )}
 
@@ -121,13 +116,14 @@ const HistorialCliente = ({ idCliente, token }) => {
                 )}
               </div>
               <p className="pref-historial__meta">
-                {[item.categoria, item.ciudad].filter(Boolean).join(' · ')}
-              </p>
-              <p className="pref-historial__meta">
-                Compra: {formatFechaCorta(item.fechaCompra)}
-                {item.fechaEvento
-                  ? ` · Evento: ${formatFechaCorta(item.fechaEvento)}`
-                  : ''}
+                {[
+                  item.categoria,
+                  item.ciudad,
+                  item.fechaEvento ? `Evento ${formatFechaCorta(item.fechaEvento)}` : null,
+                  `Compra ${formatFechaCorta(item.fechaCompra)}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             </li>
           ))}
@@ -146,7 +142,7 @@ const HistorialCliente = ({ idCliente, token }) => {
           </button>
         </div>
       )}
-    </article>
+    </div>
   )
 }
 

@@ -1,0 +1,192 @@
+/* ===== Pantalla de la entrada (ticket) ===== */
+.entrada-page__head { margin-bottom: 1.25rem; }
+.entrada-page__back { margin: 0 0 0.5rem; font-size: 0.9rem; }
+
+.entrada-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24rem;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .entrada-layout { grid-template-columns: 1fr; }
+}
+
+/* Banner de compra confirmada */
+.entrada-bought {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-lg, 20px);
+  color: var(--colors-text);
+  background: color-mix(in srgb, var(--tone-success) 12%, var(--card-bg));
+  border: 1px solid color-mix(in srgb, var(--tone-success) 35%, transparent);
+  animation: entrada-bought-in 0.5s var(--ease-out);
+}
+.entrada-bought__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  font-size: 1.6rem;
+  color: #fff;
+  background: var(--tone-success);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--tone-success) 45%, transparent);
+}
+.entrada-bought h2 { margin: 0; font-size: 1.15rem; }
+.entrada-bought p { margin: 0.1rem 0 0; font-size: 0.9rem; color: var(--colors-textSecondary); }
+.entrada-bought__actions { margin-left: auto; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+@keyframes entrada-bought-in { from { opacity: 0; transform: translateY(-8px); } }
+
+/* ===== Ticket ===== */
+.ticket {
+  --notch: var(--colors-background);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(15rem, 20rem);
+  border-radius: var(--radius-lg, 20px);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.ticket__main { min-width: 0; display: flex; flex-direction: column; }
+
+.ticket__cover {
+  position: relative;
+  min-height: 14rem;
+  flex: none;
+  background: #150d26;
+}
+.ticket__cover .event-cover { position: absolute; inset: 0; }
+.ticket__shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(12, 7, 24, 0.25) 0%, rgba(12, 7, 24, 0.2) 35%, rgba(12, 7, 24, 0.88) 100%);
+}
+.ticket__badges { position: absolute; top: 1rem; left: 1rem; z-index: 2; }
+.ticket__title {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  padding: 1.25rem 1.5rem;
+  color: #fff;
+}
+.ticket__eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-tint);
+}
+.ticket__title h2 {
+  margin: 0.2rem 0 0;
+  font-family: var(--fonts-title);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.1;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.ticket__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1.1rem 1.5rem;
+  margin: 0;
+  padding: 1.4rem 1.5rem 1.6rem;
+}
+.ticket__grid dt {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--colors-textMuted);
+}
+.ticket__grid dd { margin: 0; font-size: 1rem; font-weight: 600; }
+.ticket__mono { font-family: var(--fonts-mono); letter-spacing: 0.04em; }
+
+/* Línea de corte con muescas */
+.ticket__tear {
+  position: relative;
+  width: 0;
+  border-left: 2px dashed var(--card-border);
+  margin: 1.1rem 0;
+}
+.ticket__tear::before,
+.ticket__tear::after {
+  content: '';
+  position: absolute;
+  left: -1.1rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: var(--notch);
+  border: 1px solid var(--card-border);
+}
+.ticket__tear::before { top: -2.2rem; }
+.ticket__tear::after { bottom: -2.2rem; }
+
+.ticket__stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 1.75rem 1.5rem;
+  text-align: center;
+}
+
+/* El QR siempre sobre blanco para que lo lea el escáner, en claro y oscuro */
+.ticket__qr {
+  padding: 0.9rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 6px 22px color-mix(in srgb, var(--brand-3) 25%, transparent);
+  line-height: 0;
+}
+.ticket__qr svg { display: block; max-width: 100%; height: auto; }
+.ticket__hint { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--colors-textSecondary); }
+.ticket__code {
+  margin: 0;
+  max-width: 100%;
+  font-family: var(--fonts-mono);
+  font-size: 0.75rem;
+  color: var(--colors-textMuted);
+  word-break: break-all;
+}
+.ticket__noqr { color: var(--colors-textSecondary); font-size: 0.9rem; }
+.ticket__noqr strong { display: block; margin-bottom: 0.4rem; color: var(--colors-text); }
+.ticket__noqr p { margin: 0; line-height: 1.5; }
+.ticket--cancelada .ticket__cover { filter: grayscale(0.7); }
+
+@media (max-width: 800px) {
+  .ticket { grid-template-columns: 1fr; }
+  .ticket__tear {
+    width: auto;
+    height: 0;
+    margin: 0 1.1rem;
+    border-left: 0;
+    border-top: 2px dashed var(--card-border);
+  }
+  .ticket__tear::before,
+  .ticket__tear::after { top: -1.1rem; bottom: auto; }
+  .ticket__tear::before { left: -2.2rem; }
+  .ticket__tear::after { left: auto; right: -2.2rem; }
+}
+
+/* ===== Reclamo / devolución ===== */
+.entrada-gestion { margin-top: 0; }
+.entrada-gestion .mis-entradas-page__title--sub { margin-top: 0; }
+@media (min-width: 1001px) {
+  .entrada-gestion { position: sticky; top: calc(var(--navbar-height, 88px) + 1rem); }
+}

@@ -21,12 +21,12 @@
 }
 
 .mis-entradas-page__error {
-  color: #b91c1c;
+  color: var(--tone-danger);
   margin: 0 0 1rem;
 }
 
 .mis-entradas-page__ok {
-  color: #15803d;
+  color: var(--tone-success);
   margin: 0 0 1rem;
   font-size: 0.95rem;
 }
@@ -38,18 +38,18 @@
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 600;
-  background: color-mix(in srgb, var(--colors-primary, #e91e8c) 15%, #fff);
-  color: var(--colors-primary, #e91e8c);
+  background: color-mix(in srgb, var(--colors-primary) 15%, transparent);
+  color: var(--tone-brand);
 }
 
 .mis-entradas-page__badge--cancel {
-  background: color-mix(in srgb, #b45309 18%, #fff);
-  color: #92400e;
+  background: color-mix(in srgb, #b45309 18%, transparent);
+  color: var(--tone-warning);
 }
 
 .mis-entradas-page__badge--suspend {
-  background: color-mix(in srgb, #a16207 18%, #fff);
-  color: #854d0e;
+  background: color-mix(in srgb, var(--brand-amber) 18%, transparent);
+  color: var(--tone-warning);
 }
 
 .mis-entradas-page__aviso {
@@ -72,8 +72,8 @@
 }
 
 .mis-entradas-card--suspendida {
-  border-color: color-mix(in srgb, #a16207 35%, var(--colors-border, #ddd));
-  background: color-mix(in srgb, #a16207 6%, var(--colors-surface, #f7f7fa));
+  border-color: color-mix(in srgb, var(--brand-amber) 35%, var(--colors-border, #ddd));
+  background: color-mix(in srgb, var(--brand-amber) 6%, var(--colors-surface, #f7f7fa));
 }
 
 .mis-entradas-card__actions {
@@ -133,7 +133,7 @@
   border: none;
   background: none;
   padding: 0;
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
   font: inherit;
   cursor: pointer;
   text-decoration: underline;

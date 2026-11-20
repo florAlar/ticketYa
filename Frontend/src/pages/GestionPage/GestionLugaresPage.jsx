@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useConfirm from '../../hooks/useConfirm'
 import useAsync from '../../hooks/useAsync'
 import { deleteLugar, listLugares } from '../../api/lugares'
 import { urlMapaLugar } from '../../domain/evento'
@@ -8,6 +9,8 @@ import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateLink from '../../components/ui/GateLink'
 import GateButton from '../../components/ui/GateButton'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import { formatEntero } from '../../lib/format'
+import { PageHeader, Pill, RowMenu, Toolbar, VacioTabla } from '../../components/gestion/gestionUi'
 import './GestionPage.css'
 
 /**
@@ -16,19 +19,18 @@ import './GestionPage.css'
  */
 const GestionLugaresPage = () => {
   const { token } = useAuth()
+  const confirm = useConfirm()
   const wired = FEATURE.lugares
-  const [ciudad, setCiudad] = useState('')
-  const [filtro, setFiltro] = useState('')
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [busyId, setBusyId] = useState(null)
 
   const load = useCallback(
     async (signal) => {
-      const data = await listLugares({ ciudad: filtro }, { token, signal })
+      const data = await listLugares({}, { token, signal })
       return Array.isArray(data) ? data : []
     },
-    [filtro, token]
+    [token]
   )
 
   const {
@@ -36,15 +38,16 @@ const GestionLugaresPage = () => {
     status,
     error: loadError,
     reload,
-  } = useAsync(load, [filtro, token], { enabled: wired })
-
-  const onBuscar = (e) => {
-    e.preventDefault()
-    setFiltro(ciudad.trim())
-  }
+  } = useAsync(load, [token], { enabled: wired })
 
   const onEliminar = async (lugar) => {
-    if (!window.confirm(`¿Eliminar el lugar «${lugar.nombre}» y sus sectores?`)) return
+    const ok = await confirm({
+      title: `¿Eliminar el lugar «${lugar.nombre}»?`,
+      description: 'Se eliminan también sus sectores. Esta acción no se puede deshacer.',
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    })
+    if (!ok) return
     setBusyId(lugar.id)
     setError('')
     setAviso('')
@@ -63,127 +66,96 @@ const GestionLugaresPage = () => {
     }
   }
 
-  return (
-    <section className="gestion-page container-slim section-v-padding">
-      <header className="gestion-page__head">
-        <p className="gestion-page__eyebrow">
-          <Link to="/gestion">Gestión</Link> / lugares
-        </p>
-        <h1 className="gestion-page__title">Lugares</h1>
-        <p className="gestion-page__sub">
-          Estadios, teatros y salas donde se hacen los eventos, con sus sectores. Los organizadores
-          eligen uno de estos lugares al crear un evento.
-          {!wired && (
-            <>
-              {' '}
-              <strong title={GATE_HINT}>({GATE_HINT})</strong>
-            </>
-          )}
-        </p>
-      </header>
+  const [q, setQ] = useState('')
+  const lista = (items || []).filter((l) => {
+    const txt = [l.nombre, l.ciudad, l.direccion].join(' ').toLowerCase()
+    return !q || txt.includes(q.trim().toLowerCase())
+  })
 
-      <div className="gestion-card__actions gestion-card__actions--spaced">
+  return (
+    <>
+      <PageHeader
+        title="Lugares"
+        subtitle="Estadios, teatros y salas con sus sectores. Los organizadores eligen uno al crear un evento."
+      >
         <GateLink enabled={wired} className="btn btn-primary" to="/gestion/lugares/nuevo">
           Nuevo lugar
         </GateLink>
-      </div>
+      </PageHeader>
 
-      {wired && (
-        <form className="gestion-card gestion-card--spaced" onSubmit={onBuscar}>
-          <div className="form-group">
-            <label htmlFor="filtro-ciudad">Filtrar por ciudad</label>
-            <input
-              id="filtro-ciudad"
-              className="form-input"
-              value={ciudad}
-              onChange={(e) => setCiudad(e.target.value)}
-              placeholder="ej. Buenos Aires"
-            />
-          </div>
-          <div className="gestion-card__actions">
-            <button type="submit" className="btn">
-              Buscar
-            </button>
-            {filtro && (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setCiudad('')
-                  setFiltro('')
-                }}
-              >
-                Ver todos
-              </button>
-            )}
-          </div>
-        </form>
-      )}
-
-      {!wired && (
-        <div className="gestion-card">
-          <p>La gestión de lugares necesita el backend real: no hay versión mock.</p>
-        </div>
-      )}
+      {!wired && <VacioTabla>La gestión de lugares necesita el backend real: no hay versión mock.</VacioTabla>}
       {status === 'loading' && <LoadingState label="Cargando lugares…" />}
       {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
-      {aviso && <p className="gestion-card__muted" role="status">✔ {aviso}</p>}
-      {error && <p className="gestion-error" role="alert">{error}</p>}
+      {aviso && <p className="g-ok" role="status">{aviso}</p>}
+      {error && <p className="g-error" role="alert">{error}</p>}
 
-      {wired && status === 'success' && items.length === 0 && (
-        <div className="gestion-card">
-          <p>{filtro ? `No hay lugares en «${filtro}».` : 'Todavía no hay lugares cargados.'}</p>
-        </div>
+      {wired && status === 'success' && (
+        <>
+          <Toolbar buscar={q} onBuscar={setQ} placeholder="Buscar por nombre, ciudad o dirección…" />
+          {lista.length === 0 ? (
+            <VacioTabla>{items.length === 0 ? 'Todavía no hay lugares cargados.' : 'Ningún lugar coincide con la búsqueda.'}</VacioTabla>
+          ) : (
+            <div className="g-table-wrap">
+              <table className="g-table">
+                <thead>
+                  <tr>
+                    <th>Lugar</th>
+                    <th>Ciudad</th>
+                    <th className="is-num">Sectores</th>
+                    <th className="is-num">Capacidad</th>
+                    <th>Mapa</th>
+                    <th className="is-actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((l) => {
+                    const mapa = urlMapaLugar(l)
+                    return (
+                      <tr key={l.id}>
+                        <td>
+                          <div className="g-cell-main">
+                            <strong>
+                              <Link to={'/gestion/lugares/' + l.id}>{l.nombre}</Link>
+                            </strong>
+                            <span>{l.direccion || '—'}</span>
+                          </div>
+                        </td>
+                        <td>{l.ciudad || '—'}</td>
+                        <td className="is-num">{(l.sectores || []).length}</td>
+                        <td className="is-num">{formatEntero(l.capacidadTotal ?? 0)}</td>
+                        <td>
+                          {mapa ? (
+                            <a href={mapa} target="_blank" rel="noopener noreferrer">
+                              Ver mapa
+                            </a>
+                          ) : (
+                            <Pill tone="warning">Sin coordenadas</Pill>
+                          )}
+                        </td>
+                        <td className="is-actions">
+                          <RowMenu
+                            label={'Acciones de ' + l.nombre}
+                            items={[
+                              { label: 'Editar', to: '/gestion/lugares/' + l.id },
+                              {
+                                label: 'Eliminar',
+                                danger: true,
+                                disabled: busyId === l.id,
+                                onClick: () => onEliminar(l),
+                              },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
-
-      {status === 'success' && items.length > 0 && (
-        <ul className="gestion-event-list">
-          {items.map((l) => {
-            const mapa = urlMapaLugar(l)
-            return (
-              <li key={l.id} className="gestion-event-row">
-                <div className="gestion-event-row__main">
-                  <h2>{l.nombre}</h2>
-                  <p>
-                    {[l.direccion, l.ciudad].filter(Boolean).join(' · ')}
-                    {mapa && (
-                      <>
-                        {' · '}
-                        <a href={mapa} target="_blank" rel="noopener noreferrer">
-                          Ver en el mapa
-                        </a>
-                      </>
-                    )}
-                  </p>
-                  <p className="gestion-card__muted">
-                    {(l.sectores || []).length} sector(es) · capacidad total {l.capacidadTotal ?? 0}
-                    {l.latitud == null || l.longitud == null ? ' · sin coordenadas' : ''}
-                  </p>
-                </div>
-                <div className="gestion-event-row__actions">
-                  <GateLink enabled={wired} className="btn" to={`/gestion/lugares/${l.id}`}>
-                    Editar
-                  </GateLink>
-                  <GateButton
-                    enabled={wired}
-                    type="button"
-                    className="btn"
-                    disabled={busyId === l.id}
-                    onClick={() => onEliminar(l)}
-                  >
-                    Eliminar
-                  </GateButton>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      )}
-
-      <p className="gestion-page__foot">
-        <Link to="/gestion">← Panel</Link>
-      </p>
-    </section>
+    </>
   )
 }
 

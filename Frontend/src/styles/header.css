@@ -10,7 +10,7 @@
   z-index: var(--zIndex-header);
   width: 100%;
   min-height: var(--navbar-height, 88px);
-  padding: 0.85rem 1.5rem;
+  padding: 0.85rem var(--page-gutter, 30px);
   display: flex;
   align-items: center;
   transition: box-shadow 0.2s ease;
@@ -20,15 +20,15 @@
 .site-header.scrolled {
   background: var(--colors-headerBg, #121212);
   backdrop-filter: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 /* ===== LAYOUT ===== */
 
 .header-inner {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -47,7 +47,7 @@
 
 .logo-icon {
   font-size: 1.8rem;
-  color: var(--colors-primary);
+  color: var(--colors-headerText, #1f1f1f);
 }
 
 .logo-text {
@@ -69,6 +69,40 @@
   justify-content: flex-end;
 }
 
+/* Íconos del header agrupados a la derecha */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--colors-headerBorder, rgba(255, 255, 255, 0.12));
+}
+
+.header-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--colors-headerText, #f5f5f5);
+  font-size: 1.35rem;
+  line-height: 0;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s, background 0.2s;
+}
+
+.header-icon:hover,
+.header-icon.active {
+  color: var(--colors-headerText);
+  background: color-mix(in srgb, var(--colors-headerText) 10%, transparent);
+}
+
+.header-icon:focus-visible { outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--colors-headerText) 35%, transparent); }
+
 /* Search — barra blanca, lupa, submit con Enter */
 .header-search {
   display: flex;
@@ -80,16 +114,16 @@
   height: 2.75rem;
   padding: 0 1rem;
   border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  background: var(--nav-search-bg, #f1f1f3);
+  border: 1px solid color-mix(in srgb, var(--colors-headerText) 14%, transparent);
+  box-shadow: none;
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .header-search:hover,
 .header-search:focus-within {
-  border-color: color-mix(in srgb, var(--colors-primary) 50%, #fff);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--colors-primary) 35%, transparent);
+  border-color: color-mix(in srgb, var(--colors-headerText) 40%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--colors-headerText) 14%, transparent);
 }
 
 .header-search__icon {
@@ -100,7 +134,7 @@
 }
 
 .header-search:focus-within .header-search__icon {
-  color: var(--colors-primary);
+  color: #1a1a1a;
 }
 
 .header-search input {
@@ -157,7 +191,7 @@ a:visited{
 .nav-logout {
   cursor: pointer;
   background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--colors-headerText) 25%, transparent);
   color: var(--colors-headerText, #f5f5f5);
   padding: 0.25rem 0.6rem;
   border-radius: 4px;
@@ -184,9 +218,10 @@ a:visited{
 
 .nav-links a:hover,
 .nav-links a.active {
-  color: var(--colors-primary);
   opacity: 1;
 }
+
+.nav-links a.active { font-weight: 700; }
 
 .nav-account {
   display: inline-flex;
@@ -203,7 +238,8 @@ a:visited{
 
 .nav-account:hover,
 .nav-account.active {
-  color: var(--colors-primary);
+  color: var(--colors-headerText);
+  opacity: 0.7;
 }
 
 .nav-links a.active {
@@ -292,7 +328,9 @@ a:visited{
 
 .mobile-links a:hover,
 .mobile-links a.active {
-  color: var(--colors-primary);
+  color: var(--colors-text);
+  text-decoration: underline;
+  text-underline-offset: 6px;
 }
 
 /* ===== SCROLL LOCK (🔥 FIX REAL DEL BUG) ===== */
@@ -334,6 +372,16 @@ body.menu-open {
       display: none;
     }
 
+    .header-actions {
+      padding-left: 0;
+      border-left: 0;
+    }
+
+    .header-actions__account,
+    .header-actions__logout {
+      display: none;
+    }
+
     .header-search {
       display: none;
     }
@@ -350,3 +398,7 @@ body.menu-open {
     font-size: 1.2rem;
   }
 }
+
+/* Buscador del navbar: gris claro en el navbar blanco, blanco en el oscuro */
+:root { --nav-search-bg: #f1f1f3; }
+[data-theme='dark'] { --nav-search-bg: #ffffff; }

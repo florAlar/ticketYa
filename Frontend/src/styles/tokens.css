@@ -1,0 +1,138 @@
+/* =========================
+   TOKENS DE DISEÑO (rediseño)
+   Los colores base (primary/secondary/surface…) vienen de config/theme.js
+   vía CssVariables; acá van gradientes, sombras y radios derivados.
+   Claro/oscuro: atributo data-theme en <html> (ThemeProvider).
+========================= */
+:root {
+  --page-gutter: 30px;
+  /* Único degradé de la UI: botones principales (violeta → fucsia). El resto va en color plano. */
+  --grad-brand: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  --grad-brand-hover: linear-gradient(135deg, color-mix(in srgb, var(--brand-2) 85%, #fff) 0%, color-mix(in srgb, var(--brand) 85%, #fff) 100%);
+  --grad-brand-soft: color-mix(in srgb, var(--colors-primary) 14%, transparent);
+  --on-brand: var(--brand-ink);
+  --grad-cover-overlay: linear-gradient(180deg, rgba(12, 7, 24, 0) 35%, rgba(12, 7, 24, 0.78) 100%);
+
+  --shadow-card: 0 1px 2px rgba(24, 12, 48, 0.06), 0 8px 24px rgba(24, 12, 48, 0.08);
+  --shadow-card-hover: 0 4px 8px rgba(24, 12, 48, 0.1), 0 18px 40px rgba(24, 12, 48, 0.2);
+  --shadow-pop: 0 24px 64px rgba(24, 12, 48, 0.28);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent);
+
+  --card-bg: var(--colors-background, #fff);
+  --card-border: var(--colors-border, rgba(0, 0, 0, 0.1));
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Tonos para texto sobre fondos claros (contraste AA); en oscuro se aclaran abajo */
+  --tone-success: #15803d;
+  --tone-warning: #b45309;
+  --tone-danger: #b91c1c;
+  --tone-info: #1d4ed8;
+  --tone-brand: var(--brand-deep);
+  --tone-violet: var(--brand-amber);
+}
+
+[data-theme='dark'] {
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 4px 8px rgba(0, 0, 0, 0.6), 0 20px 44px rgba(0, 0, 0, 0.65);
+  --shadow-pop: 0 24px 64px rgba(0, 0, 0, 0.7);
+  --card-bg: var(--colors-surface, #151515);
+  --tone-success: #4ade80;
+  --tone-warning: #fbbf24;
+  --tone-danger: #f87171;
+  --tone-info: #60a5fa;
+  --tone-brand: var(--brand-3);
+  --tone-violet: var(--brand-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* =========================
+   Alias de variables heredadas (algunos CSS usaban nombres que no existían
+   y caían siempre al color claro de respaldo)
+========================= */
+:root {
+  --primary: var(--colors-primary);
+  --border-color: var(--colors-border);
+  --surface: var(--colors-surface);
+  --text-muted: var(--colors-textMuted);
+  --colors-bg: var(--colors-background);
+  --header-height: var(--navbar-height, 88px);
+  --field-bg: var(--colors-surface);
+}
+
+[data-theme='dark'] {
+  /* En oscuro las cards usan "surface": los campos van un escalón más claro para distinguirse */
+  --field-bg: var(--colors-surfaceAlt);
+}
+
+/* Todo campo nativo hereda el tema, aunque no use la clase .form-input */
+:where(
+    input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='submit']):not([type='button']):not([type='file']):not([type='color']),
+    select,
+    textarea
+  ) {
+  background-color: var(--field-bg);
+  color: var(--colors-text);
+  border-color: var(--colors-border);
+}
+
+:where(input, textarea)::placeholder {
+  color: var(--colors-textMuted);
+  opacity: 0.8;
+}
+
+:where(input[type='checkbox'], input[type='radio'], input[type='range'], progress) {
+  accent-color: var(--colors-primary);
+}
+
+:where(select option) {
+  background-color: var(--card-bg);
+  color: var(--colors-text);
+}
+
+/* =========================
+   ESCALA TIPOGRÁFICA (proporciones unificadas)
+   Título de página 28 px, sección 20 px, tarjeta 17 px, texto 15–16 px, mínimo 12 px.
+========================= */
+:root {
+  --fs-page-title: 1.75rem;
+  --fs-section: 1.25rem;
+  --fs-card-title: 1.05rem;
+  --fs-body: 0.95rem;
+  --fs-small: 0.82rem;
+  --fs-micro: 0.75rem;
+}
+
+main h1:not(.hero-t__title) {
+  font-size: var(--fs-page-title);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+/* Campos más compactos y etiquetas legibles (antes 1 rem de padding y etiquetas de 11 px) */
+.form-input,
+.form-textarea {
+  padding: 0.7rem 0.9rem;
+  font-size: var(--fs-body);
+}
+.form-group label {
+  font-size: var(--fs-micro);
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 768px) {
+  main h1:not(.hero-t__title) { font-size: 1.5rem; }
+}
+
+/* Links de texto (sin clase): color de marca en lugar del azul del navegador */
+:where(main) a:where(:not([class])) {
+  color: var(--tone-brand);
+  text-underline-offset: 2px;
+}

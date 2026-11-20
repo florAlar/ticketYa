@@ -1,3 +1,4 @@
+import { HiOutlineTicket } from 'react-icons/hi'
 import './AsyncState.css'
 
 /** Estado de carga accesible y consistente. */
@@ -30,9 +31,12 @@ export function ErrorState({ error, message, onRetry, className = '' }) {
 }
 
 /** Estado vacío reutilizable. */
-export function EmptyState({ title, children, action, className = '' }) {
+export function EmptyState({ title, children, action, icon: Icon = HiOutlineTicket, className = '' }) {
   return (
     <div className={`async-state async-state--empty ${className}`.trim()}>
+      <div className="async-state__icon" aria-hidden>
+        {Icon && <Icon />}
+      </div>
       {title ? <p className="async-state__title">{title}</p> : null}
       {children ? <div className="async-state__text">{children}</div> : null}
       {action ? <div className="async-state__actions">{action}</div> : null}

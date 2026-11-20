@@ -39,6 +39,11 @@ public class EventoRequestDTO {
     @Schema(description = "Marca de alta demanda", example = "false")
     private Boolean esAltaDemanda;
 
+    @Schema(description = "URL de la imagen de portada: http(s) absoluta o ruta relativa que empieza con '/' "
+            + "(máx. 500). En PUT, cadena vacía = quitar la imagen; ausente = no se toca",
+            example = "https://ejemplo.com/portada.jpg")
+    private String imagenUrl;
+
     @Schema(description = "UUID de un lugar existente (los lugares los crea el ADMIN). Obligatorio para publicar; "
             + "un borrador puede quedar sin lugar (queda en 'Por definir')",
             example = "f0000000-0000-4000-8000-000000000001")

@@ -90,6 +90,7 @@ erDiagram
         CHAR36 id_lugar FK
         DATETIME fecha_publicacion
         TINYINT es_alta_demanda
+        VARCHAR imagen_url
     }
     PRECIO_SECTOR {
         CHAR36 id PK

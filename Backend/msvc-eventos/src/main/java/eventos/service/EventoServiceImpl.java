@@ -298,6 +298,7 @@ public class EventoServiceImpl implements EventoService {
             evento.setLugar(lugar);
             evento.setFechaPublicacion(null);
             evento.setEsAltaDemanda(Boolean.TRUE.equals(request.getEsAltaDemanda()));
+            evento.setImagenUrl(normalizarImagenUrl(request.getImagenUrl()));
             eventoRepository.save(evento);
 
             for (int i = 0; i < inputs.size(); i++) {
@@ -349,6 +350,10 @@ public class EventoServiceImpl implements EventoService {
         }
         if (request.getEsAltaDemanda() != null) {
             evento.setEsAltaDemanda(request.getEsAltaDemanda());
+        }
+        if (request.getImagenUrl() != null) {
+            // cadena vacía = quitar la imagen
+            evento.setImagenUrl(normalizarImagenUrl(request.getImagenUrl()));
         }
 
         boolean borrador = BORRADOR.equalsIgnoreCase(evento.getEstado());
@@ -1375,6 +1380,24 @@ public class EventoServiceImpl implements EventoService {
             throw new IllegalArgumentException(field + " es obligatorio");
         }
         return v;
+    }
+
+    /** Acepta http(s) absoluta o ruta relativa a la raíz ("/img/..."); vacío → null. */
+    private static String normalizarImagenUrl(String raw) {
+        String url = blankToNull(raw);
+        if (url == null) {
+            return null;
+        }
+        if (url.length() > 500) {
+            throw new IllegalArgumentException("imagenUrl supera los 500 caracteres");
+        }
+        String lower = url.toLowerCase();
+        boolean absoluta = lower.startsWith("https://") || lower.startsWith("http://");
+        boolean relativa = url.startsWith("/") && !url.startsWith("//");
+        if (!absoluta && !relativa) {
+            throw new IllegalArgumentException("imagenUrl debe ser una URL http(s) o una ruta que empiece con /");
+        }
+        return url;
     }
 
     private static String blankToNull(String value) {

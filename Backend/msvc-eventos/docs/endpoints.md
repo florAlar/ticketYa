@@ -48,7 +48,7 @@ Respuesta listado:
 { "content": [ /* EventoResponseDTO */ ], "page", "size", "totalElements", "totalPages" }
 ```
 
-`EventoResponseDTO`: `id`, `nombre`, `tipo`, `fechaInicio`, `lugar{nombre,ciudad}`, `imagenUrl` (null), `precioDesde`, `destacado` (false), `estado`, `idOrganizador`, `esAltaDemanda`.
+`EventoResponseDTO`: `id`, `nombre`, `tipo`, `fechaInicio`, `lugar{nombre,ciudad}`, `imagenUrl` (URL o ruta relativa; `null` si no tiene), `precioDesde`, `destacado` (false), `estado`, `idOrganizador`, `esAltaDemanda`.
 
 Detalle: + `descripcion`, `fechaFin`, `fechaPublicacion`, `lugar{id,nombre,direccion,ciudad,sectores[]}`, `sectores[]` precio/moneda, `participantes[]` (id,nombre,tipo,descripcion,rol,orden).
 
@@ -97,6 +97,7 @@ Authz: lectura abierta (GET). Alta `POST /participantes` y PUT asociación: **OR
   "fechaInicio": "2026-12-01T21:00:00",
   "estado": "BORRADOR",
   "esAltaDemanda": false,
+  "imagenUrl": "https://ejemplo.com/portada.jpg",
   "idLugar": "c0000000-0000-4000-8000-000000000001",
   "sectores": [
     { "id": "c0000000-0000-4000-8000-000000000011", "precio": 95000, "capacidadTotal": 5000 },
@@ -131,7 +132,8 @@ Estados: `BORRADOR` | `PUBLICADO` | `AGOTADO` | `SUSPENDIDO` | `CANCELADO` | `FI
 | --- | --- |
 | Cancelación → reintegro entradas | Feign **best-effort** (header interno ADMIN); si entradas cae, evento igual queda CANCELADO |
 | Cupo ventas al publicar | **hecho** — `doPublicar` Feign `POST msvc-ventas /eventos/{id}/cupos` fail-hard si ventas cae |
-| imagenUrl / destacado | Sin columnas en init → siempre null/false |
+| imagenUrl | **hecho** — columna `evento.imagen_url` (VARCHAR 500, NULL). Se envía en `POST`/`PUT /eventos`: `http(s)://…` o ruta relativa que empieza con `/` (`//…`, `javascript:` y otros esquemas → 400; máx. 500). En `PUT`, `""` la quita y ausente no la toca. El archivo no vive en el backend: es una URL externa o un archivo del front (`Frontend/public/img/eventos/`). Sin imagen el front dibuja una portada generada |
+| destacado | Sin columna en init → siempre false |
 | Authz participantes | **hecho** — alta ORG/ADMIN; editar/eliminar solo ADMIN; asociar dueño/ADMIN; GET público |
 | Notifs al cancelar/cambiar fecha | E2-NOT |
 

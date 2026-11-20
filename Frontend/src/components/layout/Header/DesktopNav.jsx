@@ -1,27 +1,9 @@
-import { NavLink, useNavigate } from 'react-router-dom'
-import { HiOutlineUser } from 'react-icons/hi'
+import { NavLink } from 'react-router-dom'
 import useAuth from '../../../hooks/useAuth'
 
+/** Links de navegación del header (los íconos de cuenta viven en HeaderActions). */
 const DesktopNav = () => {
-  const navigate = useNavigate()
-  const {
-    isAuthenticated,
-    user,
-    logout,
-    canManageEvents,
-    canScanAccess,
-    isAcceso,
-  } = useAuth()
-
-  const handleLogout = async () => {
-    await logout()
-    // Al salir siempre volvemos al login limpio (sin ?next=).
-    navigate('/login', { replace: true })
-  }
-
-  const accountTitle = user?.nombre
-    ? `${user.nombre}${user.rol ? ` (${user.rol})` : ''}`
-    : user?.email || 'Mi perfil'
+  const { isAuthenticated, canManageEvents, canScanAccess, isAcceso } = useAuth()
 
   return (
     <nav className="desktop-nav">
@@ -39,36 +21,6 @@ const DesktopNav = () => {
         )}
         {canScanAccess && (
           <li><NavLink to="/acceso">Acceso</NavLink></li>
-        )}
-        {isAuthenticated ? (
-          <>
-            <li>
-              <NavLink
-                to="/perfil"
-                className="nav-account"
-                title={accountTitle}
-                aria-label={user?.nombre || 'Mi perfil'}
-              >
-                <HiOutlineUser className="nav-account__icon" aria-hidden />
-              </NavLink>
-            </li>
-            <li>
-              <button type="button" className="nav-logout" onClick={handleLogout}>
-                Salir
-              </button>
-            </li>
-          </>
-        ) : (
-          <li>
-            <NavLink
-              to="/login"
-              className="nav-account"
-              title="Ingresar"
-              aria-label="Ingresar"
-            >
-              <HiOutlineUser className="nav-account__icon" aria-hidden />
-            </NavLink>
-          </li>
         )}
       </ul>
     </nav>

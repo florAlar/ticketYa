@@ -24,16 +24,21 @@ section {
 /* =========================
    LAYOUT UTILITIES
 ========================= */
+/* Ancho completo con 30 px de margen lateral (--page-gutter) en todas las páginas */
 .container {
-  max-width: var(--container-default);
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: var(--page-gutter, 30px);
+  padding-right: var(--page-gutter, 30px);
 }
 
 .container-wide {
-  max-width: var(--container-wide);
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-left: var(--page-gutter, 30px);
+  padding-right: var(--page-gutter, 30px);
 }
 
 @media (max-width: 768px) {
@@ -46,9 +51,10 @@ section {
 }
 
 .container-slim {
-  max-width: var(--container-narrow);
-  margin: 0 auto;
-  padding: var(--spacing-xl) var(--spacing-md) 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: var(--spacing-xl) var(--page-gutter, 30px) 0;
 }
 
 .section-margin {

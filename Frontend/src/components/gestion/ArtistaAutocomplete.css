@@ -14,7 +14,7 @@
 }
 
 .artista-ac__control--selected .form-input {
-  border-color: color-mix(in srgb, var(--primary, #e91e8c) 45%, #e5e7eb);
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--colors-border));
 }
 
 .artista-ac__clear {
@@ -29,7 +29,7 @@
 }
 
 .artista-ac__hint--warn {
-  color: #a16207 !important;
+  color: var(--tone-warning) !important;
 }
 
 .artista-ac__list {
@@ -75,13 +75,13 @@
 
 .artista-ac__option:hover,
 .artista-ac__option:focus-visible {
-  background: color-mix(in srgb, var(--primary, #e91e8c) 10%, transparent);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
   outline: none;
 }
 
 .artista-ac__option--create {
   font-weight: 600;
-  color: var(--primary, #e91e8c);
+  color: var(--primary);
   border-top: 1px solid var(--border-color, #e5e7eb);
 }
 

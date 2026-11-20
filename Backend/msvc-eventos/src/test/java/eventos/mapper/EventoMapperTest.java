@@ -83,6 +83,18 @@ class EventoMapperTest {
     }
 
     @Test
+    void imagenUrl_seMapeaEnCatalogoYDetalle() {
+        EventoMapper mapper = new EventoMapper();
+        Evento evento = eventoConLugar();
+        evento.setImagenUrl("/img/eventos/metallica.webp");
+
+        assertEquals("/img/eventos/metallica.webp",
+                mapper.toCatalogo(evento, BigDecimal.TEN).getImagenUrl());
+        assertEquals("/img/eventos/metallica.webp",
+                mapper.toDetalle(evento, BigDecimal.TEN, List.of(), List.of()).getImagenUrl());
+    }
+
+    @Test
     void toCatalogo_mapeaTodosLosCampos() {
         EventoMapper mapper = new EventoMapper();
         Evento evento = eventoConLugar();

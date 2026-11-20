@@ -1,273 +1,225 @@
+/* =========================================================
+   FILA VIRTUAL — sala de espera con la foto del show de fondo.
+   La escena es siempre oscura (el texto va en blanco), en claro y oscuro.
+========================================================= */
 .fila-page {
-  padding-top: 2.25rem;
-  padding-bottom: 2.5rem;
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem var(--page-gutter, 30px) 4rem;
+  color: #fff;
+  background: #08050f;
+  overflow: hidden;
 }
 
-.fila-page__back {
-  margin: 0 0 1rem;
-  font-size: 0.9rem;
+.fila-page__scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: #08050f;
+  background-image: var(--fila-bg, none);
+  background-size: cover;
+  background-position: center 30%;
+  filter: blur(2px) saturate(1.1);
+  transform: scale(1.06);
+}
+.fila-page__scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 6, 22, 0.62);
+}
+.fila-page--turno .fila-page__scene::after { background: rgba(10, 6, 22, 0.6); }
+
+.fila-page__wrap {
+  width: 100%;
+  max-width: 44rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
-.fila-page__head {
-  margin-bottom: 1.25rem;
-}
+.fila-page__back { align-self: flex-start; margin: 0 0 1.5rem; font-size: 0.9rem; }
+.fila-page__back a { color: rgba(255, 255, 255, 0.8); }
 
-.fila-page__head h1 {
-  margin: 0.25rem 0 0.5rem;
-  font-size: clamp(1.4rem, 3vw, 1.85rem);
-}
-
+/* ---- Cabecera ---- */
 .fila-page__eyebrow {
-  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0 0 0.6rem;
   font-size: 0.78rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--colors-primary, #e91e8c);
+  color: var(--brand-light);
 }
-
+.fila-page__head h1 {
+  margin: 0;
+  font-family: var(--fonts-title);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
 .fila-page__meta {
-  margin: 0;
-  color: var(--colors-textMuted, #7b7b7b);
-  font-size: 0.92rem;
-}
-
-.fila-page__muted {
-  margin: 0.35rem 0 0;
-  color: var(--colors-textMuted, #7b7b7b);
-  font-size: 0.9rem;
-}
-
-.fila-page__error {
-  margin: 0.5rem 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  border: 1px solid rgba(185, 28, 28, 0.35);
-  background: rgba(185, 28, 28, 0.08);
-  color: #b91c1c;
-  font-size: 0.92rem;
-}
-
-.fila-page__aviso {
-  margin: 0.5rem 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  border: 1px solid rgba(22, 163, 74, 0.35);
-  background: rgba(22, 163, 74, 0.08);
-  color: #15803d;
-  font-size: 0.92rem;
-}
-
-.fila-page__warning {
-  margin: 0.5rem 0;
-  padding: 0.6rem 0.8rem;
-  border-radius: 8px;
-  border: 1px solid rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.1);
-  color: #92400e;
-  font-size: 0.9rem;
-}
-
-.fila-page__foot {
-  margin: 1.5rem 0 0;
-  color: var(--colors-textMuted, #7b7b7b);
-  font-size: 0.85rem;
-}
-
-.fila-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.fila-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.85rem 1rem;
-  border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-  background: var(--colors-surface, #f7f7fa);
-}
-
-.fila-stat__label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--colors-textMuted, #7b7b7b);
-}
-
-.fila-stat strong {
-  font-size: 1.5rem;
-  color: var(--colors-text, #1a1a1a);
-}
-
-.fila-stat__hint {
-  font-size: 0.8rem;
-  color: var(--colors-textMuted, #7b7b7b);
-}
-
-.fila-card {
-  margin-top: 1rem;
-  padding: 1.2rem 1.3rem;
-  border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-  background: var(--colors-surface, #f7f7fa);
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.fila-card h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.fila-card p {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.fila-card--muted {
-  background: #fff;
-}
-
-.fila-card--join {
-  border-color: color-mix(
-    in srgb,
-    var(--colors-primary, #e91e8c) 35%,
-    var(--colors-border, #ddd)
-  );
-  background: color-mix(
-    in srgb,
-    var(--colors-primary, #e91e8c) 6%,
-    var(--colors-surface, #fff)
-  );
-}
-
-.fila-card--turno {
-  background: #fff;
-}
-
-.fila-card--habilitado,
-.fila-card--con_token {
-  border-color: rgba(22, 163, 74, 0.4);
-  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.08);
-}
-
-.fila-card--turno_usado {
-  border-color: rgba(120, 120, 120, 0.35);
-  opacity: 0.95;
-}
-
-.fila-turno__head {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 0.4rem 1.25rem;
+  margin: 0.8rem 0 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+.fila-page__meta span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.fila-page__meta svg { color: var(--brand-light); font-size: 1.1rem; }
+
+.fila-page__error,
+.fila-page__warning {
+  margin: 1rem 0 0;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+}
+.fila-page__error { color: var(--tone-danger); }
+.fila-page__warning { color: var(--tone-warning); }
+.fila-page__muted { margin: 0 0 0.75rem; font-size: 0.85rem; color: var(--colors-textMuted); }
+
+/* ---- Escenario: un solo protagonista por estado ---- */
+.fila-stage {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 2.25rem 1.5rem;
+  border-radius: 28px;
+  color: var(--colors-text);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+}
+.fila-page--turno .fila-stage {
+  border-color: color-mix(in srgb, var(--brand) 65%, transparent);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
 }
 
-.fila-turno__posicion {
-  margin: 0;
-  font-size: clamp(2rem, 7vw, 3rem);
+.fila-msg { display: flex; flex-direction: column; align-items: center; gap: 0.9rem; }
+.fila-msg h2 { margin: 0; font-size: 1.5rem; color: var(--colors-text); }
+.fila-msg p { margin: 0; max-width: 30rem; line-height: 1.55; color: var(--colors-textSecondary); }
+.fila-msg a:not(.btn) { color: var(--tone-brand); }
+.fila-msg--join { gap: 1.1rem; }
+
+/* Esperando: el anillo es lo único que importa */
+.fila-wait { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.fila-wait__label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--colors-textMuted);
+}
+.fila-wait__pos {
+  display: block;
+  font-family: var(--fonts-title);
+  font-size: 3.4rem;
   font-weight: 800;
   line-height: 1;
-  color: var(--colors-text, #1a1a1a);
+  color: var(--brand);
 }
+.fila-wait__lead { margin: 0.4rem 0 0; font-size: 1.35rem; font-weight: 700; color: var(--colors-text); }
+.fila-wait__hint { margin: 0; font-size: 0.88rem; color: var(--colors-textMuted); }
 
-.fila-badge {
-  display: inline-block;
-  padding: 0.3rem 0.7rem;
+/* Es tu turno: cartel grande en el color de marca */
+.fila-turno { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.fila-turno__kicker {
+  margin: 0;
+  padding: 0.35rem 1rem;
   border-radius: 999px;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  background: rgba(120, 120, 120, 0.12);
-  color: #4b4b4b;
+  color: var(--brand-ink);
+  background: var(--brand);
 }
-
-.fila-badge--en_espera {
-  background: rgba(245, 158, 11, 0.15);
-  color: #92400e;
+.fila-turno__title {
+  margin: 0;
+  font-family: var(--fonts-title);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  line-height: 1.05;
+  color: var(--colors-text);
 }
+.fila-turno .countdown { font-size: 1rem; }
+.fila-turno__hint { margin: 0; font-size: 0.85rem; color: var(--colors-textMuted); }
 
-.fila-badge--habilitado,
-.fila-badge--con_token {
-  background: rgba(22, 163, 74, 0.15);
-  color: #15803d;
-}
-
-.fila-badge--turno_usado {
-  background: rgba(120, 120, 120, 0.15);
-  color: #4b4b4b;
-}
-
-.fila-progress {
-  position: relative;
-  height: 0.65rem;
-  border-radius: 999px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.08);
-}
-
-.fila-progress__bar {
-  display: block;
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    var(--colors-secondary, #7c3aed),
-    var(--colors-primary, #e91e8c)
-  );
-  transition: width 0.4s ease;
-}
-
-.fila-turno__cta {
+/* ---- Pasos: puntos finos ---- */
+.fila-dots {
   display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  align-items: flex-start;
+  align-items: center;
+  gap: 1.75rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
 }
-
-.fila-turno__cta .btn {
-  align-self: flex-start;
+.fila-dots li { position: relative; display: inline-flex; align-items: center; gap: 0.5rem; }
+.fila-dots li + li::before {
+  content: '';
+  position: absolute;
+  right: calc(100% + 0.25rem);
+  width: 1.25rem;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.25);
 }
-
-.fila-admin {
-  border-style: dashed;
+.fila-dots__dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
 }
+.fila-dots .is-done { color: rgba(255, 255, 255, 0.75); }
+.fila-dots .is-done .fila-dots__dot { background: rgba(255, 255, 255, 0.75); }
+.fila-dots .is-current { color: #fff; font-weight: 700; }
+.fila-dots .is-current .fila-dots__dot { background: var(--brand); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 30%, transparent); }
 
-.fila-admin__row {
+/* ---- Datos de la fila: una línea chica ---- */
+.fila-facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: flex-end;
-}
-
-.fila-admin__row label {
+  justify-content: center;
+  gap: 0.3rem 1.5rem;
+  margin: 1.25rem 0 0;
   font-size: 0.85rem;
-  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
 }
+.fila-facts strong { color: rgba(255, 255, 255, 0.9); }
 
-.fila-admin__input {
-  max-width: 9rem;
+/* ---- Admin ---- */
+.fila-admin {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 0.9rem 1.25rem;
+  text-align: left;
+  border-radius: 16px;
+  color: var(--colors-text);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
 }
+.fila-admin summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; }
+.fila-admin p { margin-top: 0.75rem; }
+.fila-admin__row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+.fila-admin__row label { font-size: 0.9rem; font-weight: 600; }
+.fila-admin__input { width: 9rem; }
 
-@media (max-width: 560px) {
-  .fila-admin__row {
-    align-items: stretch;
-  }
-
-  .fila-admin__input {
-    max-width: none;
-  }
-
-  .fila-turno__cta .btn,
-  .fila-card .btn {
-    width: 100%;
-  }
+@media (max-width: 768px) {
+  /* .main-content tiene 20 px de margen en móvil: la escena lo ignora (a sangre) */
+  .fila-page { margin-left: -20px; margin-right: -20px; width: calc(100% + 40px); padding: 1.25rem 20px 3rem; }
+  .fila-stage { padding: 1.75rem 1.1rem; border-radius: 22px; }
+  .fila-dots { gap: 1.1rem; }
 }

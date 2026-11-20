@@ -1,129 +1,53 @@
-import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import { FEATURE, GATE_HINT } from '../../config/featureGates'
-import GateButton from '../../components/ui/GateButton'
-import EventoLugarSectores from '../../components/gestion/EventoLugarSectores'
-import EventoParticipantesFields from '../../components/gestion/EventoParticipantesFields'
-import ConfirmarAltaDemandaModal from '../../components/gestion/ConfirmarAltaDemandaModal'
+import { GATE_HINT } from '../../config/featureGates'
+import { PageHeader, VacioTabla } from '../../components/gestion/gestionUi'
+import { LoadingState } from '../../components/ui/AsyncState'
 import useEventoNuevoForm from './evento/useEventoNuevoForm'
-import EventoNuevoDatosForm from './evento/EventoNuevoDatosForm'
+import EventoWizard from './evento/wizard/EventoWizard'
 import './GestionPage.css'
 
+/** Alta de evento en 5 pasos, con vista previa, borrador local y opción de duplicar otro evento. */
 const GestionEventoNuevoPage = () => {
   const { user, token, isAdmin } = useAuth()
-  const {
-    form,
-    sectores,
-    teloneros,
-    error,
-    loading,
-    publishing,
-    confirmacion,
-    confirmarAltaDemanda,
-    cancelarAltaDemanda,
-    gated,
-    onChange,
-    onRowChange,
-    onElegirLugar,
-    onPrincipalChange,
-    onTeloneroChange,
-    onAddTelonero,
-    onRemoveTelonero,
-    onSubmit,
-  } = useEventoNuevoForm({ user, token })
+  const w = useEventoNuevoForm({ user, token })
 
   return (
-    <section className="gestion-page container-slim section-v-padding">
-      <header className="gestion-page__head">
-        <p className="gestion-page__eyebrow">
-          <Link to="/gestion">Gestión</Link> /{' '}
-          <Link to="/gestion/eventos">eventos</Link> / nuevo
-        </p>
-        <h1 className="gestion-page__title">Crear evento</h1>
-        <p className="gestion-page__sub">
-          Borrador: alcanza con el nombre (el resto se puede completar después).
-          Publicar: fecha, un lugar y al menos un sector del lugar con su precio.
-          {isAdmin ? ' · Alta como admin.' : ` · org: ${user?.id}`}
-          {gated && (
-            <>
-              {' '}
-              <strong title={GATE_HINT}>({GATE_HINT})</strong>
-            </>
-          )}
-        </p>
-      </header>
+    <>
+      <PageHeader
+        title="Crear evento"
+        subtitle={
+          w.duplicando
+            ? 'Copiando los datos del evento original…'
+            : 'Completá los pasos. Podés guardar un borrador en cualquier momento y terminarlo después.'
+        }
+      />
 
-      {gated ? (
-        <div className="gestion-card">
-          <p>
-            Alta de eventos no disponible: backend de eventos en mock o no
-            cableado.
-          </p>
-          <Link className="btn" to="/gestion/eventos">
-            ← Volver al listado
-          </Link>
-        </div>
+      {w.gated ? (
+        <VacioTabla>
+          Alta de eventos no disponible: backend de eventos en mock o no cableado. {GATE_HINT}
+        </VacioTabla>
+      ) : w.duplicando ? (
+        <LoadingState label="Copiando evento…" />
       ) : (
-        <form className="gestion-form gestion-card" onSubmit={onSubmit} noValidate>
-          <EventoNuevoDatosForm
-            form={form}
-            loading={loading}
-            publishing={publishing}
-            onChange={onChange}
-          />
-
-          <EventoParticipantesFields
-            principal={form.principal}
-            onPrincipalChange={onPrincipalChange}
-            teloneros={teloneros}
-            onTeloneroChange={onTeloneroChange}
-            onAddTelonero={onAddTelonero}
-            onRemoveTelonero={onRemoveTelonero}
-            token={token}
-            disabled={loading}
-          />
-
-          <EventoLugarSectores
-            token={token}
-            idLugar={form.idLugar}
-            onElegirLugar={onElegirLugar}
-            rows={sectores}
-            onRowChange={onRowChange}
-            publishing={publishing}
-            disabled={loading}
-            isAdmin={isAdmin}
-          />
-
-          {error && <p className="gestion-error">{error}</p>}
-
-          <div className="gestion-card__actions">
-            <GateButton
-              enabled={FEATURE.eventosGestion}
-              type="submit"
-              className="btn btn-primary"
-              disabled={loading}
-            >
-              {loading
-                ? 'Guardando…'
-                : publishing
-                  ? 'Crear y publicar'
-                  : 'Guardar borrador'}
-            </GateButton>
-            <Link className="btn" to="/gestion/eventos">
-              Cancelar
-            </Link>
-          </div>
-        </form>
+        <>
+          {w.borradorPendiente && (
+            <div className="wz-borrador" role="status">
+              <span>
+                Tenés un evento sin terminar
+                {w.borradorPendiente.form?.nombre ? `: «${w.borradorPendiente.form.nombre}»` : ''}. ¿Querés seguir donde lo dejaste?
+              </span>
+              <button type="button" className="btn btn-primary btn-sm" onClick={w.restaurarBorrador}>
+                Continuar
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={w.descartarBorrador}>
+                Descartar
+              </button>
+            </div>
+          )}
+          <EventoWizard w={w} token={token} isAdmin={isAdmin} />
+        </>
       )}
-
-      {confirmacion && (
-        <ConfirmarAltaDemandaModal
-          cupoTotal={confirmacion.cupoTotal}
-          onConfirmar={confirmarAltaDemanda}
-          onCancelar={cancelarAltaDemanda}
-        />
-      )}
-    </section>
+    </>
   )
 }
 

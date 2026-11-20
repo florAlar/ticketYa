@@ -1,37 +1,7 @@
-import { BANNER_IMAGES } from '../../../assets/img/banners'
 import { formatMoney } from '../../../lib/format'
 
 function pad(n) {
   return String(n).padStart(2, '0')
-}
-
-function hashEvento(value) {
-  let hash = 0
-  const text = String(value || '')
-  for (let i = 0; i < text.length; i++) {
-    hash = (hash * 31 + text.charCodeAt(i)) | 0
-  }
-  return Math.abs(hash)
-}
-
-/**
- * Imagen de la card/detalle. El backend no expone imagenUrl (null): se usa un
- * banner estático del pool según el tipo, elegido de forma determinística por
- * evento para que las cards no queden todas iguales.
- */
-export function imagenEvento(evento) {
-  if (evento?.imagenUrl) return evento.imagenUrl
-  const tipo = String(evento?.tipo || '').toUpperCase()
-  const pools = {
-    RECITAL: [BANNER_IMAGES[0], BANNER_IMAGES[2], BANNER_IMAGES[3], BANNER_IMAGES[4]],
-    FESTIVAL: [BANNER_IMAGES[0], BANNER_IMAGES[1], BANNER_IMAGES[3]],
-    DEPORTE: [BANNER_IMAGES[5], BANNER_IMAGES[1]],
-    TEATRO: [BANNER_IMAGES[4], BANNER_IMAGES[3]],
-    CONFERENCIA: [BANNER_IMAGES[4], BANNER_IMAGES[3]],
-  }
-  const pool = pools[tipo] || BANNER_IMAGES
-  const key = evento?.id || evento?.nombre || tipo
-  return pool[hashEvento(key) % pool.length]
 }
 
 /** Fecha corta es-AR para cards */
@@ -45,4 +15,25 @@ export function formatEventoFecha(iso) {
 
 export function formatPrecioDesde(n) {
   return formatMoney(n, { fallback: '' })
+}
+
+const MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
+
+/** Día y mes abreviado para el chip de fecha de las cards. */
+export function partesFecha(iso) {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return { dia: pad(d.getDate()), mes: MESES[d.getMonth()] }
+}
+
+/**
+ * Parte el nombre del evento en banda/equipo y nombre del show: "Metallica — M72 World Tour" →
+ * { artista: 'Metallica', titulo: 'M72 World Tour' }. Sin separador, todo es el título.
+ */
+export function partesNombre(nombre) {
+  const [artista, ...resto] = String(nombre || '').split(' — ')
+  return resto.length
+    ? { artista: artista.trim(), titulo: resto.join(' — ').trim() }
+    : { artista: '', titulo: String(nombre || '').trim() }
 }

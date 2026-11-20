@@ -1,9 +1,11 @@
+import { HiOutlineBan, HiOutlinePause, HiOutlineFire } from 'react-icons/hi'
 import {
   EVENTO_ESTADOS,
   EVENTO_ESTADO_LABELS,
   cupoLabelDeEvento,
   isEventoAgotado,
 } from '../../../domain/evento'
+import Badge from '../../ui/Badge'
 
 /**
  * Badge de estado de evento o cupo en cards.
@@ -13,36 +15,34 @@ export default function EventoCupoBadge({ evento, className = '' }) {
   if (!evento) return null
 
   const estado = String(evento.estado || '').toUpperCase()
-  let label = null
-  let kind = 'aviso'
 
-  if (estado === EVENTO_ESTADOS.CANCELADO || estado === 'CANCELADO') {
-    label = EVENTO_ESTADO_LABELS.CANCELADO || 'Cancelado'
-    kind = 'cancel'
-  } else if (estado === EVENTO_ESTADOS.SUSPENDIDO || estado === 'SUSPENDIDO') {
-    label = EVENTO_ESTADO_LABELS.SUSPENDIDO || 'Suspendido'
-    kind = 'suspend'
-  } else {
-    label = cupoLabelDeEvento(evento)
-    if (!label) return null
-    kind = isEventoAgotado(evento) ? 'agotado' : 'aviso'
+  if (estado === EVENTO_ESTADOS.CANCELADO) {
+    return (
+      <Badge tone="danger" solid icon={HiOutlineBan} className={className}>
+        {EVENTO_ESTADO_LABELS.CANCELADO || 'Cancelado'}
+      </Badge>
+    )
+  }
+  if (estado === EVENTO_ESTADOS.SUSPENDIDO) {
+    return (
+      <Badge tone="warning" solid icon={HiOutlinePause} className={className}>
+        {EVENTO_ESTADO_LABELS.SUSPENDIDO || 'Suspendido'}
+      </Badge>
+    )
   }
 
-  const classes = [
-    'evento-cupo-badge',
-    kind === 'cancel' || kind === 'agotado'
-      ? 'evento-cupo-badge--agotado'
-      : kind === 'suspend'
-        ? 'evento-cupo-badge--suspend'
-        : 'evento-cupo-badge--aviso',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ')
-
+  const label = cupoLabelDeEvento(evento)
+  if (!label) return null
+  const agotado = isEventoAgotado(evento)
   return (
-    <span className={classes} title={label}>
+    <Badge
+      tone={agotado ? 'danger' : 'warning'}
+      solid
+      icon={agotado ? HiOutlineBan : HiOutlineFire}
+      className={className}
+      title={label}
+    >
       {label}
-    </span>
+    </Badge>
   )
 }

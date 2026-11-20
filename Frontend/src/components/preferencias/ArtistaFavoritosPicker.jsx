@@ -78,10 +78,6 @@ const ArtistaFavoritosPicker = ({
           Agregar
         </button>
       </div>
-      <p className="pref-help">
-        Se guardan los nombres; el motor de recomendaciones los cruza con los
-        artistas de cada evento.
-      </p>
     </div>
   )
 }

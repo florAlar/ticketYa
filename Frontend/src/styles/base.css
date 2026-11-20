@@ -10,13 +10,13 @@
 /* Fallback light TicketYa (antes de CssVariables / si falla el provider) */
 :root {
   color-scheme: light;
-  --colors-primary: #E91E8C;
-  --colors-secondary: #7C3AED;
-  --colors-accent: #F472B6;
+  --colors-primary: var(--brand);
+  --colors-secondary: var(--brand-3);
+  --colors-accent: var(--brand-3);
   --colors-background: #FFFFFF;
   --colors-surface: #F7F7FA;
   --colors-surfaceAlt: #EEEEF2;
-  --colors-surfaceHover: rgba(233, 30, 140, 0.08);
+  --colors-surfaceHover: color-mix(in srgb, var(--brand) 8%, transparent);
   --colors-text: #1A1A1A;
   --colors-textSecondary: #4B4B4B;
   --colors-textMuted: #7B7B7B;
@@ -24,9 +24,9 @@
   --colors-danger: #c0392b;
   --colors-surface-alt: var(--colors-surfaceAlt);
   --colors-text-muted: var(--colors-textMuted);
-  --colors-headerBg: #121212;
-  --colors-headerText: #F5F5F5;
-  --colors-headerBorder: rgba(255, 255, 255, 0.08);
+  --colors-headerBg: #FFFFFF;
+  --colors-headerText: #1F1F1F;
+  --colors-headerBorder: rgba(0, 0, 0, 0.09);
   --fonts-body: Inter, system-ui, sans-serif;
   --fonts-title: Oxanium, Inter, sans-serif;
   --fonts-mono: "Share Tech Mono", monospace;

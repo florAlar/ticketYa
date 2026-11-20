@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /**
  * Catálogo / listado — alineado al shape liviano del front (toCatalogoDto).
- * imagenUrl y destacado no existen en schema MySQL actual → null / false.
+ * destacado no existe en el schema MySQL → false; imagenUrl sale de evento.imagen_url (null si no hay).
  */
 @Getter
 @Setter

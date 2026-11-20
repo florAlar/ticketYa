@@ -8,17 +8,19 @@ const Home = () => {
   return (
     <div className="home-page">
       <Hero />
-      <HomeRecomendados />
-      {homeSections.map((section) => (
-        <EventSection
-          key={section.id}
-          title={section.title}
-          filter={section.filter}
-          layout={section.layout}
-          card={section.card}
-          linkToAll={section.linkToAll}
-        />
-      ))}
+      <div id="explorar">
+        {homeSections.map((section) => (
+          <EventSection
+            key={section.id}
+            title={section.title}
+            filter={section.filter}
+            layout={section.layout}
+            card={section.card}
+            linkToAll={section.linkToAll}
+          />
+        ))}
+        <HomeRecomendados />
+      </div>
     </div>
   )
 }

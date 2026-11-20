@@ -1,48 +1,63 @@
 /* =========================
    COMPONENTS
 ========================= */
-/* Buttons */
+/* Buttons (rediseño: relleno degradé, sin mayúsculas ni mono) */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.8rem 1.5rem;
-  border-radius: var(--radius-sm);
-  font-weight: var(--typography-weight-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-family: var(--fonts-mono);
-  font-size: var(--typography-text-sm);
+  padding: 0.7rem 1.35rem;
+  border-radius: var(--radius-full, 999px);
+  font-weight: 600;
+  font-family: var(--fonts-body);
+  font-size: 0.95rem;
+  line-height: 1.2;
   cursor: pointer;
-  transition: all var(--animation-fast);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out),
+    background 0.2s, border-color 0.2s, color 0.2s;
   text-decoration: none;
-  border: none;
+  border: 1px solid var(--colors-border);
+  background: transparent;
+  color: var(--colors-text);
 }
+.btn:focus-visible { outline: none; box-shadow: var(--ring); }
+.btn:active:not(:disabled) { transform: translateY(0) scale(0.98); }
 
 .btn-primary {
-  background: transparent;
-  border: 1px solid var(--colors-primary);
-  color: var(--colors-primary);
+  border-color: transparent;
+  background: var(--grad-brand);
+  color: var(--on-brand);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 32%, transparent);
 }
-
-.btn-primary:hover {
-  background: var(--colors-primary);
-  color: #000;
-  box-shadow: 0 0 20px var(--colors-primary);
+.btn-primary:hover:not(:disabled) {
+  background: var(--grad-brand-hover);
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--brand) 42%, transparent);
   transform: translateY(-2px);
 }
 
 .btn-secondary {
-  /*  background: rgba(255, 255, 255, 0.05); */
-  border: 1px solid var(--colors-border);
+  background: transparent;
+  border: 1.5px solid var(--colors-primary);
   color: var(--colors-text);
 }
-
-.btn-secondary:hover {
-  /* background: rgba(255, 255, 255, 0.1); */
-  border-color: var(--colors-text);
+.btn-secondary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--colors-primary) 14%, transparent);
+  border-color: var(--colors-primary);
+  color: var(--colors-text);
+  transform: translateY(-1px);
 }
+
+.btn-ghost { border-color: transparent; background: transparent; color: var(--colors-textSecondary); }
+.btn-ghost:hover:not(:disabled) { background: var(--colors-surfaceHover); color: var(--colors-primary); }
+
+.btn-danger { border-color: transparent; background: var(--tone-danger); color: #fff; }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+
+.btn-sm { padding: 0.45rem 0.95rem; font-size: 0.85rem; }
+.btn-lg { padding: 0.9rem 1.8rem; font-size: 1.05rem; }
+.btn-block { width: 100%; }
+.btn.is-loading { position: relative; pointer-events: none; opacity: 0.85; }
 
 /* CTA / nav no cableado al BE: visible pero sin flujo */
 .btn:disabled,
@@ -125,7 +140,7 @@ span.is-gated-off {
 .form-input,
 .form-textarea {
   width: 100%;
-  background: var(--colors-surface);
+  background: var(--field-bg, var(--colors-surface));
   border: 1px solid var(--colors-border);
   border-radius: var(--radius-sm);
   padding: 1rem;

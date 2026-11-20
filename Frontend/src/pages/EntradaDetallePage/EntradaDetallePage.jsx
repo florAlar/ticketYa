@@ -1,8 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { HiCheck } from 'react-icons/hi'
 import useAuth from '../../hooks/useAuth'
 import useAsync from '../../hooks/useAsync'
 import { getEntrada } from '../../api/entradas'
+import { getEvento } from '../../api/eventos'
 import { formatFecha } from '../../lib/format'
 import {
   crearSolicitudEntrada,
@@ -17,12 +19,16 @@ import {
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import Button from '../../components/ui/Button'
+import EntradaTicket from './EntradaTicket'
 import '../MisEntradasPage/MisEntradasPage.css'
+import './EntradaDetallePage.css'
 
 /** Detalle + QR + gestión reclamo/devolución. */
 const EntradaDetallePage = () => {
   const { entradaId } = useParams()
   const { user, token } = useAuth()
+  const recienComprada = Boolean(useLocation().state?.bought)
   const [msg, setMsg] = useState('')
   const [tipo, setTipo] = useState(DEVOLUCION_TIPOS.DEVOLUCION)
   const [motivo, setMotivo] = useState('')
@@ -35,8 +41,18 @@ const EntradaDetallePage = () => {
         getEntrada(entradaId, user, { token, signal }),
         listSolicitudesEntrada(entradaId, user, { token, signal }),
       ])
+      // La entrada no trae la portada ni (en datos viejos) la fecha: se completan con el evento.
+      let evento = null
+      if (ent?.idEvento) {
+        try {
+          evento = await getEvento(ent.idEvento, { token, signal })
+        } catch (err) {
+          if (err?.name === 'AbortError') throw err
+        }
+      }
       return {
         entrada: ent,
+        evento,
         solicitudes: Array.isArray(sols) ? sols : [],
       }
     },
@@ -50,6 +66,7 @@ const EntradaDetallePage = () => {
   )
 
   const entrada = data?.entrada || null
+  const evento = data?.evento || null
   const solicitudes = useMemo(() => data?.solicitudes || [], [data])
 
   const pendiente = useMemo(
@@ -89,15 +106,33 @@ const EntradaDetallePage = () => {
   }
 
   return (
-    <section className="mis-entradas-page container-slim section-v-padding">
-      <header className="mis-entradas-page__head">
-        <p className="mis-entradas-page__muted">
+    <section className="mis-entradas-page container section-v-padding">
+      <header className="entrada-page__head">
+        <p className="entrada-page__back">
           <Link to="/mis-entradas">← Mis entradas</Link>
         </p>
-        <h1 className="mis-entradas-page__title">
-          {entrada?.eventoNombre || 'Entrada'}
-        </h1>
+        <h1 className="mis-entradas-page__title">Tu entrada</h1>
       </header>
+
+      {recienComprada && status === 'success' && (
+        <div className="entrada-bought" role="status">
+          <span className="entrada-bought__icon" aria-hidden>
+            <HiCheck />
+          </span>
+          <div>
+            <h2>¡Compra confirmada!</h2>
+            <p>Tu entrada ya está lista. Guardá el QR: lo vas a necesitar en el ingreso.</p>
+          </div>
+          <div className="entrada-bought__actions">
+            <Button to="/mis-entradas" variant="secondary" size="sm">
+              Ver mis entradas
+            </Button>
+            <Button to="/eventos" variant="ghost" size="sm">
+              Seguir mirando eventos
+            </Button>
+          </div>
+        </div>
+      )}
 
       {status === 'loading' && (
         <LoadingState label="Cargando entrada…" />
@@ -108,68 +143,13 @@ const EntradaDetallePage = () => {
 
       {status === 'success' && entrada && (
         <>
-          <div className="mis-entradas-card mis-entradas-card--stack">
-            <p>
-              <strong>Estado:</strong>{' '}
-              {ENTRADA_ESTADO_LABELS[entrada.estado] || entrada.estado}
-            </p>
-            <p>
-              <strong>Fecha evento:</strong> {formatFecha(entrada.eventoFecha)}
-            </p>
-            <p>
-              <strong>Lugar:</strong>{' '}
-              {[entrada.lugarNombre, entrada.lugarCiudad]
-                .filter(Boolean)
-                .join(' · ') || '—'}
-            </p>
-            <p>
-              <strong>Sector:</strong> {entrada.sectorNombre}
-              {entrada.fila != null && entrada.asiento != null
-                ? ` · Fila ${entrada.fila} Asiento ${entrada.asiento}`
-                : ''}
-            </p>
-            <p>
-              <strong>ID:</strong> {entrada.id}
-            </p>
-            <p>
-              <strong>Compra:</strong> {entrada.idCompra}
-            </p>
-            {entrada.eventoEstado ? (
-              <p>
-                <strong>Evento:</strong> {entrada.eventoEstado}
-              </p>
-            ) : null}
-
-            {mostrarQr ? (
-              <div className="entrada-qr-box" aria-label="Código QR de la entrada">
-                <p className="entrada-qr-box__label">Código QR</p>
-                <p className="entrada-qr-box__code">{entrada.codigoQR}</p>
-              </div>
-            ) : cancelada ? (
-              <div className="entrada-detalle__notice">
-                <p className="mis-entradas-page__badge mis-entradas-page__badge--cancel">
-                  Evento cancelado
-                </p>
-                <p className="mis-entradas-page__aviso" role="status">
-                  No hay QR de ingreso. El reintegro lo gestiona la plataforma:
-                  te vamos a avisar cuando se acredite el dinero. El número de
-                  trámite está en Mis entradas → Ver devoluciones.
-                </p>
-              </div>
-            ) : (
-              <p
-                className="mis-entradas-page__muted entrada-detalle__notice"
-                role="status"
-              >
-                Esta entrada no tiene QR de ingreso (estado{' '}
-                {ENTRADA_ESTADO_LABELS[entrada.estado] || entrada.estado}
-                {entrada.eventoEstado === 'CANCELADO'
-                  ? ', evento cancelado'
-                  : ''}
-                ).
-              </p>
-            )}
-          </div>
+          <div className="entrada-layout">
+            <EntradaTicket
+              entrada={entrada}
+              evento={evento}
+              mostrarQr={Boolean(mostrarQr)}
+              cancelada={Boolean(cancelada)}
+            />
 
           {!cancelada && (
           <section className="entrada-gestion">
@@ -257,6 +237,7 @@ const EntradaDetallePage = () => {
             )}
           </section>
           )}
+          </div>
         </>
       )}
     </section>
