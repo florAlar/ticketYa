@@ -131,7 +131,7 @@
             </collectionProp>
             <stringProp name="Assertion.test_field">Assertion.response_code</stringProp>
             <boolProp name="Assertion.assume_success">false</boolProp>
-            <intProp name="Assertion.test_type">8</intProp>
+            <intProp name="Assertion.test_type">40</intProp>
           </ResponseAssertion>
           <hashTree/>
         </hashTree>
@@ -225,7 +225,7 @@
               <collectionProp name="HeaderManager.headers">
                 <elementProp name="" elementType="Header">
                   <stringProp name="Header.name">Idempotency-Key</stringProp>
-                  <stringProp name="Header.value">carga-fila-${__threadNum}-${__iterationNum}</stringProp>
+                  <stringProp name="Header.value">carga-fila-${__threadNum}-${__time(,)}-${__counter(FALSE,)}</stringProp>
                 </elementProp>
               </collectionProp>
             </HeaderManager>
@@ -263,6 +263,15 @@
             <stringProp name="HTTPSampler.path">/api/compras</stringProp>
           </HTTPSamplerProxy>
           <hashTree>
+            <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager" testname="Idempotency-Key compra" enabled="true">
+              <collectionProp name="HeaderManager.headers">
+                <elementProp name="" elementType="Header">
+                  <stringProp name="Header.name">Idempotency-Key</stringProp>
+                  <stringProp name="Header.value">carga-compra-${__threadNum}-${__time(,)}-${__counter(FALSE,)}</stringProp>
+                </elementProp>
+              </collectionProp>
+            </HeaderManager>
+            <hashTree/>
             <JSONPostProcessor guiclass="JSONPostProcessorGui" testclass="JSONPostProcessor" testname="idCompra" enabled="true">
               <stringProp name="JSONPostProcessor.referenceNames">compraId</stringProp>
               <stringProp name="JSONPostProcessor.jsonPathExprs">$.id</stringProp>
@@ -374,13 +383,13 @@
           </collectionProp>
         </HeaderManager>
         <hashTree/>
-        <Counter guiclass="CounterGui" testclass="Counter" testname="Tanda acumulativa" enabled="true">
+        <CounterConfig guiclass="CounterConfigGui" testclass="CounterConfig" testname="Tanda acumulativa" enabled="true">
           <stringProp name="Counter.start">${adminPaso}</stringProp>
           <stringProp name="Counter.increment">${adminPaso}</stringProp>
           <stringProp name="Counter.max">999999</stringProp>
           <stringProp name="Counter.referenceName">paso</stringProp>
           <boolProp name="Counter.perThread">false</boolProp>
-        </Counter>
+        </CounterConfig>
         <hashTree/>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="ADMIN POST /fila/habilitacion" enabled="true">
           <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" enabled="true">
