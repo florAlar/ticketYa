@@ -90,6 +90,47 @@
   margin-top: 1.75rem;
 }
 
+.evento-fila-destacada {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.25rem;
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--colors-primary, #e91e8c) 40%,
+    var(--colors-border, #ddd)
+  );
+  background: color-mix(
+    in srgb,
+    var(--colors-primary, #e91e8c) 7%,
+    #fff
+  );
+}
+
+.evento-fila-destacada h2 {
+  margin: 0.15rem 0 0.35rem;
+  font-size: 1.1rem;
+}
+
+.evento-fila-destacada p {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.evento-fila-destacada__pase {
+  margin-top: 0.35rem !important;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.evento-fila-destacada .btn {
+  flex-shrink: 0;
+}
+
 .evento-detalle-page__tickets h2 {
   margin: 0 0 0.85rem;
   font-size: 1.15rem;

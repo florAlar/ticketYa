@@ -4,6 +4,7 @@ import { getEvento } from './eventos'
 import { listMisEntradas } from './entradas'
 import { insertCompra } from './mock/comprasStore'
 import { insertEntrada } from './mock/entradasStore'
+import { consumirTurnoFilaMock } from './filaVirtual'
 import { COMPRA_ESTADOS } from '../domain/compra'
 import { MAX_ASIENTOS_POR_COMPRA } from '../domain/asiento'
 import { ENTRADA_ESTADOS, toEntradaListItem } from '../domain/entrada'
@@ -124,6 +125,10 @@ export async function comprarEntrada(
       )
     }
 
+    if (opts.tokenFila) {
+      consumirTurnoFilaMock(idEvento, user.id, opts.tokenFila)
+    }
+
     return {
       compra,
       entrada: entradas[0],
@@ -170,6 +175,8 @@ export async function comprarEntrada(
               }
             : { idSector: String(idSector), cantidad: 1 },
         ],
+        // FIL-03: eventos de alta demanda exigen el token emitido por la fila.
+        ...(opts.tokenFila ? { tokenFila: opts.tokenFila } : {}),
       },
       {
         token: opts.token,

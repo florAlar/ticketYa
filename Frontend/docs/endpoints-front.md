@@ -89,6 +89,25 @@ Admin pendientes reales: `GET /api/devoluciones`.
 
 ---
 
+## 3.1 Fila virtual — msvc-ventas (FIL-01…FIL-03)
+
+| Método | Path | Auth | Front |
+|---|---|---|---|
+| POST | `/api/eventos/{id}/fila/ingreso` | JWT (CLIENTE; ADMIN) | `FilaVirtualPage` → “Entrar a la fila virtual” |
+| GET | `/api/eventos/{id}/fila/posicion` | JWT (CLIENTE; ADMIN) | polling cada 5 s en `FilaVirtualPage` |
+| POST | `/api/eventos/{id}/fila/validacion` | JWT (CLIENTE; ADMIN) | “Validar turno y comprar” → guarda `tokenFila` y navega al checkout |
+| GET | `/api/eventos/{id}/fila/estado` | público | tarjeta de alta demanda en detalle + stats de la fila |
+| POST | `/api/eventos/{id}/fila/habilitacion` | ADMIN | override de tanda en `FilaVirtualPage` (y acceso “Fila virtual” en gestión) |
+
+Flujo UI: evento `PUBLICADO` + `esAltaDemanda` → el detalle ofrece la fila y los botones de
+sector redirigen a `/eventos/:id/fila`; al validar el turno el SPA guarda `{token, expiraEn}` en
+`sessionStorage` y el checkout envía `tokenFila` en `POST /api/reservas`. Los errores
+`FILA_TOKEN_REQUERIDO` / `FILA_TOKEN_INVALIDO` descartan el pase y muestran el CTA para volver
+a la fila. En mock (`VITE_USE_MOCK=true`) el estado se simula en
+`src/api/mock/filaStore.js` con tanda automática y consumo del turno al comprar.
+
+---
+
 ## 4. Entradas + validación + devoluciones — msvc-entradas
 
 | Método | Path | Auth | Front |
@@ -138,8 +157,9 @@ Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `Prefere
 | `/perfil` | GET/PATCH `/api/usuarios/me` · GET/PUT `/api/preferencias/me` · GET `/api/clientes/{id}/historial` |
 | `/` | GET `/api/eventos` (secciones home) · GET `/api/recomendaciones/me` (logueado) |
 | `/eventos` | JWT · sidebar filtros · GET `/api/eventos` (+ batch disponibilidad) |
-| `/eventos/:id` | GET `/api/eventos/{id}` · GET `/api/eventos/{id}/recomendaciones` |
-| `/eventos/:id/comprar` | GET `/api/eventos/{id}/disponibilidad` → POST `/api/reservas` → POST `/api/compras` → POST `/api/compras/{id}/pagos` (sector numerado: selector de asientos) |
+| `/eventos/:id` | GET `/api/eventos/{id}` · GET `/api/eventos/{id}/recomendaciones` · GET `/api/eventos/{id}/fila/estado` (alta demanda) |
+| `/eventos/:id/fila` | POST `.../fila/ingreso` · GET `.../fila/posicion` (polling) · POST `.../fila/validacion` · GET `.../fila/estado` · POST `.../fila/habilitacion` (ADMIN) |
+| `/eventos/:id/comprar` | GET `/api/eventos/{id}/disponibilidad` → POST `/api/reservas` (con `tokenFila` si el evento es de alta demanda) → POST `/api/compras` → POST `/api/compras/{id}/pagos` (sector numerado: selector de asientos) |
 | `/mis-entradas` | GET `/api/entradas` |
 | `/mis-entradas/:id` | GET `/api/entradas/{id}` |
 | `/notificaciones` | GET `/api/notificaciones/me` · PATCH `.../{id}/leida` · GET/PUT `/api/preferencias/me/notificaciones` |
@@ -164,7 +184,8 @@ Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `Prefere
 | `eventos.js` | catálogo, detalle, gestión, create, publicar/estado, disponibilidad |
 | `usuarios.js` | admin list/get/estado/roles (+ mock acceso) |
 | `entradas.js` | list/detalle/qr/validar |
-| `ventasCliente.js` | compras, reservas |
+| `ventasCliente.js` | compras, reservas (+ `tokenFila` de alta demanda) |
+| `filaVirtual.js` | ingreso, posición, estado, validación y habilitación de la fila virtual |
 | `ventas.js` | cola admin UI + resolución devoluciones |
 | `soporteCliente.js` | alta/listado devoluciones cliente |
 | `preferencias.js` | preferencias, artistas, recomendaciones propias/similares e historial |

@@ -30,15 +30,16 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 - Almacenamiento íntegramente en Redis.
 - Apertura automática de tandas, con override manual de ADMIN.
 - Gate en `crearReserva` para eventos con `esAltaDemanda = true`.
+- Pantalla de fila en el SPA: estado público, turno propio con polling, validación del token y override ADMIN (2026-11-20).
 - Tests unitarios, de integración con Redis real y de concurrencia.
 - Prueba de carga con informe (E2-TST-03).
 
 **No incluye**
 
-- Pantalla de fila en el front.
 - Tablas MySQL de fila ni mensajería (RabbitMQ). `VentaQueueProducer` y `VentaQueueConsumer` siguen vacíos (`:1-4`).
 - Expiración de posiciones por inactividad.
 - Devolución del turno cuando la reserva vence o el pago se rechaza (ver D6).
+- Notificaciones push fuera de la pestaña: el front refresca la posición por polling cada 5 s.
 
 ## 2. Estado de partida (chequeo único backlog ↔ código)
 
@@ -74,7 +75,7 @@ Marcar cada casilla cuando el equipo esté de acuerdo.
 - [x] **D6. Un turno por cliente y evento.** Al consumir el token, el cliente queda en el SET `usados`. No puede volver a ingresar ni pedir otro token para ese evento. *Consecuencia:* si la reserva vence o el pago se rechaza, el turno **no se devuelve**. Es una simplificación explícita. La extensión posible (liberar el turno en `rechazarVenta` y `expireOne`) queda fuera de alcance.
 - [x] **D7. TTL único.** Todas las claves de la fila de un evento (`zset`, `seq`, `tanda`, `usados`) comparten el mismo TTL, renovado por toda escritura y sembrado en el primer ingreso. La única excepción es el token, que tiene un TTL propio, más corto.
 - [x] **D8. Cache del flag del evento.** `ingreso`, `posicion`, `estado`, `validacion` y el job consultan `msvc-eventos` (estado PUBLICADO y `esAltaDemanda`) a través de una caché en memoria de pocos segundos, para no acoplar el polling de la fila a la disponibilidad de eventos. No cachea stock ni cupos: la regla de no cachear disponibilidad (`backlog.md:236`) se mantiene.
-- [x] **D9. Sin UI de fila.** El front ya cubre los flujos principales y la consigna prioriza el backend.
+- [x] **D9. UI de fila implementada (2026-11-20).** El SPA suma `/eventos/:id/fila` (estado público, turno con polling, validación y panel ADMIN de habilitación) y el checkout exige/envía `tokenFila` en `POST /reservas`. La decisión original de priorizar el backend no cambia el contrato: la UI consume los mismos 5 endpoints y las reglas siguen en Redis.
 - [x] **D10. "Posición" es el número de turno, inmutable.** Es el orden de llegada asignado con un contador atómico y no cambia aunque otros compren. Quien está habilitado cumple `posicion ≤ tanda`. Para mostrar cuánto falta, las respuestas incluyen `delante = max(0, posicion − tanda)`: cantidad de posiciones que faltan habilitar para que sea su turno.
 
 **Estados del cliente:** `EN_ESPERA` (posición mayor a la tanda) · `HABILITADO` (dentro de la tanda, sin token) · `CON_TOKEN` · `TURNO_USADO`.
@@ -556,7 +557,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 | Sin expiración por inactividad | Evita jobs y estados intermedios | Un habilitado que no compra retiene espacio del tope |
 | Tope de cupo con 1 entrada por habilitado | Heurística barata y conservadora | No garantiza stock, solo frena la apertura |
 | Gate solo en alta demanda | No afecta el flujo E1 | Los eventos normales no tienen orden de acceso |
-| Sin UI | El foco es el backend | La fila se opera por API |
+| UI mínima en el SPA | Se agregó pantalla de fila; no hay avisos push ni estimación de espera | El cliente ve posición/tanda en la pestaña y actualiza por polling cada 5 s |
 
 **Riesgos y limitaciones conocidas**
 

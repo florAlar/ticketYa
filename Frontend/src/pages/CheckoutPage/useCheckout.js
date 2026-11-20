@@ -1,10 +1,16 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAsync from '../../hooks/useAsync'
 import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
 import { isAbortError } from '../../api/http'
 import { comprarEntrada } from '../../api/ventasCliente'
 import { USE_MOCK } from '../../api/config'
+import {
+  clearFilaToken,
+  esTokenDeFilaInvalido,
+  getFilaToken,
+  tokenFilaVigente,
+} from '../../domain/filaVirtual'
 import {
   MAX_ASIENTOS_POR_COMPRA,
   asientosDeMensajeConflicto,
@@ -22,6 +28,11 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
   const [seleccion, setSeleccion] = useState([])
   const [aviso, setAviso] = useState('')
   const [error, setError] = useState('')
+  const [paseFila, setPaseFila] = useState(() => getFilaToken(eventoId))
+
+  useEffect(() => {
+    setPaseFila(getFilaToken(eventoId))
+  }, [eventoId])
 
   const load = useCallback(
     async (signal) => {
@@ -81,10 +92,14 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
   const numeradoSinLayout = esNumerado && !tieneLayout && !USE_MOCK
   const ocupados = cupoSector?.asientosOcupados || []
   const cantidad = usaPicker ? seleccion.length : 1
+  const requiereFila = Boolean(evento?.esAltaDemanda)
+  const paseVigente = tokenFilaVigente(paseFila)
+  const filaPendiente = requiereFila && !paseVigente
 
   const canPay = useMemo(() => {
     if (!isAuthenticated || !sector || paying) return false
     if (numeradoSinLayout) return false
+    if (filaPendiente) return false
     if (usaPicker && (cantidad < 1 || cantidad > MAX_ASIENTOS_POR_COMPRA)) {
       return false
     }
@@ -98,6 +113,7 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
     sector,
     paying,
     numeradoSinLayout,
+    filaPendiente,
     usaPicker,
     cantidad,
     dispError,
@@ -151,6 +167,14 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
 
   const onPagar = async () => {
     if (!canPay || !sector) return
+    const pase = requiereFila ? getFilaToken(eventoId) : null
+    if (requiereFila && !pase) {
+      setPaseFila(null)
+      setError(
+        'Necesitás validar tu turno en la fila virtual antes de comprar.'
+      )
+      return
+    }
     setPaying(true)
     setError('')
     setAviso('')
@@ -170,8 +194,17 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
           asientos: usaPicker ? seleccion : undefined,
         },
         user,
-        { token, resultadoPago: 'APROBAR' }
+        {
+          token,
+          resultadoPago: 'APROBAR',
+          tokenFila: pase?.token,
+        }
       )
+
+      if (requiereFila) {
+        clearFilaToken(eventoId)
+        setPaseFila(null)
+      }
 
       if (result.entrada?.id) {
         setMpPreview(result.mercadoPago || mpPreview)
@@ -203,6 +236,14 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
         /* ignore */
       }
     } catch (err) {
+      if (esTokenDeFilaInvalido(err)) {
+        clearFilaToken(eventoId)
+        setPaseFila(null)
+        setError(
+          'Tu pase de fila venció, ya se usó o no es válido. Volvé a la fila virtual para obtener otro turno.'
+        )
+        return
+      }
       if (usaPicker && err.status === 409 && /asiento/i.test(err.message || '')) {
         const informados = asientosDeMensajeConflicto(err.message).map((a) =>
           codigoAsiento(a.fila, a.numero)
@@ -241,6 +282,9 @@ export default function useCheckout({ eventoId, sectorParam, user, token, isAuth
     success,
     aviso,
     error,
+    requiereFila,
+    paseFila,
+    filaPendiente,
     setSeleccion,
     setAviso,
     onActualizarAsientos,
