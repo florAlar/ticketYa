@@ -1,7 +1,7 @@
 /* ===== Home events (minimal) ===== */
 
 .event-section {
-  padding: 1.25rem 1rem 0.5rem;
+  padding: 1.25rem var(--page-gutter, 30px) 0.5rem;
 }
 
 .event-section__head {
@@ -20,6 +20,8 @@
 }
 
 .event-section__more {
+  color: var(--tone-brand);
+  font-weight: 600;
   font-size: 0.85rem;
   opacity: 0.8;
   text-decoration: none;
@@ -54,32 +56,18 @@
   padding-bottom: 1rem;
 }
 
-/* Página de búsqueda / catálogo: 4 columnas fijas; alto = resultados */
+/* Página de búsqueda / catálogo: tantas columnas como entren (cards de ~260 px mínimo) */
 .event-list--grid-4 {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1.25rem;
   align-content: start;
   width: 100%;
   padding-bottom: 2rem;
-  /* sin min-height fijo: crece con las cards */
 }
 
 .event-list--grid-4 .event-list__item {
   min-width: 0;
-}
-
-@media (max-width: 1024px) {
-  .event-list--grid-4 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .event-list--grid-4 {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.85rem;
-  }
 }
 
 @media (max-width: 480px) {
@@ -88,96 +76,152 @@
   }
 }
 
+.event-row { position: relative; }
 .event-list--row {
   display: flex;
   gap: 0.85rem;
   overflow-x: auto;
-  padding-bottom: 1rem;
+  /* aire alrededor para que la sombra del hover no quede recortada por el scroll */
+  padding: 1rem 1rem 2.25rem;
+  margin: -1rem -1rem 0;
+  list-style: none;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1rem;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.event-list--row::-webkit-scrollbar { display: none; }
+
+/* Flecha discreta: solo a la derecha */
+.event-row__next {
+  position: absolute;
+  top: calc(50% - 0.5rem);
+  right: 0.5rem;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  color: #fff;
+  background: rgba(12, 7, 24, 0.55);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s, background 0.2s, transform 0.2s var(--ease-out);
+}
+.event-row:hover .event-row__next,
+.event-row__next:focus-visible { opacity: 1; background: rgba(12, 7, 24, 0.8); }
+.event-row__next:hover { transform: translateY(-50%) scale(1.08); }
+.event-row__next:focus-visible { outline: none; box-shadow: var(--ring); }
 
 .event-list--row .event-list__item {
-  flex: 0 0 200px;
+  flex: 0 0 230px;
   scroll-snap-align: start;
 }
 
 .event-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  position: relative;
+  display: block;
+  aspect-ratio: 4 / 5;
+  height: auto;
   text-decoration: none;
-  color: inherit;
-  border-radius: 12px;
+  color: #fff;
+  border-radius: var(--radius-lg, 20px);
   overflow: hidden;
-  background: var(--colors-surface, #f7f7fa);
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  isolation: isolate;
+  background: #150d26;
+  border: 0;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.28s var(--ease-out), box-shadow 0.28s var(--ease-out);
 }
 
 .event-card:hover {
-  transform: translateY(-2px);
-  border-color: color-mix(in srgb, var(--colors-primary, #7c3aed) 45%, transparent);
-  box-shadow: var(--shadows-sm, 0 2px 8px rgba(0, 0, 0, 0.08));
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-card-hover);
 }
 
+.event-card:focus-visible { outline: none; box-shadow: var(--ring); }
+
+/* La imagen es el fondo de toda la card */
 .event-card__media {
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  background: #222;
-  position: relative;
-}
-
-.event-card__cupo {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 1;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #150d26;
 }
 
-.evento-cupo-badge {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
+.event-card__media .event-cover--img {
+  transition: transform 0.7s var(--ease-out);
+}
+.event-card:hover .event-card__media .event-cover--img { transform: scale(1.07); }
+
+/* Degradé que da lectura al texto superpuesto */
+.event-card__shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(12, 7, 24, 0.35) 0%, rgba(12, 7, 24, 0) 22%),
+    linear-gradient(180deg, rgba(12, 7, 24, 0) 25%, rgba(12, 7, 24, 0.78) 62%, rgba(12, 7, 24, 0.95) 100%);
+  pointer-events: none;
+}
+
+.event-card__badges {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+}
+
+/* Categoría (Recital, Deporte…): discreta, debajo del rayo */
+.event-card__artist {
+  max-width: 9.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
   font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 1.2;
-  text-transform: none;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.28);
 }
 
-.evento-cupo-badge--agotado {
-  background: color-mix(in srgb, #b91c1c 88%, #000);
+.event-card__date {
+  position: absolute;
+  left: 0.7rem;
+  top: 0.7rem;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 2.9rem;
+  padding: 0.3rem 0.45rem;
+  line-height: 1.05;
   color: #fff;
+  border-radius: 12px;
+  background: rgba(15, 8, 30, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
 }
+.event-card__date strong { font-size: 1.15rem; font-weight: 800; }
+.event-card__date span { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; opacity: 0.9; }
 
-.evento-cupo-badge--suspend {
-  background: color-mix(in srgb, #a16207 88%, #000);
-  color: #fff;
-}
+.event-card--compact { aspect-ratio: 3 / 4; }
 
-.evento-cupo-badge--aviso {
-  background: color-mix(in srgb, #b45309 85%, #000);
-  color: #fff;
-}
-
-.event-card--featured .event-card__media {
-  aspect-ratio: 16 / 11;
-}
-
-.event-card--compact .event-card__media {
-  aspect-ratio: 16 / 9;
-}
-
-.event-card__media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
+/* Texto sobre la imagen */
 .event-card__body {
-  padding: 0.65rem 0.75rem 0.85rem;
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  padding: 1rem 1.05rem 1.05rem;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
@@ -185,47 +229,59 @@
 
 .event-card__tipo {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  opacity: 0.65;
+  letter-spacing: 0.1em;
+  color: var(--brand-tint);
 }
 
 .event-card__title {
   margin: 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.25;
+  font-family: var(--fonts-body);
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.event-card--featured .event-card__title {
-  font-size: 1.05rem;
-}
-
-.event-card--compact .event-card__title {
-  font-size: 0.85rem;
-}
+.event-card--featured .event-card__title { font-size: 1.25rem; }
+.event-card--compact .event-card__title { font-size: 0.95rem; }
 
 .event-card__meta {
   margin: 0;
-  font-size: 0.8rem;
-  opacity: 0.75;
+  font-size: 0.74rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
-.event-card__price {
-  margin: 0.25rem 0 0;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--colors-primary);
+.event-card__meta--lugar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
+.event-card__meta--lugar svg { flex: none; }
+.event-card__meta--lugar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.event-card--skeleton { box-shadow: none; pointer-events: none; }
+.event-card--skeleton:hover { transform: none; }
+.event-card--skeleton .event-card__body .skeleton { background: rgba(255, 255, 255, 0.14); animation: none; }
 
 /* Motivo de la recomendación (card compacta) */
 .event-card__motivo {
   margin: 0.2rem 0 0;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.3;
-  color: var(--colors-primary);
-  opacity: 0.9;
+  color: var(--brand-tint);
 }
 
 /* Bloque “Recomendados para vos” / “Eventos similares” */

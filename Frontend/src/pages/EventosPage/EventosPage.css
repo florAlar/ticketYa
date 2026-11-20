@@ -1,9 +1,9 @@
 .eventos-page {
   width: 100%;
-  max-width: 1200px;
+  max-width: none;
   margin: 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: var(--page-gutter, 30px);
+  padding-right: var(--page-gutter, 30px);
   padding-top: 2.25rem;
   padding-bottom: 2.5rem;
   min-height: 0;

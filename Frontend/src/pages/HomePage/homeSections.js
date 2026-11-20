@@ -20,11 +20,11 @@ export const homeSections = [
     linkToAll: '/eventos?tipo=RECITAL',
   },
   {
-    id: 'teatro',
-    title: 'Teatro',
-    filter: { tipo: 'TEATRO', limit: 8 },
+    id: 'deportes',
+    title: 'Deportes',
+    filter: { tipo: 'DEPORTE', limit: 8 },
     layout: 'row',
     card: 'standard',
-    linkToAll: '/eventos?tipo=TEATRO',
+    linkToAll: '/eventos?tipo=DEPORTE',
   },
 ]

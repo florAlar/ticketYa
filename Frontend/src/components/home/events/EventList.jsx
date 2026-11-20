@@ -6,6 +6,9 @@ import {
   withCupoResumen,
 } from '../../../domain/evento'
 import { resolveCard } from './cards/cardRegistry'
+import EventCardSkeleton from './EventCardSkeleton'
+import EventRow from './EventRow'
+import { EmptyState } from '../../ui/AsyncState'
 
 function filterKey(filter) {
   return filter ? JSON.stringify(filter) : ''
@@ -80,7 +83,15 @@ const EventList = ({
         : 'event-list event-list--grid'
 
   if (status === 'loading') {
-    return <p className="event-list__status">Cargando…</p>
+    return (
+      <ul className={layoutClass} aria-busy="true" aria-label="Cargando eventos">
+        {Array.from({ length: layout === 'row' ? 4 : 8 }, (_, i) => (
+          <li key={i} className="event-list__item">
+            <EventCardSkeleton />
+          </li>
+        ))}
+      </ul>
+    )
   }
   if (status === 'error') {
     return (
@@ -93,18 +104,24 @@ const EventList = ({
     )
   }
   if (!items?.length) {
-    return <p className="event-list__status">No hay eventos.</p>
+    return (
+      <EmptyState title="No encontramos eventos">
+        Probá con otros filtros o volvé más tarde: se publican nuevos todo el
+        tiempo.
+      </EmptyState>
+    )
   }
 
-  return (
-    <ul className={layoutClass}>
-      {items.map((evento) => (
-        <li key={evento.id} className="event-list__item">
-          <Card evento={evento} />
-        </li>
-      ))}
-    </ul>
-  )
+  const cards = items.map((evento) => (
+    <li key={evento.id} className="event-list__item">
+      <Card evento={evento} />
+    </li>
+  ))
+
+  if (layout === 'row') {
+    return <EventRow className={layoutClass}>{cards}</EventRow>
+  }
+  return <ul className={layoutClass}>{cards}</ul>
 }
 
 export default EventList
