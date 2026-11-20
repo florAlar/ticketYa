@@ -1,0 +1,437 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TicketYa — Notificaciones (Email / Push y Bandeja)",
+    "description": "Bandeja de notificaciones del usuario autenticado (una entrada por mensaje agrupando PUSH y EMAIL, con contador de no leídas) y operaciones administrativas de alta manual y consulta de estado de envío.\nEl API Gateway valida el JWT y propaga X-User-Id / X-User-Role.\n",
+    "contact": {
+      "name": "Equipo TicketYa — TUDAi 2026",
+      "email": "equipo@ticketya.com.ar"
+    },
+    "license": {
+      "name": "Uso académico — TUDAi 2026"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8086",
+      "description": "Local — directo al microservicio"
+    },
+    {
+      "url": "http://localhost:8080/api",
+      "description": "Local — vía API Gateway (StripPrefix=1)",
+      "x-gateway": true
+    },
+    {
+      "url": "https://ticketya.com.ar/api",
+      "description": "Producción — vía API Gateway",
+      "x-gateway": true
+    }
+  ],
+  "tags": [
+    {
+      "name": "Bandeja",
+      "description": "Notificaciones del usuario autenticado (/notificaciones/me)."
+    },
+    {
+      "name": "Administración",
+      "description": "Alta administrativa y consulta de estado de envío (solo ADMIN)."
+    },
+    {
+      "name": "Salud",
+      "description": "Smoke del microservicio."
+    }
+  ],
+  "paths": {
+    "/notificaciones/me": {
+      "get": {
+        "tags": ["Bandeja"],
+        "summary": "Listar notificaciones propias",
+        "description": "Devuelve una página de mensajes del usuario autenticado (una entrada por mensaje; si se envió por PUSH y EMAIL, `canales` informa ambos) junto con el contador `noLeidas`.",
+        "operationId": "listarPropias",
+        "parameters": [
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "description": "Propagado por el API Gateway desde el JWT.",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 0, "minimum": 0 }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "format": "int32", "default": 20, "minimum": 1, "maximum": 100 }
+          },
+          {
+            "name": "leida",
+            "in": "query",
+            "required": false,
+            "description": "Filtra por estado de lectura (true/false).",
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de notificaciones del usuario",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificacionPageResponseDTO" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado o falta X-User-Id",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/notificaciones/me/{id}": {
+      "get": {
+        "tags": ["Bandeja"],
+        "summary": "Consultar detalle de una notificación propia",
+        "operationId": "detallePropio",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la notificación",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificacionResponseDTO" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "La notificación pertenece a otro usuario",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Notificación no encontrada",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/notificaciones/me/{id}/leida": {
+      "patch": {
+        "tags": ["Bandeja"],
+        "summary": "Marcar notificación como leída",
+        "description": "Marca como leído el mensaje completo (todas las filas hermanas PUSH/EMAIL que comparten `clave_mensaje`) y registra `fechaLectura`.",
+        "operationId": "marcarLeida",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-User-Id",
+            "in": "header",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notificación marcada como leída",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificacionResponseDTO" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "La notificación pertenece a otro usuario",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Notificación no encontrada",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/notificaciones": {
+      "post": {
+        "tags": ["Administración"],
+        "summary": "Crear notificación administrativa (solo ADMIN)",
+        "description": "Registra una notificación en estado PENDIENTE para ser procesada por el job de envío.",
+        "operationId": "crearAdministrativa",
+        "parameters": [
+          {
+            "name": "X-User-Role",
+            "in": "header",
+            "required": false,
+            "description": "Propagado por el API Gateway; debe ser ADMIN.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/NotificacionRequestDTO" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notificación creada en estado PENDIENTE",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificacionResponseDTO" }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere rol ADMIN",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      },
+      "get": {
+        "tags": ["Salud"],
+        "summary": "Smoke del servicio",
+        "operationId": "ok",
+        "responses": {
+          "200": {
+            "description": "Servicio activo",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string", "example": "microservicio notificaciones ok!" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/notificaciones/{id}/estado": {
+      "get": {
+        "tags": ["Administración"],
+        "summary": "Consultar estado de envío de una notificación (solo ADMIN)",
+        "operationId": "estadoEnvio",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "X-User-Role",
+            "in": "header",
+            "required": false,
+            "description": "Propagado por el API Gateway; debe ser ADMIN.",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado actual de la notificación",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/NotificacionResponseDTO" }
+              }
+            }
+          },
+          "401": {
+            "description": "No autenticado",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "403": {
+            "description": "Requiere rol ADMIN",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          },
+          "404": {
+            "description": "Notificación no encontrada",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ApiError" }
+              }
+            }
+          }
+        },
+        "security": [{ "bearerAuth": [] }]
+      }
+    },
+    "/": {
+      "get": {
+        "tags": ["Salud"],
+        "summary": "Smoke raíz",
+        "operationId": "okRaiz",
+        "responses": {
+          "200": {
+            "description": "Servicio activo",
+            "content": {
+              "text/plain": {
+                "schema": { "type": "string", "example": "microservicio notificaciones ok!" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NotificacionRequestDTO": {
+        "type": "object",
+        "description": "Alta administrativa de una notificación (ADMIN)",
+        "required": ["idUsuario", "tipo", "canal", "asunto", "contenido"],
+        "properties": {
+          "idUsuario": { "type": "string", "maxLength": 36, "example": "b0000000-0000-4000-8000-000000000001" },
+          "idEventoOrigen": { "type": "string", "maxLength": 36, "nullable": true },
+          "tipo": { "type": "string", "maxLength": 64, "example": "AVISO_ADMINISTRATIVO" },
+          "canal": { "type": "string", "maxLength": 32, "enum": ["EMAIL", "PUSH"], "example": "EMAIL" },
+          "asunto": { "type": "string", "maxLength": 255, "example": "Mantenimiento programado" },
+          "contenido": { "type": "string", "example": "La plataforma estará en mantenimiento el domingo de 03:00 a 04:00." },
+          "fechaCreacion": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "NotificacionResponseDTO": {
+        "type": "object",
+        "description": "Notificación registrada y estado de entrega",
+        "properties": {
+          "id": { "type": "string" },
+          "idUsuario": { "type": "string" },
+          "idEventoOrigen": { "type": "string", "nullable": true },
+          "tipo": { "type": "string", "example": "COMPRA_CONFIRMADA" },
+          "canal": { "type": "string", "example": "PUSH" },
+          "canales": {
+            "type": "array",
+            "description": "Canales por los que se entregó el mensaje (PUSH, EMAIL)",
+            "items": { "type": "string" },
+            "example": ["PUSH", "EMAIL"]
+          },
+          "asunto": { "type": "string" },
+          "contenido": { "type": "string" },
+          "destinatario": { "type": "string", "nullable": true, "example": "demo@ticketya.com" },
+          "estado": { "type": "string", "enum": ["PENDIENTE", "ENVIADA", "FALLIDA"] },
+          "fechaCreacion": { "type": "string", "format": "date-time" },
+          "fechaEnvio": { "type": "string", "format": "date-time", "nullable": true },
+          "leida": { "type": "boolean" },
+          "fechaLectura": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "NotificacionPageResponseDTO": {
+        "type": "object",
+        "description": "Página de notificaciones propias + contador de no leídas",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/NotificacionResponseDTO" }
+          },
+          "page": { "type": "integer", "format": "int32" },
+          "size": { "type": "integer", "format": "int32" },
+          "totalElements": { "type": "integer", "format": "int64" },
+          "totalPages": { "type": "integer", "format": "int32" },
+          "noLeidas": { "type": "integer", "format": "int64" }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id, X-User-Email, X-User-Role y X-User-Roles.\n",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

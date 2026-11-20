@@ -82,10 +82,17 @@ Todas se consumen vía gateway con prefijo `/api`. Listado completo, parámetros
 | eventos | `GET/POST /eventos`, `GET/PUT/DELETE /eventos/{id}`, `POST /eventos/{id}/publicacion`, `PATCH /eventos/{id}/estado`, `PATCH /eventos/{id}/fecha`, `PUT /eventos/{id}/sectores/{sectorId}/precio`, `/eventos/{id}/participantes`, `/lugares/**`, `/sectores/**`, `/participantes/**`, `/organizadores/me/eventos` |
 | ventas | `GET /eventos/{id}/disponibilidad`, `GET /eventos/disponibilidad?ids=`, `POST /reservas`, `/reservas/{id}/{confirmacion\|renovacion\|cancelacion}`, `POST /compras`, `POST /compras/{id}/pagos`, `POST /pagos/{id}/reintentos`, `GET /reportes/eventos/{id}[/ventas\|sectores\|ocupacion\|recaudacion]` |
 | entradas | `GET /entradas`, `GET /entradas/{id}`, `GET /entradas/{id}/qr`, `POST /entradas/{id}/devoluciones`, `GET /devoluciones`, `POST /devoluciones/{id}/{aprobacion\|rechazo}`, `POST /eventos/{id}/validaciones`, `GET /eventos/{id}/validaciones` |
+| preferencias | `GET/PUT /preferencias/me`, `PUT /preferencias/me/artistas`, `GET/PUT /preferencias/me/notificaciones`, `GET /recomendaciones/me`, `GET /eventos/{id}/recomendaciones`, `GET /clientes/{id}/historial` |
+| notificaciones | `GET /notificaciones/me`, `GET /notificaciones/me/{id}`, `PATCH /notificaciones/me/{id}/leida`, `POST /notificaciones` (ADMIN), `GET /notificaciones/{id}/estado` (ADMIN) |
 
-Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad` y `/eventos/{id}/cupos` a **ventas** antes del catch-all hacia **eventos**.
+Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad`, `/eventos/{id}/cupos`, `/eventos/{id}/fila/**`, `/eventos/{id}/validaciones` y `/eventos/{id}/recomendaciones` a su servicio correspondiente antes del catch-all hacia **eventos**.
 
-## 4. Comunicación entre servicios
+## 4. Documentación complementaria de arquitectura (E2)
+- Estrategias de consistencia y compensaciones: [`consistencia-y-compensaciones.md`](./consistencia-y-compensaciones.md) (`ARQ-05`).
+- Justificación de tecnologías y patrones arquitectónicos: [`decisiones-tecnologicas.md`](./decisiones-tecnologicas.md) (`ARQ-06`).
+- Matriz RBAC y ruteo del Gateway: [`api/gateway.md`](./api/gateway.md).
+
+## 5. Comunicación entre servicios
 
 | Origen → Destino | Cuándo | Para qué |
 |---|---|---|
@@ -101,7 +108,7 @@ Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad` y `/e
 
 Headers relevantes: `X-User-Id`, `X-User-Role` (identidad), `Idempotency-Key` (reservas y compras) y `X-Correlation-Id` (trazabilidad: lo genera el gateway y lo propagan los servicios y las llamadas Feign).
 
-## 5. Identificación del usuario
+## 6. Identificación del usuario
 
 Autenticación formal con **JWT y roles** en el borde (Entrega 2): el gateway valida el token
 (firma, expiración, roles) y es el único que decide el acceso. La identidad viaja hacia los
@@ -109,10 +116,10 @@ microservicios en los headers `X-User-Id` / `X-User-Role` / `X-User-Roles`, que 
 sobreescribe con los claims del token**: los que envíe el cliente se descartan (en rutas públicas
 se vacían). Detalle en el `README.md` raíz.
 
-## 6. Despliegue
+## 7. Despliegue
 
 `cd Backend && docker compose up -d --build` levanta gateway, microservicios, bases y frontend (15 contenedores). Puertos y diagrama Docker: `specs/infraestructura.md`.
 
-## 7. Trazabilidad y bitácora
+## 8. Trazabilidad y bitácora
 
 Cada request lleva un `X-Correlation-Id` que genera el gateway y que aparece en cada línea de log de todos los servicios y en la respuesta; las acciones críticas (login, publicación, pagos, devoluciones, validaciones de acceso…) quedan en una bitácora con ese mismo id. Detalle y cómo seguir una operación entre servicios: [`observabilidad.md`](./observabilidad.md).
