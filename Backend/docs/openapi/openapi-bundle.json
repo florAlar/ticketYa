@@ -2574,7 +2574,7 @@
               "Lugares"
             ],
             "summary": "Crear lugar",
-            "description": "Alta de lugar. Requiere ORGANIZADOR o ADMIN.",
+            "description": "Alta de lugar. Solo ADMIN.",
             "operationId": "crear_1",
             "requestBody": {
               "content": {
