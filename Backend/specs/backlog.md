@@ -194,6 +194,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | hecho | README raíz y de Frontend reescritos (2026-11-11); ya no dicen "sin API de negocio aún". |
 | HIG-06 | Verificación con stack Docker (smoke, IT Testcontainers, compose completo) no hecha en 2026-11-10 | hecho | 2026-11-11: stack recreado desde cero (`down -v` + `up -d --build`): 15 contenedores Up, bases healthy, sin errores de arranque; login JWT real, reserva por asiento (201), misma reserva (409) y cancelación por el gateway; front en :3000 con proxy `/api`. No se re-ejecutaron los IT Testcontainers ni la colección Postman completa. |
 | HIG-07 | Un único `init.sql` por base; eliminar `migrations/` (02, 03, 04) | hecho | 2026-11-11: los `init.sql` ya incluían todo el esquema y el seed; los `03-reseed` eran idénticos al seed salvo las tablas de SEAT-07. Cambio de esquema = recrear volumen (`docker compose down -v`). README de mysql y docs actualizados. |
+| HIG-08 | Specs desactualizadas que declaraban pendientes features ya implementadas | hecho | 2026-11-20: actualizados `specs/fila-virtual.md` (estado y §2 como registro histórico), `specs/documentacion-y-validacion.md` (§1, D-16/R-05 y changelog 1.3), `specs/reglas-de-negocio.md` (preferencias y notificaciones) y `specs/microservicios.md` / `specs/arquitectura.md` (fin del lenguaje de scaffold). |
 
 ### 6.7 Asientos virtuales (sectores numerados)
 

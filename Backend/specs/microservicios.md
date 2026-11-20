@@ -12,12 +12,15 @@ Cada contexto es un proyecto Spring Boot independiente (carpeta + `pom.xml` + `D
 | `msvc-preferencias` | ms-preferencias | 8085 | MongoDB (`db-mongo-preferencias`, host 27018) | Preferencias, recomendaciones, historial cliente |
 | `msvc-notificaciones` | ms-notificaciones | 8086 | MySQL (`db-mysql-notificaciones`, host 3311) | Envíos email/push, plantillas, estado de notificación |
 
-## Estado actual (scaffold)
+## Estado actual (implementado)
 
-- Smoke `GET /` en gateway y cada msvc (texto ok).
-- Lógica de dominio y rutas de negocio: pendientes (ver `specs/backlog.md`).
+- Arquitectura operativa: API Gateway + 6 microservicios + frontend, orquestados por Docker Compose.
+- E1 completo: eventos y lugares/sectores, publicación y búsqueda, reserva temporal, compra, pago mock, emisión de QR, devoluciones y cancelaciones.
+- E2 implementado: fila virtual, control de acceso QR, preferencias/recomendaciones/historial (MongoDB), notificaciones (PUSH + EMAIL), reportes del organizador, JWT + RBAC, caché y resiliencia, correlation id + bitácora y geocodificación.
+- Pendiente funcional: extensión CLIENTE → ORGANIZADOR (X-ORG-01) y transferencia de entradas (sin API).
+- Deudas de testing: integración cross-msvc y corrida formal de carga (ver `specs/backlog.md` §7).
 - Prefijos públicos y solapes: `specs/endpoints.md`.
-- Modelo de dominio global: `specs/diagramas/modelo.md` (preferencias Mongo aún no modelado como documentos — backlog MOD-04).
+- Modelo de dominio global: `specs/diagramas/modelo.md` y `specs/diagramas/modelo-mongodb.md`.
 
 ## Docs por contexto
 
