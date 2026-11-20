@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -17,6 +18,7 @@ import ventas.dto.FilaEstadoResponseDTO;
 import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaIngresoResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
+import ventas.dto.FilaValidacionResponseDTO;
 import ventas.exception.FilaException;
 import ventas.exception.GlobalExceptionHandler;
 import ventas.service.FilaService;
@@ -160,6 +162,37 @@ class FilaControllerTest {
                         .content("{\"hastaPosicion\":100}"))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.code").value("FILA_NO_DISPONIBLE"));
+    }
+
+    @Test
+    void validacion_devuelveToken() throws Exception {
+        when(service.validarToken(EVENTO, USER)).thenReturn(new FilaValidacionResponseDTO(
+                EVENTO, "token-1", Instant.parse("2026-11-19T15:30:00Z"), 57, 0));
+
+        mvc.perform(post("/eventos/{id}/fila/validacion", EVENTO).header("X-User-Id", USER))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("token-1"))
+                .andExpect(jsonPath("$.posicion").value(57))
+                .andExpect(jsonPath("$.delante").value(0))
+                .andExpect(jsonPath("$.expiraEn").exists());
+    }
+
+    @Test
+    void validacion_sinIdentidad_401() throws Exception {
+        mvc.perform(post("/eventos/{id}/fila/validacion", EVENTO))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void validacion_fueraDeTanda_409ConExtras() throws Exception {
+        when(service.validarToken(any(), any())).thenThrow(FilaException.fueraDeTanda(57, 50));
+
+        mvc.perform(post("/eventos/{id}/fila/validacion", EVENTO).header("X-User-Id", USER))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("FILA_FUERA_DE_TANDA"))
+                .andExpect(jsonPath("$.posicion").value(57))
+                .andExpect(jsonPath("$.posicionHabilitadaHasta").value(50))
+                .andExpect(jsonPath("$.delante").value(7));
     }
 
     @Test

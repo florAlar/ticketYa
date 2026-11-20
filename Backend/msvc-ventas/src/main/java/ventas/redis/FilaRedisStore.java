@@ -54,6 +54,42 @@ public class FilaRedisStore {
             return 0
             """, Long.class);
 
+    // KEYS: zset, tanda, token, usados · ARGV: userId, tokenNuevo, ttlTokenSegundos
+    // Retorno: {codigo, posicion, tanda, token, ttlRestante}; código 1 ok | -1 usado | -2 sin ingreso | -3 fuera
+    private static final RedisScript<List> SCRIPT_VALIDAR = new DefaultRedisScript<>("""
+            if redis.call('SISMEMBER', KEYS[4], ARGV[1]) == 1 then return {-1} end
+            local pos = redis.call('ZSCORE', KEYS[1], ARGV[1])
+            if not pos then return {-2} end
+            pos = tonumber(pos)
+            local tanda = tonumber(redis.call('GET', KEYS[2]) or '0')
+            if pos > tanda then return {-3, pos, tanda} end
+            local t = redis.call('GET', KEYS[3])
+            if not t then
+              redis.call('SET', KEYS[3], ARGV[2], 'EX', ARGV[3])
+              t = ARGV[2]
+            end
+            return {1, pos, tanda, t, redis.call('TTL', KEYS[3])}
+            """, List.class);
+
+    // KEYS: token, usados, zset · ARGV: token, userId -> 1 consumido | 0 inexistente/vencido/ajeno
+    private static final RedisScript<Long> SCRIPT_CONSUMIR_TOKEN = new DefaultRedisScript<>("""
+            if redis.call('GET', KEYS[1]) == ARGV[1] then
+              redis.call('DEL', KEYS[1])
+              redis.call('SADD', KEYS[2], ARGV[2])
+              local ttl = redis.call('PTTL', KEYS[3])
+              if ttl > 0 then redis.call('PEXPIRE', KEYS[2], ttl) end
+              return 1
+            end
+            return 0
+            """, Long.class);
+
+    // KEYS: token, usados · ARGV: token, userId, ttlTokenSegundos -> 1 (rollback de la reserva)
+    private static final RedisScript<Long> SCRIPT_RESTAURAR_TOKEN = new DefaultRedisScript<>("""
+            redis.call('SREM', KEYS[2], ARGV[2])
+            redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[3])
+            return 1
+            """, Long.class);
+
     private final StringRedisTemplate redis;
     private final String prefix;
     private final long ttlSegundos;
@@ -83,6 +119,9 @@ public class FilaRedisStore {
 
     /** Resumen para el job: último turno, tanda y habilitados que aún no usaron su turno. */
     public record Resumen(long seq, long tanda, long activos) {}
+
+    /** Resultado de una validación: turno, tanda vigente, token (reutilizado o nuevo) y caducidad. */
+    public record Validacion(long posicion, long tanda, String token, java.time.Instant expiraEn) {}
 
     public String zsetKey(String idEvento) {
         return prefix + ":" + idEvento;
@@ -232,6 +271,62 @@ public class FilaRedisStore {
     public void liberarLock(String idInstancia) {
         try {
             redis.execute(SCRIPT_UNLOCK, List.of(lockKey()), idInstancia);
+        } catch (DataAccessException ex) {
+            throw FilaException.noDisponible(ex);
+        }
+    }
+
+    /**
+     * Emite (o reutiliza) el token de un cliente habilitado. El script es atómico: dos validaciones
+     * concurrentes con el mismo turno devuelven el mismo token mientras esté vigente.
+     */
+    public Validacion validar(String idEvento, String userId, String tokenNuevo) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<Object> out = (List<Object>) redis.execute(SCRIPT_VALIDAR,
+                    List.of(zsetKey(idEvento), tandaKey(idEvento), tokenKey(idEvento, userId),
+                            usadosKey(idEvento)),
+                    userId, tokenNuevo, String.valueOf(tokenTtlSegundos));
+            long codigo = ((Number) out.get(0)).longValue();
+            if (codigo == -1) {
+                throw FilaException.turnoUsado();
+            }
+            if (codigo == -2) {
+                throw FilaException.noIngresado();
+            }
+            if (codigo == -3) {
+                throw FilaException.fueraDeTanda(
+                        ((Number) out.get(1)).longValue(), ((Number) out.get(2)).longValue());
+            }
+            long ttl = ((Number) out.get(4)).longValue();
+            if (ttl < 0) {
+                ttl = tokenTtlSegundos;
+            }
+            return new Validacion(((Number) out.get(1)).longValue(), ((Number) out.get(2)).longValue(),
+                    String.valueOf(out.get(3)), java.time.Instant.now().plusSeconds(ttl));
+        } catch (DataAccessException ex) {
+            throw FilaException.noDisponible(ex);
+        }
+    }
+
+    /** Compare-and-delete atómico: un token solo puede consumirse una vez (CA-3.6). */
+    public boolean consumirToken(String idEvento, String userId, String token) {
+        try {
+            Long consumido = redis.execute(SCRIPT_CONSUMIR_TOKEN,
+                    List.of(tokenKey(idEvento, userId), usadosKey(idEvento), zsetKey(idEvento)),
+                    token, userId);
+            return consumido != null && consumido == 1L;
+        } catch (DataAccessException ex) {
+            throw FilaException.noDisponible(ex);
+        }
+    }
+
+    /** Rollback: devuelve el turno y reemite el token con TTL completo. */
+    public void restaurarToken(String idEvento, String userId, String token) {
+        try {
+            redis.execute(SCRIPT_RESTAURAR_TOKEN,
+                    List.of(tokenKey(idEvento, userId), usadosKey(idEvento)),
+                    token, userId, String.valueOf(tokenTtlSegundos));
         } catch (DataAccessException ex) {
             throw FilaException.noDisponible(ex);
         }

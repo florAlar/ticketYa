@@ -1,10 +1,12 @@
 package ventas.service;
 
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 import ventas.dto.FilaEstadoResponseDTO;
 import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaIngresoResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
+import ventas.dto.FilaValidacionResponseDTO;
 import ventas.exception.FilaException;
 import ventas.exception.ForbiddenException;
 import ventas.observability.Bitacora;
@@ -80,6 +82,27 @@ public class FilaServiceImpl implements FilaService {
         Bitacora.registrar("FILA_HABILITACION", "ADMIN", idEvento,
                 "modo=MANUAL anterior=" + anterior + " nueva=" + nueva);
         return new FilaHabilitacionResponseDTO(idEvento, nueva, "MANUAL");
+    }
+
+    @Override
+    public FilaValidacionResponseDTO validarToken(String idEvento, String userId) {
+        validarElegible(eventos.obtener(idEvento));
+        FilaRedisStore.Validacion v =
+                store.validar(idEvento, userId, UUID.randomUUID().toString());
+        Bitacora.registrar("FILA_TOKEN_EMITIDO", userId, idEvento,
+                "posicion=" + v.posicion() + " expiraEn=" + v.expiraEn());
+        return new FilaValidacionResponseDTO(idEvento, v.token(), v.expiraEn(), v.posicion(),
+                delante(v.posicion(), v.tanda()));
+    }
+
+    @Override
+    public boolean consumirToken(String idEvento, String userId, String token) {
+        return store.consumirToken(idEvento, userId, token);
+    }
+
+    @Override
+    public void restaurarToken(String idEvento, String userId, String token) {
+        store.restaurarToken(idEvento, userId, token);
     }
 
     static long delante(long posicion, long tanda) {

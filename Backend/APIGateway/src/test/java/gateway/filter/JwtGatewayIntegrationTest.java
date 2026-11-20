@@ -242,20 +242,20 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
-    void fila_ingresoYPosicion_exigenJwtDeCliente() throws Exception {
+    void fila_ingresoPosicionYValidacion_exigenJwtDeCliente() throws Exception {
         String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
         for (String uri : new String[] {
                 "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/ingreso",
-                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/posicion"}) {
-            MockHttpServletRequest conToken = new MockHttpServletRequest(
-                    uri.endsWith("ingreso") ? "POST" : "GET", uri);
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/posicion",
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/validacion"}) {
+            String metodo = uri.endsWith("posicion") ? "GET" : "POST";
+            MockHttpServletRequest conToken = new MockHttpServletRequest(metodo, uri);
             conToken.addHeader("Authorization", "Bearer " + token);
             Resultado r = ejecutar(conToken);
             assertTrue(r.paso(), uri);
             assertEquals(USER_ID, r.requestDownstream().getHeader("X-User-Id"), uri);
 
-            MockHttpServletRequest sinToken = new MockHttpServletRequest(
-                    uri.endsWith("ingreso") ? "POST" : "GET", uri);
+            MockHttpServletRequest sinToken = new MockHttpServletRequest(metodo, uri);
             assertEquals(401, ejecutar(sinToken).response.getStatus(), uri);
         }
     }

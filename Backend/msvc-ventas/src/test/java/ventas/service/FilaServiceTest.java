@@ -4,8 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import ventas.dto.FilaEstadoResponseDTO;
 import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
+import ventas.dto.FilaValidacionResponseDTO;
 import ventas.exception.FilaException;
 import ventas.exception.ForbiddenException;
 import ventas.redis.FilaRedisStore;
@@ -149,6 +154,57 @@ class FilaServiceTest {
 
         FilaException e = assertThrows(FilaException.class, () -> service.habilitar(EVENTO, 20, "ADMIN"));
         assertEquals("FILA_TANDA_NO_REDUCIBLE", e.getCode());
+    }
+
+    @Test
+    void validacion_habilitado_devuelveTokenConDelanteCero() {
+        Instant expira = Instant.parse("2026-11-19T15:30:00Z");
+        when(eventos.obtener(EVENTO)).thenReturn(info());
+        when(store.validar(eq(EVENTO), eq(USER), anyString()))
+                .thenReturn(new FilaRedisStore.Validacion(57, 100, "token-1", expira));
+
+        FilaValidacionResponseDTO r = service.validarToken(EVENTO, USER);
+
+        assertEquals("token-1", r.token());
+        assertEquals(expira, r.expiraEn());
+        assertEquals(57, r.posicion());
+        assertEquals(0, r.delante());
+    }
+
+    @Test
+    void validacion_fueraDeTanda_409ConExtras() {
+        when(eventos.obtener(EVENTO)).thenReturn(info());
+        when(store.validar(eq(EVENTO), eq(USER), anyString()))
+                .thenThrow(FilaException.fueraDeTanda(57, 50));
+
+        FilaException e = assertThrows(FilaException.class, () -> service.validarToken(EVENTO, USER));
+
+        assertEquals("FILA_FUERA_DE_TANDA", e.getCode());
+        assertEquals(7L, e.getExtras().get("delante"));
+        assertEquals(57L, e.getExtras().get("posicion"));
+        assertEquals(50L, e.getExtras().get("posicionHabilitadaHasta"));
+    }
+
+    @Test
+    void validacion_sinIngresoYTurnoUsado() {
+        when(eventos.obtener(EVENTO)).thenReturn(info());
+        when(store.validar(eq(EVENTO), eq(USER), anyString()))
+                .thenThrow(FilaException.noIngresado())
+                .thenThrow(FilaException.turnoUsado());
+
+        assertEquals("FILA_NO_INGRESADO",
+                assertThrows(FilaException.class, () -> service.validarToken(EVENTO, USER)).getCode());
+        assertEquals("FILA_TURNO_USADO",
+                assertThrows(FilaException.class, () -> service.validarToken(EVENTO, USER)).getCode());
+    }
+
+    @Test
+    void consumirYRestaurar_deleganEnStore() {
+        when(store.consumirToken(EVENTO, USER, "token-1")).thenReturn(true);
+
+        assertTrue(service.consumirToken(EVENTO, USER, "token-1"));
+        service.restaurarToken(EVENTO, USER, "token-1");
+        verify(store).restaurarToken(EVENTO, USER, "token-1");
     }
 
     @Test

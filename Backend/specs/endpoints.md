@@ -207,7 +207,7 @@ Definiciones: **vendidas** = unidades de compras APROBADAS; **vigentes** = vendi
 
 - POST /eventos/{id}/fila/ingreso — Ingresar a fila virtual (posición asignada en servidor). **FIL-01**: 201 primera vez, 200 reingreso; 409 `FILA_EVENTO_NO_ELEGIBLE` / `FILA_TURNO_USADO`; 503 `FILA_NO_DISPONIBLE`.
 - GET /eventos/{id}/fila/posicion — Consultar posición/estado propio. **FIL-01**: `EN_ESPERA` / `HABILITADO` / `CON_TOKEN` / `TURNO_USADO`; 404 si no ingresó.
-- POST /eventos/{id}/fila/validacion — Validar token temporal de acceso a compra (**FIL-03**, pendiente).
+- POST /eventos/{id}/fila/validacion — Emitir/reenviar el token temporal (**FIL-03**): CLIENTE con JWT, 200 `{idEvento, token, expiraEn, posicion, delante:0}`; idempotente mientras el token esté vigente; 404 `FILA_NO_INGRESADO`, 409 `FILA_FUERA_DE_TANDA` (con `posicion`, `posicionHabilitadaHasta`, `delante`), 409 `FILA_TURNO_USADO`, 503. El token se envía como tercer campo opcional `tokenFila` en `POST /reservas`.
 - GET /eventos/{id}/fila/estado — Estado general de la venta/fila (público). **FIL-01**: sin identidades.
 - POST /eventos/{id}/fila/habilitacion — Habilitar tanda de clientes (**FIL-02**): ADMIN (gateway + `X-User-Role` en ventas; 403 otro rol), body `{ "hastaPosicion": N }` con N ≥ 1 (400 si no), 200 con `modo: MANUAL`, 409 `FILA_TANDA_NO_REDUCIBLE` si retrocede. El Sistema abre tandas con el job automático (`modo: AUTO`).
 

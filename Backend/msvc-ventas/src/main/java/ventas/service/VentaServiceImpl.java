@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import ventas.clients.EventosClient;
 import ventas.clients.EventosClient.EventoDetalleFeignDTO;
 import ventas.clients.EventosClient.SectorFeignDTO;
@@ -46,6 +49,7 @@ import ventas.entity.DetalleReserva;
 import ventas.entity.Pago;
 import ventas.entity.Reserva;
 import ventas.exception.BusinessConflictException;
+import ventas.exception.FilaException;
 import ventas.exception.ResourceNotFoundException;
 import ventas.mapper.VentaMapper;
 import ventas.messaging.CompraConfirmadaEvent;
@@ -94,6 +98,7 @@ public class VentaServiceImpl implements VentaService {
     private final StockCache stockCache;
     private final VentaMapper ventaMapper;
     private final EmisionEntradasService emisionEntradasService;
+    private final FilaService filaService;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -113,6 +118,7 @@ public class VentaServiceImpl implements VentaService {
             StockCache stockCache,
             VentaMapper ventaMapper,
             EmisionEntradasService emisionEntradasService,
+            FilaService filaService,
             @Value("${ticketya.ventas.reserva-ttl-minutes:10}") long reservaTtlMinutes,
             @Value("${ticketya.ventas.max-entradas-cliente-evento:6}") int maxEntradasPorClienteEvento,
             @Value("${ticketya.ventas.idempotency-ttl-hours:24}") long idempotencyTtlHours) {
@@ -126,6 +132,7 @@ public class VentaServiceImpl implements VentaService {
         this.stockCache = stockCache;
         this.ventaMapper = ventaMapper;
         this.emisionEntradasService = emisionEntradasService;
+        this.filaService = filaService;
         this.reservaTtl = Duration.ofMinutes(reservaTtlMinutes);
         this.maxEntradasPorClienteEvento = maxEntradasPorClienteEvento;
         this.idempotencyTtl = Duration.ofHours(idempotencyTtlHours);
@@ -305,6 +312,42 @@ public class VentaServiceImpl implements VentaService {
                     "Solo se puede reservar eventos PUBLICADO (estado=" + evento.getEstado() + ")");
         }
 
+        // FIL-03 gate: antes de cualquier lock o descuento de cupo. Eventos normales siguen igual.
+        AtomicReference<String> idReservaGate = new AtomicReference<>();
+        if (Boolean.TRUE.equals(evento.getEsAltaDemanda())) {
+            String tokenFila = request.tokenFila();
+            if (tokenFila == null || tokenFila.isBlank()) {
+                Bitacora.registrar("FILA_GATE_RECHAZO", idCliente, request.idEvento(), "motivo=SIN_TOKEN");
+                throw FilaException.tokenRequerido();
+            }
+            if (!filaService.consumirToken(request.idEvento(), idCliente, tokenFila)) {
+                Bitacora.registrar("FILA_GATE_RECHAZO", idCliente, request.idEvento(), "motivo=TOKEN_INVALIDO");
+                throw FilaException.tokenInvalido();
+            }
+            if (TransactionSynchronizationManager.isSynchronizationActive()) {
+                TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status != STATUS_COMMITTED) {
+                            try {
+                                filaService.restaurarToken(request.idEvento(), idCliente, tokenFila);
+                                Bitacora.registrar("FILA_TOKEN_RESTAURADO", idCliente, request.idEvento(),
+                                        "idReserva=" + idReservaGate.get());
+                            } catch (RuntimeException ex) {
+                                log.error("FILA: no se pudo restaurar el token del cliente {}", idCliente, ex);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void afterCommit() {
+                        Bitacora.registrar("FILA_TOKEN_CONSUMIDO", idCliente, request.idEvento(),
+                                "idReserva=" + idReservaGate.get());
+                    }
+                });
+            }
+        }
+
         Map<String, BigDecimal> precios = preciosPorSector(evento);
         Map<String, SectorPedido> pedidos = armarPedidos(request.items(), evento);
 
@@ -314,6 +357,7 @@ public class VentaServiceImpl implements VentaService {
         LocalDateTime now = nowUtc();
         Reserva reserva = new Reserva();
         reserva.setIdReserva(UUID.randomUUID().toString());
+        idReservaGate.set(reserva.getIdReserva());
         reserva.setIdCliente(idCliente);
         reserva.setIdEvento(request.idEvento());
         reserva.setFechaCreacion(now);

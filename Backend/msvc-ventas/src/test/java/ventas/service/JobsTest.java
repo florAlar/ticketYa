@@ -25,7 +25,7 @@ class JobsTest {
     @Test
     void reservaExpirationJob_seInstancia() {
         VentaService ventaService = new VentaServiceImpl(
-                null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null,
                 10L, 6, 24L);
         assertNotNull(new ReservaExpirationJob(ventaService));
     }

@@ -23,6 +23,7 @@ import ventas.dto.FilaHabilitacionRequestDTO;
 import ventas.dto.FilaHabilitacionResponseDTO;
 import ventas.dto.FilaIngresoResponseDTO;
 import ventas.dto.FilaPosicionResponseDTO;
+import ventas.dto.FilaValidacionResponseDTO;
 import ventas.exception.ForbiddenException;
 import ventas.exception.UnauthorizedException;
 import ventas.service.FilaService;
@@ -74,6 +75,25 @@ public class FilaController {
         return filaService.posicion(idEvento, requireUser(userId));
     }
 
+    @Operation(summary = "Validar turno y emitir token",
+            description = "Idempotente: devuelve el mismo token mientras esté vigente.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Token vigente",
+                    content = @Content(schema = @Schema(implementation = FilaValidacionResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "Falta X-User-Id"),
+            @ApiResponse(responseCode = "404", description = "FILA_NO_INGRESADO"),
+            @ApiResponse(responseCode = "409", description = "FILA_FUERA_DE_TANDA, FILA_TURNO_USADO "
+                    + "o FILA_EVENTO_NO_ELEGIBLE"),
+            @ApiResponse(responseCode = "503", description = "FILA_NO_DISPONIBLE")
+    })
+    @PostMapping("/validacion")
+    public FilaValidacionResponseDTO validar(
+            @Parameter(description = "UUID del evento") @PathVariable String idEvento,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) String userId) {
+        return filaService.validarToken(idEvento, requireUser(userId));
+    }
+
     @Operation(summary = "Habilitar tanda (override ADMIN)",
             description = "Defensa en profundidad: el gateway también restringe este path a ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth"))
@@ -109,8 +129,6 @@ public class FilaController {
             @Parameter(description = "UUID del evento") @PathVariable String idEvento) {
         return filaService.estado(idEvento);
     }
-
-    /** La habilitación (FIL-02) y la validación (FIL-03) se agregan en sus bloques. */
 
     private static String requireUser(String userId) {
         if (userId == null || userId.isBlank()) {

@@ -3,6 +3,7 @@ package ventas.redis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.utility.DockerImageName;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import ventas.exception.FilaException;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -175,6 +177,129 @@ class FilaRedisStoreIT {
         assertEquals(2, r.seq());
         assertEquals(1, r.tanda());
         assertEquals(1, r.activos());
+    }
+
+    @Test
+    void validacion_devuelveMismoTokenMientrasEsteVigente() {
+        String evento = EVENTO + "-token";
+        String user = "user-token";
+        store.ingresar(evento, user);
+        store.habilitar(evento, 1);
+
+        FilaRedisStore.Validacion a = store.validar(evento, user, "token-nuevo-1");
+        FilaRedisStore.Validacion b = store.validar(evento, user, "token-nuevo-2");
+
+        assertEquals(a.token(), b.token());
+        assertEquals(1, a.posicion());
+        assertEquals(0, Math.max(0, b.posicion() - b.tanda()));
+        assertTrue(b.expiraEn().isAfter(java.time.Instant.now()));
+    }
+
+    @Test
+    void validacionConVeinteHilos_unSoloToken() throws Exception {
+        String evento = EVENTO + "-token-concurrente";
+        String user = "user-token-concurrente";
+        store.ingresar(evento, user);
+        store.habilitar(evento, 1);
+        ExecutorService pool = Executors.newFixedThreadPool(20);
+        CountDownLatch salida = new CountDownLatch(1);
+        List<Future<String>> futures = new ArrayList<>();
+        try {
+            for (int i = 1; i <= 20; i++) {
+                final String nuevo = "token-" + i;
+                futures.add(pool.submit(() -> {
+                    salida.await();
+                    return store.validar(evento, user, nuevo).token();
+                }));
+            }
+            salida.countDown();
+            String esperado = futures.get(0).get(20, TimeUnit.SECONDS);
+            for (Future<String> f : futures) {
+                assertEquals(esperado, f.get(20, TimeUnit.SECONDS));
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void validacion_fueraDeTandaYTurnoUsado() {
+        String evento = EVENTO + "-token-errores";
+        String user = "user-token-errores";
+        store.ingresar(evento, user);
+
+        FilaException fuera = assertThrows(FilaException.class,
+                () -> store.validar(evento, user, "token-nuevo"));
+        assertEquals("FILA_FUERA_DE_TANDA", fuera.getCode());
+        assertEquals(1L, fuera.getExtras().get("delante"));
+
+        store.habilitar(evento, 1);
+        FilaRedisStore.Validacion v = store.validar(evento, user, "token-nuevo");
+        assertTrue(store.consumirToken(evento, user, v.token()));
+        assertEquals("FILA_TURNO_USADO", assertThrows(FilaException.class,
+                () -> store.validar(evento, user, "otro-token")).getCode());
+    }
+
+    @Test
+    void tokenVencido_emiteUnoNuevo() {
+        String evento = EVENTO + "-token-vencido";
+        String user = "user-token-vencido";
+        store.ingresar(evento, user);
+        store.habilitar(evento, 1);
+        String primero = store.validar(evento, user, "token-inicial").token();
+        template.expire(store.tokenKey(evento, user), 0, TimeUnit.SECONDS);
+
+        String segundo = store.validar(evento, user, "token-renovado").token();
+
+        assertEquals("token-renovado", segundo);
+        assertFalse(primero.equals(segundo));
+    }
+
+    @Test
+    void consumoConcurrente_unaSolaReserva() throws Exception {
+        String evento = EVENTO + "-consumo-concurrente";
+        String user = "user-consumo";
+        store.ingresar(evento, user);
+        store.habilitar(evento, 1);
+        String token = store.validar(evento, user, "token-unico").token();
+        ExecutorService pool = Executors.newFixedThreadPool(20);
+        CountDownLatch salida = new CountDownLatch(1);
+        List<Future<Boolean>> futures = new ArrayList<>();
+        try {
+            for (int i = 1; i <= 20; i++) {
+                futures.add(pool.submit(() -> {
+                    salida.await();
+                    return store.consumirToken(evento, user, token);
+                }));
+            }
+            salida.countDown();
+            int consumos = 0;
+            for (Future<Boolean> f : futures) {
+                if (f.get(20, TimeUnit.SECONDS)) {
+                    consumos++;
+                }
+            }
+            assertEquals(1, consumos);
+            assertTrue(store.posicion(evento, user).usado());
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void restaurarToken_devuelveElTurno() {
+        String evento = EVENTO + "-restaurar";
+        String user = "user-restaurar";
+        store.ingresar(evento, user);
+        store.habilitar(evento, 1);
+        String token = store.validar(evento, user, "token-restaurar").token();
+
+        assertTrue(store.consumirToken(evento, user, token));
+        assertFalse(store.consumirToken(evento, user, token));
+        store.restaurarToken(evento, user, token);
+
+        assertFalse(store.posicion(evento, user).usado());
+        assertTrue(store.consumirToken(evento, user, token));
     }
 
     @Test
