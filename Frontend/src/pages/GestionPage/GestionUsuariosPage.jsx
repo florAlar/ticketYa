@@ -1,8 +1,10 @@
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import useAuth from '../../hooks/useAuth'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import { ROLE_LABELS, ROLES, normalizeRol } from '../../auth/roles'
 import GateButton from '../../components/ui/GateButton'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import { PageHeader, Toolbar, VacioTabla } from '../../components/gestion/gestionUi'
 import useUsuariosAdmin from './usuarios/useUsuariosAdmin'
 import AltaAccesoForm from './usuarios/AltaAccesoForm'
 import UsuarioRow from './usuarios/UsuarioRow'
@@ -30,26 +32,20 @@ const GestionUsuariosPage = () => {
     toggleFormEvento,
   } = useUsuariosAdmin({ user, token })
 
-  return (
-    <section className="gestion-page container section-v-padding">
-      <header className="gestion-page__head">
-        <p className="gestion-page__eyebrow">
-          <Link to="/gestion">Gestión</Link> / usuarios
-        </p>
-        <h1 className="gestion-page__title">Usuarios</h1>
-        <p className="gestion-page__sub">
-          Admin: edita solo <strong>rol</strong> y <strong>activo</strong>. Personal
-          de acceso se crea acá y se asigna a eventos (no se desactiva: se elimina).
-          {!FEATURE.adminUsuarios && (
-            <>
-              {' '}
-              <strong title={GATE_HINT}>({GATE_HINT})</strong>
-            </>
-          )}
-        </p>
-      </header>
+  const [q, setQ] = useState('')
+  const [fRol, setFRol] = useState('')
+  const filtrados = (items || []).filter((u) => {
+    if (fRol && normalizeRol(u.rol) !== fRol) return false
+    const txt = `${u.nombre || ''} ${u.email || ''}`.toLowerCase()
+    return !q || txt.includes(q.trim().toLowerCase())
+  })
 
-      <div className="gestion-card__actions gestion-card__actions--spaced">
+  return (
+    <>
+      <PageHeader
+        title="Usuarios"
+        subtitle="Cambiá el rol o el estado de una cuenta. El personal de acceso se crea acá, se asigna a eventos y se elimina (no se desactiva)."
+      >
         <GateButton
           enabled={FEATURE.adminUsuarios}
           type="button"
@@ -58,67 +54,87 @@ const GestionUsuariosPage = () => {
         >
           {showCreate ? 'Cerrar alta' : 'Nuevo personal de acceso'}
         </GateButton>
-        <GateButton
-          enabled={FEATURE.adminUsuariosListado}
-          type="button"
-          className="btn"
-          onClick={reload}
-        >
-          Actualizar
-        </GateButton>
-      </div>
+      </PageHeader>
 
       {!FEATURE.adminUsuariosListado && (
-        <div className="gestion-card">
-          <p>
-            Gestión de usuarios no habilitada en el front: el alta de personal
-            de acceso y asignación a eventos aún no están en el contrato BE
-            completo.
-          </p>
-          <p className="gestion-card__muted">{GATE_HINT}</p>
-          <Link className="btn" to="/gestion">
-            ← Panel
-          </Link>
-        </div>
+        <VacioTabla>
+          La gestión de usuarios no está habilitada en esta build. {GATE_HINT}
+        </VacioTabla>
       )}
 
-      {error && <p className="gestion-error">{error}</p>}
+      {error && <p className="g-error">{error}</p>}
       {status === 'loading' && <LoadingState label="Cargando usuarios…" />}
       {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
 
       {showCreate && (
-        <AltaAccesoForm
-          form={form}
-          setForm={setForm}
-          eventoOptions={eventoOptions}
-          busyId={busyId}
-          onSubmit={onCreate}
-          onToggleEvento={toggleFormEvento}
-        />
+        <div style={{ marginBottom: '1.25rem' }}>
+          <AltaAccesoForm
+            form={form}
+            setForm={setForm}
+            eventoOptions={eventoOptions}
+            busyId={busyId}
+            onSubmit={onCreate}
+            onToggleEvento={toggleFormEvento}
+          />
+        </div>
       )}
 
       {status === 'success' && (
-        <ul className="gestion-event-list">
-          {items.map((u) => (
-            <UsuarioRow
-              key={u.id}
-              usuario={u}
-              eventoOptions={eventoOptions}
-              busyId={busyId}
-              currentUserId={user?.id}
-              onRol={onRol}
-              onActivo={onActivo}
-              onToggleEvento={onToggleEvento}
-              onDelete={onDelete}
-            />
-          ))}
-        </ul>
-      )}
+        <>
+          <Toolbar
+            buscar={q}
+            onBuscar={setQ}
+            placeholder="Buscar por nombre o email…"
+            derecha={
+              <button type="button" className="btn btn-secondary btn-sm" onClick={reload}>
+                Actualizar
+              </button>
+            }
+          >
+            <select className="form-input" value={fRol} onChange={(e) => setFRol(e.target.value)} aria-label="Filtrar por rol">
+              <option value="">Todos los roles</option>
+              {Object.values(ROLES).map((r) => (
+                <option key={r} value={r}>
+                  {ROLE_LABELS[r] || r}
+                </option>
+              ))}
+            </select>
+          </Toolbar>
 
-      <p className="gestion-page__foot">
-        <Link to="/gestion">← Panel</Link>
-      </p>
-    </section>
+          {filtrados.length === 0 ? (
+            <VacioTabla>Ninguna cuenta coincide con el filtro.</VacioTabla>
+          ) : (
+            <div className="g-table-wrap">
+              <table className="g-table">
+                <thead>
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th className="is-actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtrados.map((u) => (
+                    <UsuarioRow
+                      key={u.id}
+                      usuario={u}
+                      eventoOptions={eventoOptions}
+                      busyId={busyId}
+                      currentUserId={user?.id}
+                      onRol={onRol}
+                      onActivo={onActivo}
+                      onToggleEvento={onToggleEvento}
+                      onDelete={onDelete}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </>
   )
 }
 

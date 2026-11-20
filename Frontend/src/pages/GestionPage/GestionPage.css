@@ -1,10 +1,10 @@
 /* Mismo aire bajo header que eventos/soporte */
 .gestion-page {
   width: 100%;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: var(--page-gutter, 30px);
+  padding-right: var(--page-gutter, 30px);
   /* section-v-padding ya da el ritmo; refuerzo si falta la clase */
   padding-top: 2.25rem;
   padding-bottom: 2.5rem;
@@ -77,7 +77,7 @@
 }
 
 .gestion-card--ops {
-  border-color: color-mix(in srgb, var(--primary, #e91e8c) 35%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
 }
 
 .gestion-page__foot {
@@ -85,7 +85,7 @@
 }
 
 .gestion-error {
-  color: #b91c1c;
+  color: var(--tone-danger);
   font-size: 0.9rem;
   margin: 0 0 0.75rem;
 }
@@ -363,44 +363,13 @@
   margin-top: 0.35rem;
 }
 
-.alta-demanda-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(15, 23, 42, 0.55);
-}
-
-.alta-demanda-modal {
-  width: min(28rem, 100%);
-  padding: 1.5rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 14px;
-  background: var(--surface, #fff);
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.25);
-}
-
-.alta-demanda-modal__titulo {
-  margin: 0 0 0.6rem;
-  font-size: 1.15rem;
-}
-
-.alta-demanda-modal__texto {
-  margin: 0 0 0.5rem;
-  font-weight: 600;
-}
-
-.alta-demanda-modal__detalle {
-  margin: 0 0 1.25rem;
-  color: var(--text-muted, #6b7280);
-  font-size: 0.92rem;
-}
-
-.alta-demanda-modal__acciones {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+/* Vista previa de portada en el formulario de evento */
+.gestion-imagen-preview { display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.6rem; }
+.gestion-imagen-preview__box {
+  width: min(16rem, 100%);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-md, 12px);
+  overflow: hidden;
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
 }

@@ -1,0 +1,144 @@
+/* =========================================================
+   ASISTENTE DE ALTA DE EVENTO — pasos + vista previa en vivo
+========================================================= */
+.wz { display: flex; flex-direction: column; gap: 1.25rem; }
+
+/* ---- Pasos ---- */
+.wz-steps { display: flex; flex-wrap: wrap; gap: 0.5rem 0; margin: 0; padding: 0; list-style: none; }
+.wz-steps li { display: flex; align-items: center; }
+.wz-steps li + li::before { content: ''; width: 2rem; height: 2px; margin: 0 0.5rem; background: var(--card-border); }
+.wz-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 0.4rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--colors-textMuted);
+  cursor: pointer;
+}
+.wz-step:disabled { cursor: default; }
+.wz-step__dot {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: var(--colors-textMuted);
+  background: var(--colors-surfaceAlt);
+  border: 1px solid var(--card-border);
+}
+.wz-step--current { color: var(--colors-text); }
+.wz-step--current .wz-step__dot { color: var(--on-brand); background: var(--grad-brand); border-color: transparent; }
+.wz-step--done { color: var(--colors-textSecondary); }
+.wz-step--done .wz-step__dot { color: #fff; background: var(--tone-success); border-color: transparent; }
+@media (max-width: 700px) { .wz-step__label { display: none; } .wz-step--current .wz-step__label { display: inline; } }
+
+/* ---- Cuerpo: formulario | vista previa ---- */
+.wz-body { display: grid; grid-template-columns: minmax(0, 1fr) 17rem; gap: 1.25rem; align-items: start; }
+@media (max-width: 1100px) { .wz-body { grid-template-columns: minmax(0, 1fr); } .wz-preview { order: -1; } }
+.wz-panel { display: flex; flex-direction: column; gap: 1.25rem; padding: 1.5rem; min-height: 22rem; }
+
+.wz-preview { position: sticky; top: calc(var(--navbar-height, 88px) + 1rem); }
+.wz-preview__label { margin: 0 0 0.6rem; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--colors-textMuted); }
+.wz-preview__card { pointer-events: none; }
+.wz-preview__card .event-card { aspect-ratio: 4 / 5; }
+
+/* ---- Formularios ---- */
+.wz .form-group { margin-bottom: 0; }
+.wz .form-group > label,
+.wz-lugares__head > label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--colors-textMuted);
+}
+.wz-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem 1.5rem; }
+.wz-span-2 { grid-column: 1 / -1; }
+.wz-check { align-self: end; padding-bottom: 0.6rem; }
+@media (max-width: 700px) { .wz-grid { grid-template-columns: minmax(0, 1fr); } }
+.wz-stack { display: flex; flex-direction: column; gap: 1.25rem; }
+.wz-hint { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--colors-textMuted); line-height: 1.45; }
+.wz-hint--ok { color: var(--tone-success); font-weight: 600; }
+.wz-aviso { display: flex; gap: 0.5rem; align-items: flex-start; margin: 0; padding: 0.7rem 0.9rem; border-radius: 12px; font-size: 0.82rem; color: var(--tone-warning); background: color-mix(in srgb, var(--tone-warning) 12%, transparent); border: 1px solid color-mix(in srgb, var(--tone-warning) 35%, transparent); }
+.wz-aviso svg { flex: none; font-size: 1.1rem; margin-top: 0.1rem; }
+.wz-fecha { max-width: 24rem; }
+.wz-vacio { display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; padding: 2rem 1rem; color: var(--colors-textMuted); }
+.wz-vacio p { margin: 0; }
+
+/* ---- Lugares como tarjetas ---- */
+.wz-lugares__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 0.5rem 1rem; margin-bottom: 0.75rem; }
+.wz-lugares__head label { margin: 0; }
+.wz-lugares__head .form-input { width: auto; min-width: 16rem; padding: 0.5rem 0.8rem; font-size: 0.85rem; }
+.wz-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.wz-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  border-radius: 14px;
+  border: 1.5px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--colors-text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.wz-card:hover:not(:disabled) { border-color: var(--colors-primary); }
+.wz-card.is-active { border-color: var(--colors-primary); background: color-mix(in srgb, var(--colors-primary) 10%, transparent); }
+.wz-card__name { display: flex; align-items: center; gap: 0.4rem; font-weight: 700; font-size: 0.92rem; }
+.wz-card__name svg { flex: none; color: var(--colors-primary); }
+.wz-card__check { margin-left: auto; }
+.wz-card__meta { font-size: 0.78rem; color: var(--colors-textMuted); }
+.wz-mapa { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-start; }
+.wz-mapa iframe { width: 100%; height: 12rem; border: 0; border-radius: 14px; }
+[data-theme='dark'] .wz-mapa iframe { filter: invert(0.92) hue-rotate(180deg) saturate(0.7); }
+.wz-mapa a { font-size: 0.82rem; }
+
+/* ---- Entradas ---- */
+.wz-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; }
+.wz-toolbar .wz-hint { margin: 0; max-width: 36rem; }
+.wz-precio-todos { display: flex; gap: 0.5rem; align-items: center; }
+.wz-precio-todos .form-input { width: 8rem; padding: 0.45rem 0.7rem; font-size: 0.85rem; }
+.wz .g-table input.form-input { width: 100%; min-width: 7rem; padding: 0.4rem 0.6rem; font-size: 0.85rem; }
+.wz-off td { opacity: 0.55; }
+.wz-off td:first-child { opacity: 1; }
+.wz-resumen-cupo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; font-size: 0.9rem; }
+
+/* ---- Revisión ---- */
+.wz-sub { margin: 0 0 0.6rem; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--colors-textMuted); }
+.wz-checklist { display: flex; flex-direction: column; gap: 0.45rem; margin: 0; padding: 0; list-style: none; }
+.wz-checklist li { display: flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; }
+.wz-checklist__icon { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; border-radius: 50%; font-size: 0.9rem; color: #fff; }
+.wz-checklist .is-ok .wz-checklist__icon { background: var(--tone-success); }
+.wz-checklist .is-falta .wz-checklist__icon { background: var(--tone-warning); }
+.wz-link { margin-left: 0.25rem; padding: 0; border: 0; background: transparent; color: var(--tone-brand); font: inherit; font-size: 0.82rem; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.wz-resumen { display: flex; flex-direction: column; margin: 0; border-top: 1px solid var(--card-border); }
+.wz-resumen > div { display: grid; grid-template-columns: 7rem minmax(0, 1fr); gap: 1rem; padding: 0.65rem 0; border-bottom: 1px solid var(--card-border); font-size: 0.88rem; }
+.wz-resumen dt { color: var(--colors-textMuted); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.wz-resumen dd { margin: 0; font-weight: 600; }
+
+/* ---- Navegación ---- */
+.wz-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: auto; padding-top: 1.1rem; border-top: 1px solid var(--card-border); }
+.wz-nav__spacer { flex: 1; }
+
+/* Artistas: sin textos de ayuda largos dentro del paso */
+.wz-participantes .gestion-participantes > .gestion-card__muted { display: none; }
+.wz-participantes fieldset { border: 0; padding: 0; margin: 0; }
+.wz-participantes legend { display: none; }
+
+/* Aviso de borrador pendiente */
+.wz-borrador { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--colors-primary) 40%, transparent); background: color-mix(in srgb, var(--colors-primary) 8%, transparent); font-size: 0.9rem; }
+.wz-borrador span { flex: 1; min-width: 14rem; }
+
+.wz .form-group > label.gestion-check { margin: 0; font-family: var(--fonts-body); font-size: 0.9rem; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--colors-text); }

@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
+import useConfirm from '../../hooks/useConfirm'
 import useAsync from '../../hooks/useAsync'
 import {
   actualizarParticipante,
@@ -18,6 +19,7 @@ import {
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import { PageHeader, Pill, RowMenu, Toolbar, VacioTabla } from '../../components/gestion/gestionUi'
 import './GestionPage.css'
 
 /**
@@ -28,10 +30,8 @@ import './GestionPage.css'
  */
 const GestionParticipantesPage = () => {
   const { token } = useAuth()
+  const confirm = useConfirm()
   const wired = FEATURE.participantes
-  const [q, setQ] = useState('')
-  const [tipo, setTipo] = useState('')
-  const [filtro, setFiltro] = useState({ q: '', tipo: '' })
   const [error, setError] = useState('')
   const [aviso, setAviso] = useState('')
   const [busyId, setBusyId] = useState(null)
@@ -40,10 +40,10 @@ const GestionParticipantesPage = () => {
 
   const load = useCallback(
     async (signal) => {
-      const data = await listarParticipantes(filtro, { token, signal })
+      const data = await listarParticipantes({ q: '', tipo: '' }, { token, signal })
       return Array.isArray(data) ? data : []
     },
-    [filtro, token]
+    [token]
   )
 
   const {
@@ -51,12 +51,7 @@ const GestionParticipantesPage = () => {
     status,
     error: loadError,
     reload,
-  } = useAsync(load, [filtro, token], { enabled: wired })
-
-  const onBuscar = (e) => {
-    e.preventDefault()
-    setFiltro({ q: q.trim(), tipo })
-  }
+  } = useAsync(load, [token], { enabled: wired })
 
   const onGuardar = async (e) => {
     e.preventDefault()
@@ -91,7 +86,12 @@ const GestionParticipantesPage = () => {
   }
 
   const onEliminar = async (p) => {
-    if (!window.confirm(`¿Eliminar a «${p.nombre}» del catálogo?`)) return
+    const ok = await confirm({
+      title: `¿Eliminar a «${p.nombre}» del catálogo?`,
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    })
+    if (!ok) return
     setBusyId(p.id)
     setError('')
     setAviso('')
@@ -112,26 +112,19 @@ const GestionParticipantesPage = () => {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  return (
-    <section className="gestion-page container-slim section-v-padding">
-      <header className="gestion-page__head">
-        <p className="gestion-page__eyebrow">
-          <Link to="/gestion">Gestión</Link> / participantes
-        </p>
-        <h1 className="gestion-page__title">Participantes</h1>
-        <p className="gestion-page__sub">
-          Bandas, artistas, elencos, equipos y pilotos del catálogo. Los organizadores los eligen al
-          armar el evento y ahí definen cuál es el principal y cuáles los teloneros.
-          {!wired && (
-            <>
-              {' '}
-              <strong title={GATE_HINT}>({GATE_HINT})</strong>
-            </>
-          )}
-        </p>
-      </header>
+  const [fq, setFq] = useState('')
+  const [fTipo, setFTipo] = useState('')
+  const lista = (items || []).filter((p) => {
+    if (fTipo && p.tipo !== fTipo) return false
+    return !fq || String(p.nombre || '').toLowerCase().includes(fq.trim().toLowerCase())
+  })
 
-      <div className="gestion-card__actions gestion-card__actions--spaced">
+  return (
+    <>
+      <PageHeader
+        title="Participantes"
+        subtitle="Bandas, artistas, elencos, equipos y pilotos. Los organizadores los eligen al armar un evento."
+      >
         <GateButton
           enabled={wired}
           type="button"
@@ -143,167 +136,117 @@ const GestionParticipantesPage = () => {
         >
           Nuevo participante
         </GateButton>
-      </div>
+      </PageHeader>
+
+      {!wired && <VacioTabla>La gestión de participantes necesita el backend real: no hay versión mock.</VacioTabla>}
+      {aviso && <p className="g-ok" role="status">{aviso}</p>}
+      {error && <p className="g-error" role="alert">{error}</p>}
 
       {wired && form && (
-        <form className="gestion-card gestion-card--spaced" onSubmit={onGuardar}>
-          <h2>{form.id ? 'Editar participante' : 'Nuevo participante'}</h2>
-          <div className="form-group">
-            <label htmlFor="par-nombre">Nombre *</label>
-            <input
-              id="par-nombre"
-              className="form-input"
-              value={form.nombre}
-              onChange={set('nombre')}
-              maxLength={200}
-              required
-            />
+        <form className="g-card g-form" style={{ marginBottom: '1.25rem' }} onSubmit={onGuardar}>
+          <h2 className="g-card__title" style={{ margin: 0 }}>
+            {form.id ? 'Editar participante' : 'Nuevo participante'}
+          </h2>
+          <div className="g-form__grid">
+            <div className="form-group">
+              <label htmlFor="par-nombre">Nombre *</label>
+              <input id="par-nombre" className="form-input" value={form.nombre} onChange={set('nombre')} maxLength={200} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="par-tipo">Tipo *</label>
+              <select id="par-tipo" className="form-input" value={form.tipo} onChange={set('tipo')}>
+                {TIPOS_PARTICIPANTE.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group g-span-2">
+              <label htmlFor="par-desc">Descripción</label>
+              <textarea id="par-desc" className="form-input" rows={2} value={form.descripcion} onChange={set('descripcion')} />
+            </div>
           </div>
-          <div className="form-group">
-            <label htmlFor="par-tipo">Tipo *</label>
-            <select id="par-tipo" className="form-input" value={form.tipo} onChange={set('tipo')}>
-              {TIPOS_PARTICIPANTE.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label htmlFor="par-desc">Descripción</label>
-            <textarea
-              id="par-desc"
-              className="form-input"
-              rows={3}
-              value={form.descripcion}
-              onChange={set('descripcion')}
-            />
-          </div>
-          <div className="gestion-card__actions">
+          <div className="g-row-actions" style={{ justifyContent: 'flex-end' }}>
+            <button type="button" className="btn btn-secondary" onClick={() => setForm(null)} disabled={saving}>
+              Cancelar
+            </button>
             <button type="submit" className="btn btn-primary" disabled={saving}>
               {saving ? 'Guardando…' : 'Guardar'}
             </button>
-            <button type="button" className="btn" onClick={() => setForm(null)} disabled={saving}>
-              Cancelar
-            </button>
           </div>
         </form>
       )}
 
-      {wired && (
-        <form className="gestion-card gestion-card--spaced" onSubmit={onBuscar}>
-          <div className="form-group">
-            <label htmlFor="filtro-q">Buscar por nombre</label>
-            <input
-              id="filtro-q"
-              className="form-input"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="ej. Metallica"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="filtro-tipo">Tipo</label>
-            <select
-              id="filtro-tipo"
-              className="form-input"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value)}
-            >
-              <option value="">Todos</option>
+      {status === 'loading' && <LoadingState label="Cargando participantes…" />}
+      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
+
+      {wired && status === 'success' && (
+        <>
+          <Toolbar buscar={fq} onBuscar={setFq} placeholder="Buscar por nombre…">
+            <select className="form-input" value={fTipo} onChange={(e) => setFTipo(e.target.value)} aria-label="Filtrar por tipo">
+              <option value="">Todos los tipos</option>
               {TIPOS_PARTICIPANTE.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>
               ))}
             </select>
-          </div>
-          <div className="gestion-card__actions">
-            <button type="submit" className="btn">
-              Buscar
-            </button>
-            {(filtro.q || filtro.tipo) && (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => {
-                  setQ('')
-                  setTipo('')
-                  setFiltro({ q: '', tipo: '' })
-                }}
-              >
-                Ver todos
-              </button>
-            )}
-          </div>
-        </form>
+          </Toolbar>
+          {lista.length === 0 ? (
+            <VacioTabla>{items.length === 0 ? 'Todavía no hay participantes cargados.' : 'Ningún participante coincide con el filtro.'}</VacioTabla>
+          ) : (
+            <div className="g-table-wrap">
+              <table className="g-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
+                    <th>Descripción</th>
+                    <th className="is-actions">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {lista.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <div className="g-cell-main">
+                          <strong>{p.nombre}</strong>
+                        </div>
+                      </td>
+                      <td>
+                        <Pill tone="brand">{labelTipoParticipante(p.tipo)}</Pill>
+                      </td>
+                      <td className="g-muted">{p.descripcion || '—'}</td>
+                      <td className="is-actions">
+                        <RowMenu
+                          label={'Acciones de ' + p.nombre}
+                          items={[
+                            {
+                              label: 'Editar',
+                              onClick: () => {
+                                setError('')
+                                setForm({
+                                  id: p.id,
+                                  nombre: p.nombre || '',
+                                  tipo: p.tipo || 'BANDA',
+                                  descripcion: p.descripcion || '',
+                                })
+                              },
+                            },
+                            { label: 'Eliminar', danger: true, disabled: busyId === p.id, onClick: () => onEliminar(p) },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
-
-      {!wired && (
-        <div className="gestion-card">
-          <p>La gestión de participantes necesita el backend real: no hay versión mock.</p>
-        </div>
-      )}
-      {status === 'loading' && <LoadingState label="Cargando participantes…" />}
-      {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
-      {aviso && <p className="gestion-card__muted" role="status">✔ {aviso}</p>}
-      {error && <p className="gestion-error" role="alert">{error}</p>}
-
-      {wired && status === 'success' && items.length === 0 && (
-        <div className="gestion-card">
-          <p>
-            {filtro.q || filtro.tipo
-              ? 'No hay participantes con ese filtro.'
-              : 'Todavía no hay participantes cargados.'}
-          </p>
-        </div>
-      )}
-
-      {status === 'success' && items.length > 0 && (
-        <ul className="gestion-event-list">
-          {items.map((p) => (
-            <li key={p.id} className="gestion-event-row">
-              <div className="gestion-event-row__main">
-                <h2>{p.nombre}</h2>
-                <p>{labelTipoParticipante(p.tipo)}</p>
-                {p.descripcion && <p className="gestion-card__muted">{p.descripcion}</p>}
-              </div>
-              <div className="gestion-event-row__actions">
-                <GateButton
-                  enabled={wired}
-                  type="button"
-                  className="btn"
-                  onClick={() => {
-                    setError('')
-                    setForm({
-                      id: p.id,
-                      nombre: p.nombre || '',
-                      tipo: p.tipo || 'BANDA',
-                      descripcion: p.descripcion || '',
-                    })
-                  }}
-                >
-                  Editar
-                </GateButton>
-                <GateButton
-                  enabled={wired}
-                  type="button"
-                  className="btn"
-                  disabled={busyId === p.id}
-                  onClick={() => onEliminar(p)}
-                >
-                  Eliminar
-                </GateButton>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      <p className="gestion-page__foot">
-        <Link to="/gestion">← Panel</Link>
-      </p>
-    </section>
+    </>
   )
 }
 

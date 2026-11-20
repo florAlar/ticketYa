@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import useAsync from '../../../hooks/useAsync'
+import useConfirm from '../../../hooks/useConfirm'
 import {
   createPersonalAcceso,
   listUsuarios,
@@ -19,6 +20,7 @@ export const FORM_VACIO = {
 
 /** Listado y acciones de usuarios (solo ADMIN). */
 export default function useUsuariosAdmin({ user, token }) {
+  const confirm = useConfirm()
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
@@ -89,9 +91,13 @@ export default function useUsuariosAdmin({ user, token }) {
 
   const onDelete = async (id) => {
     if (!FEATURE.adminUsuarios) return
-    if (!window.confirm('¿Eliminar este usuario? (personal de acceso no se desactiva)')) {
-      return
-    }
+    const ok = await confirm({
+      title: '¿Eliminar este usuario?',
+      description: 'El personal de acceso no se desactiva: se elimina.',
+      confirmLabel: 'Eliminar',
+      tone: 'danger',
+    })
+    if (!ok) return
     setBusyId(id)
     setError('')
     try {

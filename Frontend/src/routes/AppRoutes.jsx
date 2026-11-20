@@ -7,6 +7,7 @@ import { ROLES } from '../auth/roles'
 
 // Rutas con code splitting: cada pantalla pesada (gestión, checkout, acceso)
 // se descarga recién cuando se navega a ella.
+import GestionLayout from '../components/gestion/GestionLayout'
 const Home = lazy(() => import('../pages/HomePage/Home'))
 const EventosPage = lazy(() => import('../pages/EventosPage/EventosPage'))
 const EventoDetallePage = lazy(() => import('../pages/EventoDetallePage/EventoDetallePage'))
@@ -79,19 +80,25 @@ const ROUTES = [
  * Mapa front cliente TicketYa → API Gateway :8080
  * Ver docs/endpoints-front.md
  */
+function renderRoute({ path, element, auth, roles }) {
+  return (
+    <Route
+      key={path}
+      path={path}
+      element={auth ? <ProtectedRoute roles={roles}>{element}</ProtectedRoute> : element}
+    />
+  )
+}
+
 const AppRoutes = () => {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        {ROUTES.map(({ path, element, auth, roles }) => (
-          <Route
-            key={path}
-            path={path}
-            element={
-              auth ? <ProtectedRoute roles={roles}>{element}</ProtectedRoute> : element
-            }
-          />
-        ))}
+        {ROUTES.filter((r) => !r.path.startsWith('/gestion')).map(renderRoute)}
+        {/* Gestión: mismo marco (barra lateral) para admin y organizador */}
+        <Route element={<GestionLayout />}>
+          {ROUTES.filter((r) => r.path.startsWith('/gestion')).map(renderRoute)}
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>

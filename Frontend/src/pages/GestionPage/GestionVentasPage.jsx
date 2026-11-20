@@ -13,6 +13,7 @@ import {
 } from '../../domain/devolucion'
 import { ENTRADA_ESTADO_LABELS } from '../../domain/entrada'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
+import { PageHeader, Pill, RowMenu, Toolbar, VacioTabla } from '../../components/gestion/gestionUi'
 import GateButton from '../../components/ui/GateButton'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import { formatFecha, formatMoney } from '../../lib/format'
@@ -118,134 +119,101 @@ const GestionVentasPage = () => {
     cola.eventosCancelados.length === 0
 
   return (
-    <section className="gestion-page container section-v-padding">
-      <header className="gestion-page__head">
-        <p className="gestion-page__eyebrow">
-          <Link to="/gestion">Gestión</Link> / ventas
-        </p>
-        <h1 className="gestion-page__title">Cola de ventas</h1>
-        <p className="gestion-page__sub">
-          Solo <strong>reclamos / devoluciones pendientes</strong> y{' '}
-          <strong>reintegro por evento cancelado</strong> (API masiva). No se
-          listan todas las compras.
-          {!FEATURE.adminColaVentas && (
-            <>
-              {' '}
-              <strong title={GATE_HINT}>({GATE_HINT})</strong>
-            </>
-          )}
-        </p>
-      </header>
-
-      <div className="gestion-card__actions gestion-card__actions--spaced">
-        <GateButton
-          enabled={FEATURE.adminColaVentas}
-          type="button"
-          className="btn"
-          onClick={reload}
-        >
+    <>
+      <PageHeader
+        title="Cola de ventas"
+        subtitle="Devoluciones y reclamos pendientes, y reintegros de eventos cancelados."
+      >
+        <GateButton enabled={FEATURE.adminColaVentas} type="button" className="btn btn-secondary" onClick={reload}>
           Actualizar
         </GateButton>
-      </div>
+      </PageHeader>
 
-      {error && <p className="gestion-error">{error}</p>}
+      {!FEATURE.adminColaVentas && <VacioTabla>La cola de ventas no está habilitada en esta build. {GATE_HINT}</VacioTabla>}
+      {error && <p className="g-error">{error}</p>}
       {status === 'loading' && <LoadingState label="Cargando cola…" />}
       {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
 
-      {empty && (
-        <div className="gestion-card">
-          <p>No hay ítems en la cola.</p>
-          <p className="gestion-card__muted">
-            Cuando haya devoluciones pendientes o se cancele un evento con
-            entradas vendidas, aparecen acá.
-          </p>
-        </div>
-      )}
+      {empty && <VacioTabla>No hay nada pendiente. Cuando haya devoluciones o se cancele un evento con entradas vendidas, aparecen acá.</VacioTabla>}
 
       {cola.devoluciones.length > 0 && (
-        <section className="gestion-section--spaced">
-          <h2 className="gestion-page__title gestion-section__title">
-            Devoluciones y reclamos
-          </h2>
-          <ul className="gestion-event-list">
-            {cola.devoluciones.map((d) => (
-              <li key={d.id} className="gestion-event-row">
-                <div className="gestion-event-row__main">
-                  <h2>
-                    {DEVOLUCION_TIPO_LABELS[d.tipo] || d.tipo}
-                    {' · '}
-                    {d.eventoNombre || d.idEvento}
-                  </h2>
-                  <p>
-                    {d.clienteEmail || d.idCliente}
-                    {' · '}
-                    {formatFecha(d.fechaSolicitud)}
-                    {d.monto != null ? ` · ${formatMoney(d.monto)}` : ''}
-                  </p>
-                  <p className="gestion-card__muted">
-                    entrada {d.idEntrada}
-                    {d.idCompra ? ` · compra ${d.idCompra}` : ''}
-                  </p>
-                  {d.motivo && <p>{d.motivo}</p>}
-                </div>
-                <div className="gestion-event-row__actions">
-                  {d.idEntrada && (
-                    <Link
-                      className="btn"
-                      to={`/gestion/entradas/${d.idEntrada}`}
-                    >
-                      Ver entrada
-                    </Link>
-                  )}
-                  <GateButton
-                    enabled={FEATURE.adminColaVentas}
-                    type="button"
-                    className="btn btn-primary"
-                    disabled={busyId === d.id}
-                    onClick={() => onResolver(d.id, DEVOLUCION_ESTADOS.APROBADA)}
-                  >
-                    Aprobar
-                  </GateButton>
-                  <GateButton
-                    enabled={FEATURE.adminColaVentas}
-                    type="button"
-                    className="btn"
-                    disabled={busyId === d.id}
-                    onClick={() => onResolver(d.id, DEVOLUCION_ESTADOS.RECHAZADA)}
-                  >
-                    Rechazar
-                  </GateButton>
-                </div>
-              </li>
-            ))}
-          </ul>
+        <section style={{ marginBottom: '1.75rem' }}>
+          <h2 className="g-card__title">Devoluciones y reclamos ({cola.devoluciones.length})</h2>
+          <div className="g-table-wrap">
+            <table className="g-table">
+              <thead>
+                <tr>
+                  <th>Solicitud</th>
+                  <th>Cliente</th>
+                  <th>Fecha</th>
+                  <th className="is-num">Monto</th>
+                  <th className="is-actions">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cola.devoluciones.map((d) => (
+                  <tr key={d.id}>
+                    <td>
+                      <div className="g-cell-main">
+                        <strong>
+                          {DEVOLUCION_TIPO_LABELS[d.tipo] || d.tipo}{d.eventoNombre ? ` · ${d.eventoNombre}` : ""}
+                        </strong>
+                        {d.motivo && <span>{d.motivo}</span>}
+                      </div>
+                    </td>
+                    <td>{d.clienteEmail || String(d.idCliente || "—").slice(0, 8)}</td>
+                    <td>{formatFecha(d.fechaSolicitud, { dateStyle: 'medium' })}</td>
+                    <td className="is-num">{d.monto != null ? formatMoney(d.monto) : '—'}</td>
+                    <td className="is-actions">
+                      <div className="g-row-actions">
+                        <GateButton
+                          enabled={FEATURE.adminColaVentas}
+                          type="button"
+                          className="btn btn-primary btn-sm"
+                          disabled={busyId === d.id}
+                          onClick={() => onResolver(d.id, DEVOLUCION_ESTADOS.APROBADA)}
+                        >
+                          Aprobar
+                        </GateButton>
+                        <GateButton
+                          enabled={FEATURE.adminColaVentas}
+                          type="button"
+                          className="btn btn-secondary btn-sm"
+                          disabled={busyId === d.id}
+                          onClick={() => onResolver(d.id, DEVOLUCION_ESTADOS.RECHAZADA)}
+                        >
+                          Rechazar
+                        </GateButton>
+                        {d.idEntrada && <RowMenu items={[{ label: 'Ver entrada', to: '/gestion/entradas/' + d.idEntrada }]} />}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
 
       {entradasPorEvento.length > 0 && (
         <section>
-          <h2 className="gestion-page__title gestion-section__title">
-            Eventos cancelados — reintegro
-          </h2>
+          <h2 className="g-card__title">Eventos cancelados: reintegro</h2>
           {entradasPorEvento.map(({ evento, entradas }) => (
-            <div key={evento.id} className="gestion-event-group">
-              <div className="gestion-card gestion-card--spaced">
-                <h2 className="gestion-section__title">{evento.nombre}</h2>
-                <p className="gestion-card__muted">
-                  {evento.id} · {formatFecha(evento.fechaInicio)} · CANCELADO ·{' '}
-                  {entradas.length} entrada(s)
-                </p>
-                <div className="gestion-card__actions gestion-card__actions--top">
+            <div key={evento.id} style={{ marginBottom: '1.5rem' }}>
+              <div className="g-toolbar" style={{ marginBottom: '0.6rem' }}>
+                <div className="g-cell-main">
+                  <strong>{evento.nombre}</strong>
+                  <span>
+                    {formatFecha(evento.fechaInicio, { dateStyle: 'medium' })} · {entradas.length} entrada(s)
+                  </span>
+                </div>
+                <div className="g-toolbar__right">
                   <GateButton
                     enabled={FEATURE.adminReintegroEvento}
                     type="button"
-                    className="btn btn-primary"
+                    className="btn btn-primary btn-sm"
                     disabled={busyId === evento.id}
-                    title={
-                      FEATURE.adminReintegroEvento
-                        ? 'POST /api/eventos/{id}/reintegro-cancelacion'
-                        : GATE_HINT
-                    }
+                    title={FEATURE.adminReintegroEvento ? undefined : GATE_HINT}
                     onClick={() => onReintegroEvento(evento.id)}
                   >
                     Reintegrar evento
@@ -253,51 +221,44 @@ const GestionVentasPage = () => {
                 </div>
               </div>
               {entradas.length === 0 ? (
-                <p className="gestion-card__muted">Sin entradas en cola local.</p>
+                <p className="g-muted">Sin entradas en cola local.</p>
               ) : (
-                <ul className="gestion-event-list">
-                  {entradas.map((e) => (
-                    <li key={e.id} className="gestion-event-row">
-                      <div className="gestion-event-row__main">
-                        <h2>{e.id}</h2>
-                        <p>
-                          cliente {e.idCliente}
-                          {' · '}
-                          {e.sectorNombre}
-                          {' · '}
-                          {formatMoney(e.precio)}
-                        </p>
-                        <p className="gestion-card__muted">
-                          {ENTRADA_ESTADO_LABELS[e.estado] || e.estado}
-                        </p>
-                      </div>
-                      <div className="gestion-event-row__actions">
-                        <GateButton
-                          enabled={FEATURE.adminReintegroEntrada}
-                          type="button"
-                          className="btn"
-                          disabled
-                          title="No hay endpoint BE por entrada suelta — usá reintegro del evento"
-                        >
-                          Reintegro unitario
-                        </GateButton>
-                        <Link className="btn" to={`/gestion/entradas/${e.id}`}>
-                          Ver entrada
-                        </Link>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <div className="g-table-wrap">
+                  <table className="g-table">
+                    <thead>
+                      <tr>
+                        <th>Entrada</th>
+                        <th>Cliente</th>
+                        <th>Sector</th>
+                        <th className="is-num">Precio</th>
+                        <th>Estado</th>
+                        <th className="is-actions">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {entradas.map((e) => (
+                        <tr key={e.id}>
+                          <td className="g-muted">{String(e.id).slice(0, 8)}</td>
+                          <td>{String(e.idCliente || "—").slice(0, 8)}</td>
+                          <td>{e.sectorNombre}</td>
+                          <td className="is-num">{formatMoney(e.precio)}</td>
+                          <td>
+                            <Pill tone="neutral">{ENTRADA_ESTADO_LABELS[e.estado] || e.estado}</Pill>
+                          </td>
+                          <td className="is-actions">
+                            <RowMenu items={[{ label: 'Ver entrada', to: '/gestion/entradas/' + e.id }]} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           ))}
         </section>
       )}
-
-      <p className="gestion-page__foot">
-        <Link to="/gestion">← Panel</Link>
-      </p>
-    </section>
+    </>
   )
 }
 

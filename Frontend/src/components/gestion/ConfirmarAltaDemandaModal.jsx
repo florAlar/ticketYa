@@ -1,4 +1,7 @@
+import { HiOutlineLightningBolt } from 'react-icons/hi'
 import { LIMITE_ALTA_DEMANDA } from '../../domain/evento'
+import Modal from '../ui/Modal'
+import Button from '../ui/Button'
 
 /**
  * Confirmación previa a publicar. Con cupo > 5000 es solo un aviso: el evento
@@ -6,69 +9,35 @@ import { LIMITE_ALTA_DEMANDA } from '../../domain/evento'
  */
 const ConfirmarAltaDemandaModal = ({ cupoTotal = 0, onConfirmar, onCancelar }) => {
   const obligatorio = cupoTotal > LIMITE_ALTA_DEMANDA
+  const cupo = cupoTotal.toLocaleString('es-AR')
 
   return (
-    <div className="alta-demanda-backdrop">
-      <div
-        className="alta-demanda-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="alta-demanda-titulo"
-      >
-        <h2 id="alta-demanda-titulo" className="alta-demanda-modal__titulo">
-          {obligatorio ? 'Evento de alta demanda' : 'Antes de publicar'}
-        </h2>
-
-        {obligatorio ? (
-          <p className="alta-demanda-modal__texto">
-            Tu evento es un evento de alta demanda
-          </p>
+    <Modal
+      icon={HiOutlineLightningBolt}
+      title={obligatorio ? 'Tu evento es de alta demanda' : '¿Es un evento de alta demanda?'}
+      description={
+        obligatorio
+          ? `El cupo total es de ${cupo} personas (supera el límite de ${LIMITE_ALTA_DEMANDA.toLocaleString('es-AR')}), por lo que la fila virtual se activará automáticamente.`
+          : `El cupo total es de ${cupo} personas. Si elegís «Sí», se habilita la fila virtual: los clientes entran en cola y compran por tandas, en orden de llegada.`
+      }
+      onClose={onCancelar}
+      dismissible={!obligatorio}
+      actions={
+        obligatorio ? (
+          <Button onClick={() => onConfirmar(true)}>Continuar y publicar</Button>
         ) : (
-          <p className="alta-demanda-modal__texto">
-            ¿Es este un evento de alta demanda?
-          </p>
-        )}
-
-        <p className="alta-demanda-modal__detalle">
-          El cupo total es de {cupoTotal.toLocaleString('es-AR')} personas
-          {obligatorio
-            ? ` (supera el límite de ${LIMITE_ALTA_DEMANDA.toLocaleString('es-AR')}), por lo que la fila virtual se activará automáticamente.`
-            : `. Si elegís «Sí», se habilitará la fila virtual para este evento.`}
-        </p>
-
-        <div className="alta-demanda-modal__acciones">
-          {obligatorio ? (
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => onConfirmar(true)}
-            >
-              Continuar
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => onConfirmar(true)}
-              >
-                Sí
-              </button>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => onConfirmar(false)}
-              >
-                No
-              </button>
-              <button type="button" className="btn" onClick={onCancelar}>
-                Cancelar
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+          <>
+            <Button variant="ghost" onClick={onCancelar}>
+              Cancelar
+            </Button>
+            <Button variant="secondary" onClick={() => onConfirmar(false)}>
+              No
+            </Button>
+            <Button onClick={() => onConfirmar(true)}>Sí, activar fila</Button>
+          </>
+        )
+      }
+    />
   )
 }
 

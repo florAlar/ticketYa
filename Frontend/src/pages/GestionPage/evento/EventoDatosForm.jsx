@@ -3,12 +3,13 @@ import {
   EVENTO_TIPOS,
   EVENTO_TIPO_LABELS,
 } from '../../../domain/evento'
+import ImagenPreview from './ImagenPreview'
 
 /** Campos básicos del evento en borrador. */
 export default function EventoDatosForm({ form, loading, onChange }) {
   return (
-    <>
-      <div className="form-group">
+    <div className="g-form__grid">
+      <div className="form-group g-span-2">
         <label htmlFor="nombre">Nombre *</label>
         <input
           id="nombre"
@@ -21,7 +22,7 @@ export default function EventoDatosForm({ form, loading, onChange }) {
         />
       </div>
 
-      <div className="form-group">
+      <div className="form-group g-span-2">
         <label htmlFor="descripcion">Descripción</label>
         <textarea
           id="descripcion"
@@ -34,7 +35,7 @@ export default function EventoDatosForm({ form, loading, onChange }) {
         />
       </div>
 
-      <div className="gestion-form__row">
+      <div className="gestion-form__row g-contents">
         <div className="form-group">
           <label htmlFor="tipo">Tipo de evento</label>
           <select
@@ -76,7 +77,7 @@ export default function EventoDatosForm({ form, loading, onChange }) {
         />
       </div>
 
-      <div className="form-group">
+      <div className="form-group g-span-2">
         <label htmlFor="imagenUrl">URL imagen (opcional)</label>
         <input
           id="imagenUrl"
@@ -85,8 +86,10 @@ export default function EventoDatosForm({ form, loading, onChange }) {
           value={form.imagenUrl}
           onChange={onChange}
           disabled={loading}
+          placeholder="https://… (se muestra como portada)"
         />
+        <ImagenPreview form={form} />
       </div>
-    </>
+    </div>
   )
 }

@@ -4,6 +4,7 @@ import {
   EVENTO_TIPOS,
   EVENTO_TIPO_LABELS,
 } from '../../../domain/evento'
+import ImagenPreview from './ImagenPreview'
 
 /** Campos del alta de evento (borrador o publicación). */
 export default function EventoNuevoDatosForm({
@@ -13,8 +14,8 @@ export default function EventoNuevoDatosForm({
   onChange,
 }) {
   return (
-    <>
-      <div className="form-group">
+    <div className="g-form__grid">
+      <div className="form-group g-span-2">
         <label htmlFor="nombre">Nombre *</label>
         <input
           id="nombre"
@@ -27,7 +28,7 @@ export default function EventoNuevoDatosForm({
         />
       </div>
 
-      <div className="form-group">
+      <div className="form-group g-span-2">
         <label htmlFor="descripcion">Descripción</label>
         <textarea
           id="descripcion"
@@ -40,7 +41,7 @@ export default function EventoNuevoDatosForm({
         />
       </div>
 
-      <div className="gestion-form__row">
+      <div className="gestion-form__row g-contents">
         <div className="form-group">
           <label htmlFor="tipo">Tipo de evento</label>
           <select
@@ -79,7 +80,7 @@ export default function EventoNuevoDatosForm({
 
       <div className="form-group">
         <label htmlFor="fechaInicio">
-          Fecha y hora {publishing ? '*' : '(obligatoria al publicar)'}
+          Fecha y hora {publishing ? '*' : '(al publicar)'}
         </label>
         <input
           id="fechaInicio"
@@ -90,10 +91,6 @@ export default function EventoNuevoDatosForm({
           onChange={onChange}
           disabled={loading}
         />
-        <p className="gestion-card__muted gestion-hint--top">
-          En borrador podés dejarla vacía y completarla después. Al publicar es
-          obligatoria.
-        </p>
       </div>
 
       <div className="gestion-checks">
@@ -118,13 +115,8 @@ export default function EventoNuevoDatosForm({
           Destacado en home
         </label>
       </div>
-      {publishing && (
-        <p className="gestion-card__muted gestion-hint--top">
-          Al publicar se confirmará si es de alta demanda en el popup previo.
-        </p>
-      )}
 
-      <div className="form-group">
+      <div className="form-group g-span-2">
         <label htmlFor="imagenUrl">URL imagen (opcional)</label>
         <input
           id="imagenUrl"
@@ -133,8 +125,10 @@ export default function EventoNuevoDatosForm({
           value={form.imagenUrl}
           onChange={onChange}
           disabled={loading}
+          placeholder="https://… (se muestra como portada)"
         />
+        <ImagenPreview form={form} />
       </div>
-    </>
+    </div>
   )
 }
