@@ -80,7 +80,7 @@ Hoy esas carpetas están vacías (`.gitkeep` o sin contenido útil).
 | MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | hecho | Las 19 referencias lógicas entre msvc quedan dibujadas como líneas punteadas (columnas `REF`) en el diagrama de `modelo.md` (incluye `asiento_reservado`). |
 | MOD-04 | **Modelo de preferencias en MongoDB** (`docs/diagramas/modelo-mongodb.md`) | E2 | hecho | Doc + init.js INF-28. Código Spring Data / recs = E2-PRE-*. |
 | MOD-05 | Modelo local notificaciones (MySQL) alineado a ER + `notificaciones/init.sql` | E2 | hecho | Init + JPA (Plantilla/Notificacion/IntentoEnvio) en INF-27. Specs DOC-MS siguen pendientes. |
-| MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | parcial | 2026-11-11: modelos y secuencias al día con el esquema real (21 tablas verificadas columna por columna contra los `init.sql`; lugares con coordenadas, cupo por evento, control de acceso, reportes, alta de evento §8). Falta cuando entren fila, notificaciones y recomendaciones. |
+| MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | parcial | 2026-11-11: modelos y secuencias al día con el esquema real (21 tablas verificadas columna por columna contra los `init.sql`; lugares con coordenadas, cupo por evento, control de acceso, reportes, alta de evento §8). Falta sólo la fila (FIL-01…FIL-04); notificaciones y recomendaciones ya documentadas en los diagramas. |
 
 ---
 
