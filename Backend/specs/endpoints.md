@@ -131,8 +131,8 @@ Servicio: msvc-eventos | Prefijos: /eventos (catálogo), /lugares, /sectores, /p
 - POST: /eventos — Crear evento en borrador (ORGANIZADOR). **El evento elige un lugar existente** (`idLugar`; sin lugar queda en el lugar reservado "Por definir", que no se puede publicar) y, de los sectores de ese lugar, cuáles vende: `sectores[{id, precio, capacidadTotal?}]` (`capacidadTotal` = cupo del evento, de 1 a la capacidad del sector; vacío = todo el sector; los numerados se venden completos). No se crean lugares ni sectores desde el evento y nombre/tipo/layout los define el lugar (400 si el pedido los cambia)
 - PUT: /eventos/{id} — Actualizar configuración del evento (ORGANIZADOR). En BORRADOR se puede cambiar el lugar (se descartan los sectores elegidos) y `sectores` es la lista completa de sectores vendidos (los omitidos se quitan; si no viene no se tocan). Con el evento publicado solo cambia el precio de sectores que ya estaban: no se cambia el lugar, ni se agregan sectores, ni se cambia el cupo (409)
 - DELETE: /eventos/{id} — Eliminar borrador (ORGANIZADOR)
-- POST: /eventos/{id}/publicacion — Publicar evento (valida fecha/lugar/sectores/precios/capacidad)
-- PATCH: /eventos/{id}/estado — Suspender o cancelar evento (ADMIN); cancelación dispara reintegros/notifs
+- POST: /eventos/{id}/publicacion — Publicar evento (valida fecha/lugar/sectores/precios/capacidad). Fuerza `esAltaDemanda=true` si el cupo total de los sectores activos supera 5000 (regla de negocio, ver `reglas-de-negocio.md` §4); el front pide confirmación antes de publicar con el popup de alta demanda. Reanuda la fila virtual del evento
+- PATCH: /eventos/{id}/estado — Suspender o cancelar evento (ADMIN); cancelación dispara reintegros/notifs. Toda salida de `PUBLICADO` pausa la fila virtual; `PUBLICADO` la reanuda
 - PATCH: /eventos/{id}/fecha — Modificar fecha/hora (ORGANIZADOR/ADMIN)
 - GET: /organizadores/me/eventos — Listar eventos propios (ORGANIZADOR)
 - GET: /eventos/{id}/sectores — Sectores configurados del evento
@@ -171,6 +171,7 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 - GET /eventos/disponibilidad?ids= — Batch disponibilidad comercial (catálogo; máx 50; público)
 - GET /eventos/{id}/disponibilidad — Consultar disponibilidad comercial (cupos por sector; DTO con disponibleTotal + nivelCupo; en sectores numerados `asientosOcupados[{fila,numero,estado}]`, el resto del layout está libre)
 - POST /eventos/{id}/cupos — Abrir/asegurar cupo comercial al publicar (body sectores[{idSector,capacidadTotal}]; idempotente; Feign msvc-eventos)
+- POST /internas/fila/{idEvento}/invalidacion — Uso interno de msvc-eventos (Feign + `X-Internal-Token`, no expuesto por gateway): descarta la caché del flag/estado para pausar o reanudar la fila al cambiar el estado del evento o el flag de alta demanda
 
 /EL RECURSO ES EVENTOS PERO LE PEGA A ESTE SERVICIO, HAY QUE RUTEARLO DESDE GATEWAY.
 

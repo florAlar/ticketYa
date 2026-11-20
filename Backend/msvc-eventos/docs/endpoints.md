@@ -17,10 +17,10 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | GET /eventos | **hecho** | Catálogo; default `estado=PUBLICADO`. Gestión admin: `estado=TODOS\|ALL` (todos los estados). |
 | GET /eventos/{id} | **hecho** | Detalle + sectores con precio activo |
 | POST /eventos | **hecho** | Crear BORRADOR (ORG/ADMIN). Body: nombre, fechaInicio, `idLugar` (lugar existente; sin lugar queda en "Por definir"), sectores[{id,precio,capacidadTotal?}] (LUG-04: los sectores son del lugar; `capacidadTotal` = cupo del evento ≤ capacidad del sector, vacío = todo; numerados se venden completos). Si `estado=PUBLICADO` publica al final (exige lugar real y ≥1 sector). |
-| PUT /eventos/{id} | **hecho** | Editar config (dueño o ADMIN); no CANCELADO/FINALIZADO |
+| PUT /eventos/{id} | **hecho** | Editar config (dueño o ADMIN); no CANCELADO/FINALIZADO. Admite body parcial con solo `{esAltaDemanda}` (lo usa el popup de publicación del front); si el flag cambia en un evento no borrador, sincroniza la fila en ventas. |
 | DELETE /eventos/{id} | **hecho** | Solo BORRADOR |
-| POST /eventos/{id}/publicacion | **hecho** | Valida nombre/fecha/lugar/≥1 precio sector activo |
-| PATCH /eventos/{id}/estado | **hecho** | Body `{estado}`. PUBLICADO→misma validación publicar. CANCELADO→Feign reintegro entradas **best-effort**. ADMIN; ORG solo SUSPENDIDO de propios. |
+| POST /eventos/{id}/publicacion | **hecho** | Valida nombre/fecha/lugar/≥1 precio sector activo. Si el cupo total (suma de `cupoEfectivo()` de los sectores activos) **> 5000**, fuerza `esAltaDemanda = true` aunque el body venga en `false`; después notifica a ventas para reanudar la fila. |
+| PATCH /eventos/{id}/estado | **hecho** | Body `{estado}`. PUBLICADO→misma validación publicar. CANCELADO→Feign reintegro entradas **best-effort**. ADMIN; ORG solo SUSPENDIDO de propios. Toda salida de PUBLICADO pausa la fila; el alta con `estado=PUBLICADO` y la republicación la reanudan. |
 | PATCH /eventos/{id}/fecha | **hecho** | `{fechaInicio,fechaFin?}` dueño/ADMIN |
 | GET /organizadores/me/eventos | **hecho** | Listado del org (todos los estados) |
 | GET /eventos/{id}/sectores | **hecho** | Precios (activos e inactivos) |

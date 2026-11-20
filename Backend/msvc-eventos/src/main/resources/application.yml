@@ -27,6 +27,8 @@ ticketya:
   uri:
     entradas: ${TICKETYA_URI_ENTRADAS:http://localhost:8084}
     ventas: ${TICKETYA_URI_VENTAS:http://localhost:8083}
+  interno:
+    token: ${TICKETYA_INTERNAL_TOKEN:ticketya_dev_internal}
   geocoding:
     enabled: ${TICKETYA_GEOCODING_ENABLED:true}
     provider: ${TICKETYA_GEOCODING_PROVIDER:mock}

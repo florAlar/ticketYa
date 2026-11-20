@@ -49,6 +49,20 @@ class FilaEventoCacheTest {
     }
 
     @Test
+    void invalidar_fuerzaUnaNuevaConsulta() {
+        when(client.getEvento(EVENTO))
+                .thenReturn(dto("PUBLICADO", true))
+                .thenReturn(dto("SUSPENDIDO", true));
+        FilaEventoCache cache = new FilaEventoCache(client, 600);
+
+        assertEquals("PUBLICADO", cache.obtener(EVENTO).estado());
+        cache.invalidar(EVENTO);
+        assertEquals("SUSPENDIDO", cache.obtener(EVENTO).estado());
+
+        verify(client, times(2)).getEvento(EVENTO);
+    }
+
+    @Test
     void sinDatoYEventosCaido_503() {
         when(client.getEvento(EVENTO)).thenThrow(new IllegalStateException("msvc-eventos caído"));
         FilaEventoCache cache = new FilaEventoCache(client, 10);

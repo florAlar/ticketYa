@@ -105,6 +105,12 @@ public class FilaServiceImpl implements FilaService {
         store.restaurarToken(idEvento, userId, token);
     }
 
+    @Override
+    public void invalidarCache(String idEvento) {
+        eventos.invalidar(idEvento);
+        Bitacora.registrar("FILA_CACHE_INVALIDADA", "SISTEMA", idEvento, "sincronizacion=eventos");
+    }
+
     static long delante(long posicion, long tanda) {
         return Math.max(0, posicion - tanda);
     }

@@ -24,8 +24,8 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Registrarse / iniciar sesión | Público → queda CLIENTE al registrarse |
 | Editar mi perfil (nombre, apellido, ciudad) | Usuario logueado |
 | Crear / editar borrador de evento | ORGANIZADOR (dueño) o ADMIN |
-| Publicar evento | ORGANIZADOR (dueño) o ADMIN |
-| Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera |
+| Publicar evento | ORGANIZADOR (dueño) o ADMIN; antes de publicar el front pide confirmar si es de alta demanda (ver §4) |
+| Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera. Pausa la fila virtual del evento |
 | Cancelar evento | **ADMIN** (dispara reintegro de entradas vendidas) |
 | Cambiar fecha del evento | Dueño ORGANIZADOR o ADMIN |
 | Alta de lugares y sectores | **solo ADMIN** (el organizador los consulta y elige uno al crear el evento) |
@@ -39,7 +39,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Listar usuarios / cambiar estado / asignar roles | ADMIN |
 | Validar ingreso con QR en puerta | PERSONAL_ACCESO (y ADMIN) — hecho (E2-ACC-01) |
 | Reportes de ventas, ocupación y recaudación del evento | ORGANIZADOR dueño (y ADMIN) — hecho (E2-REP-01) |
-| Fila virtual alta demanda | CLIENTE: ingresar/consultar posición y validar token (`POST .../fila/validacion`); ADMIN: fijar tanda (`POST .../fila/habilitacion`). El Sistema abre tandas automáticamente. Implementado en FIL-01/FIL-02/FIL-03; `GET .../fila/estado` es público y `POST /reservas` exige `tokenFila` solo en alta demanda. |
+| Fila virtual alta demanda | CLIENTE: ingresar/consultar posición y validar token (`POST .../fila/validacion`); ADMIN: fijar tanda (`POST .../fila/habilitacion`). El Sistema abre tandas automáticamente, pausa la fila si el evento se suspende y la reanuda al republicarlo. Implementado en FIL-01/FIL-02/FIL-03; `GET .../fila/estado` es público y `POST /reservas` exige `tokenFila` solo en alta demanda. |
 | Preferencias y recomendaciones | CLIENTE — **pendiente E2** |
 | Notificaciones | — **pendiente E2** |
 
@@ -96,6 +96,15 @@ Para pasar a publicado hace falta, entre otras:
 
 Al publicar, el sistema **abre el stock de venta** (cupos por sector). Si eso falla, la publicación no queda a medias: es un paso que debe funcionar.
 
+### Alta demanda al publicar
+
+Aplica a **todo tipo de evento**, sin importar quién lo creó ni si quien publica es ORGANIZADOR o ADMIN. Antes de **cualquier** transición a `PUBLICADO` (alta con publicación, publicación de un borrador y re-publicación de un suspendido), el front despliega un popup:
+
+- Si la **capacidad/cupo total** de los sectores vendidos del evento (numerados: `filas × asientosPorFila`; generales: cupo configurado o capacidad del sector) **supera 5000 personas**, el evento queda marcado como `esAltaDemanda = true` **por defecto** y el popup muestra únicamente el aviso: **“Tu evento es un evento de alta demanda”** (sin preguntar).
+- En caso contrario, el popup pregunta **“¿Es este un evento de alta demanda?”** con botones **Sí** y **No**; la respuesta define el flag. Cancelar el popup deja el evento sin publicar.
+- `msvc-eventos` **fuerza** el flag en `true` al publicar cuando el cupo total supera 5000, aunque la petición llegue directamente a la API con el flag en `false`. Regla implementada en `EventoServiceImpl.doPublicar()`.
+- El flag habilita la elegibilidad de la fila virtual (D2 de `fila-virtual.md`); las tandas siguen abriéndose automáticamente y el override manual sigue siendo solo ADMIN (D4).
+
 ### Catálogo y búsqueda
 
 - El listado público, por defecto, muestra eventos **publicados** (y en la demo operable también se contemplan agotados en catálogo según seed/config de trabajo).  
@@ -115,7 +124,8 @@ Al publicar, el sistema **abre el stock de venta** (cupos por sector). Si eso fa
 
 ### Suspender vs cancelar
 
-- **Suspender:** el organizador puede suspender **sus** eventos; el admin cualquiera.  
+- **Suspender:** el organizador puede suspender **sus** eventos; el admin cualquiera. Al suspender (o cancelar) se **pausa la fila virtual**: se invalida de inmediato la caché del estado/flag que usa `msvc-ventas`, de modo que no se emitan nuevos tokens ni se habiliten tandas mientras el evento no esté `PUBLICADO`.  
+- **Volver a publicar** un suspendido pasa por el popup de alta demanda y **reanuda la fila** (misma invalidación, ahora derivada del estado `PUBLICADO`). Los tokens ya emitidos no se regeneran: solo se detiene la operatoria hasta la republicación.  
 - **Cancelar:** admin; las entradas vendidas pasan a reintegro (ver §6).  
 - Nota: el listado global de endpoints a veces resume “suspender/cancelar = admin”; la regla **implementada y documentada en eventos** es la de la tabla de roles de arriba. Conviene **alinear el texto global** cuando se arme la doc formal.
 

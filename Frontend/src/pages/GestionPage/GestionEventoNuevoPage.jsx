@@ -4,6 +4,7 @@ import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
 import EventoLugarSectores from '../../components/gestion/EventoLugarSectores'
 import EventoParticipantesFields from '../../components/gestion/EventoParticipantesFields'
+import ConfirmarAltaDemandaModal from '../../components/gestion/ConfirmarAltaDemandaModal'
 import useEventoNuevoForm from './evento/useEventoNuevoForm'
 import EventoNuevoDatosForm from './evento/EventoNuevoDatosForm'
 import './GestionPage.css'
@@ -17,6 +18,9 @@ const GestionEventoNuevoPage = () => {
     error,
     loading,
     publishing,
+    confirmacion,
+    confirmarAltaDemanda,
+    cancelarAltaDemanda,
     gated,
     onChange,
     onRowChange,
@@ -110,6 +114,14 @@ const GestionEventoNuevoPage = () => {
             </Link>
           </div>
         </form>
+      )}
+
+      {confirmacion && (
+        <ConfirmarAltaDemandaModal
+          cupoTotal={confirmacion.cupoTotal}
+          onConfirmar={confirmarAltaDemanda}
+          onCancelar={cancelarAltaDemanda}
+        />
       )}
     </section>
   )

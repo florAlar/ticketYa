@@ -16,6 +16,14 @@ ingreso, posición, habilitación ADMIN, validación y estado público), con `ev
 `hastaPosicionFila`, `posicionFila`, `estadoFila` y `tokenFila` en el environment. Requiere un
 evento `PUBLICADO` con `esAltaDemanda=true`; **[NV]** la corrida Newman de la carpeta 13 (no se
 ejecutó en este entorno).
+**Actualizado 2026-11-20:** la publicación de un evento (carpeta 02) ahora dispara la regla de
+alta demanda: si el cupo total de los sectores vendidos supera 5000, `msvc-eventos` fuerza
+`esAltaDemanda=true` aunque el request lo mande en `false`. El front muestra el popup de
+confirmación antes de publicar; desde la API la regla se comprueba en el detalle del evento.
+Además, suspender/cancelar pausa la fila y publicar/republicar la reanuda mediante
+`POST /internas/fila/{idEvento}/invalidacion` (llamada Feign de eventos a ventas, no expuesta por
+el gateway ni incluida como request de esta colección).
+
 **Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (sin la carpeta 13).
 
 ## Requisitos

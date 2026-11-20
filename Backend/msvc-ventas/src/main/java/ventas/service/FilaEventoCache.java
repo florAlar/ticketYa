@@ -87,6 +87,13 @@ public class FilaEventoCache {
         }
     }
 
+    /** Descarta el dato en caché: la próxima consulta vuelve a msvc-eventos. */
+    public void invalidar(String idEvento) {
+        if (idEvento != null) {
+            cache.remove(idEvento);
+        }
+    }
+
     private Info vigente(String idEvento) {
         Entrada entrada = cache.get(idEvento);
         return entrada != null && entrada.expiraEnMs > System.currentTimeMillis()

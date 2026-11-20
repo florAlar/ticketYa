@@ -51,12 +51,13 @@ flowchart LR
     EV -. "Feign: reintegro al cancelar evento" .-> EN
     EN -. "Feign: nombre/lugar del evento; estado y dueño (validación de acceso)" .-> EV
     VE -. "Feign: resumen de entradas por sector (reportes)" .-> EN
+    EV -. "Feign: invalidar caché de la fila al publicar/suspender" .-> VE
 ```
 
 Reglas de la arquitectura:
 - El navegador habla **solo con el gateway**; nunca con un microservicio directo.
 - **Una base de datos por microservicio.** No se comparten entidades ni tablas; las referencias entre servicios son lógicas (UUID sin FK física). Ver `modelo-datos.md`.
-- Comunicación **REST síncrona** (OpenFeign) entre microservicios para el flujo de E1.
+- Comunicación **REST síncrona** (OpenFeign) entre microservicios para el flujo de E1. Además de abrir cupos al publicar, `msvc-eventos` llama a `POST /internas/fila/{id}/invalidacion` de `msvc-ventas` para pausar/reanudar la fila virtual cuando cambia el estado del evento o el flag de alta demanda (D11 de `specs/fila-virtual.md`).
 - **Broker RabbitMQ** para eventos de dominio (E2): `msvc-eventos` publica `EventoCancelado`, `EventoSuspendido`, `EventoModificado` y `EventoPublicado`; `msvc-ventas` publica `CompraConfirmada`; `msvc-entradas` publica `DevolucionAprobada`; `msvc-notificaciones` los consume, genera avisos push/email y los entrega con un job y `intento_envio`. El email sale por SMTP (MailHog en local). Contrato en `specs/comunicacion.md`.
 - Cada servicio es un proyecto Maven independiente con su `Dockerfile` y su `docker-compose.yml`; `Backend/docker-compose.yml` los integra con `include`.
 
