@@ -66,6 +66,16 @@ class FilaTandaSchedulerTest {
     }
 
     @Test
+    void tick_lockConExcepcion_noSaleDelScheduler() {
+        when(store.adquirirLock(anyString())).thenThrow(new IllegalStateException("Redis caído"));
+
+        FilaTandaScheduler job = new FilaTandaScheduler(store, eventos, cupos, true, 25);
+
+        assertDoesNotThrow(job::tick);
+        verify(store, never()).liberarLock(anyString());
+    }
+
+    @Test
     void tick_eventoElegible_habilitaYSueltaLock() {
         when(store.adquirirLock(anyString())).thenReturn(true);
         when(store.eventos()).thenReturn(Set.of(EVENTO));

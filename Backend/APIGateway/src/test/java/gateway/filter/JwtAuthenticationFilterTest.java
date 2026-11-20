@@ -43,7 +43,7 @@ class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        filter = new JwtAuthenticationFilter(jwtUtil);
+        filter = new JwtAuthenticationFilter(jwtUtil, "secreto-interno-test");
         when(response.getOutputStream()).thenReturn(mock(ServletOutputStream.class));
     }
 

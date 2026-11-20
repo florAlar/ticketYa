@@ -46,10 +46,12 @@ public class FilaTandaScheduler {
         if (!enabled) {
             return;
         }
-        if (!store.adquirirLock(idInstancia)) {
-            return; // otra instancia ya está corriendo este tick
-        }
+        boolean lock = false;
         try {
+            lock = store.adquirirLock(idInstancia);
+            if (!lock) {
+                return; // otra instancia ya está corriendo este tick
+            }
             for (String idEvento : store.eventos()) {
                 try {
                     procesar(idEvento);
@@ -58,12 +60,15 @@ public class FilaTandaScheduler {
                 }
             }
         } catch (Exception ex) {
-            log.warn("FILA tick: no se pudo recorrer el índice de eventos: {}", ex.getMessage());
+            // CA-2.7: ni Redis ni Feign pueden sacar una excepción del scheduler.
+            log.warn("FILA tick: no se pudo ejecutar el tick: {}", ex.getMessage());
         } finally {
-            try {
-                store.liberarLock(idInstancia);
-            } catch (FilaException ex) {
-                log.warn("FILA tick: no se pudo liberar el lock: {}", ex.getMessage());
+            if (lock) {
+                try {
+                    store.liberarLock(idInstancia);
+                } catch (FilaException ex) {
+                    log.warn("FILA tick: no se pudo liberar el lock: {}", ex.getMessage());
+                }
             }
         }
     }

@@ -320,13 +320,13 @@ Propiedades:
 
 | Endpoint | Gateway | Control adicional en `msvc-ventas` |
 |---|---|---|
-| ingreso, posición, validación | JWT, rol CLIENTE | Lee `X-User-Id` y rechaza si falta (patrón `VentaController.java:183-189`) |
-| estado | **Ruta pública** | Sin identidad |
-| habilitación | JWT | **Verifica `X-User-Role = ADMIN`** (patrón `ReporteController.java:53`) |
+| ingreso, posición, validación | JWT, rol CLIENTE | Lee `X-User-Id` y rechaza si falta; sello `X-Internal-Token` |
+| estado | **Ruta pública** | Sin identidad; sello `X-Internal-Token` |
+| habilitación | JWT, **solo ADMIN** | **Verifica `X-User-Role = ADMIN`** + sello `X-Internal-Token` |
 
-**Hueco conocido:** hoy el gateway deja pasar a ORGANIZADOR por `/api/eventos/**` (`JwtAuthenticationFilter.java:234-237`) y `/fila` está abierto a CLIENTE (`:273-275`). Además `ventas/security/SecurityConfig.java` está vacío **[V]**. Por eso el chequeo de ADMIN dentro del controller es obligatorio y se prueba con los cuatro roles. PERSONAL_ACCESO no accede a `/fila`.
+**Acceso directo a `msvc-ventas`:** `InternalTokenFilter` exige el token compartido en `/eventos/{id}/fila/**` y el gateway lo inyecta (`JwtAuthenticationFilter.marcarComoGateway`). Un cliente que llame a `:8083` con `X-User-Role: ADMIN` recibe **401**. El resto de las rutas de ventas (por ejemplo `/eventos/{id}/cupos`, que usan eventos y entradas por Feign) queda fuera del sello para no romper esas llamadas. `SecurityConfig` sigue vacío, pero la superficie de la fila ya no depende solo de los headers.
 
-**Cambio en el gateway:** declarar `GET /api/eventos/*/fila/estado` como ruta pública, con un test en `JwtGatewayIntegrationTest` (sin token → 200, y con headers falsos no se propagan `X-User-*`).
+**Cambio en el gateway:** `GET /api/eventos/*/fila/estado` es ruta pública; el test en `JwtGatewayIntegrationTest` verifica que no se propagan `X-User-*` del cliente y que **sí** se agrega el sello interno.
 
 ## 9. Configuración (`application.yml`)
 

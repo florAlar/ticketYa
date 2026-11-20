@@ -112,13 +112,27 @@ class FilaRedisStoreIT {
     }
 
     @Test
-    void trasPrimerIngreso_lasCuatroClavesTienenTtl() {
+    void trasPrimerIngreso_zsetSeqYTandaTienenTtl() {
         String evento = EVENTO + "-ttl";
         store.ingresar(evento, "user-ttl");
 
         assertTrue(template.getExpire(store.zsetKey(evento)) > 0);
         assertTrue(template.getExpire(store.seqKey(evento)) > 0);
         assertTrue(template.getExpire(store.tandaKey(evento)) > 0);
+        // CA-1.7 no exige TTL para `usados`: es un SET vacío y Redis no crea conjuntos vacíos.
+        assertEquals(-2L, template.getExpire(store.usadosKey(evento)).longValue());
+    }
+
+    @Test
+    void alConsumirElToken_usadosHeredaElTtlDelZset() {
+        String evento = EVENTO + "-ttl-usados";
+        String user = "user-ttl-usados";
+        store.ingresar(evento, user);
+        store.habilitar(evento, 1);
+        String token = store.validar(evento, user, "token-ttl").token();
+
+        assertTrue(store.consumirToken(evento, user, token));
+
         assertTrue(template.getExpire(store.usadosKey(evento)) > 0);
     }
 

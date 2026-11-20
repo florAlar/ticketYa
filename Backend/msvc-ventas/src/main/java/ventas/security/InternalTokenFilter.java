@@ -18,9 +18,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Protege los endpoints {@code /internas/**} (no expuestos por el gateway) con un token
- * compartido entre microservicios. Se usa {@link MessageDigest#isEqual} para comparar
- * sin filtrar tiempos.
+ * Exige el token compartido entre microservicios en dos casos:
+ *
+ * <ul>
+ *   <li>{@code /internas/**}: endpoints que no pasan por el gateway.</li>
+ *   <li>{@code /eventos/{id}/fila/**}: los sella el gateway, de modo que un cliente no pueda
+ *       llamar a ventas por el puerto 8083 y forjar {@code X-User-Id}/{@code X-User-Role}.</li>
+ * </ul>
+ *
+ * Se usa {@link MessageDigest#isEqual} para comparar sin filtrar tiempos.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 20)
@@ -41,25 +47,38 @@ public class InternalTokenFilter extends OncePerRequestFilter {
             HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         String path = request.getRequestURI();
-        if (path == null || !path.startsWith("/internas/")) {
+        boolean interna = path != null && path.startsWith("/internas/");
+        if (!interna && !esRutaDeFila(path)) {
             chain.doFilter(request, response);
             return;
         }
         String received = request.getHeader(HEADER);
-        if (expectedToken.isEmpty() || received == null
-                || !MessageDigest.isEqual(
-                        expectedToken.getBytes(StandardCharsets.UTF_8),
-                        received.getBytes(StandardCharsets.UTF_8))) {
-            log.warn("Acceso interno rechazado: path={} tokenPresente={}",
-                    path, received != null);
-            response.setStatus(HttpStatus.UNAUTHORIZED.value());
-            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-            response.getOutputStream().write(
-                    "{\"error\":\"No autorizado\",\"message\":\"X-Internal-Token inválido\"}"
-                            .getBytes(StandardCharsets.UTF_8));
+        if (!tokenValido(received)) {
+            log.warn("Acceso {} rechazado: path={} tokenPresente={}",
+                    interna ? "interno" : "directo a la fila", path, received != null);
+            rechazar(response);
             return;
         }
         chain.doFilter(request, response);
+    }
+
+    private boolean tokenValido(String received) {
+        return !expectedToken.isEmpty() && received != null
+                && MessageDigest.isEqual(
+                        expectedToken.getBytes(StandardCharsets.UTF_8),
+                        received.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static boolean esRutaDeFila(String path) {
+        return path != null && path.matches("/eventos/[^/]+/fila/.*");
+    }
+
+    private static void rechazar(HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.getOutputStream().write(
+                "{\"error\":\"No autorizado\",\"message\":\"X-Internal-Token inválido\"}"
+                        .getBytes(StandardCharsets.UTF_8));
     }
 }

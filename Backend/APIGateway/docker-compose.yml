@@ -14,3 +14,5 @@ services:
       TICKETYA_URI_PREFERENCIAS: http://ms-preferencias:8085
       TICKETYA_URI_NOTIFICACIONES: http://ms-notificaciones:8086
       TICKETYA_CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost,http://127.0.0.1
+      # Mismo valor que ms-ventas: sella las rutas /fila/** contra acceso directo al 8083.
+      TICKETYA_INTERNAL_TOKEN: ${TICKETYA_INTERNAL_TOKEN:-ticketya_dev_internal}

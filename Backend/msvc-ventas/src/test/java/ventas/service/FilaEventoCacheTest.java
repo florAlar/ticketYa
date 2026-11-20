@@ -7,6 +7,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -61,5 +66,31 @@ class FilaEventoCacheTest {
 
         assertEquals("PUBLICADO", cache.obtener(EVENTO).estado());
         assertEquals("PUBLICADO", cache.obtener(EVENTO).estado());
+    }
+
+    @Test
+    void dosRequestsConcurrentesDelMismoEvento_hacenUnaSolaLlamadaFeign() throws Exception {
+        CountDownLatch enFeign = new CountDownLatch(1);
+        CountDownLatch liberar = new CountDownLatch(1);
+        when(client.getEvento(EVENTO)).thenAnswer(inv -> {
+            enFeign.countDown();
+            liberar.await(5, TimeUnit.SECONDS);
+            return dto("PUBLICADO", true);
+        });
+        FilaEventoCache cache = new FilaEventoCache(client, 10);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<FilaEventoCache.Info> primero = pool.submit(() -> cache.obtener(EVENTO));
+            assertTrue(enFeign.await(5, TimeUnit.SECONDS));
+            Future<FilaEventoCache.Info> segundo = pool.submit(() -> cache.obtener(EVENTO));
+            liberar.countDown();
+
+            assertEquals("PUBLICADO", primero.get(5, TimeUnit.SECONDS).estado());
+            assertEquals("PUBLICADO", segundo.get(5, TimeUnit.SECONDS).estado());
+        } finally {
+            pool.shutdownNow();
+        }
+
+        verify(client, times(1)).getEvento(EVENTO);
     }
 }

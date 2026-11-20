@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -38,11 +39,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String HDR_USER_EMAIL = "X-User-Email";
     public static final String HDR_USER_ROLE = "X-User-Role";
     public static final String HDR_USER_ROLES = "X-User-Roles";
+    public static final String HDR_INTERNAL = "X-Internal-Token";
 
     private final JwtUtil jwtUtil;
+    private final String internalToken;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(
+            JwtUtil jwtUtil,
+            @Value("${ticketya.interno.token:}") String internalToken) {
         this.jwtUtil = jwtUtil;
+        this.internalToken = internalToken == null ? "" : internalToken.trim();
     }
 
     private static final List<String> PUBLIC_PREFIXES = List.of(
@@ -117,6 +123,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             wrapper.putHeader(HDR_USER_EMAIL, email);
             wrapper.putHeader(HDR_USER_ROLE, primaryRol);
             wrapper.putHeader(HDR_USER_ROLES, roles.isEmpty() ? null : String.join(",", roles));
+            marcarComoGateway(wrapper, path);
 
             filterChain.doFilter(wrapper, response);
 
@@ -336,13 +343,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /** Request sin identidad: los headers X-User-* del cliente quedan vacíos. */
-    private static MutableRequest sinIdentidad(HttpServletRequest request) {
+    private MutableRequest sinIdentidad(HttpServletRequest request) {
         MutableRequest wrapper = new MutableRequest(request);
         wrapper.putHeader(HDR_USER_ID, null);
         wrapper.putHeader(HDR_USER_EMAIL, null);
         wrapper.putHeader(HDR_USER_ROLE, null);
         wrapper.putHeader(HDR_USER_ROLES, null);
+        marcarComoGateway(wrapper, request.getRequestURI());
         return wrapper;
+    }
+
+    /**
+     * Sella las rutas de la fila con el token compartido: msvc-ventas rechaza llamadas directas
+     * a {@code /eventos/{id}/fila/**} que no vengan del gateway (no alcanza con forjar X-User-*).
+     * En el resto de las rutas el header se vacía: el token del cliente nunca se propaga.
+     */
+    private void marcarComoGateway(MutableRequest wrapper, String path) {
+        boolean esFila = !internalToken.isEmpty() && path != null
+                && path.matches("/api/eventos/[^/]+/fila/.*");
+        wrapper.putHeader(HDR_INTERNAL, esFila ? internalToken : null);
     }
 
     private static final class MutableRequest extends jakarta.servlet.http.HttpServletRequestWrapper {
