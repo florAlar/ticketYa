@@ -15,6 +15,7 @@ Leyenda: `PK` clave primaria · `FK` clave foránea física (misma base) · `UK`
 6. [Relaciones entre servicios](#6-relaciones-entre-servicios-referencias-lógicas)
 7. [Entidades solapadas](#7-entidades-solapadas-entre-bases)
 8. [Preferencias (MongoDB)](#8-preferencias-mongodb-e2)
+9. [Fila virtual (Redis, no relacional)](#9-fila-virtual-redis-no-relacional)
 
 ---
 
@@ -117,7 +118,7 @@ erDiagram
 
 **Asientos virtuales:** un sector numerado guarda `filas` y `asientos_por_fila` (capacidad = filas × asientos por fila); los asientos se calculan y no se persisten. Las tablas `asiento` y `precio_asiento` se eliminaron (SEAT-07): el precio se define solo por sector (`precio_sector`). Estados del evento: `BORRADOR`, `PUBLICADO`, `AGOTADO`, `SUSPENDIDO`, `CANCELADO`, `FINALIZADO`.
 
-## 3. msvc-ventas (MySQL `ventas`; Redis para holds e idempotencia)
+## 3. msvc-ventas (MySQL `ventas`; Redis para holds, idempotencia y fila virtual)
 
 ```mermaid
 erDiagram
@@ -306,3 +307,7 @@ Consistencia entre bases: se resuelve con llamadas REST síncronas, idempotencia
 ## 8. Preferencias (MongoDB, E2)
 
 `msvc-preferencias` usa MongoDB (`preferencias_clientes`, `interacciones_eventos`). Esquema y diagrama: `Backend/specs/diagramas/modelo-mongodb.md`. Referencia lógica a usuarios y eventos por UUID, igual que el resto.
+
+## 9. Fila virtual (Redis, no relacional)
+
+La fila de alta demanda **no entra en este modelo ER ni en ningún `init.sql`**: no hay tablas `fila_*`. Turno, posición, tanda y token temporal son datos volátiles guardados en Redis con prefijo `ticketya.fila.*` (`StringRedisTemplate`). Es la decisión D1 de `specs/fila-virtual.md`, una simplificación permitida por `consigna.md:148`: evita DDL/migraciones y mensajería para un estado que solo importa durante la ventana de compra. Si Redis se reinicia, el cliente reingresa; la reserva confirmada sigue en MySQL (`cupo_sector`, `reserva`), que es la fuente de verdad. Detalle de claves, Lua y TTL en `specs/fila-virtual.md` y en el diagrama de secuencia §9.

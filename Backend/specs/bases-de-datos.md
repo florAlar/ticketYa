@@ -10,4 +10,4 @@
     - `msvc-preferencias`
 
 - **Redis:** Almacenamiento en memoria para operaciones de alta velocidad.
-    - `msvc-ventas`: stock/cupos y retención temporal de reservas (hecho); fila virtual, posiciones y tokens temporales (E2, pendiente).
+    - `msvc-ventas`: stock/cupos y retención temporal de reservas (hecho); fila virtual, posiciones, tandas y tokens temporales (hecho en FIL-01…FIL-03). La fila es **Redis-only** con prefijo `ticketya.fila.*` (decisión D1 de `specs/fila-virtual.md`): no hay tabla MySQL ni mensajes Rabbit para ella, y su pérdida no afecta las reservas confirmadas en MySQL.

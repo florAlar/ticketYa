@@ -736,9 +736,9 @@ Agregar la sección `Resultados (con fila)` a `docs/testing/carga.md`, `backlog.
 ```bash
 grep -rn '/fila' Backend/msvc-ventas/docs Backend/docs/openapi
 grep -n 'E2-FILA-01\|E2-TST-03' Backend/specs/backlog.md
-grep -rni 'sin implementar\|no implementada' Backend/docs Backend/specs | grep -i fila   # debe dar 0 (exigible desde FIL-04)
-mvn -q -f Backend/msvc-ventas/pom.xml test     # [NV] ejecutar recién en la implementación
-mvn -q -f Backend/APIGateway/pom.xml test      # [NV] ejecutar recién en la implementación
+grep -rniE 'sin impl[e]mentar|no implem[e]ntada' Backend/docs Backend/specs | grep -i fila   # debe dar 0 (FIL-04); [e] evita que el propio comando coincida
+mvn -q -f Backend/msvc-ventas/pom.xml test     # ejecutado en FIL-01…FIL-04
+mvn -q -f Backend/APIGateway/pom.xml test      # ejecutado en FIL-01…FIL-04
 git diff --check && git status --short
 ```
 
@@ -751,21 +751,22 @@ git diff --check && git status --short
 | 3 | `FIL-01` | store, service, controller, Feign, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, controller, gateway | `endpoints.md` (3 filas), docs de ventas, `backlog.md:221` (en curso) |
 | 4 | `FIL-02` | `habilitar`, scheduler, RBAC | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
 | 5 | `FIL-03` | `validar`, consumir y restaurar, gate | `FilaServiceTest`, `VentaServiceImplTest`, IT, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia |
-| 6 | `TST-CARGA-01/B` | — | JMeter con fila (+ ADMIN en B2) + SQL + Redis | `docs/testing/carga*`, `backlog.md:242` (hecho) |
-| 7 | `FIL-04` | — | checklist | OpenAPI, Postman, `gateway.md`, modelos, backlog final |
+| 6 | `TST-CARGA-01/B` | — | planes JMeter con fila (+ ADMIN en B2) y verificaciones SQL/Redis; sin corrida | `docs/testing/carga*`, `backlog.md:242` (parcial: sin métricas reales) |
+| 7 | `FIL-04` | — | checklist final: 0 resultados en el grep de "no implementada"; suites Maven OK | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
 
 ## 19. No verificado y supuestos
 
-- **[NV]** No se ejecutó Maven, Docker, JMeter ni ningún script Lua. Ningún comando de este documento fue probado.
-- **[NV]** Configuración de Redis (`maxmemory`, evicción, persistencia): la política `volatile-lru` con 256 MB proviene de una revisión del plan, no de una lectura del repo.
-- **[NV]** Credenciales de MySQL, forma de inyectar variables de entorno al contenedor de ventas y endpoint de health.
-- **[NV]** Qué mecanismo de errores usa ventas (`ResponseStatusException` u otro).
+- **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests, 0 fallos/errores) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
+- **[NV]** Docker, JMeter y los scripts Lua contra Redis real: no hay corrida de carga ni IT de Testcontainers ejecutado (los IT se omiten sin Docker). `E2-TST-03` sigue `parcial` y no se inventaron métricas.
+- **[NV]** Configuración real de Redis (`maxmemory`, evicción, persistencia): la política `volatile-lru` con 256 MB proviene de una revisión del plan, no de una lectura del repo.
+- **[NV]** Credenciales de MySQL, forma de inyectar `TICKETYA_FILA_AUTO_*` al contenedor de ventas del compose y endpoint de health.
+- **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.
 - **[NV]** Si el tablero de Trello tiene una US de fila con CA propios.
-- **[I]** Formato de body y response de los 5 endpoints: se define acá.
-- **[I]** Consulta `SUM(cantidad_disponible)` por evento: hay que agregarla al repositorio.
-- **[I]** Secuencia exacta de pago y verificación de emisión en JMeter: copiarla de la colección Postman E1.
-- **[I]** Los mocks de `VentaServiceImplTest` devuelven `false` para `esAltaDemanda`.
-- **[V, según análisis previos]** `specs/endpoints.md:212` indica "ADMIN/Sistema"; `"PUBLICADO"` en `EventoServiceImpl.java:76`; estados de reserva en `VentaServiceImpl.java:67-70` y compra `APROBADA` en `:74`.
+- **[V]** Formato de body y response de los 5 endpoints: definido acá, implementado y documentado en OpenAPI/Postman.
+- **[V]** Consulta `SUM(cantidad_disponible)` por evento: agregada al repositorio y usada por `FilaTandaScheduler`.
+- **[V]** Secuencia de pago y verificación de emisión en los planes JMeter: copiada de la colección Postman E1 (sin ejecutar).
+- **[V]** Los mocks de `VentaServiceImplTest` cubren `esAltaDemanda=true` (gate) y `false` (flujo normal).
+- **[V]** `specs/endpoints.md` marca ADMIN/Sistema la habilitación, `"PUBLICADO"` el flag de elegibilidad y los estados de reserva/compra quedaron verificados por los tests del bloque FIL-03.
 
 ## 20. Referencias
 
