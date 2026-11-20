@@ -27,7 +27,7 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: rgba(8, 8, 12, 0.28);
+  background: rgba(10, 8, 4, 0.28);
   pointer-events: none;
 }
 
@@ -57,7 +57,7 @@
 }
 
 .auth-box__star {
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
   font-size: 1.1rem;
 }
 
@@ -103,8 +103,8 @@
 }
 
 .auth-tabs button.is-active {
-  background: var(--colors-primary, #e91e8c);
-  color: #fff;
+  background: var(--colors-primary);
+  color: var(--on-brand);
   font-weight: 600;
 }
 
@@ -134,9 +134,9 @@
 
 .auth-box .form-input:focus,
 .auth-box .form-textarea:focus {
-  border-color: var(--colors-primary, #e91e8c);
+  border-color: var(--colors-primary);
   background: #121212;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--colors-primary, #e91e8c) 28%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--colors-primary) 28%, transparent);
 }
 
 .auth-box .form-input::placeholder {
@@ -151,8 +151,8 @@
   margin-top: 0.35rem;
   border: none;
   border-radius: 10px;
-  background: var(--colors-primary, #e91e8c);
-  color: #fff;
+  background: var(--colors-primary);
+  color: var(--on-brand);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: none;
@@ -235,8 +235,8 @@
 }
 
 .auth-box__roles-cta:hover {
-  background: rgba(233, 30, 140, 0.18);
-  border-color: var(--colors-primary, #e91e8c);
+  background: color-mix(in srgb, var(--brand) 18%, transparent);
+  border-color: var(--colors-primary);
   color: #fff;
 }
 

@@ -1,8 +1,8 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
-import { USE_MOCK } from '../../api/config'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
-import { formatFecha } from '../../lib/format'
+import Countdown from '../../components/ui/Countdown'
+import Steps from '../../components/ui/Steps'
 import useCheckout from './useCheckout'
 import CheckoutTicket from './CheckoutTicket'
 import CheckoutSuccess from './CheckoutSuccess'
@@ -36,17 +36,26 @@ const CheckoutPage = () => {
   }`
 
   return (
-    <section className="checkout-page container-slim section-v-padding">
-      <p>
-        <Link to={`/eventos/${eventoId}`}>← Volver al evento</Link>
-      </p>
-
-      <h1>Comprar entrada</h1>
-      {!USE_MOCK && (
-        <p className="checkout-page__muted">
-          Modo gateway: reserva + compra + pago mock del backend.
+    <section className="checkout-page">
+      <header className="checkout-top">
+        <p className="checkout-top__back">
+          <Link to={`/eventos/${eventoId}`}>← Volver al evento</Link>
         </p>
-      )}
+        <h1>Comprar entrada</h1>
+        {status === 'success' && requiereFila && !filaPendiente && paseFila && (
+          <div className="checkout-page__pase">
+            <Countdown
+              expiraEn={paseFila.expiraEn}
+              label="Tu pase de fila vence en"
+              avisoToast="Te quedan 2 minutos para completar la compra."
+            />
+          </div>
+        )}
+        <Steps
+          current={success?.eventoId === eventoId ? 2 : 1}
+          steps={['Elegí tu entrada', 'Pagá', 'Listo']}
+        />
+      </header>
 
       {status === 'loading' && <LoadingState label="Cargando evento…" />}
       {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
@@ -62,14 +71,6 @@ const CheckoutPage = () => {
             Ir a la fila virtual
           </Link>
         </div>
-      )}
-
-      {status === 'success' && requiereFila && !filaPendiente && paseFila && (
-        <p className="checkout-page__aviso">
-          Pase de fila vigente hasta{' '}
-          {formatFecha(paseFila.expiraEn, { timeStyle: 'short' })}. Tenés 10
-          minutos para completar la compra.
-        </p>
       )}
 
       {success?.eventoId === eventoId && <CheckoutSuccess success={success} />}

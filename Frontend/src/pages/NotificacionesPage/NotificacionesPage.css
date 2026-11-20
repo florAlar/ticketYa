@@ -21,13 +21,13 @@
 }
 
 .notificaciones-page__error {
-  color: #b91c1c;
+  color: var(--tone-danger);
   margin: 0.5rem 0;
   font-size: 0.9rem;
 }
 
 .notificaciones-page__ok {
-  color: #15803d;
+  color: var(--tone-success);
   margin: 0.35rem 0 0;
   font-size: 0.85rem;
 }
@@ -87,7 +87,7 @@
 
 .notificaciones-prefs__toggle input {
   margin-top: 0.15rem;
-  accent-color: var(--colors-primary, #e91e8c);
+  accent-color: var(--colors-primary);
 }
 
 .notificaciones-prefs__toggle span {
@@ -102,7 +102,7 @@
 
 .notificaciones-prefs__toggle small {
   color: var(--colors-textMuted, #7b7b7b);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .notificaciones-toolbar {
@@ -134,8 +134,8 @@
 }
 
 .notificaciones-tabs button.is-active {
-  background: var(--colors-primary, #e91e8c);
-  color: #fff;
+  background: var(--colors-primary);
+  color: var(--on-brand);
   font-weight: 600;
 }
 
@@ -176,8 +176,8 @@
 }
 
 .notificacion-card.is-unread {
-  border-color: color-mix(in srgb, var(--colors-primary, #e91e8c) 35%, var(--colors-border, #ddd));
-  box-shadow: inset 3px 0 0 var(--colors-primary, #e91e8c);
+  border-color: color-mix(in srgb, var(--colors-primary) 35%, var(--colors-border, #ddd));
+  box-shadow: inset 3px 0 0 var(--colors-primary);
 }
 
 .notificacion-card__top {
@@ -193,26 +193,26 @@
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
 }
 
 .notificacion-card__channel {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.07);
+  background: var(--colors-surfaceAlt, rgba(0, 0, 0, 0.07));
   color: var(--colors-textMuted, #5c5c5c);
 }
 
 .notificacion-card__channel.is-email {
   background: rgba(21, 128, 61, 0.12);
-  color: #166534;
+  color: var(--tone-success);
 }
 
 .notificacion-card__channel.is-push {
-  background: rgba(233, 30, 140, 0.12);
-  color: var(--colors-primary, #e91e8c);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--colors-primary);
 }
 
 .notificacion-card__date {
@@ -251,7 +251,7 @@
 }
 
 .notificacion-card__actions a {
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
   text-decoration: none;
 }
 
@@ -262,7 +262,7 @@
 .notificacion-card__actions button {
   border: 0;
   background: transparent;
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
   font: inherit;
   font-size: 0.76rem;
   cursor: pointer;

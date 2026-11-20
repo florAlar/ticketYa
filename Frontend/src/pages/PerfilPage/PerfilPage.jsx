@@ -7,6 +7,7 @@ import { isAbortError } from '../../api/http'
 import { ROLE_LABELS, normalizeRol } from '../../auth/roles'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateButton from '../../components/ui/GateButton'
+import Badge from '../../components/ui/Badge'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import PreferenciasForm from '../../components/preferencias/PreferenciasForm'
 import HistorialCliente from '../../components/preferencias/HistorialCliente'
@@ -26,10 +27,10 @@ function formFromProfile(p) {
 
 /**
  * Mi perfil — GET/PATCH /api/usuarios/me
- * Panel: solo «Editar datos» (resto de flujos en el nav).
- * CLIENTE: 2 columnas — datos | CTA organizador.
+ * Dos columnas: identidad + edición (+ CTA organizador) | gustos y recomendaciones.
  */
 const PerfilPage = () => {
+  const [tab, setTab] = useState('prefs')
   const { token, user, updateUser, isCliente } = useAuth()
 
   const [error, setError] = useState('')
@@ -124,13 +125,38 @@ const PerfilPage = () => {
     .join(' ')
     .trim()
 
-  const datosCard = profile && !editing && (
-    <article className="perfil-card perfil-card--datos">
-      <h2 className="perfil-card__heading">Datos personales</h2>
-      <dl className="perfil-dl">
+  const iniciales =
+    [profile?.nombre, profile?.apellido]
+      .filter(Boolean)
+      .map((p) => p[0].toUpperCase())
+      .join('')
+      .slice(0, 2) || (profile?.email || '?')[0].toUpperCase()
+
+  // Cabecera de cuenta: identidad · datos · acción, repartidos a lo ancho
+  const identidad = profile && !editing && (
+    <article className="perfil-card perfil-hero">
+      <div className="perfil-hero__id">
+        <div className="perfil-identity__avatar" aria-hidden>
+          {iniciales}
+        </div>
+        <div className="perfil-hero__who">
+          <h2 className="perfil-hero__name">
+            {displayName || profile.nombre || 'Mi cuenta'}
+          </h2>
+          <p className="perfil-hero__email">{profile.email || '—'}</p>
+          <div className="perfil-identity__badges">
+            <Badge tone="violet">{rolLabel}</Badge>
+            <Badge tone={profile.activo === false ? 'danger' : 'success'}>
+              {profile.activo === false ? 'Desactivada' : 'Activa'}
+            </Badge>
+          </div>
+        </div>
+      </div>
+
+      <dl className="perfil-hero__facts">
         <div>
           <dt>Nombre</dt>
-          <dd>{displayName || profile.nombre || '—'}</dd>
+          <dd>{profile.nombre || '—'}</dd>
         </div>
         <div>
           <dt>Apellido</dt>
@@ -141,193 +167,179 @@ const PerfilPage = () => {
           <dd>{profile.ciudad || '—'}</dd>
         </div>
         <div>
-          <dt>Email</dt>
-          <dd className="perfil-dl__mono">{profile.email || '—'}</dd>
-        </div>
-        <div>
           <dt>Rol</dt>
-          <dd>
-            <span className="perfil-badge">{rolLabel}</span>
-          </dd>
-        </div>
-        <div>
-          <dt>Estado</dt>
-          <dd>{profile.activo === false ? 'Desactivada' : 'Activa'}</dd>
+          <dd>{rolLabel}</dd>
         </div>
       </dl>
 
-      <div className="perfil-card__actions">
+      <div className="perfil-hero__actions">
         <button type="button" className="btn btn-primary" onClick={startEdit}>
           Editar datos
         </button>
+        <p className="perfil-page__muted">Email y rol no se cambian desde acá.</p>
       </div>
-      <p className="perfil-page__muted perfil-page__hint">
-        Email y rol no se cambian desde acá. El resto de acciones está en el menú.
-      </p>
     </article>
   )
 
+  const edicion = profile && editing && (
+    <form className="perfil-card perfil-edit" onSubmit={onSubmit} noValidate>
+      <h2 className="perfil-card__heading">Editar datos</h2>
+      <div className="perfil-edit__grid">
+        <div className="form-group">
+          <label htmlFor="perfil-nombre">Nombre</label>
+          <input
+            id="perfil-nombre"
+            className="form-input"
+            name="nombre"
+            value={form.nombre}
+            onChange={onChange}
+            required
+            minLength={2}
+            maxLength={100}
+            autoComplete="given-name"
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="perfil-apellido">Apellido</label>
+          <input
+            id="perfil-apellido"
+            className="form-input"
+            name="apellido"
+            value={form.apellido}
+            onChange={onChange}
+            maxLength={100}
+            autoComplete="family-name"
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="perfil-ciudad">Ciudad</label>
+          <input
+            id="perfil-ciudad"
+            className="form-input"
+            name="ciudad"
+            value={form.ciudad}
+            onChange={onChange}
+            maxLength={120}
+            autoComplete="address-level2"
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="perfil-email">Email</label>
+          <input
+            id="perfil-email"
+            className="form-input"
+            value={profile.email || ''}
+            disabled
+            readOnly
+          />
+        </div>
+        <div className="form-group">
+          <label htmlFor="perfil-rol">Rol</label>
+          <input
+            id="perfil-rol"
+            className="form-input"
+            value={rolLabel}
+            disabled
+            readOnly
+          />
+        </div>
+      </div>
+
+      <div className="perfil-card__actions">
+        <button type="submit" className="btn btn-primary" disabled={saving}>
+          {saving ? 'Guardando…' : 'Guardar'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={cancelEdit}
+          disabled={saving}
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  )
+
   const orgCard = isCliente && profile && !editing && (
-    <aside className="perfil-card perfil-card--org" aria-label="Cuenta organizador">
-      <h2 className="perfil-org__title">¿Querés organizar eventos?</h2>
-      <p className="perfil-page__muted">
-        Los organizadores no se registran solos: un cliente pide la extensión y un
-        admin la autoriza. Por ahora el pedido no está cableado al backend.
+    <aside className="perfil-card perfil-org" aria-label="Cuenta organizador">
+      <p>
+        <strong>¿Querés organizar eventos?</strong> Un cliente pide la extensión y un admin la
+        autoriza (todavía no está cableado al backend).
       </p>
-      <div className="perfil-card__actions perfil-card__actions--stack">
+      <div className="perfil-org__actions">
         <GateButton
           enabled={FEATURE.solicitudOrganizador}
-          className="btn btn-primary"
+          className="btn btn-secondary btn-sm"
           title={
             FEATURE.solicitudOrganizador
               ? 'Enviar solicitud de organizador'
               : GATE_HINT
           }
         >
-          Solicitar cuenta de organizador
+          Solicitar cuenta
         </GateButton>
-        <Link className="btn btn-secondary" to="/cuenta/organizador">
+        <Link className="btn btn-secondary btn-sm" to="/cuenta/organizador">
           Ver guía de roles
         </Link>
       </div>
     </aside>
   )
 
+  const conPrefs = FEATURE.preferencias
+
   return (
-    <section className="perfil-page container-slim section-v-padding">
+    <section className="perfil-page container section-v-padding">
       <header className="perfil-page__head">
         <h1 className="perfil-page__title">Mi perfil</h1>
         <p className="perfil-page__sub">
-          Datos de la cuenta con la que estás logueado.
+          Tu cuenta, tus gustos y lo que te recomendamos.
         </p>
       </header>
 
-      {status === 'loading' && (
-        <LoadingState label="Cargando perfil…" />
-      )}
+      {status === 'loading' && <LoadingState label="Cargando perfil…" />}
       {status === 'error' && <ErrorState error={loadError} onRetry={reload} />}
       {error && <p className="perfil-page__error">{error}</p>}
       {msg && <p className="perfil-page__ok">{msg}</p>}
 
-      {status === 'success' && profile && !editing && (
-        <div
-          className={
-            isCliente
-              ? 'perfil-layout perfil-layout--two'
-              : 'perfil-layout perfil-layout--one'
-          }
-        >
-          <div className="perfil-layout__main">{datosCard}</div>
-          {isCliente && (
-            <div className="perfil-layout__side">{orgCard}</div>
-          )}
-        </div>
-      )}
+      {status === 'success' && profile && (
+        <div className="perfil-cols">
+          <aside className="perfil-cols__side">
+            {identidad}
+            {edicion}
+            {orgCard}
+          </aside>
 
-      {status === 'success' && profile && !editing && FEATURE.preferencias && (
-        <section className="perfil-prefs-section">
-          <div className="perfil-prefs-head">
-            <h2 className="perfil-prefs-head__title">
-              Gustos y recomendaciones
-            </h2>
-            <p className="perfil-page__muted">
-              Cargá tus tipos de evento, ciudades y artistas favoritos.
-              {isCliente && ' Se combinan con tus compras para sugerirte eventos.'}
-            </p>
-          </div>
-          <div className="perfil-prefs">
-            <PreferenciasForm token={token} />
-            {isCliente && (
-              <HistorialCliente idCliente={user?.id} token={token} />
+          <div className="perfil-cols__main">
+            {conPrefs && (
+              <section className="perfil-card perfil-panel">
+                {isCliente && (
+                  <div className="perfil-tabs" role="tablist" aria-label="Preferencias e historial">
+                    {[
+                      ['prefs', 'Mis gustos'],
+                      ['historial', 'Mis compras'],
+                    ].map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        role="tab"
+                        aria-selected={tab === id}
+                        className={`perfil-tabs__tab${tab === id ? ' is-active' : ''}`}
+                        onClick={() => setTab(id)}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {(!isCliente || tab === 'prefs') && <PreferenciasForm token={token} />}
+                {isCliente && tab === 'historial' && (
+                  <HistorialCliente idCliente={user?.id} token={token} />
+                )}
+              </section>
             )}
           </div>
-        </section>
-      )}
-
-      {status === 'success' && profile && editing && (
-        <form
-          className="perfil-card perfil-card--datos perfil-card--edit"
-          onSubmit={onSubmit}
-          noValidate
-        >
-          <h2 className="perfil-card__heading">Editar datos</h2>
-          <div className="form-group">
-            <label htmlFor="perfil-nombre">Nombre</label>
-            <input
-              id="perfil-nombre"
-              className="form-input"
-              name="nombre"
-              value={form.nombre}
-              onChange={onChange}
-              required
-              minLength={2}
-              maxLength={100}
-              autoComplete="given-name"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="perfil-apellido">Apellido</label>
-            <input
-              id="perfil-apellido"
-              className="form-input"
-              name="apellido"
-              value={form.apellido}
-              onChange={onChange}
-              maxLength={100}
-              autoComplete="family-name"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="perfil-ciudad">Ciudad</label>
-            <input
-              id="perfil-ciudad"
-              className="form-input"
-              name="ciudad"
-              value={form.ciudad}
-              onChange={onChange}
-              maxLength={120}
-              autoComplete="address-level2"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="perfil-email">Email</label>
-            <input
-              id="perfil-email"
-              className="form-input"
-              value={profile.email || ''}
-              disabled
-              readOnly
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="perfil-rol">Rol</label>
-            <input
-              id="perfil-rol"
-              className="form-input"
-              value={rolLabel}
-              disabled
-              readOnly
-            />
-          </div>
-
-          <div className="perfil-card__actions">
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={saving}
-            >
-              {saving ? 'Guardando…' : 'Guardar'}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={cancelEdit}
-              disabled={saving}
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
+        </div>
       )}
     </section>
   )

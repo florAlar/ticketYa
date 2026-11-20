@@ -130,12 +130,7 @@ const PreferenciasForm = ({ token }) => {
   }
 
   return (
-    <article className="perfil-card pref-card">
-      <h2 className="perfil-card__heading">Mis preferencias</h2>
-      <p className="perfil-page__muted">
-        Contanos qué te gusta. Se combina con tu historial de compras para
-        recomendarte eventos.
-      </p>
+    <div className="pref-embed">
 
       {!token && (
         <p className="perfil-page__error">
@@ -179,7 +174,6 @@ const PreferenciasForm = ({ token }) => {
             }
             suggestions={ciudadesSugeridas}
             placeholder="Ej. Buenos Aires"
-            help="Agregá una o más ciudades de tu interés."
             disabled={saving}
           />
 
@@ -194,7 +188,7 @@ const PreferenciasForm = ({ token }) => {
           />
 
           <fieldset className="pref-fieldset">
-            <legend>Rango de precio (ARS)</legend>
+            <legend>Rango de precio (ARS) · opcional</legend>
             <div className="pref-range">
               <div className="form-group">
                 <label htmlFor="pref-precio-min">Mínimo</label>
@@ -227,19 +221,16 @@ const PreferenciasForm = ({ token }) => {
                 />
               </div>
             </div>
-            <p className="pref-help">
-              Dejá ambos vacíos para no limitar las recomendaciones por precio.
-            </p>
           </fieldset>
 
-          <div className="perfil-card__actions">
+          <div className="pref-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Guardando…' : 'Guardar preferencias'}
+              {saving ? 'Guardando…' : 'Guardar'}
             </button>
           </div>
         </form>
       )}
-    </article>
+    </div>
   )
 }
 

@@ -9,38 +9,47 @@
 }
 
 .evento-detalle-page__error {
-  color: #b91c1c;
+  color: var(--tone-danger);
 }
 
 .evento-detalle-page__media {
-  margin-bottom: 1.25rem;
-  border-radius: 12px;
+  margin-bottom: 1.5rem;
+  border-radius: var(--radius-lg, 20px);
   overflow: hidden;
-  max-height: 280px;
+  min-height: clamp(280px, 38vh, 400px);
   background: var(--colors-surfaceAlt, #eee);
+  box-shadow: var(--shadow-card);
   position: relative;
+}
+
+.evento-detalle-page__media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--grad-cover-overlay);
+  pointer-events: none;
 }
 
 .evento-detalle-page__cupo {
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
-  z-index: 1;
+  z-index: 2;
 }
 
 .evento-detalle-page__cupo-line {
   margin: 0.35rem 0 0.5rem;
   font-size: 0.92rem;
   font-weight: 600;
-  color: #b45309;
+  color: var(--tone-warning);
 }
 
 .evento-detalle-page__cupo-line--agotado {
-  color: #b91c1c;
+  color: var(--tone-danger);
 }
 
 .evento-detalle-page__cupo-line--suspend {
-  color: #a16207;
+  color: var(--tone-warning);
 }
 
 .evento-ticket-card--agotado {
@@ -48,11 +57,12 @@
   border-color: color-mix(in srgb, #b91c1c 35%, var(--colors-border, #ddd));
 }
 
-.evento-detalle-page__media img {
+.evento-detalle-page__media .event-cover {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: 280px;
-  object-fit: cover;
+  height: 100%;
 }
 
 .evento-detalle-page__head h1 {
@@ -90,47 +100,6 @@
   margin-top: 1.75rem;
 }
 
-.evento-fila-destacada {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 1.25rem;
-  padding: 1rem 1.2rem;
-  border-radius: 12px;
-  border: 1px solid color-mix(
-    in srgb,
-    var(--colors-primary, #e91e8c) 40%,
-    var(--colors-border, #ddd)
-  );
-  background: color-mix(
-    in srgb,
-    var(--colors-primary, #e91e8c) 7%,
-    #fff
-  );
-}
-
-.evento-fila-destacada h2 {
-  margin: 0.15rem 0 0.35rem;
-  font-size: 1.1rem;
-}
-
-.evento-fila-destacada p {
-  margin: 0;
-  font-size: 0.92rem;
-}
-
-.evento-fila-destacada__pase {
-  margin-top: 0.35rem !important;
-  font-weight: 600;
-  color: #15803d;
-}
-
-.evento-fila-destacada .btn {
-  flex-shrink: 0;
-}
-
 .evento-detalle-page__tickets h2 {
   margin: 0 0 0.85rem;
   font-size: 1.15rem;
@@ -165,7 +134,7 @@
 .evento-ticket-card__price {
   margin: 0.35rem 0 0;
   font-weight: 700;
-  color: var(--colors-primary, #e91e8c);
+  color: var(--colors-primary);
   font-size: 1.05rem;
 }
 
@@ -185,3 +154,210 @@
   margin-left: 0.5rem;
   vertical-align: middle;
 }
+
+.evento-detalle-page__hot {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+}
+
+.evento-ticket-card:not(.evento-ticket-card--agotado):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* ---- Título y datos del evento dentro de la imagen ---- */
+.evento-detalle-page__media { display: flex; align-items: flex-end; }
+.evento-detalle-page__media::after {
+  background: linear-gradient(180deg, rgba(12, 7, 24, 0.15) 0%, rgba(12, 7, 24, 0.35) 40%, rgba(12, 7, 24, 0.9) 100%);
+}
+.evento-detalle-page__head {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  padding: 3.5rem 1.5rem 1.25rem;
+  color: #fff;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+.evento-detalle-page__head h1 {
+  margin: 0.2rem 0 0.4rem;
+  font-size: clamp(1.5rem, 3.4vw, 2.2rem);
+  line-height: 1.1;
+  color: #fff;
+}
+.evento-detalle-page__head p { margin: 0.2rem 0 0; font-size: 0.95rem; color: rgba(255, 255, 255, 0.9); }
+.evento-detalle-page__head .evento-detalle-page__meta { font-size: 0.78rem; font-weight: 700; color: var(--brand-light); }
+.evento-detalle-page__head a { color: var(--brand-tint); }
+.evento-detalle-page__head .evento-detalle-page__artistas { font-weight: 700; }
+.evento-detalle-page__head .evento-detalle-page__desc {
+  max-width: 52rem;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.78);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.evento-detalle-page__head .evento-detalle-page__cupo-line { text-shadow: none; }
+.evento-detalle-page__head .evento-detalle-page__cupo-line--agotado { color: #fca5a5; }
+.evento-detalle-page__head .evento-detalle-page__cupo-line--suspend { color: var(--brand-tint); }
+
+/* ===== Elegí tu entrada ===== */
+.evento-entradas { margin-top: 1.75rem; }
+.evento-entradas__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.evento-entradas__head h2 { margin: 0; font-size: 1.3rem; }
+.evento-entradas__fila {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--colors-textSecondary);
+}
+.evento-entradas__fila > svg { color: var(--bolt); font-size: 1.15rem; }
+.evento-entradas__fila > span::before { content: '·'; margin-right: 0.6rem; }
+.evento-entradas__fila a { font-weight: 600; }
+
+.evento-ticket-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+.evento-ticket-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  padding: 1.25rem;
+}
+.evento-ticket-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+.evento-ticket-card h3 { margin: 0; font-size: 1.1rem; }
+.evento-ticket-card__price {
+  margin: 0.4rem 0 0;
+  font-family: var(--fonts-title);
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--colors-text);
+}
+.evento-ticket-card__price small { font-family: var(--fonts-body); font-size: 0.8rem; font-weight: 500; color: var(--colors-textMuted); }
+.evento-ticket-card .evento-detalle-page__muted { margin: 0; }
+.evento-ticket-card .btn { margin-top: auto; }
+.evento-ticket-card__price + .evento-detalle-page__muted + .btn { margin-top: 0.9rem; }
+
+
+/* ===== Cuándo y dónde ===== */
+.evento-donde {
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+.evento-cuando,
+.evento-lugar {
+  display: flex;
+  align-items: stretch;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg, 20px);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.evento-donde__label {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--colors-primary);
+}
+
+/* Calendario */
+.evento-cuando__cal {
+  flex: none;
+  width: 6.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  overflow: hidden;
+  text-align: center;
+  background: var(--colors-surfaceAlt);
+  border: 1px solid var(--card-border);
+}
+.evento-cuando__mes {
+  align-self: stretch;
+  padding: 0.3rem 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-ink);
+  background: var(--brand);
+}
+.evento-cuando__cal strong { margin-top: 0.3rem; font-family: var(--fonts-title); font-size: 3.2rem; line-height: 1; color: var(--colors-text); }
+.evento-cuando__anio { margin: 0.1rem 0 0.5rem; font-size: 0.8rem; color: var(--colors-textMuted); }
+.evento-cuando__info { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 0.15rem; min-width: 0; }
+.evento-cuando__dia { margin: 0; font-size: 1.15rem; font-weight: 700; }
+.evento-cuando__dia::first-letter { text-transform: uppercase; }
+.evento-cuando__hora { margin: 0 0 0.6rem; font-family: var(--fonts-title); font-size: 1.8rem; font-weight: 800; color: var(--colors-text); }
+
+/* Lugar + mapa */
+.evento-lugar { padding: 0; }
+.evento-lugar__info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 0.2rem; padding: 1.25rem 0 1.25rem 1.25rem; }
+.evento-lugar__nombre { margin: 0; display: flex; align-items: center; gap: 0.4rem; font-size: 1.3rem; font-weight: 800; }
+.evento-lugar__nombre svg { flex: none; color: var(--colors-primary); }
+.evento-lugar__dir { margin: 0 0 0.7rem; color: var(--colors-textSecondary); }
+.evento-lugar__mapa { flex: 1.3; min-width: 12rem; min-height: 11rem; border: 0; align-self: stretch; }
+[data-theme='dark'] .evento-lugar__mapa { filter: invert(0.92) hue-rotate(180deg) saturate(0.7); }
+
+@media (max-width: 900px) {
+  .evento-donde { grid-template-columns: minmax(0, 1fr); }
+  .evento-lugar { flex-direction: column; }
+  .evento-lugar__info { padding: 1.25rem 1.25rem 0; }
+  .evento-lugar__mapa { min-height: 14rem; }
+}
+
+/* ===== Tipografía más chica en toda la página del evento ===== */
+.evento-detalle-page { font-size: 0.9rem; }
+.evento-detalle-page__back { font-size: 0.82rem; }
+.evento-detalle-page__head h1 { font-size: clamp(1.2rem, 2.6vw, 1.6rem); }
+.evento-detalle-page__head p { font-size: 0.82rem; }
+.evento-detalle-page__head .evento-detalle-page__meta { font-size: 0.7rem; }
+.evento-detalle-page__head .evento-detalle-page__desc { font-size: 0.78rem; }
+.evento-donde__label { font-size: 0.68rem; }
+.evento-cuando__cal { width: 5.5rem; }
+.evento-cuando__mes { font-size: 0.68rem; }
+.evento-cuando__cal strong { font-size: 2.4rem; }
+.evento-cuando__anio { font-size: 0.72rem; }
+.evento-cuando__dia { font-size: 0.95rem; }
+.evento-cuando__hora { font-size: 1.3rem; }
+.evento-lugar__nombre { font-size: 1.05rem; }
+.evento-lugar__dir { font-size: 0.85rem; }
+.evento-donde .btn-sm { font-size: 0.78rem; padding: 0.35rem 0.85rem; }
+.evento-entradas__head h2 { font-size: 1.1rem; }
+.evento-entradas__fila { font-size: 0.78rem; }
+.evento-ticket-card h3 { font-size: 0.98rem; }
+.evento-ticket-card__price { font-size: 1.4rem; }
+.evento-ticket-card__price small { font-size: 0.72rem; }
+.evento-ticket-card .evento-detalle-page__muted { font-size: 0.78rem; }
+.evento-ticket-card .btn { font-size: 0.85rem; padding: 0.55rem 1rem; }
+.evento-ticket-card .badge { font-size: 0.7rem; }
+.evento-detalle-page__muted { font-size: 0.8rem; }
+.evento-similares .event-section__title { font-size: 1.05rem; }
+.evento-similares .event-section__head + p,
+.evento-similares p { font-size: 0.8rem; }

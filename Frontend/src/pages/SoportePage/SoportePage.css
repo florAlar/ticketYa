@@ -1,8 +1,8 @@
 .soporte-page {
-  max-width: 960px;
+  max-width: none;
   margin: 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: var(--page-gutter, 30px);
+  padding-right: var(--page-gutter, 30px);
   padding-top: 2.25rem;
   padding-bottom: 2.5rem;
 }
@@ -71,7 +71,7 @@
   padding: 0.45rem 0.9rem;
   border-radius: 8px;
   background: var(--colors-primary);
-  color: #fff;
+  color: var(--on-brand);
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
@@ -87,12 +87,12 @@
 }
 
 .soporte-error {
-  color: #b91c1c;
+  color: var(--tone-danger);
   margin: 0.5rem 0;
 }
 
 .soporte-ok {
-  color: #15803d;
+  color: var(--tone-success);
   margin: 0.5rem 0;
 }
 
