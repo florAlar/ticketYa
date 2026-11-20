@@ -27,7 +27,25 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 | GET /compras/{id}/pagos | **hecho** | |
 | POST /pagos/{id}/reintentos | **hecho** | Solo si pago RECHAZADO y se puede reabrir; tras rechazo con liberación de cupo suele exigir nueva reserva |
 | Reportes del organizador | **hecho** | E2-REP-01. `GET /reportes/eventos/{id}` (+ `/ventas`, `/sectores`, `/ocupacion`, `/recaudacion`). ORGANIZADOR dueño o ADMIN (403 otro rol; dueño verificado por Feign a eventos). Ventas y capacidad de la base de ventas; devueltas, usadas y a reintegrar por Feign a entradas (`GET /eventos/{id}/entradas/resumen`); si eventos o entradas fallan → 503. |
-| Fila virtual | pendiente | E2 |
+| Fila virtual | **hecho** | FIL-01 (ingreso, posición, estado), FIL-02 (tandas) y FIL-03 (token + gate de reserva) implementados. Ver sección abajo y `specs/fila-virtual.md`. |
+
+### Fila virtual (FIL-01 a FIL-03)
+
+Solo eventos `PUBLICADO` con `esAltaDemanda = true`; el flag se lee por Feign a msvc-eventos con caché en memoria de `ticketya.fila.evento-cache-ttl-seconds` (10 s). Todo el estado de la fila vive en Redis (`ticketya.fila.key-prefix`, default `fila`), sin tablas MySQL nuevas.
+
+| Endpoint (path interno) | Rol | Respuesta |
+| --- | --- | --- |
+| `POST /eventos/{id}/fila/ingreso` | CLIENTE (JWT, `X-User-Id`) | 201 primera vez / 200 reingreso con la misma `posicion`; 409 `FILA_EVENTO_NO_ELEGIBLE` o `FILA_TURNO_USADO` |
+| `GET /eventos/{id}/fila/posicion` | CLIENTE (JWT) | 200 con `posicion`, `posicionHabilitadaHasta`, `delante`, `estado` (`EN_ESPERA`/`HABILITADO`/`CON_TOKEN`/`TURNO_USADO`); 404 `FILA_NO_INGRESADO` |
+| `POST /eventos/{id}/fila/validacion` | CLIENTE (JWT, `X-User-Id`) | 200 `{idEvento, token, expiraEn, posicion, delante:0}`; mismo token mientras esté vigente; 404 `FILA_NO_INGRESADO`; 409 `FILA_FUERA_DE_TANDA` (con `posicion`, `posicionHabilitadaHasta`, `delante`) / `FILA_TURNO_USADO`; 503 |
+| `GET /eventos/{id}/fila/estado` | **Público** (sin JWT, sin identidades) | 200 con `totalEnFila`, `posicionHabilitadaHasta`, `abierta` |
+| `POST /eventos/{id}/fila/habilitacion` | **ADMIN** (JWT; gateway y controller verifican el rol) | 200 `{idEvento, posicionHabilitadaHasta, modo:"MANUAL"}`; 400 si `hastaPosicion` < 1; 403 otro rol; 409 `FILA_TANDA_NO_REDUCIBLE` |
+
+`delante = max(0, posicion − posicionHabilitadaHasta)`: la posición es el turno inmutable asignado por un `INCR` atómico. Si Redis o msvc-eventos fallan sin dato en caché → **503 `FILA_NO_DISPONIBLE`** (fail-closed, nunca fallback a MySQL). El `code` viaja en el cuerpo de error (`GlobalExceptionHandler`). Config: `ticketya.fila.ttl-hours` (24), `token-ttl-minutes` (10) y el prefijo citado; las cuatro claves por evento comparten TTL. Tests: `FilaServiceTest`, `FilaControllerTest`, `FilaEventoCacheTest`, `FilaRedisStoreIT` (perfil `it`, Testcontainers) y gateway `JwtGatewayIntegrationTest`.
+
+**Tandas (FIL-02):** la tanda es acumulativa y nunca decrece; el ADMIN puede fijarla por encima del total con `habilitacion`. En paralelo, `FilaTandaScheduler` (`ticketya.fila.auto.*`) avanza cada `intervalo-ms` en `min(tamanio, max(0, SUM(cantidad_disponible) − activos))`, topeado por el último turno asignado (`seq`). Solo una instancia corre cada tick gracias al lock `fila:auto:lock` (NX + PX); un evento no PUBLICADO se omite y cualquier error de Redis/Feign se registra sin propagarse. Cada apertura queda en bitácora con `modo=AUTO|MANUAL`, tanda anterior y nueva.
+
+**Gate de reserva (FIL-03):** `POST /reservas` acepta el tercer campo opcional `tokenFila` (constructor de 2 argumentos conservado). En eventos de alta demanda, después de la idempotencia y de validar PUBLICADO, ventas consume el token con un compare-and-delete atómico **antes de `lockCupo`**: sin token → 409 `FILA_TOKEN_REQUERIDO`, inválido/vencido/ajeno → 409 `FILA_TOKEN_INVALIDO`, Redis caído → 503 `FILA_NO_DISPONIBLE`; en ninguno de esos casos se descuenta cupo. Un `TransactionSynchronization` restaura el token si la transacción no hace commit (límite por cliente, unique key de asientos o excepción) y registra `FILA_TOKEN_CONSUMIDO` en `afterCommit`. Los eventos normales no consultan Redis. La secuencia completa, con la rama de rollback, está en `specs/diagramas/diagramas-secuencia.md` §9.
 
 ### Estados
 

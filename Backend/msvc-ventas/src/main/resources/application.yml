@@ -25,6 +25,14 @@ spring:
     port: ${SPRING_RABBITMQ_PORT:5672}
     username: ${SPRING_RABBITMQ_USERNAME:ticketya}
     password: ${SPRING_RABBITMQ_PASSWORD:ticketya_dev}
+  cloud:
+    openfeign:
+      client:
+        config:
+          # Solo el cliente de eventos: la fila no puede quedar colgada si se degrada.
+          msvc-eventos:
+            connectTimeout: 2000
+            readTimeout: 3000
 
 # msvc-eventos / msvc-entradas (Feign). Docker: http://ms-*:port
 ticketya:
@@ -44,6 +52,17 @@ ticketya:
     emision-delay-ms: ${TICKETYA_EMISION_DELAY_MS:250}
     emision-max-intentos: ${TICKETYA_EMISION_MAX_INTENTOS:20}
     emision-job-ms: ${TICKETYA_EMISION_JOB_MS:30000}
+  # E2-FILA-01: cola en Redis (D1), fail-closed (D3), tanda automática + override ADMIN (D4)
+  fila:
+    key-prefix: ${TICKETYA_FILA_PREFIX:fila}
+    ttl-hours: ${TICKETYA_FILA_TTL_HOURS:24}
+    token-ttl-minutes: ${TICKETYA_FILA_TOKEN_TTL_MINUTES:10}
+    evento-cache-ttl-seconds: ${TICKETYA_FILA_EVENTO_CACHE_TTL_SECONDS:10}
+    auto:
+      enabled: ${TICKETYA_FILA_AUTO_ENABLED:true}
+      tamanio: ${TICKETYA_FILA_AUTO_TAMANIO:25}
+      intervalo-ms: ${TICKETYA_FILA_AUTO_INTERVALO_MS:10000}
+      lock-ms: ${TICKETYA_FILA_AUTO_LOCK_MS:8000}
 
 # E2-NFR-03: correlation id en cada línea de log
 logging:

@@ -102,7 +102,6 @@ export default function useEventoNuevoForm({ user, token }) {
         estado: wantsPublish
           ? EVENTO_ESTADOS.PUBLICADO
           : EVENTO_ESTADOS.BORRADOR,
-        esAltaDemanda: false,
         fechaInicio: form.fechaInicio ? form.fechaInicio : null,
         idLugar: form.idLugar || undefined,
         sectores: check.sectores.map((s) => ({

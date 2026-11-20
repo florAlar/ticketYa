@@ -9145,6 +9145,231 @@
           ]
         }
       ]
+    },
+    {
+      "name": "13 Fila virtual",
+      "description": "FIL-01 a FIL-03: ingreso, posición, tanda (override ADMIN) validación y estado público. Requiere configurar eventoFilaId con un evento PUBLICADO y esAltaDemanda=true; hastaPosicionFila fija el override de B2.",
+      "item": [
+        {
+          "name": "13.01 Ingreso a la fila → 201/200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoFilaId}}/fila/ingreso",
+            "description": "Rol: CLIENTE · Esperado: 201 la primera vez, 200 en reingresos · Requiere evento PUBLICADO con esAltaDemanda=true (configurar eventoFilaId).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 o 200', function () { pm.expect(pm.response.code).to.be.oneOf([200, 201]); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Turno asignado', function () { pm.expect(b.posicion).to.be.a('number'); pm.expect(b.delante).to.be.at.least(0); });",
+                  "if (b.posicion !== undefined) pm.environment.set('posicionFila', String(b.posicion));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13.02 Posición propia → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoFilaId}}/fila/posicion",
+            "description": "Rol: CLIENTE · Esperado: 200 con estado EN_ESPERA/HABILITADO/CON_TOKEN/TURNO_USADO.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Estado y posición', function () {",
+                  "  pm.expect(b.estado).to.be.oneOf(['EN_ESPERA','HABILITADO','CON_TOKEN','TURNO_USADO']);",
+                  "  pm.expect(b.posicion).to.eql(Number(pm.environment.get('posicionFila') || b.posicion));",
+                  "});",
+                  "pm.environment.set('estadoFila', b.estado);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13.03 Habilitar tanda (override ADMIN) → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoFilaId}}/fila/habilitacion",
+            "description": "Rol: ADMIN · Esperado: 200 {modo:'MANUAL'} · B2 del plan de carga; en B1 el job abre la tanda y este request es opcional. 403 para CLIENTE.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"hastaPosicion\": {{hastaPosicionFila}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Modo MANUAL', function () { pm.expect(b.modo).to.eql('MANUAL'); pm.expect(b.posicionHabilitadaHasta).to.be.at.least(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13.04 Validar turno y emitir token → 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoFilaId}}/fila/validacion",
+            "description": "Rol: CLIENTE · Esperado: 200 con token de 10 min; idempotente mientras esté vigente. 409 FILA_FUERA_DE_TANDA si el turno no está habilitado.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Token y caducidad', function () {",
+                  "  pm.expect(b.token).to.be.a('string').and.not.empty;",
+                  "  pm.expect(b.expiraEn).to.be.a('string');",
+                  "  pm.expect(b.delante).to.eql(0);",
+                  "});",
+                  "pm.environment.set('tokenFila', b.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13.05 Estado general de la fila (público) → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/eventos/{{eventoFilaId}}/fila/estado",
+            "description": "Rol: público (sin JWT) · Esperado: 200 con totalEnFila, posicionHabilitadaHasta y abierta; no expone identidades.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Estado sin identidades', function () {",
+                  "  pm.expect(b.abierta).to.be.a('boolean');",
+                  "  pm.expect(b.totalEnFila).to.be.at.least(0);",
+                  "  pm.expect(b.posicionHabilitadaHasta).to.be.at.least(0);",
+                  "  pm.expect(b.clientes).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }

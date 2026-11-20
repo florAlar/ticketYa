@@ -61,4 +61,58 @@ class InternalTokenFilterTest
 
         assertNotNull(chain.getRequest());
     }
+
+    @Test
+    void filaSinTokenDelGatewayDevuelve401() throws Exception {
+        InternalTokenFilter filter = new InternalTokenFilter(TOKEN);
+        MockHttpServletRequest request = new MockHttpServletRequest("POST",
+                "/eventos/d0000000-0000-4000-8000-000000000001/fila/habilitacion");
+        request.addHeader("X-User-Role", "ADMIN"); // identidad forjada, sin pasar por el gateway
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertEquals(401, response.getStatus());
+    }
+
+    @Test
+    void filaConTokenIncorrectoDevuelve401() throws Exception {
+        InternalTokenFilter filter = new InternalTokenFilter(TOKEN);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET",
+                "/eventos/d0000000-0000-4000-8000-000000000001/fila/estado");
+        request.addHeader(InternalTokenFilter.HEADER, "otro");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertEquals(401, response.getStatus());
+    }
+
+    @Test
+    void filaConTokenDelGatewayDejaPasar() throws Exception {
+        InternalTokenFilter filter = new InternalTokenFilter(TOKEN);
+        MockHttpServletRequest request = new MockHttpServletRequest("GET",
+                "/eventos/d0000000-0000-4000-8000-000000000001/fila/estado");
+        request.addHeader(InternalTokenFilter.HEADER, TOKEN);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertNotNull(chain.getRequest());
+        assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    void cuposEntreMsvcsSigueSinToken() throws Exception {
+        InternalTokenFilter filter = new InternalTokenFilter(TOKEN);
+        MockHttpServletRequest request = new MockHttpServletRequest("POST",
+                "/eventos/d0000000-0000-4000-8000-000000000001/cupos");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain chain = new MockFilterChain();
+
+        filter.doFilter(request, response, chain);
+
+        assertNotNull(chain.getRequest());
+    }
 }

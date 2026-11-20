@@ -89,7 +89,7 @@ class ReservaConcurrenciaTest {
 
         VentaServiceImpl service = new VentaServiceImpl(
                 cupoRepo, reservaRepo, detalleRepo, mock(AsientoReservadoRepository.class), compraRepo, pagoRepo,
-                eventosClient, stockCache, mapper, emision, 10L, 6, 24L);
+                eventosClient, stockCache, mapper, emision, mock(FilaService.class), 10L, 6, 24L);
 
         EventoDetalleFeignDTO evento = new EventoDetalleFeignDTO();
         evento.setId(ID_EVENTO);

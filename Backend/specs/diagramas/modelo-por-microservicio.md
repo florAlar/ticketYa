@@ -99,6 +99,8 @@ erDiagram
 
 ## msvc-ventas
 
+> La fila virtual **no** tiene entidad en este ER: turnos, tanda y token temporal se guardan en Redis con prefijo `ticketya.fila.*` (decisión D1 de `specs/fila-virtual.md`; simplificación permitida por `consigna.md:148`). No hay `fila_*` en `init.sql` ni mensajes Rabbit para la fila; el cupo y las reservas sí son MySQL y son la fuente de verdad transaccional.
+
 ```mermaid
 erDiagram
     RESERVA {

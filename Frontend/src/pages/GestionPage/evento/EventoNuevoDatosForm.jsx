@@ -103,10 +103,9 @@ export default function EventoNuevoDatosForm({
             name="esAltaDemanda"
             checked={form.esAltaDemanda}
             onChange={onChange}
-            disabled
-            title="Fila virtual E2 — no cableada"
+            disabled={loading}
           />
-          Alta demanda (fila virtual — no disponible aún)
+          Alta demanda (fila virtual)
         </label>
         <label className="gestion-check">
           <input

@@ -25,8 +25,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import ventas.clients.EventosClient;
 import ventas.clients.EventosClient.EventoDetalleFeignDTO;
 import ventas.clients.EventosClient.SectorFeignDTO;
@@ -46,6 +49,7 @@ import ventas.entity.DetalleReserva;
 import ventas.entity.Pago;
 import ventas.entity.Reserva;
 import ventas.exception.BusinessConflictException;
+import ventas.exception.FilaException;
 import ventas.exception.ResourceNotFoundException;
 import ventas.mapper.VentaMapper;
 import ventas.redis.StockCache;
@@ -68,6 +72,7 @@ class VentaServiceImplTest {
     private StockCache stockCache;
     private VentaMapper ventaMapper;
     private EmisionEntradasService emisionEntradasService;
+    private FilaService filaService;
     private VentaServiceImpl service;
 
     private static final String ID_EVENTO = "e0000000-0000-4000-8000-000000000001";
@@ -89,18 +94,19 @@ class VentaServiceImplTest {
         stockCache = mock(StockCache.class);
         ventaMapper = mock(VentaMapper.class);
         emisionEntradasService = mock(EmisionEntradasService.class);
+        filaService = mock(FilaService.class);
 
         service = new VentaServiceImpl(
                 cupoSectorRepository, reservaRepository, detalleReservaRepository,
                 asientoReservadoRepository,
                 compraRepository, pagoRepository, eventosClient, stockCache,
-                ventaMapper, emisionEntradasService,
+                ventaMapper, emisionEntradasService, filaService,
                 10L, 6, 24L);
 
         reset(cupoSectorRepository, reservaRepository, detalleReservaRepository,
                 asientoReservadoRepository,
                 compraRepository, pagoRepository, eventosClient, stockCache,
-                ventaMapper, emisionEntradasService);
+                ventaMapper, emisionEntradasService, filaService);
 
         when(cupoSectorRepository.findByIdEvento(anyString())).thenReturn(new ArrayList<>());
         when(cupoSectorRepository.findByIdEventoIn(anyList())).thenReturn(new ArrayList<>());
@@ -111,8 +117,47 @@ class VentaServiceImplTest {
         when(ventaMapper.toPago(any(Pago.class))).thenReturn(new PagoResponseDTO());
     }
 
+    @AfterEach
+    void limpiarSincronizacion() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
+    }
+
     private ReservaCreateRequestDTO.Item crearItem(String idSector, int cantidad) {
         return new ReservaCreateRequestDTO.Item(idSector, Integer.valueOf(cantidad));
+    }
+
+    private static EventoDetalleFeignDTO eventoAltaDemanda(boolean altaDemanda) {
+        EventoDetalleFeignDTO evento = new EventoDetalleFeignDTO();
+        evento.setEstado("PUBLICADO");
+        evento.setEsAltaDemanda(altaDemanda);
+        SectorFeignDTO sector = new SectorFeignDTO();
+        sector.setId(ID_SECTOR);
+        sector.setPrecio(BigDecimal.valueOf(95000));
+        evento.setSectores(new ArrayList<>(List.of(sector)));
+        return evento;
+    }
+
+    private static CupoSector cupoDisponible() {
+        CupoSector cupo = new CupoSector();
+        cupo.setCapacidadTotal(100);
+        cupo.setCantidadDisponible(100);
+        cupo.setCantidadReservada(0);
+        cupo.setCantidadVendida(0);
+        return cupo;
+    }
+
+    private void stubReservaExitosa(CupoSector cupo) {
+        when(cupoSectorRepository.findByEventoAndSectorForUpdate(ID_EVENTO, ID_SECTOR))
+                .thenReturn(Optional.of(cupo));
+        when(compraRepository.sumCantidadByClienteEventoAndEstados(anyString(), anyString(), anyList()))
+                .thenReturn(0L);
+        when(cupoSectorRepository.save(any(CupoSector.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(reservaRepository.save(any(Reserva.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(detalleReservaRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+        doNothing().when(stockCache).putReservaHold(anyString(), anyString(), any(Duration.class));
+        when(ventaMapper.toReserva(any(Reserva.class), anyList())).thenReturn(new ReservaResponseDTO());
     }
 
     // ---------- disponibilidad ----------
@@ -564,6 +609,121 @@ class VentaServiceImplTest {
 
         assertNotNull(res);
         verify(stockCache).putReservaHold(anyString(), eq(ID_CLIENTE), eq(Duration.ofMinutes(10)));
+    }
+
+    // ---------- gate de fila (FIL-03) ----------
+
+    @Test
+    void crearReserva_altaDemandaConTokenValido_consumeYDescuentaCupo() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(true));
+        when(filaService.consumirToken(ID_EVENTO, ID_CLIENTE, "token-1")).thenReturn(true);
+        CupoSector cupo = cupoDisponible();
+        stubReservaExitosa(cupo);
+
+        ReservaResponseDTO res = service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 2)), "token-1"), null);
+
+        assertNotNull(res);
+        verify(filaService).consumirToken(ID_EVENTO, ID_CLIENTE, "token-1");
+        assertEquals(98, cupo.getCantidadDisponible());
+        assertEquals(2, cupo.getCantidadReservada());
+    }
+
+    @Test
+    void crearReserva_altaDemandaSinToken_409YCupoIntacto() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(true));
+
+        FilaException e = assertThrows(FilaException.class, () -> service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 2))), null));
+
+        assertEquals("FILA_TOKEN_REQUERIDO", e.getCode());
+        verify(cupoSectorRepository, never()).findByEventoAndSectorForUpdate(anyString(), anyString());
+        verify(filaService, never()).consumirToken(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void crearReserva_tokenInvalido_409YCupoIntacto() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(true));
+        when(filaService.consumirToken(ID_EVENTO, ID_CLIENTE, "ajeno")).thenReturn(false);
+
+        FilaException e = assertThrows(FilaException.class, () -> service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 2)), "ajeno"), null));
+
+        assertEquals("FILA_TOKEN_INVALIDO", e.getCode());
+        verify(cupoSectorRepository, never()).findByEventoAndSectorForUpdate(anyString(), anyString());
+    }
+
+    @Test
+    void crearReserva_altaDemandaRedisCaido_503YCupoIntacto() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(true));
+        when(filaService.consumirToken(anyString(), anyString(), anyString()))
+                .thenThrow(FilaException.noDisponible());
+
+        FilaException e = assertThrows(FilaException.class, () -> service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 2)), "token-1"), null));
+
+        assertEquals("FILA_NO_DISPONIBLE", e.getCode());
+        verify(cupoSectorRepository, never()).findByEventoAndSectorForUpdate(anyString(), anyString());
+    }
+
+    @Test
+    void crearReserva_eventoNormal_noConsultaLaFila() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(false));
+        CupoSector cupo = cupoDisponible();
+        stubReservaExitosa(cupo);
+
+        assertNotNull(service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 1))), null));
+        verify(filaService, never()).consumirToken(anyString(), anyString(), anyString());
+        assertEquals(99, cupo.getCantidadDisponible());
+    }
+
+    @Test
+    void crearReserva_rollback_restauraToken() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(true));
+        when(filaService.consumirToken(ID_EVENTO, ID_CLIENTE, "token-1")).thenReturn(true);
+        stubReservaExitosa(cupoDisponible());
+        TransactionSynchronizationManager.initSynchronization();
+
+        service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 1)), "token-1"), null);
+        TransactionSynchronization sync = TransactionSynchronizationManager.getSynchronizations().get(0);
+        sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+
+        verify(filaService).restaurarToken(ID_EVENTO, ID_CLIENTE, "token-1");
+    }
+
+    @Test
+    void crearReserva_commit_noRestauraToken() {
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(eventoAltaDemanda(true));
+        when(filaService.consumirToken(ID_EVENTO, ID_CLIENTE, "token-1")).thenReturn(true);
+        stubReservaExitosa(cupoDisponible());
+        TransactionSynchronizationManager.initSynchronization();
+
+        service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, List.of(crearItem(ID_SECTOR, 1)), "token-1"), null);
+        TransactionSynchronizationManager.getSynchronizations().get(0)
+                .afterCompletion(TransactionSynchronization.STATUS_COMMITTED);
+
+        verify(filaService, never()).restaurarToken(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void crearReserva_reintentoIdempotente_noExigeToken() {
+        when(stockCache.getIdempotentCompraId("reserva:key-1")).thenReturn(Optional.of(ID_RESERVA));
+        Reserva reserva = new Reserva();
+        reserva.setIdReserva(ID_RESERVA);
+        reserva.setIdCliente(ID_CLIENTE);
+        reserva.setEstado("PENDIENTE");
+        when(reservaRepository.findById(ID_RESERVA)).thenReturn(Optional.of(reserva));
+        when(detalleReservaRepository.findByReservaIdReserva(ID_RESERVA)).thenReturn(new ArrayList<>());
+        when(ventaMapper.toReserva(reserva, new ArrayList<>())).thenReturn(new ReservaResponseDTO());
+
+        service.crearReserva(ID_CLIENTE,
+                new ReservaCreateRequestDTO(ID_EVENTO, new ArrayList<>()), "key-1");
+
+        verify(filaService, never()).consumirToken(anyString(), anyString(), anyString());
+        verify(eventosClient, never()).getEvento(anyString());
     }
 
     // ---------- obtenerReserva ----------

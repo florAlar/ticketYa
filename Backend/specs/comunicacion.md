@@ -28,6 +28,15 @@
 | `/eventos/{idEvento}/validaciones` | msvc-entradas |
 | `/eventos/{id}/recomendaciones` | msvc-preferencias |
 
+### Fila virtual → reserva (FIL-03)
+
+El flujo de acceso a un evento de alta demanda es **REST síncrono** y no introduce mensajes nuevos:
+
+1. `POST /eventos/{id}/fila/ingreso` → turno en Redis.
+2. `POST /eventos/{id}/fila/validacion` → `token` con TTL de 10 min (config `ticketya.fila.token-ttl-minutes`).
+3. `POST /reservas` con `tokenFila`: ventas consume el token **antes** de `lockCupo`. Si el token falta o no sirve → 409 y no se descuenta cupo; si Redis falla → 503. El consumo es compare-and-delete atómico, así que un token solo habilita una reserva.
+4. Si la transacción de la reserva hace rollback, un `TransactionSynchronization` devuelve el token (`restaurarToken`). Ninguno de estos pasos publica eventos Rabbit: la bitácora local (`Bitacora.registrar`) cubre la observabilidad.
+
 ## Async (broker)
 
 Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Exchange compartido: `eventos.exchange`

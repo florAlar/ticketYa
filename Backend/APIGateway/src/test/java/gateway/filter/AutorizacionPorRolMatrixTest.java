@@ -49,7 +49,7 @@ class AutorizacionPorRolMatrixTest {
     void setUp() {
         JwtUtil jwtUtil = new JwtUtil();
         ReflectionTestUtils.setField(jwtUtil, "secret", SECRET);
-        filter = new JwtAuthenticationFilter(jwtUtil);
+        filter = new JwtAuthenticationFilter(jwtUtil, "secreto-interno-test");
     }
 
     private static String tokenConRol(String rol) {

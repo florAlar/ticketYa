@@ -64,7 +64,7 @@ src/
   styles/        # global.css (índice) → base, layout, components, header, footer
 ```
 
-Rutas vivas: solo `src/routes/AppRoutes.jsx` (Home, eventos, checkout, mis-entradas, soporte, gestión, acceso, login, 404).
+Rutas vivas: solo `src/routes/AppRoutes.jsx` (Home, eventos, fila virtual, checkout, mis-entradas, soporte, gestión, acceso, login, 404).
 
 ## Capas de datos y estados
 

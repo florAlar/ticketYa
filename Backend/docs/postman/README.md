@@ -4,14 +4,19 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 200 requests en 13 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 205 requests en 14 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados, `internalToken`) |
 
 **Actualizado 2026-11-16:** se agregó la carpeta `12 Preferencias, historial y recomendaciones`
 (7 requests: preferencias, artistas, historial, recomendaciones propias/similares y backfill).
 La verificación funcional de esos endpoints se hizo contra el stack real (200/401/403/404
 según corresponda); la corrida Newman completa queda pendiente.
-**Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos.
+**Actualizado 2026-11-19 (FIL-04):** se agregó la carpeta `13 Fila virtual` (5 requests:
+ingreso, posición, habilitación ADMIN, validación y estado público), con `eventoFilaId`,
+`hastaPosicionFila`, `posicionFila`, `estadoFila` y `tokenFila` en el environment. Requiere un
+evento `PUBLICADO` con `esAltaDemanda=true`; **[NV]** la corrida Newman de la carpeta 13 (no se
+ejecutó en este entorno).
+**Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (sin la carpeta 13).
 
 ## Requisitos
 
@@ -25,7 +30,7 @@ según corresponda); la corrida Newman completa queda pendiente.
 
 1. Importar los dos archivos `.json`.
 2. Elegir el environment **TicketYa local**.
-3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 12**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones). La carpeta 12 usa `{{userId}}` y `{{eventoSeedId}}`.
+3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 13**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones). La carpeta 12 usa `{{userId}}` y `{{eventoSeedId}}`; la 13 usa `{{eventoFilaId}}` y `{{hastaPosicionFila}}`.
 
 ### Por consola (sin instalar nada)
 
@@ -76,6 +81,7 @@ identidad sale siempre del token verificado.
 | 10 Control de acceso QR | 19 | cliente compra una entrada y el personal de acceso la valida: ingreso aceptado, QR repetido (YA_USADA), QR de otro evento, QR inexistente, roles y auditoría de intentos |
 | 11 Reportes del organizador | 9 | reporte completo, ventas, sectores, ocupación y recaudación como organizador dueño y ADMIN (con las identidades aritméticas: vigentes y neta), 403 para cliente y personal de acceso, 401 sin token y 404 |
 | 12 Preferencias, historial y recomendaciones | 7 | preferencias propias, actualización, artistas favoritos, historial del cliente, recomendaciones propias (JWT), eventos similares (público) y backfill interno con `X-Internal-Token` |
+| 13 Fila virtual | 5 | ingreso y posición del turno (CLIENTE), override de tanda (ADMIN, B2 del plan de carga), validación con token de 10 min y estado general público; captura `tokenFila` para enviarlo como `tokenFila` en `POST /reservas` |
 
 ## Flujo de negocio que recorre
 
@@ -86,6 +92,7 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 - **Fijas (seed):** `baseUrl`, `entradasDirectUrl`, IDs de usuarios, evento publicado y cancelado, lugar, sectores y participante.
 - **Capturadas por scripts:** `reservaId`, `compraId`, `pagoId`, `entradaId`, `entrada2Id`, `devolucionId`, entre otras. Se llenan solas al correr la colección en orden.
 - **`idempotencyKey`:** se genera una nueva en cada request que la necesita.
+- **Fila virtual:** `eventoFilaId` (evento `PUBLICADO` con `esAltaDemanda=true`, **[NV]** se configura a mano), `hastaPosicionFila` (default `100`, override ADMIN) y las capturadas `posicionFila`, `estadoFila` y `tokenFila`.
 
 ## Brechas conocidas de E1 (documentadas, no ocultas)
 

@@ -3,7 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import useAsync from '../../hooks/useAsync'
 import { getEvento, getDisponibilidadEvento } from '../../api/eventos'
+import { getEstadoFila } from '../../api/filaVirtual'
 import { isAbortError } from '../../api/http'
+import { getFilaToken } from '../../domain/filaVirtual'
+import { formatFecha } from '../../lib/format'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import {
   formatEventoFecha,
@@ -51,9 +54,20 @@ const EventoDetallePage = () => {
           sectores: [],
         })
       }
+      let filaEstado = null
+      const esAltaDemanda = Boolean(data?.esAltaDemanda)
+      if (esAltaDemanda) {
+        try {
+          filaEstado = await getEstadoFila(eventoId, { signal })
+        } catch (err) {
+          if (isAbortError(err)) throw err
+          filaEstado = null
+        }
+      }
       return {
         evento: withCupoResumen(data, disp),
         disponibilidad: disp,
+        filaEstado,
       }
     },
     [eventoId]
@@ -62,6 +76,8 @@ const EventoDetallePage = () => {
   const { data, status, error, reload } = useAsync(load, [eventoId])
   const evento = data?.evento || null
   const disponibilidad = data?.disponibilidad || null
+  const filaEstado = data?.filaEstado || null
+  const paseFila = useMemo(() => getFilaToken(eventoId), [eventoId])
 
   const sectores = useMemo(
     () => evento?.sectores || evento?.lugar?.sectores || [],
@@ -88,12 +104,19 @@ const EventoDetallePage = () => {
   const eventoAgotado = isEventoAgotado(evento)
 
   const irComprar = (sectorId) => {
-    const path = `/eventos/${eventoId}/comprar?sector=${encodeURIComponent(sectorId)}`
     if (!isAuthenticated) {
       navigate('/login')
       return
     }
-    navigate(path)
+    if (evento?.esAltaDemanda && !getFilaToken(eventoId)) {
+      navigate(
+        `/eventos/${eventoId}/fila?sector=${encodeURIComponent(sectorId)}`
+      )
+      return
+    }
+    navigate(
+      `/eventos/${eventoId}/comprar?sector=${encodeURIComponent(sectorId)}`
+    )
   }
 
   return (
@@ -163,6 +186,41 @@ const EventoDetallePage = () => {
               <p className="evento-detalle-page__desc">{evento.descripcion}</p>
             )}
           </header>
+
+          {aLaVenta && evento.esAltaDemanda && (
+            <section className="evento-fila-destacada">
+              <div>
+                <p className="evento-detalle-page__meta">Alta demanda</p>
+                <h2>Fila virtual</h2>
+                {filaEstado?.abierta ? (
+                  <p>
+                    {filaEstado.totalEnFila ?? 0} personas en la fila ·
+                    habilitados hasta la posición{' '}
+                    {filaEstado.posicionHabilitadaHasta ?? 0}.
+                  </p>
+                ) : (
+                  <p>La fila no está abierta en este momento.</p>
+                )}
+                {paseFila ? (
+                  <p className="evento-fila-destacada__pase">
+                    Tenés un pase de compra vigente hasta{' '}
+                    {formatFecha(paseFila.expiraEn, { timeStyle: 'short' })}.
+                  </p>
+                ) : (
+                  <p className="evento-detalle-page__muted">
+                    Para comprar, obtené tu turno por orden de llegada. La
+                    pantalla te muestra cuántos faltan y te habilita el pago.
+                  </p>
+                )}
+              </div>
+              <Link
+                className="btn btn-primary"
+                to={`/eventos/${eventoId}/fila`}
+              >
+                {paseFila ? 'Ver mi turno' : 'Entrar a la fila'}
+              </Link>
+            </section>
+          )}
 
           <section className="evento-detalle-page__tickets">
             <h2>Tipos de entrada</h2>
@@ -241,7 +299,9 @@ const EventoDetallePage = () => {
                         disabled={!canBuy}
                         title={
                           canBuy
-                            ? 'Comprar'
+                            ? evento.esAltaDemanda && !paseFila
+                              ? 'Primero entrá a la fila virtual'
+                              : 'Comprar'
                             : sectorAgotado
                               ? 'Sector agotado'
                               : 'Sin cupo disponible'
@@ -250,9 +310,11 @@ const EventoDetallePage = () => {
                       >
                         {sectorAgotado
                           ? 'Agotado'
-                          : s.esNumerado
-                            ? 'Elegir asientos'
-                            : 'Comprar'}
+                          : evento.esAltaDemanda && !paseFila
+                            ? 'Entrar a la fila'
+                            : s.esNumerado
+                              ? 'Elegir asientos'
+                              : 'Comprar'}
                       </button>
                     </li>
                   )

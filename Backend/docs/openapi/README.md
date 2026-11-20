@@ -8,7 +8,7 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 |---------|-----------|
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
 | `msvc-eventos.json` | Contrato de eventos/lugares/participantes (27 ops / 17 paths) |
-| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador (21 ops / 19 paths, 23 schemas) |
+| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador y fila virtual (26 ops / 24 paths, 30 schemas) |
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
 | `msvc-preferencias.json` | Contrato de preferencias, historial y recomendaciones (13 ops / 11 paths, 11 schemas) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 5 specs bajo la clave `specs` |
@@ -28,6 +28,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.
 >
 > **Actualizado 2026-11-16 (E2-PRE):** nuevo `msvc-preferencias.json` con preferencias, artistas, historial, recomendaciones propias/similares y backfill interno (`X-Internal-Token`). `openapi-bundle.json` regenerado con 5 specs.
+>
+> **Actualizado 2026-11-19 (FIL-04):** `msvc-ventas.json` suma la carpeta `Fila virtual` con los 5 endpoints (`POST/GET /eventos/{idEvento}/fila/ingreso|posicion|estado|validacion|habilitacion` en el contrato interno; el gateway los expone como `/api/eventos/{id}/fila/**`), los schemas `Fila*`, el schema de error `ApiError` con `code`/`extras` y los 8 códigos `FILA_*` en `x-error-codes`. `GET .../fila/estado` es público (sin `security`); los otros cuatro usan `bearerAuth`. `POST /reservas` documenta el campo opcional `tokenFila`. `openapi-bundle.json` regenerado (ventas: 26 ops / 24 paths / 30 schemas). Los paths internos usan `{idEvento}` porque ese es el nombre de la variable en `@RequestMapping`; la documentación de gateway/endpoints usa `{id}` como marcador equivalente.
 
 ## Regeneración (tras cambios en anotaciones)
 
@@ -54,7 +56,7 @@ for f in sorted(glob.glob(d+'/msvc-*.json')):
     name=os.path.basename(f).replace('.json','')
     specs[name]=json.load(open(f))
 bundle={
-    "generatedAt":"2026-11-10",
+    "generatedAt":"2026-11-19",
     "generator":"springdoc-openapi-starter-webmvc-ui 3.2.0",
     "openapi":"3.1.0",
     "microservices":{k:{"paths":len(v.get('paths',{})),"operations":sum(len(p) for p in v.get('paths',{}).values()),"schemas":len(v.get('components',{}).get('schemas',{}))} for k,v in specs.items()},
@@ -117,4 +119,5 @@ PY
 
 - Los paths documentados son internos (sin `/api`); el gateway aplica `StripPrefix=1` y el RBAC se documenta en `docs/api/gateway.md`.
 - No hay Newman collection en esta fase; la colección Postman (v2.1 + entorno `local` con auto-login) se entrega como parte de los artefactos E1 aparte de este bundle.
-- Endpoints no implementados en E1 (`/reportes`, `/fila`, webhooks) no aparecen en los specs.
+- Los webhooks no aparecen en los specs; la fila virtual (`/fila`, FIL-01…FIL-03) y los reportes sí están documentados.
+- Los errores de fila se documentan en cada respuesta con `x-error-codes` (`FILA_*`) y el payload `ApiError`; `code` y `extras` aparecen solo cuando la excepción los trae.

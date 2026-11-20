@@ -153,6 +153,11 @@ const GestionEventosPage = () => {
                 </p>
               </div>
               <div className="gestion-event-row__actions">
+                {isAdmin && e.esAltaDemanda && (
+                  <Link className="btn" to={`/eventos/${e.id}/fila`}>
+                    Fila virtual
+                  </Link>
+                )}
                 {e.estado !== EVENTO_ESTADOS.BORRADOR && (
                   <GateLink
                     enabled={FEATURE.reportes}

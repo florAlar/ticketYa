@@ -3,17 +3,20 @@ package gateway.filter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import gateway.util.JwtUtil;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -38,6 +41,9 @@ class JwtGatewayIntegrationTest {
 
     /** Mismo default que {@code jwt.secret} en application.yml de gateway y usuarios. */
     private static final String SECRET = "ticketya-dev-jwt-secret-change-me-32b";
+
+    /** Token compartido que el gateway inyecta en las rutas de la fila. */
+    private static final String TOKEN_INTERNO = "secreto-interno-test";
 
     private static final String USER_ID = "b0000000-0000-4000-8000-000000000001";
     private static final String EMAIL = "demo@ticketya.com";
@@ -82,7 +88,7 @@ class JwtGatewayIntegrationTest {
     }
 
     private Resultado ejecutar(MockHttpServletRequest req) throws Exception {
-        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil);
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil, TOKEN_INTERNO);
         Resultado r = new Resultado();
         filter.doFilterInternal(req, r.response, r.chain);
         return r;
@@ -108,6 +114,7 @@ class JwtGatewayIntegrationTest {
         assertEquals(EMAIL, down.getHeader(JwtAuthenticationFilter.HDR_USER_EMAIL));
         assertEquals("CLIENTE", down.getHeader(JwtAuthenticationFilter.HDR_USER_ROLE));
         assertEquals("CLIENTE", down.getHeader(JwtAuthenticationFilter.HDR_USER_ROLES));
+        assertNull(down.getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
     }
 
     @Test
@@ -122,6 +129,60 @@ class JwtGatewayIntegrationTest {
         assertTrue(r.paso());
         assertEquals(USER_ID, r.requestDownstream().getHeader("X-User-Id"));
         assertEquals("CLIENTE", r.requestDownstream().getHeader("X-User-Role"));
+    }
+
+    @Test
+    void tokenInternoDelCliente_noSePropagaYEnFilaSeReemplaza() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+
+        MockHttpServletRequest normal = get("/api/entradas", token);
+        normal.addHeader(JwtAuthenticationFilter.HDR_INTERNAL, "intruso");
+        assertNull(ejecutar(normal).requestDownstream()
+                .getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
+
+        MockHttpServletRequest fila = get(
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/posicion", token);
+        fila.addHeader(JwtAuthenticationFilter.HDR_INTERNAL, "intruso");
+        assertEquals(TOKEN_INTERNO, ejecutar(fila).requestDownstream()
+                .getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
+    }
+
+    @Test
+    void headersDelClienteEnMinusculas_noSobrevivenComoDuplicados() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+        MockHttpServletRequest req = get("/api/entradas", token);
+        req.addHeader("x-user-id", "00000000-0000-0000-0000-000000000000");
+        req.addHeader("x-user-role", "ADMIN");
+        req.addHeader("x-internal-token", "intruso");
+
+        HttpServletRequest down = ejecutar(req).requestDownstream();
+
+        assertEquals(USER_ID, down.getHeader("X-User-Id"));
+        assertEquals("CLIENTE", down.getHeader("X-User-Role"));
+        assertNull(down.getHeader("X-Internal-Token"));
+        assertEquals(1, contarHeader(down, "X-User-Id"));
+        assertEquals(1, contarHeader(down, "X-User-Role"));
+    }
+
+    @Test
+    void excepcionDelDownstream_noSeConvierteEn401() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+        MockHttpServletRequest req = get("/api/entradas", token);
+        MockHttpServletResponse res = new MockHttpServletResponse();
+        FilterChain chain = (rq, rs) -> {
+            throw new IllegalStateException("proxy caído");
+        };
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtUtil, TOKEN_INTERNO);
+
+        assertThrows(IllegalStateException.class,
+                () -> filter.doFilterInternal(req, res, chain));
+        assertEquals(200, res.getStatus());
+    }
+
+    private static long contarHeader(HttpServletRequest request, String name) {
+        return Collections.list(request.getHeaderNames()).stream()
+                .filter(n -> n.equalsIgnoreCase(name))
+                .count();
     }
 
     @Test
@@ -242,6 +303,59 @@ class JwtGatewayIntegrationTest {
     }
 
     @Test
+    void fila_ingresoPosicionYValidacion_exigenJwtDeCliente() throws Exception {
+        String token = tokenComoUsuarios(SECRET, "CLIENTE", 60_000);
+        for (String uri : new String[] {
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/ingreso",
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/posicion",
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/validacion"}) {
+            String metodo = uri.endsWith("posicion") ? "GET" : "POST";
+            MockHttpServletRequest conToken = new MockHttpServletRequest(metodo, uri);
+            conToken.addHeader("Authorization", "Bearer " + token);
+            Resultado r = ejecutar(conToken);
+            assertTrue(r.paso(), uri);
+            assertEquals(USER_ID, r.requestDownstream().getHeader("X-User-Id"), uri);
+            assertEquals(TOKEN_INTERNO,
+                    r.requestDownstream().getHeader(JwtAuthenticationFilter.HDR_INTERNAL), uri);
+
+            MockHttpServletRequest sinToken = new MockHttpServletRequest(metodo, uri);
+            assertEquals(401, ejecutar(sinToken).response.getStatus(), uri);
+        }
+    }
+
+    @Test
+    void fila_estadoEsPublico_yNoPropagaIdentidad() throws Exception {
+        MockHttpServletRequest req = get(
+                "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/estado", null);
+        req.addHeader("X-User-Id", USER_ID);
+        req.addHeader("X-User-Role", "ADMIN");
+
+        Resultado r = ejecutar(req);
+
+        assertTrue(r.paso());
+        assertNull(r.requestDownstream().getHeader("X-User-Id"));
+        assertNull(r.requestDownstream().getHeader("X-User-Role"));
+        assertEquals(TOKEN_INTERNO,
+                r.requestDownstream().getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
+    }
+
+    @Test
+    void fila_habilitacion_soloAdminEnElGateway() throws Exception {
+        String uri = "/api/eventos/d0000000-0000-4000-8000-000000000001/fila/habilitacion";
+        for (String rol : new String[] {"CLIENTE", "ORGANIZADOR", "PERSONAL_ACCESO"}) {
+            MockHttpServletRequest req = new MockHttpServletRequest("POST", uri);
+            req.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, rol, 60_000));
+            assertEquals(403, ejecutar(req).response.getStatus(), rol);
+        }
+        MockHttpServletRequest admin = new MockHttpServletRequest("POST", uri);
+        admin.addHeader("Authorization", "Bearer " + tokenComoUsuarios(SECRET, "ADMIN", 60_000));
+        Resultado r = ejecutar(admin);
+        assertTrue(r.paso());
+        assertEquals(TOKEN_INTERNO,
+                r.requestDownstream().getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
+    }
+
+    @Test
     void sinToken_devuelve401() throws Exception {
         Resultado r = ejecutar(get("/api/entradas", null));
 
@@ -287,6 +401,7 @@ class JwtGatewayIntegrationTest {
         assertTrue(r.paso());
         assertNull(r.requestDownstream().getHeader("X-User-Id"));
         assertNull(r.requestDownstream().getHeader("X-User-Role"));
+        assertNull(r.requestDownstream().getHeader(JwtAuthenticationFilter.HDR_INTERNAL));
     }
 
     /**

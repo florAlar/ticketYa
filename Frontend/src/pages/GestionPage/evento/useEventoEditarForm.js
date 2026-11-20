@@ -191,7 +191,6 @@ export default function useEventoEditarForm({ eventoId, user, token, isAdmin }) 
       const payload = {
         ...form,
         estado: EVENTO_ESTADOS.BORRADOR,
-        esAltaDemanda: false,
         fechaInicio: form.fechaInicio ? form.fechaInicio : null,
         idLugar: form.idLugar || undefined,
         sectores: check.sectores.map((s) => ({

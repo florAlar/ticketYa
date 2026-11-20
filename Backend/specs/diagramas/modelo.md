@@ -1,5 +1,7 @@
 # Modelo de datos
 
+> **Alcance:** este `classDiagram` cubre **solo MySQL** (persistencia transaccional). La fila virtual de alta demanda **no** aparece: posiciones, tandas y tokens viven en Redis (`StringRedisTemplate`, claves `ticketya.fila:*`) y no tienen tabla propia (decisión D1 de `specs/fila-virtual.md`, justificada en `consigna.md:148`). Los datos de la fila son volátiles por diseño: si se pierde Redis se reingresa, pero nunca se pierde una reserva ya confirmada en MySQL.
+
 ```mermaid
 classDiagram
 direction TB

@@ -39,6 +39,11 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    @ExceptionHandler(FilaException.class)
+    public ResponseEntity<Map<String, Object>> handleFila(FilaException ex) {
+        return body(ex.getStatus(), ex.getMessage(), ex.getCode(), ex.getExtras());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -52,11 +57,24 @@ public class GlobalExceptionHandler {
     }
 
     private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message) {
+        return body(status, message, null);
+    }
+
+    private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message, String code) {
+        return body(status, message, code, Map.of());
+    }
+
+    private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message, String code,
+            Map<String, Object> extras) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("timestamp", Instant.now().toString());
         payload.put("status", status.value());
         payload.put("error", status.getReasonPhrase());
         payload.put("message", message);
+        if (code != null) {
+            payload.put("code", code);
+        }
+        payload.putAll(extras);
         return ResponseEntity.status(status).body(payload);
     }
 }

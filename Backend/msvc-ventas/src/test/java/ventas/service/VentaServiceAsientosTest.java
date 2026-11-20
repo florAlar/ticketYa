@@ -86,7 +86,7 @@ class VentaServiceAsientosTest {
         emision = mock(EmisionEntradasService.class);
         service = new VentaServiceImpl(
                 cupoRepo, reservaRepo, detalleRepo, asientoRepo, compraRepo, pagoRepo,
-                eventosClient, stockCache, mapper, emision, 10L, 6, 24L);
+                eventosClient, stockCache, mapper, emision, mock(FilaService.class), 10L, 6, 24L);
 
         cupo = new CupoSector();
         cupo.setIdEvento(ID_EVENTO);

@@ -328,6 +328,68 @@ sequenceDiagram
 - **Borrador:** puede quedar sin lugar (lugar reservado "Por definir") y se edita con `PUT`: `sectores` es la lista completa y cambiar de lugar descarta los sectores elegidos. Con el evento ya publicado solo cambia el precio de sectores que ya estaban.
 - **Baja de lugares:** `DELETE /lugares/{id}` solo ADMIN; responde 409 si el lugar tiene eventos.
 
+## 9. Fila virtual: ingreso → tandas → validación → reserva (FIL-01 a FIL-03)
+
+Solo para eventos `PUBLICADO` con `esAltaDemanda = true`. Las tandas las abre el job automático (`modo=AUTO`) o un ADMIN (`modo=MANUAL`, `POST .../fila/habilitacion`).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Cliente (CLIENTE)
+    participant G as API Gateway
+    participant V as msvc-ventas
+    participant R as Redis (fila)
+    participant E as msvc-eventos
+    participant DB as MySQL (cupo_sector)
+
+    C->>G: POST /eventos/{id}/fila/ingreso
+    G->>V: + X-User-Id (JWT)
+    V->>E: GET /eventos/{id} (caché 10 s)
+    E-->>V: PUBLICADO + esAltaDemanda
+    V->>R: Lua ingresar (INCR atómico)
+    R-->>V: posición = 57, tanda = 50
+    V-->>C: 201 {posicion:57, delante:7, EN_ESPERA}
+
+    loop cada intervalo-ms (o ADMIN manual)
+        V->>R: lock fila:auto:lock (NX PX)
+        V->>DB: SUM(cantidad_disponible)
+        V->>R: Lua habilitar(min(tamanio, espacio), tope seq)
+        Note over V,R: bitácora FILA_HABILITACION modo=AUTO|MANUAL
+    end
+
+    C->>G: POST /eventos/{id}/fila/validacion
+    G->>V: + X-User-Id
+    V->>R: Lua validar (posición ≤ tanda)
+    alt turno consumido / sin ingreso / fuera de tanda
+        R-->>V: -1 / -2 / -3
+        V-->>C: 409 FILA_TURNO_USADO / 404 / 409 FILA_FUERA_DE_TANDA
+    else habilitado
+        R-->>V: token (nuevo o el vigente), TTL 10 min
+        V-->>C: 200 {token, expiraEn, posicion:57, delante:0}
+    end
+
+    C->>G: POST /reservas {tokenFila}
+    G->>V: + X-User-Id
+    V->>V: idempotencia: si ya existe, devolver sin pedir token
+    V->>E: GET /eventos/{id} (flag alta demanda)
+    alt sin token o inválido
+        V-->>C: 409 FILA_TOKEN_REQUERIDO / FILA_TOKEN_INVALIDO (cupo intacto)
+    else token válido (evento alta demanda)
+        V->>R: Lua consumirToken (compare-and-delete)
+        V->>DB: SELECT ... FOR UPDATE + descuento de cupo
+        alt commit
+            V-->>C: 200 reserva; bitácora FILA_TOKEN_CONSUMIDO
+        else rollback (límite, asiento único, excepción)
+            V->>R: Lua restaurarToken (afterCompletion)
+            V-->>C: 409/5xx; bitácora FILA_TOKEN_RESTAURADO
+        end
+    else evento normal
+        V->>DB: flujo actual, sin consultar Redis
+    end
+```
+
+Un token = una reserva, aun con 20 hilos concurrentes: el consumo es atómico. Redis caído en alta demanda → 503 fail-closed y el cupo no se toca; en eventos normales el flujo no consulta la fila.
+
 ## Garantía de no doble venta
 
 Hay dos defensas combinadas:

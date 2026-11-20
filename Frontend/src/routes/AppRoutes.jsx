@@ -11,6 +11,7 @@ const Home = lazy(() => import('../pages/HomePage/Home'))
 const EventosPage = lazy(() => import('../pages/EventosPage/EventosPage'))
 const EventoDetallePage = lazy(() => import('../pages/EventoDetallePage/EventoDetallePage'))
 const CheckoutPage = lazy(() => import('../pages/CheckoutPage/CheckoutPage'))
+const FilaVirtualPage = lazy(() => import('../pages/FilaVirtualPage/FilaVirtualPage'))
 const MisEntradasPage = lazy(() => import('../pages/MisEntradasPage/MisEntradasPage'))
 const EntradaDetallePage = lazy(() => import('../pages/EntradaDetallePage/EntradaDetallePage'))
 const LoginPage = lazy(() => import('../pages/LoginPage/LogInPage'))
@@ -48,6 +49,7 @@ const ROUTES = [
   { path: '/soporte', element: <SoportePage /> },
   { path: '/sin-permiso', element: <ForbiddenPage /> },
 
+  { path: '/eventos/:eventoId/fila', element: <FilaVirtualPage />, auth: true },
   { path: '/eventos/:eventoId/comprar', element: <CheckoutPage />, auth: true },
   { path: '/perfil', element: <PerfilPage />, auth: true },
   { path: '/mis-entradas', element: <MisEntradasPage />, auth: true },

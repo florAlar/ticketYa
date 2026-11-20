@@ -39,7 +39,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Listar usuarios / cambiar estado / asignar roles | ADMIN |
 | Validar ingreso con QR en puerta | PERSONAL_ACCESO (y ADMIN) — hecho (E2-ACC-01) |
 | Reportes de ventas, ocupación y recaudación del evento | ORGANIZADOR dueño (y ADMIN) — hecho (E2-REP-01) |
-| Fila virtual alta demanda | — **pendiente E2** |
+| Fila virtual alta demanda | CLIENTE: ingresar/consultar posición y validar token (`POST .../fila/validacion`); ADMIN: fijar tanda (`POST .../fila/habilitacion`). El Sistema abre tandas automáticamente. Implementado en FIL-01/FIL-02/FIL-03; `GET .../fila/estado` es público y `POST /reservas` exige `tokenFila` solo en alta demanda. |
 | Preferencias y recomendaciones | CLIENTE — **pendiente E2** |
 | Notificaciones | — **pendiente E2** |
 
@@ -262,7 +262,7 @@ Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por s
 
 ### Segunda entrega  para no olvidar el orden)
 
-16. Fila virtual: reglas de tandas y quién habilita.  
+16. Fila virtual: reglas de tandas y quién habilita. **Resuelta (FIL-02):** habilita el Sistema (job automático, `ticketya.fila.auto.*`) y el ADMIN (override `POST .../habilitacion`); la tanda es acumulativa por posición y nunca decrece (`FILA_TANDA_NO_REDUCIBLE`). El job nunca supera `seq` ni el cupo disponible; el ADMIN puede adelantarse.
 17. Preferencias: qué guarda el cliente y qué tan “inteligente” es la recomendación (puede ser simple).  
 18. Notificaciones: canales y en qué momentos exactos avisan.  
 19. Reportes: métricas mínimas del organizador.

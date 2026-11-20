@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -38,11 +39,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public static final String HDR_USER_EMAIL = "X-User-Email";
     public static final String HDR_USER_ROLE = "X-User-Role";
     public static final String HDR_USER_ROLES = "X-User-Roles";
+    public static final String HDR_INTERNAL = "X-Internal-Token";
 
     private final JwtUtil jwtUtil;
+    private final String internalToken;
 
-    public JwtAuthenticationFilter(JwtUtil jwtUtil) {
+    public JwtAuthenticationFilter(
+            JwtUtil jwtUtil,
+            @Value("${ticketya.interno.token:}") String internalToken) {
         this.jwtUtil = jwtUtil;
+        this.internalToken = internalToken == null ? "" : internalToken.trim();
     }
 
     private static final List<String> PUBLIC_PREFIXES = List.of(
@@ -88,6 +94,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
+        // Solo el procesamiento del token queda dentro del try: una excepción del downstream
+        // (proxy, conexión rechazada) no debe convertirse en un 401 "token inválido".
+        String email;
+        String userId;
+        List<String> roles;
         try {
             if (!jwtUtil.validateToken(token)) {
                 log.warn("Invalid or expired token for path: {}", path);
@@ -96,35 +107,36 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            String email = jwtUtil.extractEmail(token);
-            String userId = jwtUtil.extractUserId(token);
-            List<String> roles = jwtUtil.extractRoles(token);
-            String primaryRol = roles.isEmpty() ? null : roles.get(0);
-
-            log.debug("Token OK. User: {} (ID: {}), Roles: {}", email, userId, roles);
-
-            if (!hasPermission(path, method, roles)) {
-                log.warn("Access denied for user {} roles {} path: {}", email, roles, path);
-                writeError(response, HttpStatus.FORBIDDEN, "No autorizado",
-                        "No tiene permisos para acceder a este recurso");
-                return;
-            }
-
-            MutableRequest wrapper = new MutableRequest(request);
-            // La identidad sale SIEMPRE del token verificado. Si el token no trae un claim,
-            // el header se vacía: nunca se conserva el que mandó el cliente.
-            wrapper.putHeader(HDR_USER_ID, userId);
-            wrapper.putHeader(HDR_USER_EMAIL, email);
-            wrapper.putHeader(HDR_USER_ROLE, primaryRol);
-            wrapper.putHeader(HDR_USER_ROLES, roles.isEmpty() ? null : String.join(",", roles));
-
-            filterChain.doFilter(wrapper, response);
-
+            email = jwtUtil.extractEmail(token);
+            userId = jwtUtil.extractUserId(token);
+            roles = jwtUtil.extractRoles(token);
         } catch (Exception e) {
             log.error("Error processing JWT: {}", e.getMessage());
             writeError(response, HttpStatus.UNAUTHORIZED, "No autenticado",
                     "Error al procesar el token");
+            return;
         }
+
+        String primaryRol = roles.isEmpty() ? null : roles.get(0);
+        log.debug("Token OK. User: {} (ID: {}), Roles: {}", email, userId, roles);
+
+        if (!hasPermission(path, method, roles)) {
+            log.warn("Access denied for user {} roles {} path: {}", email, roles, path);
+            writeError(response, HttpStatus.FORBIDDEN, "No autorizado",
+                    "No tiene permisos para acceder a este recurso");
+            return;
+        }
+
+        MutableRequest wrapper = new MutableRequest(request);
+        // La identidad sale SIEMPRE del token verificado. Si el token no trae un claim,
+        // el header se vacía: nunca se conserva el que mandó el cliente.
+        wrapper.putHeader(HDR_USER_ID, userId);
+        wrapper.putHeader(HDR_USER_EMAIL, email);
+        wrapper.putHeader(HDR_USER_ROLE, primaryRol);
+        wrapper.putHeader(HDR_USER_ROLES, roles.isEmpty() ? null : String.join(",", roles));
+        marcarComoGateway(wrapper, path);
+
+        filterChain.doFilter(wrapper, response);
     }
 
     private boolean isPublicPath(String path, String method) {
@@ -143,6 +155,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 && (path.matches("/api/eventos/[^/]+/recomendaciones")
                         || path.equals("/api/eventos/disponibilidad")
                         || path.matches("/api/eventos/[^/]+/disponibilidad"))) {
+            return true;
+        }
+        // E2-FILA-01: el estado general de la fila es público (no expone identidades).
+        if ("GET".equalsIgnoreCase(method) && path.matches("/api/eventos/[^/]+/fila/estado")) {
             return true;
         }
         return false;
@@ -208,6 +224,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         if (path.equals("/api/lugares/geocodificar")) {
+            return true;
+        }
+        // FIL-02: fijar la tanda es operación de ADMIN; ventas vuelve a verificar X-User-Role.
+        if (path.matches("/api/eventos/[^/]+/fila/habilitacion") && "POST".equals(method)) {
             return true;
         }
         // Notificaciones administrativas: alta manual y consulta de estado son solo ADMIN
@@ -367,13 +387,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /** Request sin identidad: los headers X-User-* del cliente quedan vacíos. */
-    private static MutableRequest sinIdentidad(HttpServletRequest request) {
+    private MutableRequest sinIdentidad(HttpServletRequest request) {
         MutableRequest wrapper = new MutableRequest(request);
         wrapper.putHeader(HDR_USER_ID, null);
         wrapper.putHeader(HDR_USER_EMAIL, null);
         wrapper.putHeader(HDR_USER_ROLE, null);
         wrapper.putHeader(HDR_USER_ROLES, null);
+        marcarComoGateway(wrapper, request.getRequestURI());
         return wrapper;
+    }
+
+    /**
+     * Sella las rutas de la fila con el token compartido: msvc-ventas rechaza llamadas directas
+     * a {@code /eventos/{id}/fila/**} que no vengan del gateway (no alcanza con forjar X-User-*).
+     * En el resto de las rutas el header se vacía: el token del cliente nunca se propaga.
+     */
+    private void marcarComoGateway(MutableRequest wrapper, String path) {
+        boolean esFila = !internalToken.isEmpty() && path != null
+                && path.matches("/api/eventos/[^/]+/fila/.*");
+        wrapper.putHeader(HDR_INTERNAL, esFila ? internalToken : null);
     }
 
     private static final class MutableRequest extends jakarta.servlet.http.HttpServletRequestWrapper {
@@ -385,21 +417,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         /** Un valor {@code null} vacía el header: el del cliente no se conserva. */
         void putHeader(String name, String value) {
+            String existente = claveCustom(name);
+            if (existente != null) {
+                custom.remove(existente);
+            }
             custom.put(name, value);
         }
 
         @Override
         public String getHeader(String name) {
-            if (custom.containsKey(name)) {
-                return custom.get(name);
+            String clave = claveCustom(name);
+            if (clave != null) {
+                return custom.get(clave);
             }
             return super.getHeader(name);
         }
 
         @Override
         public java.util.Enumeration<String> getHeaders(String name) {
-            if (custom.containsKey(name)) {
-                String v = custom.get(name);
+            String clave = claveCustom(name);
+            if (clave != null) {
+                String v = custom.get(clave);
                 return v == null
                         ? java.util.Collections.emptyEnumeration()
                         : java.util.Collections.enumeration(List.of(v));
@@ -412,10 +450,28 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             java.util.Set<String> names = new java.util.HashSet<>();
             java.util.Enumeration<String> original = super.getHeaderNames();
             while (original.hasMoreElements()) {
-                names.add(original.nextElement());
+                String nombre = original.nextElement();
+                // Un header del cliente que colisiona (en cualquier capitalización) con uno
+                // controlado por el gateway se descarta: evita duplicados tipo x-user-id.
+                if (claveCustom(nombre) == null) {
+                    names.add(nombre);
+                }
             }
             names.addAll(custom.keySet());
             return java.util.Collections.enumeration(names);
+        }
+
+        /** Búsqueda case-insensitive: los nombres de header HTTP no distinguen mayúsculas. */
+        private String claveCustom(String name) {
+            if (name == null) {
+                return null;
+            }
+            for (String clave : custom.keySet()) {
+                if (clave.equalsIgnoreCase(name)) {
+                    return clave;
+                }
+            }
+            return null;
         }
     }
 }
