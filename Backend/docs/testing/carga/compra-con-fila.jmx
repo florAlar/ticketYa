@@ -54,8 +54,8 @@
       <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="CLIENTES - compra con fila" enabled="true">
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop" enabled="true">
-          <boolProp name="LoopController.continue_forever">true</boolProp>
-          <stringProp name="LoopController.loops">-1</stringProp>
+          <boolProp name="LoopController.continue_forever">${__P(loopForever,true)}</boolProp>
+          <stringProp name="LoopController.loops">${__P(iteraciones,-1)}</stringProp>
         </elementProp>
         <stringProp name="ThreadGroup.num_threads">${__P(usuarios,25)}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${__P(ramp,30)}</stringProp>
