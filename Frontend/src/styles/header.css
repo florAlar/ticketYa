@@ -20,7 +20,7 @@
 .site-header.scrolled {
   background: var(--colors-headerBg, #121212);
   backdrop-filter: none;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
 /* ===== LAYOUT ===== */
@@ -399,6 +399,5 @@ body.menu-open {
   }
 }
 
-/* Buscador del navbar: gris claro en el navbar blanco, blanco en el oscuro */
-:root { --nav-search-bg: #f1f1f3; }
-[data-theme='dark'] { --nav-search-bg: #ffffff; }
+/* El navbar es siempre oscuro (en claro y en oscuro): el buscador va en blanco */
+:root { --nav-search-bg: #ffffff; }

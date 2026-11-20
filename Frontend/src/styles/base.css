@@ -24,9 +24,9 @@
   --colors-danger: #c0392b;
   --colors-surface-alt: var(--colors-surfaceAlt);
   --colors-text-muted: var(--colors-textMuted);
-  --colors-headerBg: #FFFFFF;
-  --colors-headerText: #1F1F1F;
-  --colors-headerBorder: rgba(0, 0, 0, 0.09);
+  --colors-headerBg: #171717;
+  --colors-headerText: #F2F2F2;
+  --colors-headerBorder: rgba(255, 255, 255, 0.10);
   --fonts-body: Inter, system-ui, sans-serif;
   --fonts-title: Oxanium, Inter, sans-serif;
   --fonts-mono: "Share Tech Mono", monospace;

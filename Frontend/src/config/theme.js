@@ -214,9 +214,9 @@ const themes = {
                     info: "#2563EB",
 
                     /* chrome UI (header / search) */
-                    headerBg: "#FFFFFF",
-                    headerText: "#1F1F1F",
-                    headerBorder: "rgba(0,0,0,.09)"
+                    headerBg: "#171717",
+                    headerText: "#F2F2F2",
+                    headerBorder: "rgba(255,255,255,.10)"
 
                 },
 
