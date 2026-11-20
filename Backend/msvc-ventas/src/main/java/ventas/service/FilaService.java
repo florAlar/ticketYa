@@ -28,4 +28,7 @@ public interface FilaService {
 
     /** Restaura el token cuando la transacción de la reserva no llega a commit. */
     void restaurarToken(String idEvento, String userId, String token);
+
+    /** Descarta el flag/estado cacheado tras publicar, suspender o cambiar alta demanda. */
+    void invalidarCache(String idEvento);
 }

@@ -388,6 +388,53 @@ class EventoServiceImplTest {
         service.publicar(EVENTO_ID, ORG_ID, "ORGANIZADOR");
 
         verify(ventasClient, times(1)).abrirCupos(any(String.class), any(AbrirCuposBody.class));
+        verify(ventasClient, times(1)).invalidarCacheFila(EVENTO_ID);
+    }
+
+    @Test
+    void publicar_cupoTotal5001ConFlagFalse_loFuerzaAAltaDemanda() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setEsAltaDemanda(false);
+        evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(precioSectorRepository.findActivosByEventoId(EVENTO_ID)).thenReturn(List.of(
+                precioSector(sector(SECTOR_ID, evento.getLugar(), "Campo", 3000, false), BigDecimal.TEN),
+                precioSector(sector("c0000000-0000-4000-8000-000000000012", evento.getLugar(), "Platea", 2001, true),
+                        BigDecimal.TEN)));
+
+        service.publicar(EVENTO_ID, ORG_ID, "ORGANIZADOR");
+
+        ArgumentCaptor<Evento> captor = ArgumentCaptor.forClass(Evento.class);
+        verify(eventoRepository, times(1)).save(captor.capture());
+        assertEquals(true, captor.getValue().getEsAltaDemanda());
+        verify(ventasClient).invalidarCacheFila(EVENTO_ID);
+    }
+
+    @Test
+    void publicar_cupoTotal5000ConFlagFalse_noLoFuerza() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setEsAltaDemanda(false);
+        evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(precioSectorRepository.findActivosByEventoId(EVENTO_ID)).thenReturn(List.of(
+                precioSector(sector(SECTOR_ID, evento.getLugar(), "Campo", 5000, false), BigDecimal.TEN)));
+
+        service.publicar(EVENTO_ID, ORG_ID, "ORGANIZADOR");
+
+        ArgumentCaptor<Evento> captor = ArgumentCaptor.forClass(Evento.class);
+        verify(eventoRepository, times(1)).save(captor.capture());
+        assertEquals(false, captor.getValue().getEsAltaDemanda());
+    }
+
+    @Test
+    void patchEstado_suspender_publicado_pausaLaFila() {
+        Evento evento = evento("PUBLICADO", ORG_ID);
+        evento.setEsAltaDemanda(true);
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+
+        service.patchEstado(EVENTO_ID, "SUSPENDIDO", ORG_ID, "ADMIN");
+
+        verify(ventasClient).invalidarCacheFila(EVENTO_ID);
     }
 
     @Test

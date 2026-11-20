@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { createEvento, syncEventoParticipantes } from '../../../api/eventos'
 import {
   EVENTO_ESTADOS,
+  cupoTotalSectores,
   rowsDeLugar,
   validateEventoGestionForm,
 } from '../../../domain/evento'
@@ -30,6 +31,7 @@ export default function useEventoNuevoForm({ user, token }) {
   const [teloneros, setTeloneros] = useState([])
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
+  const [confirmacion, setConfirmacion] = useState(null)
 
   const onChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -72,68 +74,96 @@ export default function useEventoNuevoForm({ user, token }) {
     setTeloneros((prev) => prev.filter((t) => t.key !== key))
   }
 
+  const crear = async (payload) => {
+    const created = await createEvento(payload, user, { token })
+    await syncEventoParticipantes(
+      created.id,
+      {
+        principalId: form.principal?.id,
+        principalNombre: form.principal?.nombre,
+        teloneros,
+      },
+      { token }
+    )
+    setStatus('ok')
+    navigate('/gestion/eventos', {
+      replace: true,
+      state: { createdId: created.id },
+    })
+  }
+
   const onSubmit = async (e) => {
     e.preventDefault()
     if (!FEATURE.eventosGestion) return
     setError('')
+    const wantsPublish =
+      String(form.estado || '').toUpperCase() === EVENTO_ESTADOS.PUBLICADO
+    const mode = wantsPublish ? 'publicacion' : 'borrador'
+    const check = validateEventoGestionForm(
+      {
+        ...form,
+        principalId: form.principal?.id,
+        principal: form.principal,
+        teloneros,
+      },
+      sectores,
+      mode
+    )
+    if (!check.ok) {
+      setError(check.error)
+      setStatus('error')
+      return
+    }
+
+    const payload = {
+      ...form,
+      estado: wantsPublish
+        ? EVENTO_ESTADOS.PUBLICADO
+        : EVENTO_ESTADOS.BORRADOR,
+      fechaInicio: form.fechaInicio ? form.fechaInicio : null,
+      idLugar: form.idLugar || undefined,
+      sectores: check.sectores.map((s) => ({
+        ...s,
+        precio: s.precio == null ? 0 : s.precio,
+      })),
+    }
+    delete payload.principal
+    delete payload.principalId
+    delete payload.principalNombre
+    delete payload.participantes
+    delete payload.teloneros
+
+    if (wantsPublish) {
+      // La respuesta del popup define el flag final; se muestra antes de crear/publicar.
+      setConfirmacion({ payload, cupoTotal: cupoTotalSectores(sectores) })
+      return
+    }
+
     setStatus('loading')
     try {
-      const wantsPublish =
-        String(form.estado || '').toUpperCase() === EVENTO_ESTADOS.PUBLICADO
-      const mode = wantsPublish ? 'publicacion' : 'borrador'
-      const check = validateEventoGestionForm(
-        {
-          ...form,
-          principalId: form.principal?.id,
-          principal: form.principal,
-          teloneros,
-        },
-        sectores,
-        mode
-      )
-      if (!check.ok) {
-        setError(check.error)
-        setStatus('error')
-        return
-      }
-
-      const payload = {
-        ...form,
-        estado: wantsPublish
-          ? EVENTO_ESTADOS.PUBLICADO
-          : EVENTO_ESTADOS.BORRADOR,
-        fechaInicio: form.fechaInicio ? form.fechaInicio : null,
-        idLugar: form.idLugar || undefined,
-        sectores: check.sectores.map((s) => ({
-          ...s,
-          precio: s.precio == null ? 0 : s.precio,
-        })),
-      }
-      delete payload.principal
-      delete payload.principalId
-      delete payload.principalNombre
-      delete payload.participantes
-      delete payload.teloneros
-
-      const created = await createEvento(payload, user, { token })
-      await syncEventoParticipantes(
-        created.id,
-        {
-          principalId: form.principal?.id,
-          principalNombre: form.principal?.nombre,
-          teloneros,
-        },
-        { token }
-      )
-      setStatus('ok')
-      navigate('/gestion/eventos', {
-        replace: true,
-        state: { createdId: created.id },
-      })
+      await crear(payload)
     } catch (err) {
       setStatus('error')
       setError(err.message || 'No se pudo crear')
     }
+  }
+
+  const confirmarAltaDemanda = async (esAltaDemanda) => {
+    if (!confirmacion) return
+    const { payload } = confirmacion
+    setConfirmacion(null)
+    setStatus('loading')
+    try {
+      await crear({ ...payload, esAltaDemanda })
+    } catch (err) {
+      setStatus('error')
+      setError(err.message || 'No se pudo crear')
+    }
+  }
+
+  const cancelarAltaDemanda = () => {
+    setConfirmacion(null)
+    setStatus('idle')
   }
 
   const publishing =
@@ -147,6 +177,9 @@ export default function useEventoNuevoForm({ user, token }) {
     error,
     loading: status === 'loading',
     publishing,
+    confirmacion,
+    confirmarAltaDemanda,
+    cancelarAltaDemanda,
     gated: !FEATURE.eventosGestion,
     onChange,
     onRowChange,

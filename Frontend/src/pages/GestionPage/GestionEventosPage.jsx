@@ -2,15 +2,22 @@ import { useCallback, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import useAsync from '../../hooks/useAsync'
-import { listEventosGestion, patchEventoEstado } from '../../api/eventos'
+import {
+  getEvento,
+  listEventosGestion,
+  patchEventoAltaDemanda,
+  patchEventoEstado,
+} from '../../api/eventos'
 import {
   EVENTO_ESTADOS,
   EVENTO_ESTADO_LABELS,
   EVENTO_TIPO_LABELS,
+  cupoTotalSectores,
 } from '../../domain/evento'
 import { FEATURE, GATE_HINT } from '../../config/featureGates'
 import GateLink from '../../components/ui/GateLink'
 import GateButton from '../../components/ui/GateButton'
+import ConfirmarAltaDemandaModal from '../../components/gestion/ConfirmarAltaDemandaModal'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import { formatFecha } from '../../lib/format'
 import './GestionPage.css'
@@ -19,6 +26,7 @@ const GestionEventosPage = () => {
   const { user, token, isAdmin, canManageAllEvents } = useAuth()
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState(null)
+  const [confirmacion, setConfirmacion] = useState(null)
 
   const load = useCallback(
     async (signal) => {
@@ -41,17 +49,7 @@ const GestionEventosPage = () => {
     enabled: FEATURE.eventosGestion,
   })
 
-  const onEstado = async (id, estado) => {
-    const next = String(estado || '').toUpperCase()
-    if (next === EVENTO_ESTADOS.CANCELADO || next === 'CANCELADO') {
-      if (!FEATURE.eventosCancelar || !isAdmin) return
-    } else if (next === EVENTO_ESTADOS.SUSPENDIDO || next === 'SUSPENDIDO') {
-      if (!FEATURE.eventosSuspender) return
-    } else if (next === EVENTO_ESTADOS.PUBLICADO || next === 'PUBLICADO') {
-      if (!FEATURE.eventosGestion) return
-    } else if (!FEATURE.eventosGestion) {
-      return
-    }
+  const aplicarEstado = async (id, estado) => {
     setBusyId(id)
     setError('')
     try {
@@ -66,6 +64,61 @@ const GestionEventosPage = () => {
       setBusyId(null)
     }
   }
+
+  const prepararPublicacion = async (id) => {
+    setBusyId(id)
+    setError('')
+    try {
+      const detalle = await getEvento(id, { token })
+      setConfirmacion({
+        id,
+        cupoTotal: cupoTotalSectores(
+          detalle?.sectores || detalle?.lugar?.sectores
+        ),
+        flagActual: Boolean(detalle?.esAltaDemanda),
+      })
+    } catch (err) {
+      setError(err.message || 'No se pudo consultar el evento')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const onEstado = async (id, estado) => {
+    const next = String(estado || '').toUpperCase()
+    if (next === EVENTO_ESTADOS.CANCELADO || next === 'CANCELADO') {
+      if (!FEATURE.eventosCancelar || !isAdmin) return
+    } else if (next === EVENTO_ESTADOS.SUSPENDIDO || next === 'SUSPENDIDO') {
+      if (!FEATURE.eventosSuspender) return
+    } else if (next === EVENTO_ESTADOS.PUBLICADO || next === 'PUBLICADO') {
+      if (!FEATURE.eventosGestion) return
+      await prepararPublicacion(id)
+      return
+    } else if (!FEATURE.eventosGestion) {
+      return
+    }
+    await aplicarEstado(id, estado)
+  }
+
+  const confirmarPublicacion = async (esAltaDemanda) => {
+    if (!confirmacion) return
+    const { id, flagActual } = confirmacion
+    setConfirmacion(null)
+    if (esAltaDemanda !== flagActual) {
+      setBusyId(id)
+      setError('')
+      try {
+        await patchEventoAltaDemanda(id, esAltaDemanda, { token })
+      } catch (err) {
+        setError(err.message || 'No se pudo actualizar el alta demanda')
+        setBusyId(null)
+        return
+      }
+    }
+    await aplicarEstado(id, EVENTO_ESTADOS.PUBLICADO)
+  }
+
+  const cancelarPublicacion = () => setConfirmacion(null)
 
   return (
     <section className="gestion-page container section-v-padding">
@@ -249,6 +302,14 @@ const GestionEventosPage = () => {
         {' · '}
         <Link to="/eventos">Catálogo público</Link>
       </p>
+
+      {confirmacion && (
+        <ConfirmarAltaDemandaModal
+          cupoTotal={confirmacion.cupoTotal}
+          onConfirmar={confirmarPublicacion}
+          onCancelar={cancelarPublicacion}
+        />
+      )}
     </section>
   )
 }

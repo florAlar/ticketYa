@@ -57,10 +57,10 @@ En real esas facades responden 501 hasta que el BE los defina.
 | GET | `/api/eventos` | público | Home, `/eventos`; admin gestión (listado amplio) |
 | GET | `/api/eventos/{id}` | público | detalle / checkout |
 | POST | `/api/eventos` | ORG | `/gestion/eventos/nuevo` |
-| PUT | `/api/eventos/{id}` | ORG dueño / ADMIN | `/gestion/eventos/:id/editar` (solo BORRADOR en UI) |
+| PUT | `/api/eventos/{id}` | ORG dueño / ADMIN | `/gestion/eventos/:id/editar` (solo BORRADOR en UI) y body parcial `{esAltaDemanda}` desde el popup previo a publicar |
 | DELETE | `/api/eventos/{id}` | ORG | `deleteEvento` (listo) |
-| POST | `/api/eventos/{id}/publicacion` | ORG | publicar (UI “Publicar”) |
-| PATCH | `/api/eventos/{id}/estado` | ORG suspende propios; ADMIN cancela | botones Suspender / Cancelar (admin) |
+| POST | `/api/eventos/{id}/publicacion` | ORG | publicar (UI “Publicar” / “Volver a publicar”), detrás del popup de alta demanda |
+| PATCH | `/api/eventos/{id}/estado` | ORG suspende propios; ADMIN cancela | botones Suspender / Cancelar (admin); al salir de PUBLICADO se pausa la fila |
 | GET | `/api/organizadores/me/eventos` | ORG | listado gestión org |
 | GET | `/api/eventos/{id}/disponibilidad` | público | checkout + detalle (`getDisponibilidadEvento`) |
 | GET | `/api/eventos/disponibilidad?ids=` | público | batch catálogo (`getDisponibilidadBatch` → badges home) |
@@ -166,8 +166,8 @@ Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `Prefere
 | `/soporte/devolucion` | POST `/api/entradas/{id}/devoluciones` |
 | `/soporte/transferencia` | **no está en back** — shell UI |
 | `/gestion/eventos` | GET `/api/organizadores/me/eventos` o GET `/api/eventos` |
-| `/gestion/eventos/nuevo` | POST `/api/eventos` |
-| publicar / estado | POST `.../publicacion` · PATCH `.../estado` |
+| `/gestion/eventos/nuevo` | POST `/api/eventos` (si se crea publicando, antes pasa por el popup de alta demanda) |
+| publicar / estado | GET `/api/eventos/{id}` (para el cupo total del popup) · PUT `/api/eventos/{id}` con `{esAltaDemanda}` si el flag cambia · POST `.../publicacion` · PATCH `.../estado` |
 | `/gestion/usuarios` | GET `/api/usuarios` · PATCH `.../estado` · PUT `.../roles` |
 | `/gestion/participantes` | GET/POST `/api/participantes` · PUT/DELETE `/api/participantes/{id}` (ADMIN; 409 si el nombre existe / si participa en eventos) — gate `FEATURE.participantes` |
 | `/gestion/lugares`, `/gestion/lugares/nuevo`, `/gestion/lugares/:id` | GET/POST `/api/lugares` · GET/PUT/DELETE `/api/lugares/{id}` · POST `.../sectores` · PUT `/api/sectores/{id}` |
@@ -176,12 +176,21 @@ Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `Prefere
 
 ---
 
+## 6.1 Popup previo a publicar (regla de negocio)
+
+Antes de **toda** transición a `PUBLICADO` (crear y publicar, publicar borrador o volver a publicar un suspendido), el SPA muestra `ConfirmarAltaDemandaModal`:
+
+- Cupo total de los sectores vendidos **≤ 5000**: pregunta **“¿Es este un evento de alta demanda?”** con botones **Sí** / **No** (y **Cancelar**, que deja el evento sin publicar).
+- Cupo total **> 5000**: aviso **“Tu evento es un evento de alta demanda”** con un único botón **Continuar**; el flag se fuerza en `true`.
+
+El total se calcula con `cupoTotalSectores` (en `domain/evento/sectores.js`) sobre las filas del form de alta o sobre `detalle.sectores` (donde `capacidad` ya es el cupo efectivo). La respuesta del popup se persiste con `patchEventoAltaDemanda` (`PUT /api/eventos/{id}` parcial) antes de publicar en el listado de gestión; en el alta viaja en el body de `POST /api/eventos`. El backend además fuerza el flag cuando el cupo supera 5000, aunque la petición venga directa de la API.
+
 ## 7. Facades `src/api`
 
 | Archivo | Dominio |
 |---|---|
 | `auth.js` | login, register, refresh, logout, me |
-| `eventos.js` | catálogo, detalle, gestión, create, publicar/estado, disponibilidad |
+| `eventos.js` | catálogo, detalle, gestión, create, publicar/estado, `patchEventoAltaDemanda`, disponibilidad |
 | `usuarios.js` | admin list/get/estado/roles (+ mock acceso) |
 | `entradas.js` | list/detalle/qr/validar |
 | `ventasCliente.js` | compras, reservas (+ `tokenFila` de alta demanda) |

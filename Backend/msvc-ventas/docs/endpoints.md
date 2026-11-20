@@ -40,6 +40,7 @@ Solo eventos `PUBLICADO` con `esAltaDemanda = true`; el flag se lee por Feign a 
 | `POST /eventos/{id}/fila/validacion` | CLIENTE (JWT, `X-User-Id`) | 200 `{idEvento, token, expiraEn, posicion, delante:0}`; mismo token mientras esté vigente; 404 `FILA_NO_INGRESADO`; 409 `FILA_FUERA_DE_TANDA` (con `posicion`, `posicionHabilitadaHasta`, `delante`) / `FILA_TURNO_USADO`; 503 |
 | `GET /eventos/{id}/fila/estado` | **Público** (sin JWT, sin identidades) | 200 con `totalEnFila`, `posicionHabilitadaHasta`, `abierta` |
 | `POST /eventos/{id}/fila/habilitacion` | **ADMIN** (JWT; gateway y controller verifican el rol) | 200 `{idEvento, posicionHabilitadaHasta, modo:"MANUAL"}`; 400 si `hastaPosicion` < 1; 403 otro rol; 409 `FILA_TANDA_NO_REDUCIBLE` |
+| `POST /internas/fila/{id}/invalidacion` | **msvc-eventos** (Feign, `X-Internal-Token`; no expuesto por gateway) | 204; descarta la caché del flag/estado. Lo llama eventos al publicar, suspender/cancelar o cambiar `esAltaDemanda` |
 
 `delante = max(0, posicion − posicionHabilitadaHasta)`: la posición es el turno inmutable asignado por un `INCR` atómico. Si Redis o msvc-eventos fallan sin dato en caché → **503 `FILA_NO_DISPONIBLE`** (fail-closed, nunca fallback a MySQL). El `code` viaja en el cuerpo de error (`GlobalExceptionHandler`). Config: `ticketya.fila.ttl-hours` (24), `token-ttl-minutes` (10) y el prefijo citado; las cuatro claves por evento comparten TTL. Tests: `FilaServiceTest`, `FilaControllerTest`, `FilaEventoCacheTest`, `FilaRedisStoreIT` (perfil `it`, Testcontainers) y gateway `JwtGatewayIntegrationTest`.
 
@@ -142,5 +143,9 @@ Errores: 400 si el sector numerado no trae asientos, un asiento no existe en el 
 - `GET /internas/compras?desde=&hasta=` — compras `APROBADA` con `idCompra`, `idCliente`,
   `idEvento`, `fechaCompra`, `total`, `moneda` y `cantidadEntradas`. Uso: backfill del
   historial en `msvc-preferencias` (`POST /internas/backfill`).
-  El path `/internas/**` **no** está expuesto por el gateway y exige `X-Internal-Token`
-  (`TICKETYA_INTERNAL_TOKEN`, default `ticketya_dev_internal`).
+- `POST /internas/fila/{idEvento}/invalidacion` — lo invoca `msvc-eventos` (vía
+  `VentasClient.invalidarCacheFila`) para pausar/reanudar la fila cuando cambia el estado
+  del evento o el flag de alta demanda. Responde 204.
+
+El path `/internas/**` **no** está expuesto por el gateway y exige `X-Internal-Token`
+(`TICKETYA_INTERNAL_TOKEN`, default `ticketya_dev_internal`).

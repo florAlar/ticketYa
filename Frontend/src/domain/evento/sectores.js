@@ -1,5 +1,33 @@
 import { EVENTO_ESTADOS } from './constants'
 
+/** Regla de negocio: por encima de este cupo total el evento es alta demanda sin preguntar. */
+export const LIMITE_ALTA_DEMANDA = 5000
+
+/**
+ * Cupo total que se vende en el evento. Sirve tanto para las filas del form de alta
+ * ({@code incluido/capacidad/cupo}) como para los sectores del detalle (capacidad = cupo efectivo).
+ */
+export function cupoTotalSectores(sectores) {
+  if (!Array.isArray(sectores)) return 0
+  return sectores.reduce((total, s) => {
+    if (!s || s.incluido === false) return total
+    const capacidadBruta = Number(s.capacidad ?? s.capacidadTotal)
+    const porLayout = s.esNumerado
+      ? Number(s.filas) * Number(s.asientosPorFila)
+      : 0
+    const capacidad =
+      Number.isFinite(capacidadBruta) && capacidadBruta > 0
+        ? capacidadBruta
+        : Number.isFinite(porLayout) && porLayout > 0
+          ? porLayout
+          : 0
+    if (capacidad <= 0) return total
+    const cupo = s.esNumerado ? null : Number(s.cupo)
+    const efectivo = Number.isFinite(cupo) && cupo > 0 ? cupo : capacidad
+    return total + efectivo
+  }, 0)
+}
+
 /**
  * Filas de la tabla de sectores de un evento (LUG-04). Los sectores los define
  * el lugar: el organizador elige cuáles se venden y fija precio/cupo.

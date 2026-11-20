@@ -118,6 +118,11 @@ export default function EventoNuevoDatosForm({
           Destacado en home
         </label>
       </div>
+      {publishing && (
+        <p className="gestion-card__muted gestion-hint--top">
+          Al publicar se confirmará si es de alta demanda en el popup previo.
+        </p>
+      )}
 
       <div className="form-group">
         <label htmlFor="imagenUrl">URL imagen (opcional)</label>

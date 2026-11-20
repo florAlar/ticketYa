@@ -82,6 +82,9 @@ public class EventoServiceImpl implements EventoService {
     private static final Set<String> ESTADOS_PATCH = Set.of(
             SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO, PUBLICADO, BORRADOR);
 
+    /** Regla de negocio: por encima de este cupo total el evento es de alta demanda sin preguntar. */
+    private static final long LIMITE_ALTA_DEMANDA = 5000;
+
     private final EventoRepository eventoRepository;
         private final PrecioSectorRepository precioSectorRepository;
         private final LugarRepository lugarRepository;
@@ -327,6 +330,7 @@ public class EventoServiceImpl implements EventoService {
         LocalDateTime finAnterior = evento.getFechaFin();
         String tipoAnterior = evento.getTipo();
         String lugarAnterior = evento.getLugar() == null ? null : evento.getLugar().getId();
+        boolean altaDemandaAnterior = Boolean.TRUE.equals(evento.getEsAltaDemanda());
 
         if (blankToNull(request.getNombre()) != null) {
             evento.setNombre(request.getNombre().trim());
@@ -366,6 +370,11 @@ public class EventoServiceImpl implements EventoService {
         }
 
         eventoRepository.save(evento);
+        if (altaDemandaAnterior != Boolean.TRUE.equals(evento.getEsAltaDemanda())
+                && !BORRADOR.equalsIgnoreCase(evento.getEstado())) {
+            sincronizarFila(evento.getId(), PUBLICADO.equalsIgnoreCase(evento.getEstado()),
+                    "CAMBIO_FLAG_ALTA_DEMANDA");
+        }
         publicarModificacion(
                 evento,
                 nombreAnterior,
@@ -430,6 +439,10 @@ public class EventoServiceImpl implements EventoService {
         evento.setEstado(next); //guarda el nuevo estado
         eventoRepository.save(evento);
         Bitacora.registrar("EVENTO_ESTADO_" + next, userId, evento.getId(), "rol=" + role);
+        if (!next.equalsIgnoreCase(anterior)) {
+            // Toda salida de PUBLICADO pausa la fila; la reanudación la hace doPublicar.
+            sincronizarFila(evento.getId(), false, "ESTADO_" + next);
+        }
 
         if (!next.equalsIgnoreCase(anterior) && (CANCELADO.equals(next) || SUSPENDIDO.equals(next))) { // esta bosta puede bugearse 
             eventPublisher.publishEvent(new EventChangeEvent(
@@ -873,6 +886,17 @@ public class EventoServiceImpl implements EventoService {
                                 }
                             }
 
+                            // Regla de negocio: cupo total > 5000 ⇒ alta demanda obligatoria,
+                            // aunque la petición viniera con el flag en false (API directa).
+                            long cupoTotal = activos.stream()
+                                    .mapToLong(ps -> ps.cupoEfectivo() == null ? 0 : ps.cupoEfectivo())
+                                    .sum();
+                            if (cupoTotal > LIMITE_ALTA_DEMANDA && !Boolean.TRUE.equals(evento.getEsAltaDemanda())) {
+                                evento.setEsAltaDemanda(true);
+                                Bitacora.registrar("EVENTO_ALTA_DEMANDA_AUTO", null, evento.getId(),
+                                        "cupoTotal=" + cupoTotal + " limite=" + LIMITE_ALTA_DEMANDA);
+                            }
+
                             // Abrir stock comercial en msvc-ventas ANTES de marcar PUBLICADO (fail-hard).
                             abrirCuposEnVentas(evento.getId(), activos);
 
@@ -882,6 +906,7 @@ public class EventoServiceImpl implements EventoService {
                             }
                             eventoRepository.save(evento);
                             Bitacora.registrar("EVENTO_PUBLICADO", null, evento.getId(), "nombre=" + evento.getNombre());
+                            sincronizarFila(evento.getId(), true, "PUBLICADO");
                             eventPublisher.publishEvent(new EventChangeEvent(
                                     evento.getId(),
                                     "PUBLICADO",
@@ -899,7 +924,24 @@ public class EventoServiceImpl implements EventoService {
                                                     // no-op
                                                 }
 
-                                                private void abrirCuposEnVentas(String idEvento, List<PrecioSector> activos) {
+                        /**
+                         * Pausa/reanuda la fila derivándola del estado del evento y descarta la caché que
+                         * msvc-ventas mantiene del flag/estado. Best-effort: si ventas no responde, el
+                         * TTL de esa caché (10 s) termina convergiendo y la publicación no se revierte.
+                         */
+                        private void sincronizarFila(String idEvento, boolean activa, String motivo) {
+                            Bitacora.registrar(activa ? "FILA_REANUDADA" : "FILA_PAUSADA", "SISTEMA", idEvento,
+                                    "motivo=" + motivo);
+                            try {
+                                ventasClient.invalidarCacheFila(idEvento);
+                            } catch (FeignException e) {
+                                log.warn("No se pudo sincronizar la fila de {}: status={}", idEvento, e.status());
+                            } catch (Exception e) {
+                                log.warn("No se pudo sincronizar la fila de {}: {}", idEvento, e.getMessage());
+                            }
+                        }
+
+                        private void abrirCuposEnVentas(String idEvento, List<PrecioSector> activos) {
                             AbrirCuposBody body = new AbrirCuposBody();
                             List<AbrirCuposBody.Item> items = new ArrayList<>();
                             for (PrecioSector ps : activos) {

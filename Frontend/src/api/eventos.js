@@ -274,6 +274,29 @@ export async function patchEventoEstado(id, estado, user, { isAdmin, token } = {
   })
 }
 
+/**
+ * Actualiza solo el flag de alta demanda antes de publicar. El PUT parcial ya
+ * está soportado por EventoServiceImpl.actualizar (los demás campos se omiten).
+ */
+export async function patchEventoAltaDemanda(id, esAltaDemanda, opts = {}) {
+  const flag = Boolean(esAltaDemanda)
+  if (USE_MOCK) {
+    await delay()
+    const updated = updateGestionEvento(id, { esAltaDemanda: flag })
+    if (!updated) {
+      const err = new Error('Evento no encontrado')
+      err.status = 404
+      throw err
+    }
+    return updated
+  }
+  return http(`/api/eventos/${id}`, {
+    method: 'PUT',
+    token: opts.token,
+    body: JSON.stringify({ esAltaDemanda: flag }),
+  })
+}
+
 /** PUT /api/eventos/{id} */
 export async function updateEvento(id, body, opts = {}) {
   if (USE_MOCK) {
