@@ -73,9 +73,9 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 
 | Rol | Paths permitidos | Nota |
 |-----|------------------|------|
-| `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila GET, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**`, `GET /api/eventos/**` | El msvc filtra recursos por `X-User-Id` |
-| `ORGANIZADOR` | `/api/eventos/**`, `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, `/api/preferencias/**`, `/api/recomendaciones/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
-| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), `/api/preferencias/**`, `/api/recomendaciones/**`, compras propias (self-service) | Validación de ingreso en evento |
+| `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**`, `/api/notificaciones/me/**`, `GET /api/eventos/**` (excepto `/validaciones`) | El msvc filtra recursos por `X-User-Id` |
+| `ORGANIZADOR` | `/api/eventos/**` (excepto `POST /api/eventos/{id}/validaciones`), `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
+| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Validación de ingreso en evento |
 | `ADMIN` | Todo | Short-circuit en `hasPermission` |
 
 ### 3.2 Exclusivas de ADMIN (403 para cualquier otro rol)
@@ -83,6 +83,7 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | Path | Método |
 |------|--------|
 | `/api/usuarios` | GET |
+| `/api/usuarios/{id}` | GET (fuera de `/api/usuarios/me`) |
 | `/api/usuarios/{id}/estado` | PATCH |
 | `/api/usuarios/{id}/roles` | GET / PUT / PATCH |
 | `/api/devoluciones/{id}/aprobacion` | POST |
@@ -90,6 +91,10 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/reportes/**` | DELETE |
 | `/api/lugares/**`, `/api/sectores/**` | POST / PUT / PATCH / DELETE (alta, edición y baja de lugares y sectores; LUG-01/LUG-04) |
 | `/api/lugares/geocodificar` | GET (geocodificación de lugares por dirección y ciudad; LUG-03) |
+| `/api/participantes/{id}` | PUT / PATCH / DELETE (PAR-01) |
+| `/api/notificaciones` | POST (alta administrativa de notificación) |
+| `/api/notificaciones/{id}/estado` | GET (estado de envío) |
+| Endpoints internos Feign (`/api/eventos/{id}/cupos`, `/cupos/liberacion`, `/reintegro-cancelacion`, `/entradas/resumen`, `/api/entradas/emision`, `/api/preferencias/clientes/matching`, `/api/preferencias/clientes/{id}/notificaciones`, `/api/compras/evento/{id}`) | POST / GET (invocados por Feign directo entre servicios; por gateway solo ADMIN) |
 
 ### 3.3 Notas de política
 

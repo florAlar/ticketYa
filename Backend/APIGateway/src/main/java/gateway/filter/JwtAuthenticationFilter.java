@@ -210,12 +210,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.equals("/api/lugares/geocodificar")) {
             return true;
         }
+        // Notificaciones administrativas: alta manual y consulta de estado son solo ADMIN
+        // (la bandeja propia vive bajo /api/notificaciones/me/**).
+        if (path.equals("/api/notificaciones") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/notificaciones/[^/]+/estado") && "GET".equals(method)) {
+            return true;
+        }
+        // Endpoints internos (Feign entre msvcs): por el gateway solo se permiten a ADMIN.
+        if (path.matches("/api/eventos/[^/]+/cupos(/liberacion)?") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/eventos/[^/]+/reintegro-cancelacion") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/eventos/[^/]+/entradas/resumen") && "GET".equals(method)) {
+            return true;
+        }
+        if (path.equals("/api/entradas/emision") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.equals("/api/preferencias/clientes/matching") && "POST".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/preferencias/clientes/[^/]+/notificaciones") && "GET".equals(method)) {
+            return true;
+        }
+        if (path.matches("/api/compras/evento/[^/]+") && "GET".equals(method)) {
+            return true;
+        }
         return false;
     }
 
     private boolean roleAllows(String path, String method, String rol) {
         // Bandeja propia de notificaciones: cualquier rol autenticado; el msvc valida dueño/ADMIN.
-        if (path.startsWith("/api/notificaciones")) {
+        if (isSelfPath(path, "/api/notificaciones/me")) {
             return true;
         }
         // Preferencias y recomendaciones propias: cualquier rol autenticado (un ORG/ACCESO
@@ -232,6 +262,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isOrganizadorAccess(String path, String method) {
+        // Control de acceso QR: ORGANIZADOR solo consulta validaciones (GET); escanear (POST) es PERSONAL_ACCESO/ADMIN.
+        if (path.matches("/api/eventos/[^/]+/validaciones")) {
+            return "GET".equals(method);
+        }
         if (path.startsWith("/api/eventos")
                 || path.startsWith("/api/lugares")
                 || path.startsWith("/api/sectores")
@@ -242,10 +276,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/reportes")) {
             return true;
         }
-        if (path.matches("/api/eventos/[^/]+/validaciones") && "GET".equals(method)) {
-            return true;
-        }
-        if (path.startsWith("/api/usuarios/me")) {
+        if (isSelfPath(path, "/api/usuarios/me")) {
             return true;
         }
         if (path.startsWith("/api/auth/")) {
@@ -259,7 +290,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isClienteAccess(String path, String method) {
-        if (path.startsWith("/api/usuarios/me") || path.startsWith("/api/auth/")) {
+        if (isSelfPath(path, "/api/usuarios/me") || path.startsWith("/api/auth/")) {
             return true;
         }
         if (isBuyerSelfService(path, method)) {
@@ -276,6 +307,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (path.startsWith("/api/preferencias") || path.startsWith("/api/clientes")) {
             return true;
         }
+        // Validaciones de acceso QR no son visibles para CLIENTE (solo ORGANIZADOR dueño / PERSONAL_ACCESO / ADMIN).
+        if (path.matches("/api/eventos/[^/]+/validaciones")) {
+            return false;
+        }
         if (path.startsWith("/api/eventos") && "GET".equals(method)) {
             return true;
         }
@@ -283,7 +318,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean isAccesoAccess(String path, String method) {
-        if (path.startsWith("/api/usuarios/me") || path.startsWith("/api/auth/")) {
+        if (isSelfPath(path, "/api/usuarios/me") || path.startsWith("/api/auth/")) {
             return true;
         }
         if (path.matches("/api/eventos/[^/]+/validaciones")
@@ -295,6 +330,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         return false;
+    }
+
+    private static boolean isSelfPath(String path, String base) {
+        return base.equals(path) || path.startsWith(base + "/");
     }
 
     /**
