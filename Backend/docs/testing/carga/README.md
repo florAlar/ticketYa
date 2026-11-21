@@ -8,25 +8,25 @@ Pruebas de carga contra el gateway local con dos planes:
 | `compra-con-fila.jmx` | Compra con fila virtual: ingreso, poll de posición, validación, reserva, compra, pago y verificación |
  
 ## Requisitos
-- Usuarios generados por generar_usuarios.sh (Los usuarios tienen una duracion de 1 hora debido a la caducidad del token) 
+- Usuarios generados por `generar-usuarios.sh` (los JWT vencen a la hora).
 - Stack levantado (gateway en `http://localhost:8080`):
 
 ```bash
 cd Backend && docker compose up -d --build
 ```
 - JMeter 5.x (probado con 5.6.3). El 2.13 de apt **no** sirve.
-- `curl`, `python3` y acceso a `docker` (para reiniciar la fila en Redis).
-- `generar-usuarios.sh` y los `.jmx` en la misma carpeta.
+- `curl` y `jq` (los usa `generar-usuarios.sh`).
+- `generar-usuarios.sh`, `jmeter.sh` y los `.jmx` en la misma carpeta.
 ## Uso rápido
  
-Con el script completo:
+Con el script completo (regenera el CSV y ejecuta el plan):
  
 ```bash
-./correr-carga.sh fila   25    # compra con fila virtual, 25 usuarios
-./correr-carga.sh normal 50    # compra sin fila, 50 usuarios
+./jmeter.sh compra-con-fila.jmx 25    # compra con fila virtual, 25 usuarios
+./jmeter.sh compra-normal.jmx 50      # compra sin fila, 50 usuarios
 ```
  
-El reporte queda en `/tmp/ticketya-carga/<fecha>-<modo>/report/index.html`.
+El reporte queda en `report/index.html`, dentro de esta carpeta.
  
 ## Uso manual
  
@@ -90,7 +90,7 @@ Abrí `report/index.html` al terminar.
 ## Variantes de la fila
  
 - **B1 (default):** la tanda la habilita automáticamente el job del servicio.
-- **B2 (habilitación manual):** levantar el servicio con `TICKETYA_FILA_AUTO_ENABLED=false` y agregar:
+- **B2 (habilitación manual):** definir `TICKETYA_FILA_AUTO_ENABLED=false` en `.env`/shell y recrear `ms-ventas` (`docker compose up -d --force-recreate ms-ventas`), y agregar:
 ```bash
 -JadminThreads=1 -JadminToken=<JWT_ADMIN> -JadminPaso=25 -JadminIntervalo=10000
 ```
@@ -106,7 +106,7 @@ Abrí `report/index.html` al terminar.
 |---|---|
 | `El gateway no responde` | El stack no está levantado |
 | Todos los requests fallan con 401 | Tokens del CSV vencidos o inválidos: regenerar el CSV |
-| JMeter falla al generar el reporte | La carpeta `report/` ya existe: borrarla |
+| JMeter falla al generar el reporte | La carpeta `report/` ya existe: `jmeter.sh` la elimina al inicio; si corrés JMeter a mano, borrala |
 | Errores de conexión con `-Jhost=http://...` | `host` no lleva protocolo |
 | La corrida dura unos 5 minutos en vez de terminar sola | Agregar `-JloopForever=false` |
 | `usuarios.csv` no se encuentra | Pasar ruta absoluta en `-Jcsv` |

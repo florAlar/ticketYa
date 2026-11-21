@@ -100,7 +100,7 @@ erDiagram
 
 ## msvc-ventas
 
-> La fila virtual **no** tiene entidad en este ER: turnos, tanda y token temporal se guardan en Redis con prefijo `ticketya.fila.*` (decisión D1 de `specs/fila-virtual.md`; simplificación permitida por `consigna.md:148`). No hay `fila_*` en `init.sql` ni mensajes Rabbit para la fila; el cupo y las reservas sí son MySQL y son la fuente de verdad transaccional.
+> La fila virtual **no** tiene entidad en este ER: turnos, tanda y token temporal se guardan en Redis con claves `fila:*` (prefijo configurable con `ticketya.fila.key-prefix` / `TICKETYA_FILA_PREFIX`; decisión D1 de `specs/fila-virtual.md`; simplificación permitida por `consigna.md:148`). No hay `fila_*` en `init.sql` ni mensajes Rabbit para la fila; el cupo y las reservas sí son MySQL y son la fuente de verdad transaccional.
 
 ```mermaid
 erDiagram
@@ -261,9 +261,14 @@ erDiagram
         VARCHAR canal
         VARCHAR asunto
         TEXT contenido
+        VARCHAR destinatario "email resuelto (canal EMAIL)"
         DATETIME fecha_creacion
         DATETIME fecha_envio
         VARCHAR estado
+        TINYINT leida
+        DATETIME fecha_lectura
+        VARCHAR clave_idempotencia "tipo:canal:eventoId:messageId | CompraConfirmada:EMAIL:compraId"
+        VARCHAR clave_mensaje "identidad del mensaje sin canal; PUSH y EMAIL comparten valor"
     }
     INTENTO_ENVIO {
         CHAR36 id_intento PK

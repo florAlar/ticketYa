@@ -15,8 +15,8 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 2 | `eventos-disponibilidad-ventas` | 10 | `/api/eventos/{id}/disponibilidad` | GET | ms-ventas:8083 | 1 | — |
 | 3 | `eventos-cupos-liberacion-ventas` | 9 | `/api/eventos/{id}/cupos/liberacion` | POST | ms-ventas:8083 | 1 | Uso interno Feign msvc-entradas |
 | 4 | `eventos-cupos-ventas` | 10 | `/api/eventos/{id}/cupos` | POST | ms-ventas:8083 | 1 | Uso interno Feign msvc-eventos |
-| 5 | `eventos-fila-ventas` | 11 | `/api/eventos/{id}/fila/**` | — | ms-ventas:8083 | 1 | Fila virtual implementada (FIL-01/02/03): ingreso, posición, validación y estado públicos, habilitación solo ADMIN |
-| 6 | `eventos-validaciones-entradas` | 12 | `/api/eventos/{id}/validaciones` | — | ms-entradas:8084 | 1 | Control de acceso QR (E2-ACC-01): POST PERSONAL_ACCESO/ADMIN, GET ORGANIZADOR/ADMIN |
+| 5 | `eventos-fila-ventas` | 11 | `/api/eventos/{id}/fila/**` | — | ms-ventas:8083 | 1 | Fila virtual implementada (FIL-01/02/03): ingreso, posición y validación requieren JWT (CLIENTE u ORGANIZADOR); `GET .../fila/estado` es público; habilitación solo ADMIN |
+| 6 | `eventos-validaciones-entradas` | 12 | `/api/eventos/{id}/validaciones` | — | ms-entradas:8084 | 1 | Control de acceso QR (E2-ACC-01): POST PERSONAL_ACCESO/ADMIN; GET PERSONAL_ACCESO, ORGANIZADOR dueño o ADMIN |
 | 7 | `eventos-recomendaciones-preferencias` | 13 | `/api/eventos/{id}/recomendaciones` | — | ms-preferencias:8085 | 1 | — |
 | 8 | `eventos` | 20 | `/api/eventos`, `/api/eventos/**` | — | ms-eventos:8082 | 1 | Catch-all eventos/lugares |
 | 9 | `lugares` | 21 | `/api/lugares`, `/api/lugares/**` | — | ms-eventos:8082 | 1 | — |
@@ -36,7 +36,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 23 | `clientes-preferencias` | 62 | `/api/clientes`, `/api/clientes/**` | — | ms-preferencias:8085 | 1 | — |
 | 24 | `notificaciones` | 70 | `/api/notificaciones`, `/api/notificaciones/**` | — | ms-notificaciones:8086 | 1 | — |
 
-**Rutas implementadas:** `/api/eventos/{id}/fila/**` (fila virtual, FIL-01…FIL-03) ya está implementada en ms-ventas con Redis; ingreso/posición/validación son de CLIENTE, `GET .../fila/estado` es público y `POST .../fila/habilitacion` es exclusivo de ADMIN. Preferencias, recomendaciones, historial, notificaciones, reportes y validaciones también están implementados.
+**Rutas implementadas:** `/api/eventos/{id}/fila/**` (fila virtual, FIL-01…FIL-03) ya está implementada en ms-ventas con Redis; ingreso/posición/validación requieren JWT (CLIENTE u ORGANIZADOR), `GET .../fila/estado` es público y `POST .../fila/habilitacion` es exclusivo de ADMIN. Preferencias, recomendaciones, historial, notificaciones, reportes y validaciones también están implementados.
 
 ---
 
@@ -96,7 +96,9 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/participantes/{id}` | PUT / PATCH / DELETE (PAR-01) |
 | `/api/notificaciones` | POST (alta administrativa de notificación) |
 | `/api/notificaciones/{id}/estado` | GET (estado de envío) |
-| Endpoints internos Feign (`/api/eventos/{id}/cupos`, `/cupos/liberacion`, `/reintegro-cancelacion`, `/entradas/resumen`, `/api/entradas/emision`, `/api/preferencias/clientes/matching`, `/api/preferencias/clientes/{id}/notificaciones`, `/api/compras/evento/{id}`) | POST / GET (invocados por Feign directo entre servicios; por gateway solo ADMIN) |
+| Endpoints internos Feign ruteados (`/api/eventos/{id}/cupos`, `/cupos/liberacion`, `/api/entradas/emision`, `/api/preferencias/clientes/matching`, `/api/preferencias/clientes/{id}/notificaciones`, `/api/compras/evento/{id}`) | POST / GET (invocados por Feign directo entre servicios; por gateway solo ADMIN) |
+
+> **No ruteados:** `/api/eventos/{id}/reintegro-cancelacion` y `/api/eventos/{id}/entradas/resumen` no tienen ruta en el gateway; solo se usan por Feign directo entre servicios. Si se llaman por `/api`, el catch-all de eventos las deriva a `ms-eventos` y responden 404.
 
 ### 3.3 Notas de política
 

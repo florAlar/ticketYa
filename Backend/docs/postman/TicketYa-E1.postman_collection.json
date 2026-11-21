@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a418183f-8090-48a7-bf18-4f680b192840",
     "name": "TicketYa E1 — API Gateway",
-    "description": "Colección E1 de TicketYa (Postman v2.1). Cubre las carpetas 00→08 contra el stack local (`docker compose up -d`). Incluye auto-login de los 4 roles seed, captura de IDs y casos negativos (401/403/400/404/409). Seleccionar el environment **TicketYa local** y correr las carpetas en orden.\n\nBrechas E1 documentadas, no ocultas:\n- `reintegro-cancelacion` no está ruteado en el gateway: 06.09/06.10 invocan directo al msvc-entradas (8084) y 07.15 documenta el 404 vía gateway.\n- El reintento de un pago RECHAZADO devuelve 409 porque la reserva ya fue cancelada: 07.13.",
+    "description": "Colección E1 de TicketYa (Postman v2.1). Cubre las carpetas 00→14 contra el stack local (`docker compose up -d`). Incluye auto-login de los 4 roles seed, captura de IDs y casos negativos (401/403/400/404/409). Seleccionar el environment **TicketYa local** y correr las carpetas en orden.\n\nBrechas E1 documentadas, no ocultas:\n- `reintegro-cancelacion` no está ruteado en el gateway: 06.09/06.10 invocan directo al msvc-entradas (8084) y 07.15 documenta el 404 vía gateway.\n- El reintento de un pago RECHAZADO devuelve 409 porque la reserva ya fue cancelada: 07.13.\n\nLa carpeta **14 Notificaciones** cubre alta administrativa, bandeja propia, detalle, marcado de lectura, estado de envío y RBAC.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -9364,6 +9364,484 @@
                   "  pm.expect(b.posicionHabilitadaHasta).to.be.at.least(0);",
                   "  pm.expect(b.clientes).to.be.undefined;",
                   "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "14 Notificaciones",
+      "description": "E2-NOT: bandeja propia, detalle, marcado de lectura, alta administrativa y estado de envío. Es autónoma: crea su propia notificación para el usuario demo ({{userId}}) y captura {{notificacionId}}.",
+      "item": [
+        {
+          "name": "14.01 Alta administrativa (ADMIN) → 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones",
+            "description": "Rol: ADMIN · Esperado: 201 con estado PENDIENTE y leida=false. Captura notificacionId.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idUsuario\": \"{{userId}}\", \"tipo\": \"AVISO_ADMINISTRATIVO\", \"canal\": \"PUSH\", \"asunto\": \"Aviso de prueba Postman {{$timestamp}}\", \"contenido\": \"Notificación creada por la colección Postman para verificar la bandeja.\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Notificación PENDIENTE para el usuario demo', function () {",
+                  "  pm.expect(b.id).to.be.a('string').and.not.empty;",
+                  "  pm.expect(b.idUsuario).to.eql(pm.environment.get('userId'));",
+                  "  pm.expect(b.estado).to.eql('PENDIENTE');",
+                  "  pm.expect(b.leida).to.eql(false);",
+                  "  pm.expect(b.canales).to.include('PUSH');",
+                  "});",
+                  "pm.environment.set('notificacionId', b.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.02 Bandeja propia (CLIENTE) → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/me?page=0&size=100",
+            "description": "Rol: CLIENTE · Esperado: 200 paginado con content y noLeidas; incluye la notificación recién creada.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Bandeja paginada', function () {",
+                  "  pm.expect(b.content).to.be.an('array');",
+                  "  pm.expect(b.noLeidas).to.be.a('number');",
+                  "  pm.expect(b.page).to.eql(0);",
+                  "});",
+                  "pm.test('Incluye la notificación creada', function () {",
+                  "  const id = pm.environment.get('notificacionId');",
+                  "  pm.expect(b.content.some(function (n) { return n.id === id; })).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.03 Detalle propio → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/me/{{notificacionId}}",
+            "description": "Rol: CLIENTE dueño · Esperado: 200 con el mismo id y leida=false.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Detalle de la notificación', function () {",
+                  "  pm.expect(b.id).to.eql(pm.environment.get('notificacionId'));",
+                  "  pm.expect(b.leida).to.eql(false);",
+                  "  pm.expect(b.asunto).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.04 Marcar leída → 200",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/me/{{notificacionId}}/leida",
+            "description": "Rol: CLIENTE dueño · Esperado: 200 con leida=true y fechaLectura.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Queda leída y con fecha', function () {",
+                  "  pm.expect(b.leida).to.eql(true);",
+                  "  pm.expect(b.fechaLectura).to.be.a('string').and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.05 Filtro no leídas ya no la incluye → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/me?leida=false&page=0&size=100",
+            "description": "Rol: CLIENTE · Esperado: 200 y la notificación marcada ya no aparece en leida=false.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('No incluye la notificación leída', function () {",
+                  "  const id = pm.environment.get('notificacionId');",
+                  "  pm.expect(b.content.some(function (n) { return n.id === id; })).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.06 Estado de envío (ADMIN) → 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/{{notificacionId}}/estado",
+            "description": "Rol: ADMIN · Esperado: 200 con el mismo id y estado PENDIENTE/ENVIADA/FALLIDA (el job puede haberla procesado).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Estado de envío', function () {",
+                  "  pm.expect(b.id).to.eql(pm.environment.get('notificacionId'));",
+                  "  pm.expect(b.estado).to.be.oneOf(['PENDIENTE', 'ENVIADA', 'FALLIDA']);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.07 Notificación ajena (ADMIN) → 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/me/{{notificacionId}}",
+            "description": "Rol: ADMIN (no es el dueño) · Esperado: 404; el msvc no revela notificaciones de otros usuarios.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Error uniforme', function () { pm.expect(b.status).to.eql(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.08 Alta sin asunto (ADMIN) → 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones",
+            "description": "Rol: ADMIN · Esperado: 400 por validación (@NotBlank en asunto).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idUsuario\": \"{{userId}}\", \"tipo\": \"AVISO_ADMINISTRATIVO\", \"canal\": \"PUSH\", \"contenido\": \"Sin asunto para probar la validación.\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "const b = pm.response.json();",
+                  "pm.test('Error de validación', function () { pm.expect(b.status).to.eql(400); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.09 Bandeja sin token → 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/me",
+            "description": "Rol: público (sin JWT) · Esperado: 401 (el gateway exige Bearer).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', function () { pm.response.to.have.status(401); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.10 CLIENTE no puede crear (ADMIN) → 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones",
+            "description": "Rol: CLIENTE · Esperado: 403; el alta administrativa es solo ADMIN.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"idUsuario\": \"{{userId}}\", \"tipo\": \"AVISO_ADMINISTRATIVO\", \"canal\": \"PUSH\", \"asunto\": \"Aviso de prueba Postman {{$timestamp}}\", \"contenido\": \"Notificación creada por la colección Postman para verificar la bandeja.\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14.11 CLIENTE no puede ver el estado → 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/notificaciones/{{notificacionId}}/estado",
+            "description": "Rol: CLIENTE · Esperado: 403; el estado de envío es solo ADMIN.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', function () { pm.response.to.have.status(403); });"
                 ]
               }
             }

@@ -3,7 +3,7 @@
 Se utilizará MongoDB con un modelo documental compuesto por dos colecciones.
 No hay claves foráneas físicas: `idCliente` e `idEvento` son **referencias lógicas** a MySQL (`USUARIO.idUsuario`, `EVENTO.id`) en otros microservicios.
 
-> MongoDB cubre solo preferencias/historial/recomendaciones. La fila virtual tampoco se modela acá: es estado efímero en Redis (`ticketya.fila:*`, decisión D1 de `specs/fila-virtual.md`), no un documento persistente.
+> MongoDB cubre solo preferencias/historial/recomendaciones. La fila virtual tampoco se modela acá: es estado efímero en Redis (claves `fila:*` con prefijo configurable por `TICKETYA_FILA_PREFIX`, decisión D1 de `specs/fila-virtual.md`), no un documento persistente.
 
 ```mermaid
 erDiagram

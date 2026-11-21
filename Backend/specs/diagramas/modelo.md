@@ -1,6 +1,6 @@
 # Modelo de datos
 
-> **Alcance:** este `classDiagram` cubre **solo MySQL** (persistencia transaccional). La fila virtual de alta demanda **no** aparece: posiciones, tandas y tokens viven en Redis (`StringRedisTemplate`, claves `ticketya.fila:*`) y no tienen tabla propia (decisión D1 de `specs/fila-virtual.md`, justificada en `consigna.md:148`). Los datos de la fila son volátiles por diseño: si se pierde Redis se reingresa, pero nunca se pierde una reserva ya confirmada en MySQL.
+> **Alcance:** este `classDiagram` cubre **solo MySQL** (persistencia transaccional). La fila virtual de alta demanda **no** aparece: posiciones, tandas y tokens viven en Redis (`StringRedisTemplate`, claves `fila:*`; prefijo configurable con `ticketya.fila.key-prefix` / `TICKETYA_FILA_PREFIX`) y no tienen tabla propia (decisión D1 de `specs/fila-virtual.md`, justificada en `consigna.md:148`). Los datos de la fila son volátiles por diseño: si se pierde Redis se reingresa, pero nunca se pierde una reserva ya confirmada en MySQL.
 
 ```mermaid
 classDiagram
@@ -194,9 +194,14 @@ namespace msvc_notificaciones {
         +VARCHAR canal
         +VARCHAR asunto
         +TEXT contenido
+        +VARCHAR destinatario
         +DATETIME fecha_creacion
         +DATETIME fecha_envio
         +VARCHAR estado
+        +BOOL leida
+        +DATETIME fecha_lectura
+        +VARCHAR clave_idempotencia
+        +VARCHAR clave_mensaje
     }
     class intento_envio {
         +CHAR36 id_intento PK

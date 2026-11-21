@@ -1,5 +1,12 @@
 package notificaciones.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -14,6 +21,7 @@ import notificaciones.dto.NotificacionPageResponseDTO;
 import notificaciones.dto.NotificacionRequestDTO;
 import notificaciones.dto.NotificacionResponseDTO;
 import notificaciones.entity.Notificacion;
+import notificaciones.exception.ApiError;
 import notificaciones.exception.ForbiddenException;
 import notificaciones.exception.ResourceNotFoundException;
 import notificaciones.exception.UnauthorizedException;
@@ -37,6 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificacionController {
 
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String TEXTO_OK = "microservicio notificaciones ok!";
     private static final List<String> ORDEN_CANALES = List.of("PUSH", "EMAIL");
 
     private final NotificacionService notificacionService;
@@ -49,9 +58,32 @@ public class NotificacionController {
         this.notificacionRepository = notificacionRepository;
     }
 
-    @GetMapping({"/", "/notificaciones"})
+    @Operation(
+            operationId = "ok",
+            summary = "Smoke del servicio",
+            description = "Chequeo de infraestructura. No forma parte del contrato de negocio.",
+            tags = "Salud")
+    @ApiResponse(responseCode = "200", description = "Servicio activo",
+            content = @Content(mediaType = "text/plain",
+                    schema = @Schema(type = "string",
+                            example = "microservicio notificaciones ok!")))
+    @GetMapping("/notificaciones")
     public String ok() {
-        return "microservicio notificaciones ok!";
+        return TEXTO_OK;
+    }
+
+    @Operation(
+            operationId = "okRaiz",
+            summary = "Smoke raíz",
+            description = "Chequeo de infraestructura. No forma parte del contrato de negocio.",
+            tags = "Salud")
+    @ApiResponse(responseCode = "200", description = "Servicio activo",
+            content = @Content(mediaType = "text/plain",
+                    schema = @Schema(type = "string",
+                            example = "microservicio notificaciones ok!")))
+    @GetMapping("/")
+    public String okRaiz() {
+        return TEXTO_OK;
     }
 
     /**
@@ -59,11 +91,32 @@ public class NotificacionController {
      * por PUSH y EMAIL se muestra la fila PUSH y {@code canales} informa ambos. {@code noLeidas}
      * alimenta el badge de la campanita y cuenta mensajes, no filas.
      */
+    @Operation(
+            operationId = "listarPropias",
+            summary = "Listar notificaciones propias",
+            description = "Devuelve una página de mensajes del usuario autenticado (una entrada por "
+                    + "mensaje; si se envió por PUSH y EMAIL, `canales` informa ambos) junto con el "
+                    + "contador `noLeidas`.",
+            tags = "Bandeja",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Página de notificaciones del usuario",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificacionPageResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado o falta X-User-Id",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)))
+    })
     @GetMapping("/notificaciones/me")
     public NotificacionPageResponseDTO listarPropias(
+            @Parameter(description = "UUID del usuario autenticado (lo inyecta el gateway)",
+                    required = true, example = "b0000000-0000-4000-8000-000000000001")
             @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @Parameter(description = "Número de página (0-based)", example = "0")
             @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Tamaño de página (máximo 100)", example = "20")
             @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Filtra por estado de lectura")
             @RequestParam(required = false) Boolean leida) {
         String cliente = requireUser(userId);
         int pagina = Math.max(0, page);
@@ -88,9 +141,29 @@ public class NotificacionController {
         return respuesta;
     }
 
+    @Operation(
+            operationId = "detallePropio",
+            summary = "Consultar detalle de una notificación propia",
+            description = "Solo el dueño puede consultarla; si es ajena o no existe devuelve 404.",
+            tags = "Bandeja",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Detalle de la notificación",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificacionResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "404", description = "Notificación no encontrada o pertenece "
+                    + "a otro usuario (no se revela su existencia)",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)))
+    })
     @GetMapping("/notificaciones/me/{id}")
     public NotificacionResponseDTO detallePropio(
+            @Parameter(description = "UUID del usuario autenticado", required = true)
             @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @Parameter(description = "UUID de la notificación", required = true)
             @PathVariable String id) {
         Notificacion n = requirePropia(requireUser(userId), id);
         Map<String, List<String>> canales = canalesDe(n.getIdUsuario(), List.of(n));
@@ -101,9 +174,30 @@ public class NotificacionController {
      * Marca como leído el mensaje completo: las filas PUSH y EMAIL que lo componen, para que el
      * badge no quede con una mitad sin leer.
      */
+    @Operation(
+            operationId = "marcarLeida",
+            summary = "Marcar notificación como leída",
+            description = "Marca como leído el mensaje completo (todas las filas hermanas PUSH/EMAIL "
+                    + "que comparten `clave_mensaje`) y registra `fechaLectura`.",
+            tags = "Bandeja",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Notificación marcada como leída",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificacionResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "404", description = "Notificación no encontrada o pertenece "
+                    + "a otro usuario (no se revela su existencia)",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)))
+    })
     @PatchMapping("/notificaciones/me/{id}/leida")
     public NotificacionResponseDTO marcarLeida(
+            @Parameter(description = "UUID del usuario autenticado", required = true)
             @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @Parameter(description = "UUID de la notificación", required = true)
             @PathVariable String id) {
         String cliente = requireUser(userId);
         Notificacion notificacion = requirePropia(cliente, id);
@@ -139,9 +233,32 @@ public class NotificacionController {
     }
 
     /** Estado de envío para soporte/administración. */
+    @Operation(
+            operationId = "estadoEnvio",
+            summary = "Consultar estado de envío de una notificación (solo ADMIN)",
+            description = "Estado de una notificación por id. Solo ADMIN.",
+            tags = "Administración",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado actual de la notificación",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificacionResponseDTO.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "404", description = "Notificación no encontrada",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)))
+    })
     @GetMapping("/notificaciones/{id}/estado")
     public NotificacionResponseDTO estado(
+            @Parameter(description = "Rol del usuario autenticado (lo inyecta el gateway)",
+                    required = true, example = "ADMIN")
             @RequestHeader(value = "X-User-Role", required = false) String role,
+            @Parameter(description = "UUID de la notificación", required = true)
             @PathVariable String id) {
         requireAdmin(role);
         Notificacion n = notificacionRepository
@@ -151,9 +268,33 @@ public class NotificacionController {
     }
 
     /** Alta administrativa; queda PENDIENTE para que el job de envío la procese. */
+    @Operation(
+            operationId = "crearAdministrativa",
+            summary = "Crear notificación administrativa (solo ADMIN)",
+            description = "Registra una notificación en estado PENDIENTE para ser procesada por el "
+                    + "job de envío.",
+            tags = "Administración",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Notificación creada en estado PENDIENTE",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = NotificacionResponseDTO.class))),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos. La API devuelve el "
+                    + "mismo `ApiError` (timestamp/status/error/message/path).",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "401", description = "No autenticado",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class))),
+            @ApiResponse(responseCode = "403", description = "Requiere rol ADMIN",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ApiError.class)))
+    })
     @PostMapping("/notificaciones")
     @ResponseStatus(HttpStatus.CREATED)
     public NotificacionResponseDTO crear(
+            @Parameter(description = "Rol del usuario autenticado (lo inyecta el gateway)",
+                    required = true, example = "ADMIN")
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody NotificacionRequestDTO request) {
         requireAdmin(role);

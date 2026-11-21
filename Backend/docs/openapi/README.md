@@ -7,11 +7,12 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | Archivo | Contenido |
 |---------|-----------|
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
-| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (27 ops / 17 paths) |
-| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador y fila virtual (26 ops / 24 paths, 30 schemas) |
+| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (28 ops / 18 paths) |
+| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador y fila virtual (28 ops / 26 paths, 30 schemas) |
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
 | `msvc-preferencias.json` | Contrato de preferencias, historial y recomendaciones (13 ops / 11 paths, 11 schemas) |
-| `openapi-bundle.json` | Bundle consolidado: metadatos + los 5 specs bajo la clave `specs` |
+| `msvc-notificaciones.json` | Contrato de notificaciones: bandeja, alta administrativa y estado de envío (7 ops / 6 paths, 4 schemas). |
+| `openapi-bundle.json` | Bundle consolidado: metadatos + los 6 specs bajo la clave `specs` |
 
 > **Actualizado 2026-11-10:** los specs incluyen los asientos virtuales (`filas`/`asientosPorFila` en sectores; `asientos` en `POST /reservas`, `POST /eventos/{id}/cupos/liberacion` y `POST /entradas/emision`; `asientosOcupados` en disponibilidad; `fila`/`asiento` en la entrada).
 >
@@ -21,7 +22,7 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-11 (lugares):** `msvc-eventos.json`: el lugar suma `latitud` y `longitud` opcionales (`LugarRequest`, `Lugar`, `LugarDetalle`) y `quitarCoordenadas` en el pedido. `openapi-bundle.json` regenerado.
 >
-> **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
+> **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos (estado actual): 28 operaciones / 18 paths.
 >
 > **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
 
@@ -29,7 +30,17 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-16 (E2-PRE):** nuevo `msvc-preferencias.json` con preferencias, artistas, historial, recomendaciones propias/similares y backfill interno (`X-Internal-Token`). `openapi-bundle.json` regenerado con 5 specs.
 >
-> **Actualizado 2026-11-19 (FIL-04):** `msvc-ventas.json` suma la carpeta `Fila virtual` con los 5 endpoints (`POST/GET /eventos/{idEvento}/fila/ingreso|posicion|estado|validacion|habilitacion` en el contrato interno; el gateway los expone como `/api/eventos/{id}/fila/**`), los schemas `Fila*`, el schema de error `ApiError` con `code`/`extras` y los 8 códigos `FILA_*` en `x-error-codes`. `GET .../fila/estado` es público (sin `security`); los otros cuatro usan `bearerAuth`. `POST /reservas` documenta el campo opcional `tokenFila`. `openapi-bundle.json` regenerado (ventas: 26 ops / 24 paths / 30 schemas). Los paths internos usan `{idEvento}` porque ese es el nombre de la variable en `@RequestMapping`; la documentación de gateway/endpoints usa `{id}` como marcador equivalente.
+> **Actualizado 2026-11-19 (FIL-04):** `msvc-ventas.json` suma la carpeta `Fila virtual` con los 5 endpoints (`POST/GET /eventos/{idEvento}/fila/ingreso|posicion|estado|validacion|habilitacion` en el contrato interno; el gateway los expone como `/api/eventos/{id}/fila/**`), los schemas `Fila*`, el schema de error `ApiError` con `code`/`extras` y los 8 códigos `FILA_*` en `x-error-codes`. `GET .../fila/estado` es público (sin `security`); los otros cuatro usan `bearerAuth`. `POST /reservas` documenta el campo opcional `tokenFila`. `openapi-bundle.json` regenerado (ventas: 28 ops / 26 paths / 30 schemas). Los paths internos usan `{idEvento}` porque ese es el nombre de la variable en `@RequestMapping`; la documentación de gateway/endpoints usa `{id}` como marcador equivalente.
+>
+> **Actualizado 2026-11-20 (completitud):** `msvc-eventos.json` suma `GET /lugares/geocodificar` y el schema `Coordenadas`; `msvc-ventas.json` suma `GET /compras/evento/{idEvento}`. `openapi-bundle.json` regenerado (eventos: 28 ops / 18 paths / 20 schemas; ventas: 28 ops / 26 paths / 30 schemas).
+>
+> **Actualizado 2026-11-20 (notificaciones):** se incorpora `msvc-notificaciones.json` al `openapi-bundle.json`. El detalle y el marcar leída documentan **404** cuando la notificación no existe o es de otro usuario (el msvc no revela su existencia; antes figuraba 403); `ApiError` refleja timestamp/status/error/message/path.
+>
+> **Actualizado 2026-11-21 (notificaciones + springdoc):** `msvc-notificaciones` suma `springdoc-openapi-starter-webmvc-ui 3.2.0`, `OpenApiConfig` y anotaciones Swagger en el controller/DTOs. Ahora expone `/v3/api-docs` y `/swagger-ui/index.html` como los otros cinco servicios; el JSON estático puede regenerarse con el comando de la sección siguiente. El `GlobalExceptionHandler` devuelve `ApiError` uniforme (timestamp/status/error/message/path), incluidos los errores de validación.
+>
+> **Actualizado 2026-11-21 (alineación runtime/estático):** `msvc-notificaciones.json` se regeneró desde `/v3/api-docs`. Quedan alineados los tags (`Bandeja`, `Administración`, `Salud`), los `operationId` (`listarPropias`, `detallePropio`, `marcarLeida`, `crearAdministrativa`, `estadoEnvio`, `ok`, `okRaiz`), los headers `X-User-Id`/`X-User-Role` como obligatorios, las respuestas `401` de las rutas administrativas y los media types (`application/json`; `text/plain` en los smoke). La nullability usa sintaxis OpenAPI 3.1 (`type: [..., "null"]`).
+>
+> **Actualizado 2026-11-20 (fila virtual):** `msvc-ventas.json` documenta el **404** de `POST /eventos/{id}/fila/ingreso` (evento inexistente) y el campo `reingreso` en `FilaPosicion`; las respuestas 400/401/409 de `POST /reservas` usan el schema `ApiError` real. `openapi-bundle.json` regenerado.
 
 ## Regeneración (tras cambios en anotaciones)
 
@@ -46,6 +57,7 @@ curl -s http://localhost:8082/v3/api-docs -o docs/openapi/msvc-eventos.json     
 curl -s http://localhost:8083/v3/api-docs -o docs/openapi/msvc-ventas.json      # puerto 8083
 curl -s http://localhost:8084/v3/api-docs -o docs/openapi/msvc-entradas.json    # puerto 8084
 curl -s http://localhost:8085/v3/api-docs -o docs/openapi/msvc-preferencias.json # puerto 8085
+curl -s http://localhost:8086/v3/api-docs -o docs/openapi/msvc-notificaciones.json # puerto 8086
 
 # 3. Reconstruir el bundle consolidado
 python3 - <<'PY'
@@ -56,7 +68,7 @@ for f in sorted(glob.glob(d+'/msvc-*.json')):
     name=os.path.basename(f).replace('.json','')
     specs[name]=json.load(open(f))
 bundle={
-    "generatedAt":"2026-11-19",
+    "generatedAt":"2026-11-21",
     "generator":"springdoc-openapi-starter-webmvc-ui 3.2.0",
     "openapi":"3.1.0",
     "microservices":{k:{"paths":len(v.get('paths',{})),"operations":sum(len(p) for p in v.get('paths',{}).values()),"schemas":len(v.get('components',{}).get('schemas',{}))} for k,v in specs.items()},
@@ -78,6 +90,7 @@ Cada microservicio sirve su propia UI (no hay agregación en el gateway):
 | ventas (8083) | `http://localhost:8083/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
 | entradas (8084) | `http://localhost:8084/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
 | preferencias (8085) | `http://localhost:8085/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
+| notificaciones (8086) | `http://localhost:8086/swagger-ui/index.html` | `/v3/api-docs.yaml` | `/v3/api-docs` |
 
 Comandos rápidos:
 
@@ -87,6 +100,7 @@ curl -s -o /dev/null -w 'eventos   -> %{http_code}\n' http://localhost:8082/swag
 curl -s -o /dev/null -w 'ventas    -> %{http_code}\n' http://localhost:8083/swagger-ui/index.html
 curl -s -o /dev/null -w 'entradas  -> %{http_code}\n' http://localhost:8084/swagger-ui/index.html
 curl -s -o /dev/null -w 'preferencias -> %{http_code}\n' http://localhost:8085/swagger-ui/index.html
+curl -s -o /dev/null -w 'notificaciones -> %{http_code}\n' http://localhost:8086/swagger-ui/index.html
 ```
 
 Todos deben devolver **200**.

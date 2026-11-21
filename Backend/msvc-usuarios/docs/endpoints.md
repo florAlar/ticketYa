@@ -2,6 +2,7 @@
 
 Copia de referencia para este microservicio.
 **Fuente canónica (no borrar):** `Backend/specs/endpoints.md`
+**Contexto del servicio:** [`README.md`](README.md) — alcance, agregados, modelo, eventos y operación.
 
 Paths públicos vía gateway: prefijo `/api` (ej. `/api/auth/login`). Abajo paths **internos** del msvc (sin `/api`; el GW hace StripPrefix=1).
 

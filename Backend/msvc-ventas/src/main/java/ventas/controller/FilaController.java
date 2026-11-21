@@ -47,6 +47,7 @@ public class FilaController {
                     content = @Content(schema = @Schema(implementation = FilaIngresoResponseDTO.class))),
             @ApiResponse(responseCode = "200", description = "Reingreso con la misma posición"),
             @ApiResponse(responseCode = "401", description = "Falta X-User-Id"),
+            @ApiResponse(responseCode = "404", description = "Evento inexistente"),
             @ApiResponse(responseCode = "409", description = "FILA_EVENTO_NO_ELEGIBLE o FILA_TURNO_USADO"),
             @ApiResponse(responseCode = "503", description = "FILA_NO_DISPONIBLE")
     })

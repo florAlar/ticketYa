@@ -115,7 +115,7 @@ public class VentaController {
             description = """
                     Crea/asegura el stock por sector al publicar. Idempotente por (idEvento, idSector):
                     si el cupo ya existe no resetea vendido/reservado.
-                    Uso principal: Feign desde msvc-eventos; vía gateway requiere ORGANIZADOR o ADMIN.
+                    Uso principal: Feign desde msvc-eventos; vía gateway requiere ADMIN.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -142,7 +142,7 @@ public class VentaController {
             summary = "Liberar cupo por devolución",
             description = """
                     Devuelve unidades al disponible del sector (devolución aprobada).
-                    Uso principal: Feign desde msvc-entradas; vía gateway requiere ORGANIZADOR o ADMIN.
+                    Uso principal: Feign desde msvc-entradas; vía gateway requiere ADMIN.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -177,7 +177,10 @@ public class VentaController {
                     content = @Content(schema = @Schema(implementation = java.util.Map.class))),
             @ApiResponse(responseCode = "401", description = "Falta X-User-Id",
                     content = @Content(schema = @Schema(implementation = java.util.Map.class))),
-            @ApiResponse(responseCode = "409", description = "Cupo insuficiente o límite por cliente superado",
+            @ApiResponse(responseCode = "409", description = "Cupo insuficiente, límite por cliente o token "
+                    + "de fila inválido/requerido",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "503", description = "FILA_NO_DISPONIBLE: Redis caído en evento de alta demanda",
                     content = @Content(schema = @Schema(implementation = java.util.Map.class)))
     })
     @PostMapping("/reservas")

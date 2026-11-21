@@ -62,12 +62,13 @@ public class EntradaController {
         return "microservicio entradas ok!";
     }
 
-    /** Emisión post-compra (ventas Feign o cliente autenticado dueño). */
+    /** Emisión post-compra (Feign de ventas; el gateway restringe la ruta a ADMIN). */
     @Operation(
             summary = "Emitir entradas",
             description = """
                     Crea entradas con código QR a partir de una compra.
-                    Llamado por msvc-ventas (Feign) o por el cliente autenticado dueño de la compra.
+                    Llamado por msvc-ventas (Feign). Vía gateway la ruta está restringida a ADMIN;
+                    un CLIENTE dueño no puede invocarla por el gateway.
                     Estado de entrada: VENDIDA.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
@@ -91,7 +92,7 @@ public class EntradaController {
             @RequestHeader(value = "X-User-Role", required = false) String role,
             @Valid @RequestBody EmitirEntradasRequestDTO body) {
         if (userId != null && !userId.isBlank() && !userId.equals(body.idCliente()) && !isStaff(role)) {
-            throw new UnauthorizedException("No puede emitir entradas para otro cliente");
+            throw new ForbiddenException("No puede emitir entradas para otro cliente");
         }
         List<EntradaResponseDTO> created = entradaService.emitir(body);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -441,7 +442,7 @@ public class EntradaController {
 
     private static void requireAdmin(String role) {
         if (!isAdmin(role)) {
-            throw new UnauthorizedException("Se requiere rol ADMIN");
+            throw new ForbiddenException("Se requiere rol ADMIN");
         }
     }
 

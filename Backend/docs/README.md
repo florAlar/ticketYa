@@ -18,7 +18,7 @@ Backend/specs/
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
 | Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
-| Colección Postman | listo | [`postman/`](./postman/) (183 requests, 0 fallos, incluye asientos, control de acceso, reportes y lugares) |
+| Colección Postman | listo | [`postman/`](./postman/) (216 requests en 15 carpetas; última corrida completa verificada 193/0 sin las carpetas 13 y 14, e incluye asientos, control de acceso, reportes, lugares y preferencias; las carpetas 13 y 14 aún no tienen corrida Newman) |
 | Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
 | Trazabilidad y bitácora (correlation id, log por servicio) | listo | [`observabilidad.md`](./observabilidad.md) |
 | README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
@@ -33,6 +33,21 @@ Backend/specs/
 | Enrutado, rutas públicas y matriz RBAC del Gateway (`E2-SEC-02`) | listo | [`api/gateway.md`](./api/gateway.md) |
 | OpenAPI `msvc-notificaciones` (`API-04`) | listo | [`openapi/msvc-notificaciones.json`](./openapi/msvc-notificaciones.json) |
 | Verificación de notificaciones | listo | [`testing/notificaciones.md`](./testing/notificaciones.md) |
+| Contexto por microservicio (`DOC-MS-00`) | parcial | [ver tabla](#contexto-por-microservicio) — plantilla: [`../specs/plantilla-docs-msvc.md`](../specs/plantilla-docs-msvc.md) |
+
+## Contexto por microservicio
+
+Documento de contexto de cada servicio (alcance, agregados, modelo local, eventos, criterios y
+operación). La plantilla común es [`DOC-MS-00`](../specs/plantilla-docs-msvc.md).
+
+| Microservicio | Contexto | Endpoints | OpenAPI |
+| --- | --- | --- | --- |
+| `msvc-usuarios` | [`README.md`](../msvc-usuarios/docs/README.md) | [`endpoints.md`](../msvc-usuarios/docs/endpoints.md) | [`msvc-usuarios.json`](./openapi/msvc-usuarios.json) |
+| `msvc-eventos` | [`README.md`](../msvc-eventos/docs/README.md) | [`endpoints.md`](../msvc-eventos/docs/endpoints.md) | [`msvc-eventos.json`](./openapi/msvc-eventos.json) |
+| `msvc-ventas` | [`README.md`](../msvc-ventas/docs/README.md) | [`endpoints.md`](../msvc-ventas/docs/endpoints.md) | [`msvc-ventas.json`](./openapi/msvc-ventas.json) |
+| `msvc-entradas` | [`README.md`](../msvc-entradas/docs/README.md) | [`endpoints.md`](../msvc-entradas/docs/endpoints.md) | [`msvc-entradas.json`](./openapi/msvc-entradas.json) |
+| `msvc-preferencias` | [`README.md`](../msvc-preferencias/docs/README.md) | [`endpoints.md`](../msvc-preferencias/docs/endpoints.md) | [`msvc-preferencias.json`](./openapi/msvc-preferencias.json) |
+| `msvc-notificaciones` | [`README.md`](../msvc-notificaciones/docs/README.md) | [`endpoints.md`](../msvc-notificaciones/docs/endpoints.md) | [`msvc-notificaciones.json`](./openapi/msvc-notificaciones.json) |
 
 ## Regla de oro
 

@@ -40,8 +40,8 @@ El flujo de acceso a un evento de alta demanda es **REST síncrono** y no introd
 ## Async (broker)
 
 Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Exchange compartido: `eventos.exchange`
-(topic, durable=true, autoDelete=false), declarado por `msvc-eventos`, `msvc-ventas` y
-`msvc-notificaciones` con los mismos atributos.
+(topic, durable=true, autoDelete=false), declarado por `msvc-eventos`, `msvc-ventas`,
+`msvc-entradas`, `msvc-preferencias` y `msvc-notificaciones` con los mismos atributos.
 
 ### Colas consumidoras de msvc-notificaciones
 
@@ -50,6 +50,12 @@ Broker: **RabbitMQ** (servicio `rabbitmq`, panel en `:15672`). Exchange comparti
 | `notificaciones.eventos` | `evento.#` | `evento.cancelado`, `evento.suspendido`, `evento.modificado`, `evento.publicado` | `notificaciones.eventos.dlq` |
 | `notificaciones.compras` | `compra.#` | `compra.confirmada` | `notificaciones.compras.dlq` |
 | `notificaciones.devoluciones` | `devolucion.#` | `devolucion.aprobada` | `notificaciones.devoluciones.dlq` |
+
+### Cola consumidora de msvc-preferencias
+
+| Cola | Binding | Routing keys | DLQ |
+|---|---|---|---|
+| `preferencias.compras` | `compra.confirmada` | `compra.confirmada` | `preferencias.compras.dlq` (DLX `preferencias.dlx`) |
 
 Semántica **at-least-once**; `messageId` identifica la ocurrencia y sirve para deduplicar
 reentregas. La deduplicación es por (`idUsuario`, `clave_idempotencia`), donde la clave es

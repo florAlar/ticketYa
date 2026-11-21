@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 /**
  * Reintegro por cancelación (E1-ENT-05). Best-effort desde patch estado CANCELADO.
- * El endpoint de entradas exige rol ADMIN; servicio→servicio manda header interno.
+ * El endpoint de entradas exige rol ADMIN; la llamada servicio→servicio envía
+ * {@code X-User-Role: ADMIN} (no usa {@code X-Internal-Token}).
  */
 @FeignClient(name = "msvc-entradas", url = "${ticketya.uri.entradas:http://localhost:8084}")
 public interface EntradasClient {

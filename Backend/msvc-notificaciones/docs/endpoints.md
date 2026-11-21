@@ -2,6 +2,7 @@
 
 Copia de referencia para este microservicio.
 **Fuente canónica (no borrar):** `Backend/specs/endpoints.md`
+**Contexto del servicio:** [`README.md`](README.md) — alcance, agregados, modelo, eventos y operación.
 
 Paths públicos vía gateway: prefijo `/api`. Abajo se listan como en el global.
 
@@ -18,6 +19,10 @@ Servicio: msvc-notificaciones | Prefijo: /notificaciones | disparos de negocio v
 - `POST /notificaciones` — Crear notificación administrativa (ADMIN). Queda `PENDIENTE`.
 - `GET /notificaciones/{id}/estado` — Estado de envío (ADMIN).
 
+Errores: payload uniforme `ApiError` (`timestamp`, `status`, `error`, `message`, `path`), incluidos
+los errores de validación del body (`400`). El detalle y el marcado de lectura devuelven `404`
+cuando la notificación no existe o es de otro usuario; las rutas administrativas exigen `ADMIN`.
+
 Identidad: `X-User-Id` (obligatorio en `/me`); el gateway lo deriva del JWT y no confía en el header
 del cliente. Las preferencias de canal viven en `msvc-preferencias` (`/preferencias/me/notificaciones`).
 
@@ -33,6 +38,11 @@ del cliente. Las preferencias de canal viven en `msvc-preferencias` (`/preferenc
 | `devolucion.aprobada` | `DevolucionAprobada` | cliente dueño de la entrada devuelta (PUSH + EMAIL) |
 
 Contrato completo en `Backend/specs/comunicacion.md`.
+
+### OpenAPI / Swagger
+
+- Swagger UI: `http://localhost:8086/swagger-ui/index.html`
+- JSON: `http://localhost:8086/v3/api-docs` (también en `Backend/docs/openapi/msvc-notificaciones.json`)
 
 ### Entrega
 

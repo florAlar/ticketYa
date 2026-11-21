@@ -4,7 +4,7 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 205 requests en 14 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 216 requests en 15 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados, `internalToken`) |
 
 **Actualizado 2026-11-16:** se agregó la carpeta `12 Preferencias, historial y recomendaciones`
@@ -23,12 +23,16 @@ confirmación antes de publicar; desde la API la regla se comprueba en el detall
 Además, suspender/cancelar pausa la fila y publicar/republicar la reanuda mediante
 `POST /internas/fila/{idEvento}/invalidacion` (llamada Feign de eventos a ventas, no expuesta por
 el gateway ni incluida como request de esta colección).
+**Actualizado 2026-11-21 (E2-NOT):** se agregó la carpeta `14 Notificaciones` (11 requests:
+alta administrativa, bandeja propia, detalle, marcado de lectura, filtro `leida=false`, estado
+de envío y RBAC). Es autónoma: crea su propia notificación para el usuario demo y captura
+`notificacionId`. **[NV]** falta la corrida Newman de esta carpeta.
 
-**Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (sin la carpeta 13).
+**Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (sin las carpetas 13 y 14).
 
 ## Requisitos
 
-- Stack levantado desde `Backend/`: `docker compose up -d` (gateway 8080, msvc 8081–8084 y sus bases).
+- Stack levantado desde `Backend/`: `docker compose up -d` (gateway 8080, msvc 8081–8086 y sus bases).
 - Datos seed cargados (los `init.sql` de `infrastructure/` corren solo sobre volúmenes vacíos).
 - Verificación rápida: `curl http://localhost:8080/` debe responder `api gateway ok!`.
 
@@ -38,7 +42,7 @@ el gateway ni incluida como request de esta colección).
 
 1. Importar los dos archivos `.json`.
 2. Elegir el environment **TicketYa local**.
-3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 13**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones). La carpeta 12 usa `{{userId}}` y `{{eventoSeedId}}`; la 13 usa `{{eventoFilaId}}` y `{{hastaPosicionFila}}`.
+3. Ejecutar la colección con el Runner **en orden, carpetas 00 → 14**. Las carpetas dependen de los IDs que capturan las anteriores (evento, reserva, compra, entradas, devoluciones). La carpeta 12 usa `{{userId}}` y `{{eventoSeedId}}`; la 13 usa `{{eventoFilaId}}` y `{{hastaPosicionFila}}`; la 14 es autónoma y usa `{{userId}}` para crear su propia notificación.
 
 ### Por consola (sin instalar nada)
 
@@ -90,10 +94,11 @@ identidad sale siempre del token verificado.
 | 11 Reportes del organizador | 9 | reporte completo, ventas, sectores, ocupación y recaudación como organizador dueño y ADMIN (con las identidades aritméticas: vigentes y neta), 403 para cliente y personal de acceso, 401 sin token y 404 |
 | 12 Preferencias, historial y recomendaciones | 7 | preferencias propias, actualización, artistas favoritos, historial del cliente, recomendaciones propias (JWT), eventos similares (público) y backfill interno con `X-Internal-Token` |
 | 13 Fila virtual | 5 | ingreso y posición del turno (CLIENTE), override de tanda (ADMIN, B2 del plan de carga), validación con token de 10 min y estado general público; captura `tokenFila` para enviarlo como `tokenFila` en `POST /reservas` |
+| 14 Notificaciones | 11 | alta administrativa (ADMIN), bandeja propia (CLIENTE), detalle, marcar leída, filtro `leida=false`, estado de envío (ADMIN), 404 de notificación ajena, 400 de validación, 401 sin token y 403 para CLIENTE; captura `notificacionId` |
 
 ## Flujo de negocio que recorre
 
-publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotency-Key` obligatoria) → pagar → entradas emitidas → QR → devolución → aprobación/rechazo.
+publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotency-Key` obligatoria) → pagar → entradas emitidas → QR → devolución → aprobación/rechazo. La carpeta 14 agrega el circuito de notificaciones (alta → bandeja → lectura → estado).
 
 ## Variables
 
@@ -101,6 +106,7 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 - **Capturadas por scripts:** `reservaId`, `compraId`, `pagoId`, `entradaId`, `entrada2Id`, `devolucionId`, entre otras. Se llenan solas al correr la colección en orden.
 - **`idempotencyKey`:** se genera una nueva en cada request que la necesita.
 - **Fila virtual:** `eventoFilaId` (evento `PUBLICADO` con `esAltaDemanda=true`, **[NV]** se configura a mano), `hastaPosicionFila` (default `100`, override ADMIN) y las capturadas `posicionFila`, `estadoFila` y `tokenFila`.
+- **Notificaciones:** `notificacionId` la captura la carpeta 14 al crear el aviso; no requiere configuración previa.
 
 ## Brechas conocidas de E1 (documentadas, no ocultas)
 
@@ -114,6 +120,10 @@ Se puede correr varias veces sin reiniciar los datos: registra un **cliente nuev
 ## Carpeta 10 — control de acceso QR (E2-ACC-01)
 
 Autónoma y repetible: registra un **cliente nuevo por corrida**, compra una entrada en el Campo del evento seed y la escanea como `PERSONAL_ACCESO`. Verifica `POST /eventos/{id}/validaciones` (200 `VALIDA`; 409 con `resultado` = `YA_USADA` / `OTRO_EVENTO`; 404 y 400), que la entrada del cliente queda `USADA` y sin QR, y que `GET /eventos/{id}/validaciones` (ADMIN u ORGANIZADOR dueño) lista los tres intentos. Cliente y organizador no pueden validar (403).
+
+## Carpeta 14 — notificaciones (E2-NOT)
+
+Autónoma y repetible: un ADMIN crea una notificación para el usuario demo (`{{userId}}`), se recorre la bandeja propia como CLIENTE, se marca leída y se verifican el filtro `leida=false`, el estado de envío como ADMIN y los rechazos esperados (404 ajena, 400 sin asunto, 401 sin token y 403 para CLIENTE). Al crear se captura `{{notificacionId}}`, que usan el resto de los requests. No depende de las carpetas anteriores.
 
 ## Reiniciar los datos
 

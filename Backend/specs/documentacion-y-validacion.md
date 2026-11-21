@@ -766,7 +766,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 
 ### 11.5 Aceptación
 
-- Importar colección + environment en Postman y correr carpetas 00→08 contra el stack local
+- Importar colección + environment en Postman y correr carpetas 00→14 contra el stack local
   (`docker compose up -d`): **todas verdes**, incluidos los negativos.
 - Cada request declara su rol esperado y el status.
 - `README.md` explica el orden (publicar evento → abrir cupos → reservar → comprar → pagar →
