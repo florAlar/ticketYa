@@ -141,6 +141,10 @@ mv corrida.jtl corrida-B25.jtl && mv report report-B25
 # repetir con 50 y 100
 ```
 
+> **Rangos del pool:** `generar-usuarios.sh` crea `carga<base>..carga<base+N-1>`. Elegir un `base`
+> que no se solape con corridas anteriores: si un usuario ya consumió su turno, el ingreso responde
+> `409 FILA_TURNO_USADO`.
+
 Parámetros sugeridos para B: `-JpollMax=60 -JpollInterval=1000` (poll cada 1 s, hasta 60 s) para
 absorber el tiempo de la tanda sin marcar falsos errores.
 
