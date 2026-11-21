@@ -4,6 +4,7 @@ Microservicio dueño de: preferencias del cliente, historial de compras y recome
 Base: MongoDB (`preferencias_clientes`, `interacciones_eventos`).
 
 **Fuente canónica (no borrar):** `Backend/specs/endpoints.md`.
+**Contexto del servicio:** [`README.md`](README.md) — alcance, agregados, modelo, eventos y operación.
 Paths públicos vía gateway: prefijo `/api`.
 
 ---
