@@ -36,7 +36,8 @@ public class FilaServiceImpl implements FilaService {
                 "posicion=" + ingreso.posicion() + " creado=" + ingreso.creado());
         return new IngresoResultado(
                 new FilaIngresoResponseDTO(idEvento, ingreso.posicion(), tanda,
-                        delante(ingreso.posicion(), tanda), estadoTurno(ingreso.posicion(), tanda, false, false)),
+                        delante(ingreso.posicion(), tanda), estadoTurno(ingreso.posicion(), tanda, false, false),
+                        !ingreso.creado()),
                 ingreso.creado());
     }
 

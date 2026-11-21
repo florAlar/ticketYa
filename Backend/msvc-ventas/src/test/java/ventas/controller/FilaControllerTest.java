@@ -40,28 +40,32 @@ class FilaControllerTest {
                 .build();
     }
 
-    private static FilaIngresoResponseDTO respuesta() {
-        return new FilaIngresoResponseDTO(EVENTO, 57, 50, 7, "EN_ESPERA");
+    private static FilaIngresoResponseDTO respuesta(boolean reingreso) {
+        return new FilaIngresoResponseDTO(EVENTO, 57, 50, 7, "EN_ESPERA", reingreso);
     }
 
     @Test
     void ingresoPrimeraVez_201() throws Exception {
-        when(service.ingresar(EVENTO, USER)).thenReturn(new FilaService.IngresoResultado(respuesta(), true));
+        when(service.ingresar(EVENTO, USER))
+                .thenReturn(new FilaService.IngresoResultado(respuesta(false), true));
 
         mvc.perform(post("/eventos/{id}/fila/ingreso", EVENTO).header("X-User-Id", USER))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.posicion").value(57))
                 .andExpect(jsonPath("$.delante").value(7))
-                .andExpect(jsonPath("$.estado").value("EN_ESPERA"));
+                .andExpect(jsonPath("$.estado").value("EN_ESPERA"))
+                .andExpect(jsonPath("$.reingreso").value(false));
     }
 
     @Test
     void reingreso_200() throws Exception {
-        when(service.ingresar(EVENTO, USER)).thenReturn(new FilaService.IngresoResultado(respuesta(), false));
+        when(service.ingresar(EVENTO, USER))
+                .thenReturn(new FilaService.IngresoResultado(respuesta(true), false));
 
         mvc.perform(post("/eventos/{id}/fila/ingreso", EVENTO).header("X-User-Id", USER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.posicion").value(57));
+                .andExpect(jsonPath("$.posicion").value(57))
+                .andExpect(jsonPath("$.reingreso").value(true));
     }
 
     @Test

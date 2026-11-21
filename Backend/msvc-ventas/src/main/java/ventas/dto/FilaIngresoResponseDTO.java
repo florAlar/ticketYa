@@ -10,5 +10,7 @@ public record FilaIngresoResponseDTO(
         @Schema(description = "Última posición habilitada por la tanda") long posicionHabilitadaHasta,
         @Schema(description = "Posiciones que faltan habilitar para este turno") long delante,
         @Schema(description = "EN_ESPERA | HABILITADO | CON_TOKEN | TURNO_USADO",
-                allowableValues = {"EN_ESPERA", "HABILITADO", "CON_TOKEN", "TURNO_USADO"}) String estado) {
+                allowableValues = {"EN_ESPERA", "HABILITADO", "CON_TOKEN", "TURNO_USADO"}) String estado,
+        @Schema(description = "true si el cliente ya estaba en la fila y conserva su posición")
+        boolean reingreso) {
 }

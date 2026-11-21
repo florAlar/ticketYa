@@ -89,7 +89,7 @@ jmeter -n -t Backend/docs/testing/carga/compra-con-fila.jmx \
   -e -o Backend/docs/testing/carga/report-fila-admin
 ```
 
-Sin el hilo ADMIN en B2 la validación se traba: los clientes agotan `pollMax` y el plan lo cuenta como error. **[NV]** Forma de inyectar `TICKETYA_FILA_AUTO_*` en el contenedor de ventas del compose.
+Sin el hilo ADMIN en B2 la validación se traba: los clientes agotan `pollMax` y el plan lo cuenta como error. Las variables `TICKETYA_FILA_AUTO_*` se pasan al contenedor desde `msvc-ventas/docker-compose.yml` (valores por defecto o definidos en `.env`/shell).
 
 | Métrica | B1 (tanda automática) | B2 (override ADMIN) |
 |---|---|---|

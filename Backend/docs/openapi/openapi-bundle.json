@@ -6733,7 +6733,7 @@
                 "content": {
                   "*/*": {
                     "schema": {
-                      "type": "string"
+                      "$ref": "#/components/schemas/ApiError"
                     }
                   }
                 }
@@ -6743,7 +6743,7 @@
                 "content": {
                   "*/*": {
                     "schema": {
-                      "type": "string"
+                      "$ref": "#/components/schemas/ApiError"
                     }
                   }
                 }
@@ -6753,7 +6753,7 @@
                 "content": {
                   "*/*": {
                     "schema": {
-                      "type": "string"
+                      "$ref": "#/components/schemas/ApiError"
                     }
                   }
                 },
@@ -8075,7 +8075,8 @@
                       "posicion": 57,
                       "posicionHabilitadaHasta": 50,
                       "delante": 7,
-                      "estado": "EN_ESPERA"
+                      "estado": "EN_ESPERA",
+                      "reingreso": false
                     }
                   }
                 }
@@ -8092,7 +8093,8 @@
                       "posicion": 57,
                       "posicionHabilitadaHasta": 50,
                       "delante": 7,
-                      "estado": "EN_ESPERA"
+                      "estado": "EN_ESPERA",
+                      "reingreso": true
                     }
                   }
                 }
@@ -8152,6 +8154,21 @@
                 "x-error-codes": [
                   "FILA_NO_DISPONIBLE"
                 ]
+              },
+              "404": {
+                "description": "Evento inexistente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/ApiError"
+                    },
+                    "example": {
+                      "status": 404,
+                      "error": "Not Found",
+                      "message": "Evento no encontrado: d0000000-0000-4000-8000-000000000001"
+                    }
+                  }
+                }
               }
             },
             "security": [
@@ -9432,7 +9449,7 @@
           },
           "FilaPosicion": {
             "type": "object",
-            "description": "Posición del cliente en la fila virtual",
+            "description": "Posición del cliente en la fila virtual (incluye si fue reingreso)",
             "properties": {
               "idEvento": {
                 "type": "string",
@@ -9467,6 +9484,11 @@
                   "TURNO_USADO"
                 ],
                 "example": "EN_ESPERA"
+              },
+              "reingreso": {
+                "type": "boolean",
+                "description": "true si el cliente ya estaba en la fila y conserva su posición",
+                "example": false
               }
             },
             "required": [
@@ -9474,7 +9496,8 @@
               "posicion",
               "posicionHabilitadaHasta",
               "delante",
-              "estado"
+              "estado",
+              "reingreso"
             ]
           },
           "FilaPosicionDetalle": {

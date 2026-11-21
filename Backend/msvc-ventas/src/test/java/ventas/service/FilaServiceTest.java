@@ -51,6 +51,7 @@ class FilaServiceTest {
         FilaService.IngresoResultado r = service.ingresar(EVENTO, USER);
 
         assertTrue(r.creado());
+        assertFalse(r.respuesta().reingreso());
         assertEquals(57, r.respuesta().posicion());
         assertEquals(50, r.respuesta().posicionHabilitadaHasta());
         assertEquals(7, r.respuesta().delante());
@@ -65,6 +66,7 @@ class FilaServiceTest {
         FilaService.IngresoResultado r = service.ingresar(EVENTO, USER);
 
         assertFalse(r.creado());
+        assertTrue(r.respuesta().reingreso());
         assertEquals(57, r.respuesta().posicion());
     }
 
