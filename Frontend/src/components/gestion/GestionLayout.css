@@ -26,7 +26,7 @@ body:has(.gestion-shell) .site-footer { display: none; }
 .gestion-shell__brand {
   margin: 0 0 0 0.6rem;
   font-size: 0.7rem;
-  font-weight: 800;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--colors-primary);
@@ -39,7 +39,7 @@ body:has(.gestion-shell) .site-footer { display: none; }
   padding: 0.6rem 0.75rem;
   border-radius: 10px;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   color: var(--colors-textSecondary);
   text-decoration: none;
   transition: background 0.15s, color 0.15s;
@@ -50,9 +50,10 @@ body:has(.gestion-shell) .site-footer { display: none; }
   color: var(--colors-text);
   background: color-mix(in srgb, var(--colors-primary) 14%, transparent);
   box-shadow: inset 3px 0 0 var(--colors-primary);
+  border-radius: 0 10px 10px 0; /* el lado de la franja queda recto */
 }
 .gestion-shell__link.active svg { color: var(--colors-primary); }
-.gestion-shell__link--ghost { font-weight: 500; font-size: 0.85rem; }
+.gestion-shell__link--ghost { font-weight: var(--typography-weight-medium); font-size: 0.85rem; }
 .gestion-shell__foot { margin-top: auto; display: flex; flex-direction: column; gap: 0.75rem; }
 .gestion-shell__user {
   margin: 0;
@@ -79,7 +80,7 @@ body:has(.gestion-shell) .site-footer { display: none; }
 }
 .gestion-shell__crumbs a { color: var(--colors-textMuted); text-decoration: none; }
 .gestion-shell__crumbs a:hover { color: var(--colors-text); text-decoration: underline; }
-.gestion-shell__crumbs strong { color: var(--colors-text); font-weight: 600; }
+.gestion-shell__crumbs strong { color: var(--colors-text); font-weight: var(--typography-weight-semibold); }
 .gestion-shell__content { padding: 0.75rem var(--page-gutter, 30px) 3rem; }
 
 /* Las páginas ya no llevan su propio marco: sin padding propio, sin migas ni "volver" repetidos */

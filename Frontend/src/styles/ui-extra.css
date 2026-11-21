@@ -77,11 +77,11 @@
   height: 1.6rem;
   border-radius: 50%;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   background: var(--colors-surfaceAlt);
   color: var(--colors-textSecondary);
 }
-.steps__item--current { color: var(--colors-text); font-weight: 600; }
+.steps__item--current { color: var(--colors-text); font-weight: var(--typography-weight-semibold); }
 .steps__item--current .steps__dot {
   background: var(--colors-primary);
   color: var(--on-brand);
@@ -115,7 +115,7 @@
   padding: 0.6rem 0.8rem;
   border-radius: 10px;
   font-size: 0.8rem;
-  font-weight: 400;
+  font-weight: var(--typography-weight-regular);
   line-height: 1.4;
   text-align: left;
   color: #fff;
@@ -148,7 +148,7 @@
   color: var(--tone-brand);
   background: var(--grad-brand-soft);
 }
-.empty-state__title { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.empty-state__title { margin: 0; font-size: 1.1rem; font-weight: var(--typography-weight-bold); }
 .empty-state__desc {
   margin: 0 0 0.4rem;
   max-width: 28rem;

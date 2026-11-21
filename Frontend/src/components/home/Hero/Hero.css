@@ -277,20 +277,6 @@
 .hero-t__scroll:hover { background: rgba(255, 255, 255, 0.2); }
 @keyframes hero-t-bob { 50% { transform: translateY(6px); } }
 
-/* ---- Telón de apertura ---- */
-.hero-t__telon { position: absolute; inset: 0; z-index: 5; display: flex; pointer-events: none; }
-.hero-t__telon span {
-  flex: 1;
-  background:
-    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.28) 0 2px, transparent 2px 46px),
-    var(--brand-dark);
-  box-shadow: inset 0 -80px 120px rgba(0, 0, 0, 0.45);
-}
-.hero-t__telon-l { transform-origin: left; animation: hero-t-telon-l 1.5s 0.7s cubic-bezier(0.7, 0, 0.2, 1) forwards; }
-.hero-t__telon-r { transform-origin: right; animation: hero-t-telon-r 1.5s 0.7s cubic-bezier(0.7, 0, 0.2, 1) forwards; }
-@keyframes hero-t-telon-l { to { transform: translateX(-102%) scaleX(0.7); } }
-@keyframes hero-t-telon-r { to { transform: translateX(102%) scaleX(0.7); } }
-
 /* ---- Cinta de shows ---- */
 .hero-marquee {
   overflow: hidden;

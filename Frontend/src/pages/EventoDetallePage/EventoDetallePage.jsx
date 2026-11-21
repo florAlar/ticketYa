@@ -12,7 +12,13 @@ import { formatPrecioDesde } from '../../components/home/events/eventFormat'
 import EventCover from '../../components/ui/EventCover'
 import InfoTip from '../../components/ui/InfoTip'
 import Badge from '../../components/ui/Badge'
-import { HiOutlineBan, HiOutlineFire, HiOutlineLightningBolt } from 'react-icons/hi'
+import {
+  HiOutlineBan,
+  HiOutlineCalendar,
+  HiOutlineFire,
+  HiOutlineLightningBolt,
+} from 'react-icons/hi'
+import { descargarEventoIcs } from '../../lib/ics'
 import EventoCupoBadge from '../../components/home/events/EventoCupoBadge'
 import EventosSimilares from '../../components/preferencias/EventosSimilares'
 import { sectorTieneLayout } from '../../domain/asiento'
@@ -120,36 +126,70 @@ const EventoDetallePage = () => {
   }
 
   return (
-    <section className="evento-detalle-page container section-v-padding">
-      <p className="evento-detalle-page__back">
-        <Link to="/eventos">← Volver al listado</Link>
-      </p>
-
-      {status === 'loading' && <LoadingState label="Cargando evento…" />}
-      {status === 'error' && <ErrorState error={error} onRetry={reload} />}
+    <section className="evento-detalle-page">
+      {status === 'loading' && (
+        <div className="container section-v-padding">
+          <LoadingState label="Cargando evento…" />
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="container section-v-padding">
+          <p className="evento-detalle-page__back">
+            <Link to="/eventos">← Volver al listado</Link>
+          </p>
+          <ErrorState error={error} onRetry={reload} />
+        </div>
+      )}
 
       {status === 'success' && evento && (
         <>
-          <div className="evento-detalle-page__media">
-            <EventCover evento={evento} alt={evento.nombre} position="center 30%" />
-            <EventoCupoBadge evento={evento} className="evento-detalle-page__cupo" />
-            {evento.esAltaDemanda && (
-              <Badge
-                hot
-                icon={HiOutlineLightningBolt}
-                className="evento-detalle-page__hot"
-              >
-                Alta demanda
-              </Badge>
-            )}
-            <header className="evento-detalle-page__head">
-              <p className="evento-detalle-page__meta">
-                {EVENTO_TIPO_LABELS[evento.tipo] || evento.tipo}
-                {evento.estado ? ` · ${evento.estado}` : ''}
-              </p>
-              <h1>{evento.nombre}</h1>
+          <header className="evento-hero">
+            <div className="evento-hero__bg" aria-hidden>
+              <EventCover evento={evento} alt="" position="center 30%" />
+            </div>
+            <div className="evento-hero__shade" aria-hidden />
+
+            <Link to="/eventos" className="evento-hero__back">
+              ← Volver al listado
+            </Link>
+            <div className="evento-hero__badges">
+              <EventoCupoBadge evento={evento} />
+              {evento.esAltaDemanda && (
+                <Badge hot icon={HiOutlineLightningBolt}>
+                  Alta demanda
+                </Badge>
+              )}
+            </div>
+
+            <div className="evento-hero__content">
+              <div className="evento-hero__fila">
+                <div className="evento-hero__titulo">
+                  <p className="evento-hero__kicker">
+                    {EVENTO_TIPO_LABELS[evento.tipo] || evento.tipo}
+                    {evento.estado ? ` · ${evento.estado}` : ''}
+                  </p>
+                  <h1 className="evento-hero__title">{evento.nombre}</h1>
+                  {formatParticipantesLine(evento.participantes) && (
+                    <p className="evento-hero__artistas">
+                      {formatParticipantesLine(evento.participantes)}
+                    </p>
+                  )}
+                </div>
+                <div className="evento-hero__acciones">
+                  <button
+                    type="button"
+                    className="btn evento-hero__ghost"
+                    onClick={() => descargarEventoIcs(evento)}
+                  >
+                    <HiOutlineCalendar aria-hidden /> Agregar al calendario
+                  </button>
+                  <a className="btn btn-primary" href="#entradas">
+                    Elegí tu entrada
+                  </a>
+                </div>
+              </div>
               {evento.cupo && !evento.cupo.agotado && evento.cupo.nivelCupoLabel && (
-                <p className="evento-detalle-page__cupo-line">
+                <p className="evento-hero__aviso">
                   {evento.cupo.nivelCupoLabel}
                   {evento.cupo.disponibleTotal != null
                     ? ` · ${evento.cupo.disponibleTotal} libres`
@@ -157,29 +197,29 @@ const EventoDetallePage = () => {
                 </p>
               )}
               {eventoAgotado && (
-                <p className="evento-detalle-page__cupo-line evento-detalle-page__cupo-line--agotado">
+                <p className="evento-hero__aviso evento-hero__aviso--agotado">
                   Agotado — no hay cupo comercial disponible.
                 </p>
               )}
               {suspendido && (
-                <p className="evento-detalle-page__cupo-line evento-detalle-page__cupo-line--suspend">
+                <p className="evento-hero__aviso">
                   Evento suspendido — la venta de entradas nuevas está pausada.
                   Quienes ya compraron conservan su entrada.
                 </p>
               )}
-              {formatParticipantesLine(evento.participantes) && (
-                <p className="evento-detalle-page__artistas">
-                  {formatParticipantesLine(evento.participantes)}
-                </p>
-              )}
-              {evento.descripcion && (
-                <p className="evento-detalle-page__desc">{evento.descripcion}</p>
-              )}
-            </header>
-          </div>
+            </div>
+          </header>
 
-          <EventoCuandoDonde evento={evento} />
+          <div className="evento-detalle-page__body container">
+            <div className="evento-body">
+              <div className="evento-body__main">
+                {evento.descripcion && (
+                  <p className="evento-detalle-page__desc">{evento.descripcion}</p>
+                )}
+                <EventoCuandoDonde evento={evento} />
+              </div>
 
+              <aside className="evento-body__side">
           <section className="evento-entradas" id="entradas">
             <header className="evento-entradas__head">
               <h2>Elegí tu entrada</h2>
@@ -289,7 +329,11 @@ const EventoDetallePage = () => {
             )}
           </section>
 
+              </aside>
+            </div>
+
           <EventosSimilares key={eventoId} eventoId={eventoId} />
+          </div>
         </>
       )}
     </section>

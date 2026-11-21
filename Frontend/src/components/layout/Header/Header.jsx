@@ -29,8 +29,9 @@ const Header = () => {
       <div className="header-inner">
         <Logo onClick={closeMenu} />
 
+        <SearchBar />
+
         <div className="header-right">
-          <SearchBar />
           <DesktopNav />
           <HeaderActions />
           <HamburgerButton toggle={toggleMenu} />

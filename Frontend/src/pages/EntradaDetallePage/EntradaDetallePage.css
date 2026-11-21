@@ -80,7 +80,7 @@
 .ticket__eyebrow {
   margin: 0;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--brand-tint);
@@ -89,7 +89,7 @@
   margin: 0.2rem 0 0;
   font-family: var(--fonts-title);
   font-size: clamp(1.5rem, 3vw, 2.25rem);
-  font-weight: 800;
+  font-weight: var(--typography-weight-bold);
   line-height: 1.1;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
@@ -107,19 +107,19 @@
   gap: 0.3rem;
   margin-bottom: 0.2rem;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--colors-textMuted);
 }
-.ticket__grid dd { margin: 0; font-size: 1rem; font-weight: 600; }
+.ticket__grid dd { margin: 0; font-size: 1rem; font-weight: var(--typography-weight-semibold); }
 .ticket__mono { font-family: var(--fonts-mono); letter-spacing: 0.04em; }
 
 /* Línea de corte con muescas */
 .ticket__tear {
   position: relative;
   width: 0;
-  border-left: 2px dashed var(--card-border);
+  border-left: 2px dashed var(--colors-border);
   margin: 1.1rem 0;
 }
 .ticket__tear::before,
@@ -155,7 +155,7 @@
   line-height: 0;
 }
 .ticket__qr svg { display: block; max-width: 100%; height: auto; }
-.ticket__hint { margin: 0; font-size: 0.85rem; font-weight: 600; color: var(--colors-textSecondary); }
+.ticket__hint { margin: 0; font-size: 0.85rem; font-weight: var(--typography-weight-semibold); color: var(--colors-textSecondary); }
 .ticket__code {
   margin: 0;
   max-width: 100%;
@@ -176,7 +176,7 @@
     height: 0;
     margin: 0 1.1rem;
     border-left: 0;
-    border-top: 2px dashed var(--card-border);
+    border-top: 2px dashed var(--colors-border);
   }
   .ticket__tear::before,
   .ticket__tear::after { top: -1.1rem; bottom: auto; }

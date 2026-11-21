@@ -5,7 +5,7 @@
 .mis-entradas-page__title {
   margin: 0 0 0.35rem;
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
 }
 
 .mis-entradas-page__sub {
@@ -37,7 +37,7 @@
   padding: 0.2rem 0.5rem;
   border-radius: 6px;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   background: color-mix(in srgb, var(--colors-primary) 15%, transparent);
   color: var(--tone-brand);
 }
@@ -61,20 +61,12 @@
 }
 
 .mis-entradas-page__mono {
-  font-family: ui-monospace, monospace;
+  font-family: var(--fonts-body);
   font-size: 0.85em;
   word-break: break-all;
 }
 
-.mis-entradas-card--cancelada {
-  border-color: color-mix(in srgb, #b45309 35%, var(--colors-border, #ddd));
-  background: color-mix(in srgb, #b45309 6%, var(--colors-surface, #f7f7fa));
-}
-
-.mis-entradas-card--suspendida {
-  border-color: color-mix(in srgb, var(--brand-amber) 35%, var(--colors-border, #ddd));
-  background: color-mix(in srgb, var(--brand-amber) 6%, var(--colors-surface, #f7f7fa));
-}
+.mis-entradas-card--cancelada .mis-entradas-card__body h2 { color: #b45309; }
 
 .mis-entradas-card__actions {
   display: flex;
@@ -84,9 +76,7 @@
 }
 
 .mis-entradas-empty {
-  padding: 1.25rem;
-  border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
+  padding: 1.25rem 0;
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
@@ -108,11 +98,10 @@
   gap: 0.85rem;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.15rem;
-  border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-  background: var(--colors-surface, #f7f7fa);
+  padding: 1rem 0;
+  border-bottom: 1px solid transparent;
 }
+.mis-entradas-card:last-child { border-bottom: 0; }
 
 .mis-entradas-card__body h2 {
   margin: 0 0 0.2rem;
@@ -186,7 +175,7 @@
   border-radius: 12px;
   border: 1px dashed var(--colors-border, #ccc);
   text-align: center;
-  font-family: var(--fonts-mono, ui-monospace, monospace);
+  font-family: var(--fonts-mono);
   word-break: break-all;
 }
 
@@ -198,7 +187,7 @@
 
 .entrada-qr-box__code {
   margin: 0;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
 }
 
 /* ===== Card de entrada (listado) ===== */
@@ -243,11 +232,11 @@
   gap: 0.55rem;
   padding: 1rem 1.25rem;
   min-width: 11rem;
-  border-left: 2px dashed var(--card-border);
+  border-left: 2px dashed var(--colors-border);
   text-align: center;
 }
 .entrada-card__stub .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; }
-.entrada-card__price { font-weight: 800; font-size: 1.05rem; }
+.entrada-card__price { font-weight: var(--typography-weight-bold); font-size: 1.05rem; }
 .entrada-card__link {
   border: 0;
   background: none;
@@ -267,5 +256,5 @@
 @media (max-width: 680px) {
   .entrada-card { grid-template-columns: 1fr; }
   .entrada-card__cover { min-height: 8rem; }
-  .entrada-card__stub { border-left: 0; border-top: 2px dashed var(--card-border); flex-direction: row; justify-content: space-between; align-items: center; }
+  .entrada-card__stub { border-left: 0; border-top: 2px dashed var(--colors-border); flex-direction: row; justify-content: space-between; align-items: center; }
 }

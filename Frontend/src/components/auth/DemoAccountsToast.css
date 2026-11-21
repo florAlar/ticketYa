@@ -10,8 +10,7 @@
   color: #1a1a1a;
   border: 1px solid rgba(0, 0, 0, 0.12);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
-    sans-serif;
+  font-family: var(--fonts-body);
   font-size: 0.875rem;
   line-height: 1.4;
   pointer-events: auto;
@@ -33,7 +32,7 @@
   background: transparent;
   color: #111;
   font: inherit;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   font-size: 0.9rem;
   text-align: left;
   cursor: pointer;
@@ -82,7 +81,7 @@
   margin: 0;
   padding: 0.35rem 0.85rem 0;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: var(--typography-weight-medium);
   color: #666;
 }
 
@@ -106,13 +105,13 @@
 
 .demo-toast__role {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   color: #444;
 }
 
 .demo-toast__creds {
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: var(--typography-weight-medium);
   color: #111;
   word-break: break-word;
 }
@@ -120,7 +119,7 @@
 .demo-toast__sep {
   margin: 0 0.35rem;
   color: #888;
-  font-weight: 400;
+  font-weight: var(--typography-weight-regular);
 }
 
 @media (max-width: 480px) {

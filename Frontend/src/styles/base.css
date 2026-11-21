@@ -28,8 +28,8 @@
   --colors-headerText: #F2F2F2;
   --colors-headerBorder: rgba(255, 255, 255, 0.10);
   --fonts-body: Inter, system-ui, sans-serif;
-  --fonts-title: Oxanium, Inter, sans-serif;
-  --fonts-mono: "Share Tech Mono", monospace;
+  --fonts-title: Inter, system-ui, sans-serif;
+  --fonts-mono: Inter, system-ui, sans-serif;
   --typography-baseSize: 16px;
   --typography-lineHeight-normal: 1.5;
   --navbar-height: 88px;
@@ -103,7 +103,7 @@ h6 {
 .text-display {
   font-family: var(--fonts-title);
   font-size: clamp(3rem, 10vw, 6rem);
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   transform: scaleY(1.1);
   text-transform: uppercase;
   /* font-size: var(--typography-h1); */

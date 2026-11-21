@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineTicket } from 'react-icons/hi'
+import { HiOutlineCalendar, HiOutlineLocationMarker } from 'react-icons/hi'
 import { USE_MOCK } from '../../api/config'
 import { MAX_ASIENTOS_POR_COMPRA, codigoAsiento } from '../../domain/asiento'
 import SeatPicker from '../../components/seats/SeatPicker'
@@ -97,9 +97,9 @@ export default function CheckoutTicket({ checkout, isAuthenticated }) {
           />
         ) : (
           <div className="checkout-single">
-            <HiOutlineTicket aria-hidden />
+            <p className="checkout-single__kicker">Tu entrada</p>
             <h2>{sector.nombre}</h2>
-            <p>Una entrada por compra.</p>
+            <p className="checkout-single__detalle">Una entrada por compra</p>
             {!USE_MOCK && !dispError && cupoSector && (
               <p className="checkout-page__muted">
                 Quedan {cupoSector.cantidadDisponible} de {cupoSector.capacidadTotal}

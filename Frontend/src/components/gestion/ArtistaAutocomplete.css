@@ -80,7 +80,7 @@
 }
 
 .artista-ac__option--create {
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   color: var(--primary);
   border-top: 1px solid var(--border-color, #e5e7eb);
 }
