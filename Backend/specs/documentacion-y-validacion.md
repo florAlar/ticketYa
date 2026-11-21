@@ -70,7 +70,8 @@ más el gateway documentado como capa de ruteo/RBAC, más 6 endpoints smoke `GET
 - Diagramas de secuencia (compra OK / pago rechazado / reserva vencida): **hechos** en
   `specs/diagramas/diagramas-secuencia.md`.
 - Pruebas de integración entre microservicios, seguridad y carga (consigna E2 §F): seguridad **hecha**
-  (E2-TST-02); integración **parcial** (E2-TST-01) y carga **parcial** (E2-TST-03: humo OK, falta 25/50/100).
+  (E2-TST-02); integración **hecha** (E2-TST-01: ITs de borde y E2E F1–F5) y carga **parcial**
+  (E2-TST-03: humo OK, falta 25/50/100).
 - Newman / CI: sigue fuera de alcance.
 
 ---

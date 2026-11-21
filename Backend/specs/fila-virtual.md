@@ -755,7 +755,7 @@ git diff --check && git status --short
 | 3 | `FIL-01` | store, service, controller, Feign, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, controller, gateway | `endpoints.md` (3 filas), docs de ventas, `backlog.md:221` (en curso) |
 | 4 | `FIL-02` | `habilitar`, scheduler, RBAC | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
 | 5 | `FIL-03` | `validar`, consumir y restaurar, gate | `FilaServiceTest`, `VentaServiceImplTest`, IT, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia |
-| 6 | `TST-CARGA-01/B` | — | planes JMeter con fila (+ ADMIN en B2) y verificaciones SQL/Redis; sin corrida | `docs/testing/carga*`, `backlog.md:242` (parcial: sin métricas reales) |
+| 6 | `TST-CARGA-01/B` | — | planes JMeter con fila (+ ADMIN en B2) y verificaciones SQL/Redis; humo 5 usuarios OK, falta 25/50/100 | `docs/testing/carga*` (parcial: humo sin métricas formales) |
 | 7 | `FIL-04` | — | checklist final: 0 resultados en el grep de "no implementada"; suites Maven OK | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
 
 ## 19. No verificado y supuestos

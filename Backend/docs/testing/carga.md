@@ -1,7 +1,9 @@
 # Prueba de carga — flujo de compra (E2-TST-03)
 
-**Estado: PLAN VERSIONADO, SIN CORRIDA EJECUTADA (2026-11-19).**  
-Los planes JMeter y el andamiaje de verificación están listos, pero **no se ejecutaron**: en este entorno no hay Docker ni JMeter disponibles. No hay métricas reales; los campos de resultados quedan explícitamente vacíos y no deben interpretarse como medidas. Ver la sección `Pendiente de ejecución`.
+**Estado: PLAN VERSIONADO; CORRIDA DE HUMO EJECUTADA (2026-11-20).**
+Los planes JMeter y el andamiaje de verificación están listos. Se ejecutó una corrida de **humo con
+5 usuarios y 0 % de error** (JMeter 5.6.3). **Falta la corrida formal 25/50/100**: las tablas de
+resultados siguen vacías y no deben interpretarse como medidas. Ver `Pendiente de ejecución`.
 
 Diseño: `Backend/specs/fila-virtual.md` §15. Antes de cada corrida: `cd Backend && docker compose down -v && docker compose up -d --build` (**`down -v` borra los datos de todas las bases**).
 
@@ -128,4 +130,6 @@ Comprobaciones:
 
 ## Conclusión
 
-**Pendiente.** No hay datos de ejecución.Una vez corridos A y B, completar comparación de overhead, integridad y el estado de `backlog.md:242`.
+**Parcial.** Hay una corrida de humo (5 usuarios, 0 % de error) que valida el andamiaje; falta la
+corrida formal 25/50/100 para completar las tablas, la verificación de integridad y la comparación
+de overhead entre A y B.

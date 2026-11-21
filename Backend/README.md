@@ -159,6 +159,7 @@ Los de `scripts/` se ejecutan desde `Backend/`:
 | Script | Qué hace |
 | --- | --- |
 | `scripts/status.sh` | Estado de contenedores. Flags: `--http` (smoke HTTP), `--watch [seg]` (refresco) |
+| `scripts/e2e.sh` | Escenarios E2E F1–F5 contra el stack completo (build, bases `healthy`, gateway + servicios, verify y limpieza). `--keep` deja el entorno |
 | `scripts/up-e2e.sh` | Levanta lo mínimo para probar eventos → RabbitMQ → notificaciones (`--down` para bajar) |
 | `scripts/test-rabbitmq.sh` | Prueba aislada de `ms-eventos` + `ms-notificaciones` |
 | `scripts/backfill-preferencias.sh` | Importa compras aprobadas de ventas al historial (idempotente) |
@@ -281,10 +282,20 @@ Dentro del módulo correspondiente:
 ```bash
 mvn test                              # unitarios
 mvn test -Dtest=ClaseTest             # una clase puntual
-mvn -Pit verify                       # solo ventas/entradas/preferencias (requiere Docker)
+mvn -Pit verify                       # ITs de borde con Testcontainers (requiere Docker)
 ```
 
-El perfil `it` está definido solo en `msvc-ventas`, `msvc-entradas` y `msvc-preferencias`; en el resto de los módulos, `mvn test` ejecuta los tests disponibles. Los IT levantan MySQL/Redis reales vía Testcontainers.
+El perfil `it` está definido en los **6 microservicios**: `mvn -Pit verify` ejecuta las ITs (`*IT.java`) contra MySQL/Mongo/Redis/Rabbit reales con Testcontainers; `mvn test` corre solo los unitarios sin Docker.
+
+Escenarios E2E (gateway + 6 microservicios + bases reales, sin levantar contextos Spring):
+
+```bash
+cd Backend
+./scripts/e2e.sh              # F1–F5: limpia volúmenes, levanta el stack, verifica y limpia
+./scripts/e2e.sh --keep       # deja el stack levantado para inspeccionar
+```
+
+Guía y resultados: [`docs/testing/integracion-msvc.md`](docs/testing/integracion-msvc.md).
 
 > No ejecutes varios `mvn` en paralelo sobre el mismo `~/.m2`.
 

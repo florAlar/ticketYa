@@ -197,7 +197,15 @@ mvn test -Dtest=ClaseTest             # una clase puntual
 mvn -Pit verify                       # integración con Testcontainers (requiere Docker)
 ```
 
-El perfil `it` está definido en los **6 microservicios**: `mvn -Pit verify` ejecuta las ITs (`*IT.java`) contra MySQL real con Testcontainers, y `mvn test` corre solo los unitarios sin Docker. **No corras varios Maven en paralelo** sobre el mismo `~/.m2`.
+El perfil `it` está definido en los **6 microservicios**: `mvn -Pit verify` ejecuta las ITs (`*IT.java`) contra MySQL/Mongo/Redis/Rabbit reales con Testcontainers, y `mvn test` corre solo los unitarios sin Docker. **No corras varios Maven en paralelo** sobre el mismo `~/.m2`.
+
+Escenarios E2E (F1–F5) contra el stack completo, hablando solo con el gateway:
+
+```bash
+cd Backend
+./scripts/e2e.sh              # limpia volúmenes, levanta, corre -Pe2e verify y limpia
+./scripts/e2e.sh --keep       # deja el stack levantado para inspeccionar
+```
 
 Frontend:
 
@@ -207,7 +215,7 @@ npm run lint
 npm run build
 ```
 
-Guías: [`Backend/docs/testing/`](Backend/docs/testing/) (concurrencia, notificaciones y pruebas de carga con JMeter).
+Guías: [`Backend/docs/testing/`](Backend/docs/testing/) (concurrencia, notificaciones, integración entre microservicios y pruebas de carga con JMeter).
 
 ## Documentación
 
