@@ -119,12 +119,12 @@ Query: tipo | organizador | participante | ciudad | fechaDesde | fechaHasta | pr
 - api/reservas
 - api/compras
 - api/pagos
-- api/reports
+- api/reportes
 - api/entradas
 - api/devoluciones
 - api/preferencias
 - api/recomendaciones
-- api/clients
+- api/clientes
 - api/notificaciones
 
 ### Enrutamiento:  gateway → servicio (implementado)

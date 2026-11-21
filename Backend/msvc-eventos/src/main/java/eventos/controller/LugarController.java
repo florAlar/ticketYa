@@ -97,7 +97,7 @@ public class LugarController {
 
     @Operation(
             summary = "Crear lugar",
-            description = "Alta de lugar. Requiere ORGANIZADOR o ADMIN.",
+            description = "Alta de lugar. Solo ADMIN.",
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Lugar creado",
