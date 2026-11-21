@@ -33,6 +33,7 @@ Backend/specs/
 | Enrutado, rutas públicas y matriz RBAC del Gateway (`E2-SEC-02`) | listo | [`api/gateway.md`](./api/gateway.md) |
 | OpenAPI `msvc-notificaciones` (`API-04`) | listo | [`openapi/msvc-notificaciones.json`](./openapi/msvc-notificaciones.json) |
 | Verificación de notificaciones | listo | [`testing/notificaciones.md`](./testing/notificaciones.md) |
+| Integración entre microservicios (`E2-TST-01`) | hecho | [`testing/integracion-msvc.md`](./testing/integracion-msvc.md) — Niveles 1 y 2 implementados; corrida limpia 2026-11-21: E2E 5/5 e ITs 37 OK |
 | Contexto por microservicio (`DOC-MS-00`) | parcial | [ver tabla](#contexto-por-microservicio) — plantilla: [`../specs/plantilla-docs-msvc.md`](../specs/plantilla-docs-msvc.md) |
 
 ## Contexto por microservicio

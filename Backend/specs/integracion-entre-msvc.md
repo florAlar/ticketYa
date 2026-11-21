@@ -1,8 +1,8 @@
 # E2-TST-01 — Integración entre microservicios
 
-> **Estado:** `parcial` — Nivel 1 implementado; falta el Nivel 2 (E2E con compose) · **Fecha:**
-> 2026-11-21 · **Alcance:** flujos que cruzan dos o más microservicios (Feign + RabbitMQ + gateway)
-> · **No incluye:** carga (E2-TST-03) ni autorización por endpoint (E2-TST-02).
+> **Estado:** `hecho` — Niveles 1 y 2 implementados y verificados con Docker el 2026-11-21 ·
+> **Fecha:** 2026-11-21 · **Alcance:** flujos que cruzan dos o más microservicios (Feign + RabbitMQ +
+> gateway) · **No incluye:** carga (E2-TST-03) ni autorización por endpoint (E2-TST-02).
 
 ## 1. Objetivo
 
@@ -105,8 +105,23 @@ porque da diagnósticos más precisos y no depende de todo el stack.
   en rollback, contra RabbitMQ real.
 - `DevolucionAprobadaPublisherIT` (2 tests): misma semántica para `devolucion.aprobada`.
 - Los tres corren con `mvn -Pit verify` y `@Testcontainers(disabledWithoutDocker = true)`.
-- Pendiente de ejecución en este entorno por falta de permisos de Docker; compilan y quedan
-  listos para la corrida local/CI.
+- Corrida real 2026-11-21 con Docker: notificaciones **6 OK**, ventas **22 OK**, entradas **4 OK**
+  y preferencias **5 OK** (incluye los ITs de concurrencia de cada módulo).
+
+### Implementación actual del Nivel 2 (2026-11-21)
+
+- Módulo [`Backend/e2e-tests`](../e2e-tests/pom.xml): JUnit 5 + REST Assured + Awaitility.
+  Habla solo con el gateway; no levanta contextos Spring.
+- `E2EBase`: login por rol, alta de cliente aislado, creación/publicación de eventos, flujo
+  reserva → compra → pago, esperas de emisión/historial/notificaciones, MailHog y disponibilidad.
+- Escenarios: `CompraConfirmadaE2E` (F1), `DevolucionAprobadaE2E` (F2),
+  `EventoNotificacionesE2E` (F3), `EventoPublicadoE2E` (F4) y `ReporteOrganizadorE2E` (F5).
+- [`scripts/e2e.sh`](../scripts/e2e.sh): `down -v` → `compose build` → levanta bases e
+  infraestructura y espera `healthy` → levanta gateway + 6 msvc → healthchecks HTTP →
+  `mvn -f e2e-tests/pom.xml -Pe2e verify` → `down -v` (trap). Soporta `--keep` y `-Dit.test=`.
+- Documentación de corrida: [`docs/testing/integracion-msvc.md`](../docs/testing/integracion-msvc.md).
+- Corrida real 2026-11-21 sobre volúmenes limpios: **5 tests, 0 fallos, 0 errores, 0 omitidos**
+  (`BUILD SUCCESS`).
 
 ## 5. Escenarios E2E
 
@@ -212,14 +227,14 @@ porque da diagnósticos más precisos y no depende de todo el stack.
   orden de ejecución.
 - Limpiar colas/MailHog entre escenarios o usar ids de correlación para filtrar.
 
-## 7. Estructura propuesta
+## 7. Estructura implementada
 
 ```text
 Backend/
 ├── e2e-tests/
 │   ├── pom.xml
 │   └── src/test/java/e2e/
-│       ├── E2EBase.java          # REST Assured, login, espera de health, helpers
+│       ├── E2EBase.java          # REST Assured, login, alta de datos, esperas, MailHog
 │       ├── CompraConfirmadaE2E.java
 │       ├── DevolucionAprobadaE2E.java
 │       ├── EventoNotificacionesE2E.java
@@ -229,23 +244,29 @@ Backend/
 ```
 
 - El módulo no depende de los `pom.xml` de los servicios; solo de JUnit, REST Assured, Awaitility,
-  Jackson y Testcontainers (si se usa `ComposeContainer`).
-- El `pom.xml` declara el perfil `e2e` y Failsafe con `**/*E2E.java`.
-- `E2EBase` centraliza: `baseUrl`, login por rol, headers, espera de condiciones y limpieza.
+  Jackson y SLF4J.
+- El `pom.xml` declara el perfil `e2e` y Failsafe con `**/*E2E.java`; sin perfil, `mvn test` no los
+  ejecuta.
+- `E2EBase` centraliza: `baseUrl`, login por rol, alta de cliente/evento, flujo de compra, esperas
+  de efectos asincrónicos, MailHog y disponibilidad.
 
 ## 8. Criterios de aceptación
 
-- [x] **Nivel 1:** ITs de borde con Testcontainers implementados (`NotificacionMensajesConsumeIT`,
-  `CompraConfirmadaPublisherIT`, `DevolucionAprobadaPublisherIT`); falta la corrida real con Docker.
-- [ ] F1–F5 pasan contra un stack limpio (`down -v` + `up -d --build`).
-- [ ] Los tests no usan mocks de los servicios que participan en el flujo.
-- [ ] Los mensajes Rabbit se verifican por su efecto observable (DB, inbox, MailHog), no solo por el log.
-- [ ] La reentrega del mismo `messageId`/`compraId`/`devolucionId` no duplica datos.
-- [ ] Cada escenario es independiente y repetible.
+- [x] **Nivel 1:** ITs de borde con Testcontainers implementados y ejecutados
+  (`NotificacionMensajesConsumeIT`, `CompraConfirmadaPublisherIT`, `DevolucionAprobadaPublisherIT`,
+  `CompraConfirmadaIngestIT`): 37 tests OK en total.
+- [x] **Nivel 2:** módulo `e2e-tests`, escenarios F1–F5 y `scripts/e2e.sh` implementados y
+  ejecutados contra un stack limpio.
+- [x] F1–F5 pasan contra un stack limpio (`down -v` + `up -d`): 5/5.
+- [x] Los tests no usan mocks de los servicios que participan en el flujo.
+- [x] Los mensajes Rabbit se verifican por su efecto observable (DB, inbox, MailHog), no solo por el log.
+- [x] La reentrega del mismo `messageId`/`compraId`/`devolucionId` no duplica datos (ITs de idempotencia).
+- [x] Cada escenario es independiente y repetible.
 - [ ] El fallo de una dependencia se refleja en el status esperado (`503`) y no deja datos parciales.
-- [ ] El script deja el entorno limpio al terminar (incluso si falla).
-- [ ] `mvn test` sigue sin Docker; `mvn -Pe2e verify` (o `scripts/e2e.sh`) es el único que levanta el stack.
-- [ ] Se documenta la corrida en `docs/testing/integracion-msvc.md` con fecha, comandos y resultados.
+  (Fuera de alcance de esta iteración: cubierto por unitarios/ITs del reporte; ver §4.)
+- [x] El script deja el entorno limpio al terminar (incluso si falla).
+- [x] `mvn test` sigue sin Docker; `mvn -Pe2e verify` (o `scripts/e2e.sh`) es el único que levanta el stack.
+- [x] Se documenta la corrida en `docs/testing/integracion-msvc.md` con fecha, comandos y resultados.
 
 ## 9. Evidencia
 
