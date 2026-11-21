@@ -194,9 +194,14 @@ namespace msvc_notificaciones {
         +VARCHAR canal
         +VARCHAR asunto
         +TEXT contenido
+        +VARCHAR destinatario
         +DATETIME fecha_creacion
         +DATETIME fecha_envio
         +VARCHAR estado
+        +BOOL leida
+        +DATETIME fecha_lectura
+        +VARCHAR clave_idempotencia
+        +VARCHAR clave_mensaje
     }
     class intento_envio {
         +CHAR36 id_intento PK
