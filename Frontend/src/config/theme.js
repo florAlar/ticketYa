@@ -40,9 +40,9 @@ const themes = {
 
         fonts: {
 
-            title: "Oxanium",
+            title: "Inter",
             body: "Inter",
-            mono: "Share Tech Mono"
+            mono: "Inter"
 
         },
 
@@ -222,9 +222,9 @@ const themes = {
 
         fonts: {
 
-            title: "Oxanium",
+            title: "Inter",
             body: "Inter",
-            mono: "Share Tech Mono"
+            mono: "Inter"
 
         },
 

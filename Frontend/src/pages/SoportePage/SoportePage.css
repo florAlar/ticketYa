@@ -37,7 +37,7 @@
 .soporte-card {
   padding: 1.25rem;
   border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
+  border: 1px solid transparent;
   background: var(--colors-surface, #f7f7fa);
   display: flex;
   flex-direction: column;
@@ -74,7 +74,7 @@
   color: var(--on-brand);
   text-decoration: none;
   font-size: 0.9rem;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
 }
 
 .soporte-card__cta:hover {

@@ -11,19 +11,6 @@ import { HERO_BANDAS } from './heroBands'
 import './Hero.css'
 
 const SLIDE_MS = 6500
-const TELON_KEY = 'ticketya_telon'
-
-/** El telón se abre una sola vez por sesión (y nunca con "reducir movimiento"). */
-function debeAbrirTelon() {
-  try {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return false
-    if (sessionStorage.getItem(TELON_KEY)) return false
-    sessionStorage.setItem(TELON_KEY, '1')
-    return true
-  } catch {
-    return false
-  }
-}
 
 /** Fecha corta es-AR: "15 de marzo"; con año solo si no es el año en curso ("15 de marzo de 2027"). */
 function fechaCorta(iso) {
@@ -47,19 +34,12 @@ function tintaSobre(hex) {
  */
 const Hero = ({ slides = HERO_BANDAS }) => {
   const [index, setIndex] = useState(0)
-  const [telon, setTelon] = useState(debeAbrirTelon)
 
   useEffect(() => {
     if (slides.length <= 1) return undefined
     const id = setInterval(() => setIndex((i) => (i + 1) % slides.length), SLIDE_MS)
     return () => clearInterval(id)
   }, [slides.length])
-
-  useEffect(() => {
-    if (!telon) return undefined
-    const id = setTimeout(() => setTelon(false), 2600)
-    return () => clearTimeout(id)
-  }, [telon])
 
   const { data: eventos } = useAsync(
     async (signal) => {
@@ -154,12 +134,6 @@ const Hero = ({ slides = HERO_BANDAS }) => {
           </a>
         </div>
 
-        {telon && (
-          <div className="hero-t__telon" aria-hidden>
-            <span className="hero-t__telon-l" />
-            <span className="hero-t__telon-r" />
-          </div>
-        )}
       </section>
 
       {lista.length > 0 && (

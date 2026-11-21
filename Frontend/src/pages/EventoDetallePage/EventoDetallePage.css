@@ -1,210 +1,134 @@
-.evento-detalle-page {
-  padding-top: 2.25rem;
-  padding-bottom: 2.5rem;
-}
-
-.evento-detalle-page__back {
-  margin: 0 0 1rem;
-  font-size: 0.9rem;
-}
-
-.evento-detalle-page__error {
-  color: var(--tone-danger);
-}
-
-.evento-detalle-page__media {
-  margin-bottom: 1.5rem;
-  border-radius: var(--radius-lg, 20px);
-  overflow: hidden;
-  min-height: clamp(280px, 38vh, 400px);
-  background: var(--colors-surfaceAlt, #eee);
-  box-shadow: var(--shadow-card);
-  position: relative;
-}
-
-.evento-detalle-page__media::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--grad-cover-overlay);
-  pointer-events: none;
-}
-
-.evento-detalle-page__cupo {
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  z-index: 2;
-}
-
-.evento-detalle-page__cupo-line {
-  margin: 0.35rem 0 0.5rem;
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: var(--tone-warning);
-}
-
-.evento-detalle-page__cupo-line--agotado {
-  color: var(--tone-danger);
-}
-
-.evento-detalle-page__cupo-line--suspend {
-  color: var(--tone-warning);
-}
-
-.evento-ticket-card--agotado {
-  opacity: 0.85;
-  border-color: color-mix(in srgb, #b91c1c 35%, var(--colors-border, #ddd));
-}
-
-.evento-detalle-page__media .event-cover {
-  position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.evento-detalle-page__head h1 {
-  margin: 0.25rem 0 0.5rem;
-  font-size: clamp(1.4rem, 3vw, 1.85rem);
-}
-
-.evento-detalle-page__meta {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--colors-textMuted, #7b7b7b);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.evento-detalle-page__desc {
-  margin: 0.75rem 0 0;
-  line-height: 1.5;
-  color: var(--text-muted, #4b5563);
-}
-
-.evento-detalle-page__artistas {
-  margin: 0.45rem 0 0;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
+/* =========================================================
+   DETALLE DE EVENTO — hero a ancho completo (como la home) + cuerpo sin cajas.
+   Solo llevan caja las tarjetas de entrada (selección de sector).
+========================================================= */
+.evento-detalle-page { font-size: 0.9rem; }
+.evento-detalle-page__back { margin: 0 0 1rem; font-size: 0.82rem; }
+.evento-detalle-page__body { padding-top: 2rem; padding-bottom: 2.5rem; }
 
 .evento-detalle-page__muted {
   margin: 0.25rem 0 0;
   color: var(--colors-textMuted, #7b7b7b);
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+}
+.evento-detalle-page__desc {
+  max-width: 52rem;
+  margin: 0 0 1.75rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--colors-textSecondary);
 }
 
-.evento-detalle-page__tickets {
-  margin-top: 1.75rem;
+/* ---- Hero: el texto va siempre en blanco, apoyado en la imagen ---- */
+.evento-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  min-height: clamp(420px, 62vh, 620px);
+  padding: 5rem var(--page-gutter, 30px) 2.25rem;
+  overflow: hidden;
+  color: #fff;
+  background: #08050f;
+}
+.evento-hero__bg { position: absolute; inset: 0; z-index: -2; }
+.evento-hero__bg .event-cover { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.evento-hero__shade {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(10, 6, 22, 0.55) 0%, rgba(10, 6, 22, 0.15) 30%, rgba(10, 6, 22, 0.92) 100%),
+    linear-gradient(90deg, rgba(10, 6, 22, 0.55) 0%, rgba(10, 6, 22, 0) 65%);
 }
 
-.evento-detalle-page__tickets h2 {
-  margin: 0 0 0.85rem;
-  font-size: 1.15rem;
+.evento-hero__back {
+  position: absolute;
+  top: 1.25rem;
+  left: var(--page-gutter, 30px);
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+}
+.evento-hero__back:hover { color: #fff; text-decoration: underline; }
+.evento-hero__badges {
+  position: absolute;
+  top: 1.1rem;
+  right: var(--page-gutter, 30px);
+  display: flex;
+  gap: 0.5rem;
 }
 
-.evento-ticket-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.evento-hero__content {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: 0.55rem;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+  animation: evento-hero-rise 0.8s var(--ease-out) both;
 }
+@keyframes evento-hero-rise { from { opacity: 0; transform: translateY(14px); } }
 
-.evento-ticket-card {
+/* Título a la izquierda; acciones en la misma línea, a la derecha */
+.evento-hero__fila {
+  width: 100%;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.15rem;
-  border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-  background: var(--colors-surface, #f7f7fa);
+  gap: 1.25rem 2rem;
 }
+.evento-hero__titulo { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; max-width: 54rem; }
 
-.evento-ticket-card h3 {
+.evento-hero__kicker {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.72rem;
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-tint);
 }
-
-.evento-ticket-card__price {
-  margin: 0.35rem 0 0;
-  font-weight: 700;
-  color: var(--colors-primary);
-  font-size: 1.05rem;
-}
-
-/* Recomendaciones: eventos similares */
-.evento-similares {
-  margin-top: 2.25rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-}
-
-.evento-similares .event-section__head {
-  margin-bottom: 0.9rem;
-}
-
-/* Badge de cupo inline dentro del título del sector */
-.evento-cupo-badge--inline {
-  margin-left: 0.5rem;
-  vertical-align: middle;
-}
-
-.evento-detalle-page__hot {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
-  z-index: 2;
-}
-
-.evento-ticket-card:not(.evento-ticket-card--agotado):hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-card-hover);
-}
-
-/* ---- Título y datos del evento dentro de la imagen ---- */
-.evento-detalle-page__media { display: flex; align-items: flex-end; }
-.evento-detalle-page__media::after {
-  background: linear-gradient(180deg, rgba(12, 7, 24, 0.15) 0%, rgba(12, 7, 24, 0.35) 40%, rgba(12, 7, 24, 0.9) 100%);
-}
-.evento-detalle-page__head {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  padding: 3.5rem 1.5rem 1.25rem;
-  color: #fff;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
-}
-.evento-detalle-page__head h1 {
-  margin: 0.2rem 0 0.4rem;
-  font-size: clamp(1.5rem, 3.4vw, 2.2rem);
-  line-height: 1.1;
+.evento-hero__title {
+  margin: 0;
+  font-size: clamp(2rem, 5.5vw, 3.8rem);
+  font-weight: var(--typography-weight-bold);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
   color: #fff;
 }
-.evento-detalle-page__head p { margin: 0.2rem 0 0; font-size: 0.95rem; color: rgba(255, 255, 255, 0.9); }
-.evento-detalle-page__head .evento-detalle-page__meta { font-size: 0.78rem; font-weight: 700; color: var(--brand-light); }
-.evento-detalle-page__head a { color: var(--brand-tint); }
-.evento-detalle-page__head .evento-detalle-page__artistas { font-weight: 700; }
-.evento-detalle-page__head .evento-detalle-page__desc {
-  max-width: 52rem;
-  font-size: 0.88rem;
-  color: rgba(255, 255, 255, 0.78);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.evento-hero__artistas {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: var(--typography-weight-semibold);
+  color: rgba(255, 255, 255, 0.92);
 }
-.evento-detalle-page__head .evento-detalle-page__cupo-line { text-shadow: none; }
-.evento-detalle-page__head .evento-detalle-page__cupo-line--agotado { color: #fca5a5; }
-.evento-detalle-page__head .evento-detalle-page__cupo-line--suspend { color: var(--brand-tint); }
+
+.evento-hero__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  text-shadow: none;
+}
+.evento-hero__ghost {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+.evento-hero__ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.2); color: #fff; }
+
+.evento-hero__aviso {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  font-weight: var(--typography-weight-semibold);
+  color: var(--brand-tint);
+}
+.evento-hero__aviso--agotado { color: #fca5a5; }
 
 /* ===== Elegí tu entrada ===== */
-.evento-entradas { margin-top: 1.75rem; }
+.evento-entradas { margin-top: 0.5rem; }
 .evento-entradas__head {
   display: flex;
   flex-wrap: wrap;
@@ -213,151 +137,219 @@
   gap: 0.4rem 1.5rem;
   margin-bottom: 1rem;
 }
-.evento-entradas__head h2 { margin: 0; font-size: 1.3rem; }
+.evento-entradas__head h2 { margin: 0; font-size: 1.15rem; }
 .evento-entradas__fila {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem 0.6rem;
   margin: 0;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   color: var(--colors-textSecondary);
 }
 .evento-entradas__fila > svg { color: var(--bolt); font-size: 1.15rem; }
 .evento-entradas__fila > span::before { content: '·'; margin-right: 0.6rem; }
-.evento-entradas__fila a { font-weight: 600; }
+.evento-entradas__fila a { font-weight: var(--typography-weight-semibold); }
 
 .evento-ticket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
 }
 .evento-ticket-card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  justify-content: flex-start;
-  flex-wrap: nowrap;
   gap: 0.35rem;
   padding: 1.25rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--colors-surface, #f7f7fa);
+}
+.evento-ticket-card--agotado {
+  opacity: 0.85;
+  border-color: color-mix(in srgb, #b91c1c 35%, var(--colors-border, #ddd));
+}
+.evento-ticket-card:not(.evento-ticket-card--agotado):hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
 }
 .evento-ticket-card__top { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
-.evento-ticket-card h3 { margin: 0; font-size: 1.1rem; }
+.evento-ticket-card h3 { margin: 0; font-size: 0.98rem; }
 .evento-ticket-card__price {
   margin: 0.4rem 0 0;
-  font-family: var(--fonts-title);
-  font-size: 1.9rem;
-  font-weight: 800;
+  font-size: 1.4rem;
+  font-weight: var(--typography-weight-bold);
   line-height: 1.1;
   color: var(--colors-text);
 }
-.evento-ticket-card__price small { font-family: var(--fonts-body); font-size: 0.8rem; font-weight: 500; color: var(--colors-textMuted); }
+.evento-ticket-card__price small { font-size: 0.72rem; font-weight: var(--typography-weight-medium); color: var(--colors-textMuted); }
 .evento-ticket-card .evento-detalle-page__muted { margin: 0; }
-.evento-ticket-card .btn { margin-top: auto; }
+.evento-ticket-card .btn { margin-top: auto; font-size: 0.85rem; padding: 0.55rem 1rem; }
 .evento-ticket-card__price + .evento-detalle-page__muted + .btn { margin-top: 0.9rem; }
+.evento-ticket-card .badge { font-size: 0.7rem; }
 
+/* ===== Cuerpo: contenido a la izquierda, tipos de entrada a la derecha ===== */
+.evento-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  gap: 2rem;
+  align-items: start;
+}
+.evento-body__main { min-width: 0; }
+.evento-body__side {
+  position: sticky;
+  top: calc(var(--navbar-height, 88px) + 1rem);
+}
+@media (max-width: 900px) {
+  .evento-body { grid-template-columns: minmax(0, 1fr); }
+  .evento-body__side { position: static; }
+}
 
-/* ===== Cuándo y dónde ===== */
+/* ===== Cuándo y dónde: una sola línea — calendario (25%) + mapa con la dirección (75%) ===== */
 .evento-donde {
   display: grid;
-  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  grid-template-columns: 1fr 3fr;
   gap: 1.25rem;
-  margin-top: 1.5rem;
-}
-.evento-cuando,
-.evento-lugar {
-  display: flex;
   align-items: stretch;
-  gap: 1.25rem;
-  padding: 1.25rem;
-  border-radius: var(--radius-lg, 20px);
+  min-height: 17rem;
+}
+.evento-donde--solo { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+
+/* Calendario: único recuadro, con forma de hoja de almanaque */
+.evento-cal {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 18px;
+  overflow: hidden;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: var(--shadow-card);
-  overflow: hidden;
+  box-shadow: 0 18px 40px -26px rgba(10, 6, 22, 0.5);
 }
-.evento-donde__label {
-  margin: 0 0 0.35rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+.evento-cal__mes {
+  padding: 0.65rem 1rem;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: var(--typography-weight-bold);
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--colors-primary);
+  color: var(--on-brand, #fff);
+  background: var(--grad-brand);
 }
-
-/* Calendario */
-.evento-cuando__cal {
-  flex: none;
-  width: 6.5rem;
+.evento-cal__cuerpo {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  overflow: hidden;
+  gap: 0.15rem;
+  padding: 1rem;
   text-align: center;
-  background: var(--colors-surfaceAlt);
-  border: 1px solid var(--card-border);
 }
-.evento-cuando__mes {
-  align-self: stretch;
-  padding: 0.3rem 0;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--brand-ink);
-  background: var(--brand);
+.evento-cal__num {
+  font-size: clamp(3.6rem, 6vw, 5rem);
+  font-weight: var(--typography-weight-bold);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--colors-text);
 }
-.evento-cuando__cal strong { margin-top: 0.3rem; font-family: var(--fonts-title); font-size: 3.2rem; line-height: 1; color: var(--colors-text); }
-.evento-cuando__anio { margin: 0.1rem 0 0.5rem; font-size: 0.8rem; color: var(--colors-textMuted); }
-.evento-cuando__info { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 0.15rem; min-width: 0; }
-.evento-cuando__dia { margin: 0; font-size: 1.15rem; font-weight: 700; }
-.evento-cuando__dia::first-letter { text-transform: uppercase; }
-.evento-cuando__hora { margin: 0 0 0.6rem; font-family: var(--fonts-title); font-size: 1.8rem; font-weight: 800; color: var(--colors-text); }
+.evento-cal__dia { font-size: 0.9rem; text-transform: capitalize; color: var(--colors-textMuted); }
+.evento-cal__hora {
+  margin-top: 0.6rem;
+  font-size: 1.5rem;
+  font-weight: var(--typography-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--colors-text);
+}
+.evento-cal__hora small { font-size: 0.75rem; font-weight: var(--typography-weight-medium); color: var(--colors-textMuted); }
 
-/* Lugar + mapa */
-.evento-lugar { padding: 0; }
-.evento-lugar__info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 0.2rem; padding: 1.25rem 0 1.25rem 1.25rem; }
-.evento-lugar__nombre { margin: 0; display: flex; align-items: center; gap: 0.4rem; font-size: 1.3rem; font-weight: 800; }
-.evento-lugar__nombre svg { flex: none; color: var(--colors-primary); }
-.evento-lugar__dir { margin: 0 0 0.7rem; color: var(--colors-textSecondary); }
-.evento-lugar__mapa { flex: 1.3; min-width: 12rem; min-height: 11rem; border: 0; align-self: stretch; }
+.evento-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.8rem 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: var(--typography-weight-semibold);
+  color: var(--colors-primary);
+  cursor: pointer;
+}
+.evento-link:hover { opacity: 0.8; text-decoration: underline; }
+
+/* Lugar: mapa sin recuadro, con la dirección sobre la parte baja */
+.evento-lugar {
+  position: relative;
+  min-width: 0;
+  min-height: 15rem;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 24px 50px -28px rgba(10, 6, 22, 0.55);
+}
+.evento-lugar__mapa { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 [data-theme='dark'] .evento-lugar__mapa { filter: invert(0.92) hue-rotate(180deg) saturate(0.7); }
+.evento-lugar__info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+}
+.evento-lugar__info--sobre {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2.5rem 1.25rem 1.1rem;
+  color: #fff;
+  background: linear-gradient(180deg, transparent, rgba(10, 6, 22, 0.88));
+  pointer-events: none;
+}
+.evento-lugar__info--sobre > a { pointer-events: auto; }
+.evento-lugar__nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: var(--typography-weight-bold);
+}
+.evento-lugar__nombre svg { flex: none; color: var(--brand-light); }
+.evento-lugar__dir { margin: 0.2rem 0 0; font-size: 0.85rem; opacity: 0.85; }
+.evento-lugar__ir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: var(--typography-weight-bold);
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  transition: background 0.2s, transform 0.2s var(--ease-out);
+}
+.evento-lugar__ir:hover { background: var(--brand); color: var(--on-brand, #fff); transform: translateY(-2px); }
 
-@media (max-width: 900px) {
-  .evento-donde { grid-template-columns: minmax(0, 1fr); }
-  .evento-lugar { flex-direction: column; }
-  .evento-lugar__info { padding: 1.25rem 1.25rem 0; }
-  .evento-lugar__mapa { min-height: 14rem; }
+@media (max-width: 700px) {
+  .evento-donde { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .evento-lugar { min-height: 16rem; }
 }
 
-/* ===== Tipografía más chica en toda la página del evento ===== */
-.evento-detalle-page { font-size: 0.9rem; }
-.evento-detalle-page__back { font-size: 0.82rem; }
-.evento-detalle-page__head h1 { font-size: clamp(1.2rem, 2.6vw, 1.6rem); }
-.evento-detalle-page__head p { font-size: 0.82rem; }
-.evento-detalle-page__head .evento-detalle-page__meta { font-size: 0.7rem; }
-.evento-detalle-page__head .evento-detalle-page__desc { font-size: 0.78rem; }
-.evento-donde__label { font-size: 0.68rem; }
-.evento-cuando__cal { width: 5.5rem; }
-.evento-cuando__mes { font-size: 0.68rem; }
-.evento-cuando__cal strong { font-size: 2.4rem; }
-.evento-cuando__anio { font-size: 0.72rem; }
-.evento-cuando__dia { font-size: 0.95rem; }
-.evento-cuando__hora { font-size: 1.3rem; }
-.evento-lugar__nombre { font-size: 1.05rem; }
-.evento-lugar__dir { font-size: 0.85rem; }
-.evento-donde .btn-sm { font-size: 0.78rem; padding: 0.35rem 0.85rem; }
-.evento-entradas__head h2 { font-size: 1.1rem; }
-.evento-entradas__fila { font-size: 0.78rem; }
-.evento-ticket-card h3 { font-size: 0.98rem; }
-.evento-ticket-card__price { font-size: 1.4rem; }
-.evento-ticket-card__price small { font-size: 0.72rem; }
-.evento-ticket-card .evento-detalle-page__muted { font-size: 0.78rem; }
-.evento-ticket-card .btn { font-size: 0.85rem; padding: 0.55rem 1rem; }
-.evento-ticket-card .badge { font-size: 0.7rem; }
-.evento-detalle-page__muted { font-size: 0.8rem; }
+/* Recomendaciones: eventos similares */
+.evento-similares {
+  margin-top: 2.25rem;
+}
+.evento-similares .event-section__head { margin-bottom: 0.9rem; }
 .evento-similares .event-section__title { font-size: 1.05rem; }
-.evento-similares .event-section__head + p,
 .evento-similares p { font-size: 0.8rem; }
+
+/* Badge de cupo inline dentro del título del sector */
+.evento-cupo-badge--inline { margin-left: 0.5rem; vertical-align: middle; }

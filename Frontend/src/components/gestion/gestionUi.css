@@ -9,7 +9,7 @@
   gap: 0.75rem 1.5rem;
   margin: 0.5rem 0 1.25rem;
 }
-.g-head h1 { margin: 0; font-size: 1.5rem; font-weight: 800; }
+.g-head h1 { margin: 0; font-size: 1.5rem; font-weight: var(--typography-weight-bold); }
 .g-head p { margin: 0.25rem 0 0; font-size: 0.88rem; color: var(--colors-textMuted); max-width: 46rem; }
 .g-head__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
@@ -20,7 +20,7 @@
   background: var(--card-bg);
   box-shadow: var(--shadow-card);
 }
-.g-card__title { margin: 0 0 0.9rem; font-size: 1rem; font-weight: 700; }
+.g-card__title { margin: 0 0 0.9rem; font-size: 1rem; font-weight: var(--typography-weight-bold); }
 
 /* ---- Herramientas de tabla ---- */
 .g-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-bottom: 0.9rem; }
@@ -57,7 +57,7 @@
   padding: 0.8rem 1rem;
   text-align: left;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -71,7 +71,7 @@
 .g-table .is-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .g-table .is-actions { width: 1%; white-space: nowrap; text-align: right; }
 .g-cell-main { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
-.g-cell-main strong { font-weight: 700; color: var(--colors-text); }
+.g-cell-main strong { font-weight: var(--typography-weight-bold); color: var(--colors-text); }
 .g-cell-main strong a { color: inherit; text-decoration: none; }
 .g-cell-main strong a:hover { color: var(--tone-brand); text-decoration: underline; }
 .g-cell-main span { font-size: 0.78rem; color: var(--colors-textMuted); }
@@ -97,7 +97,7 @@
   padding: 0.18rem 0.6rem;
   border-radius: 999px;
   font-size: 0.74rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   white-space: nowrap;
   color: var(--pill-c);
   background: color-mix(in srgb, var(--pill-c) 13%, transparent);
@@ -172,8 +172,8 @@
   background: var(--card-bg);
   box-shadow: var(--shadow-card);
 }
-.g-kpi__label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--colors-textMuted); }
-.g-kpi__value { font-family: var(--fonts-title); font-size: 2rem; font-weight: 800; line-height: 1.1; color: var(--colors-text); }
+.g-kpi__label { font-size: 0.72rem; font-weight: var(--typography-weight-bold); letter-spacing: 0.09em; text-transform: uppercase; color: var(--colors-textMuted); }
+.g-kpi__value { font-family: var(--fonts-title); font-size: 2rem; font-weight: var(--typography-weight-bold); line-height: 1.1; color: var(--colors-text); }
 .g-kpi__hint { font-size: 0.78rem; color: var(--colors-textMuted); }
 
 .g-grid-2 { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
@@ -182,7 +182,7 @@
 /* Barras de ocupación */
 .g-bars { display: flex; flex-direction: column; gap: 0.9rem; margin: 0; padding: 0; list-style: none; }
 .g-bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.25rem 1rem; align-items: baseline; font-size: 0.85rem; }
-.g-bars__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.g-bars__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--typography-weight-semibold); }
 .g-bars__val { font-variant-numeric: tabular-nums; color: var(--colors-textMuted); font-size: 0.8rem; }
 .g-bars__track { grid-column: 1 / -1; height: 8px; border-radius: 999px; background: var(--colors-surfaceAlt); overflow: hidden; }
 .g-bars__track span { display: block; height: 100%; border-radius: inherit; background: var(--grad-brand); }
@@ -192,7 +192,7 @@
 .g-attn li { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.7rem 0; border-bottom: 1px solid var(--card-border); font-size: 0.86rem; }
 .g-attn li:first-child { padding-top: 0; }
 .g-attn li:last-child { border-bottom: 0; padding-bottom: 0; }
-.g-attn a { color: var(--tone-brand); font-weight: 600; white-space: nowrap; }
+.g-attn a { color: var(--tone-brand); font-weight: var(--typography-weight-semibold); white-space: nowrap; }
 
 /* ---- Formularios en dos columnas con barra de guardado fija ---- */
 .g-form { display: flex; flex-direction: column; gap: 1.25rem; }
@@ -215,7 +215,7 @@
 /* ===== Páginas internas (formularios, reportes, detalle): mismo aspecto que el resto ===== */
 .g-contents { display: contents; }
 .gestion-shell .gestion-page__head { margin: 0.5rem 0 1.25rem; }
-.gestion-shell .gestion-page__title { margin: 0; font-size: 1.5rem; font-weight: 800; }
+.gestion-shell .gestion-page__title { margin: 0; font-size: 1.5rem; font-weight: var(--typography-weight-bold); }
 .gestion-shell .gestion-page__sub { margin: 0.3rem 0 0; font-size: 0.88rem; max-width: 46rem; color: var(--colors-textMuted); }
 
 .gestion-shell .gestion-card {
@@ -236,7 +236,7 @@
   display: block;
   margin-bottom: 0.35rem;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--colors-textMuted);

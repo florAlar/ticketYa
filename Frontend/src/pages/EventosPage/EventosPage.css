@@ -23,50 +23,58 @@
   }
 }
 
+/* El panel se ajusta a la altura de la pantalla: si no entra, scrollea por dentro y
+   el botón Aplicar queda siempre visible al pie. */
 .eventos-sidebar {
-  padding: 1.1rem 1.15rem;
-  border-radius: 12px;
-  border: 1px solid var(--colors-border, rgba(0, 0, 0, 0.1));
-  background: var(--colors-surface, #f7f7fa);
   position: sticky;
-  top: calc(var(--header-height, 64px) + 1rem);
+  top: calc(var(--navbar-height, 88px) + 1rem);
+  max-height: calc(100dvh - var(--navbar-height, 88px) - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 @media (max-width: 860px) {
   .eventos-sidebar {
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 
 .eventos-sidebar__title {
-  margin: 0 0 1rem;
+  margin: 0 0 0.75rem;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
 }
 
 .eventos-sidebar__form .form-group {
-  margin-bottom: 0.85rem;
+  margin-bottom: 0.6rem;
 }
 
 .eventos-sidebar__form .form-input {
-  padding: 0.65rem 0.75rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.88rem;
 }
 
 .eventos-sidebar__check {
   display: flex;
   align-items: center;
   gap: 0.45rem;
-  margin: 0.35rem 0 1rem;
-  font-size: 0.88rem;
+  margin: 0.25rem 0 0.6rem;
+  font-size: 0.85rem;
   cursor: pointer;
   color: var(--colors-text, #111);
 }
 
 .eventos-sidebar__actions {
+  position: sticky;
+  bottom: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  padding: 0.6rem 0 0.25rem;
+  background: var(--colors-background);
 }
 
 .eventos-sidebar__actions .btn {
@@ -82,7 +90,7 @@
 .eventos-page__title {
   margin: 0;
   font-size: 1.35rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   color: var(--colors-text);
 }
 

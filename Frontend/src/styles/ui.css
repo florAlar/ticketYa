@@ -11,7 +11,7 @@
   padding: 0.22rem 0.6rem;
   border-radius: var(--radius-full, 999px);
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   line-height: 1.2;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -126,7 +126,7 @@
   background: var(--colors-primary);
   box-shadow: 0 8px 20px color-mix(in srgb, var(--brand) 35%, transparent);
 }
-.modal-title { margin: 0 0 0.4rem; font-size: 1.25rem; font-weight: 700; }
+.modal-title { margin: 0 0 0.4rem; font-size: 1.25rem; font-weight: var(--typography-weight-bold); }
 .modal-desc { margin: 0 0 1.25rem; color: var(--colors-textSecondary); font-size: 0.95rem; line-height: 1.55; }
 .modal-body { margin-bottom: 1.25rem; }
 .modal-actions { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: flex-end; }
@@ -176,7 +176,7 @@
 .event-cover--conferencia { background: var(--brand-amber); }
 .event-cover__initials {
   font-family: var(--fonts-title);
-  font-weight: 800;
+  font-weight: var(--typography-weight-bold);
   font-size: clamp(1.8rem, 16cqw, 3.4rem);
   letter-spacing: 0.04em;
   opacity: 0.28;

@@ -6,7 +6,7 @@
 .perfil-page { padding-top: 2rem; }
 
 .perfil-page__head { margin-bottom: 1.25rem; }
-.perfil-page__title { margin: 0 0 0.25rem; font-size: 1.5rem; font-weight: 800; }
+.perfil-page__title { margin: 0 0 0.25rem; font-size: 1.5rem; font-weight: var(--typography-weight-bold); }
 .perfil-page__sub { margin: 0; color: var(--colors-textMuted); font-size: 0.9rem; }
 .perfil-page__muted { margin: 0.25rem 0 0; color: var(--colors-textMuted); font-size: 0.85rem; line-height: 1.45; }
 .perfil-page__error { margin: 0 0 0.75rem; color: var(--tone-danger); font-size: 0.88rem; }
@@ -72,12 +72,12 @@
   border-radius: 50%;
   font-family: var(--fonts-title);
   font-size: 1.8rem;
-  font-weight: 800;
+  font-weight: var(--typography-weight-bold);
   color: var(--on-brand);
   background: var(--grad-brand);
   box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 40%, transparent);
 }
-.perfil-hero__name { margin: 0; font-size: 1.2rem; font-weight: 800; }
+.perfil-hero__name { margin: 0; font-size: 1.2rem; font-weight: var(--typography-weight-bold); }
 .perfil-hero__email { margin: 0.1rem 0 0.5rem; font-size: 0.85rem; color: var(--colors-textMuted); word-break: break-all; }
 .perfil-identity__badges { display: flex; justify-content: center; gap: 0.4rem; }
 
@@ -92,15 +92,15 @@
   text-align: left;
 }
 .perfil-hero__facts > div { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
-.perfil-hero__facts dt { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: var(--colors-textMuted); }
-.perfil-hero__facts dd { margin: 0; font-size: 0.92rem; font-weight: 600; text-align: right; }
+.perfil-hero__facts dt { font-size: 0.7rem; font-weight: var(--typography-weight-bold); letter-spacing: 0.09em; text-transform: uppercase; color: var(--colors-textMuted); }
+.perfil-hero__facts dd { margin: 0; font-size: 0.92rem; font-weight: var(--typography-weight-semibold); text-align: right; }
 
 .perfil-hero__actions { width: 100%; display: flex; flex-direction: column; gap: 0.4rem; text-align: center; }
 .perfil-hero__actions p { margin: 0; font-size: 0.74rem; }
 
 /* ---- Edición de datos ---- */
 .perfil-edit { padding: 1.4rem 1.5rem; }
-.perfil-card__heading { margin: 0 0 0.9rem; font-size: 1rem; font-weight: 700; }
+.perfil-card__heading { margin: 0 0 0.9rem; font-size: 1rem; font-weight: var(--typography-weight-bold); }
 .perfil-edit__grid { display: grid; grid-template-columns: minmax(0, 1fr); }
 .perfil-edit .form-group:last-of-type { margin-bottom: 1rem; }
 
@@ -111,7 +111,13 @@
 .perfil-org__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 
 /* ---- Panel único: pestañas + contenido ---- */
-.perfil-panel { padding: 0.5rem 1.75rem 1.75rem; }
+.perfil-card.perfil-panel {
+  padding: 0.5rem 0 1.75rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
 .perfil-tabs {
   display: flex;
   gap: 0.25rem;
@@ -125,7 +131,7 @@
   border-bottom: 2px solid transparent;
   background: transparent;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   color: var(--colors-textMuted);
   cursor: pointer;
   transition: color 0.15s, border-color 0.15s;
@@ -154,7 +160,7 @@
   margin: 0 0 0.5rem;
   padding: 0;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--colors-textMuted);
@@ -173,7 +179,7 @@
   border: 1.5px solid var(--colors-border);
   background: transparent;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: var(--typography-weight-semibold);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -222,8 +228,8 @@
 .pref-historial__item:first-child { padding-top: 0; }
 .pref-historial__item:last-child { border-bottom: 0; padding-bottom: 0; }
 .pref-historial__head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
-.pref-historial__title { font-size: 0.92rem; font-weight: 700; color: inherit; text-decoration: none; }
+.pref-historial__title { font-size: 0.92rem; font-weight: var(--typography-weight-bold); color: inherit; text-decoration: none; }
 a.pref-historial__title:hover { color: var(--tone-brand); text-decoration: underline; }
-.pref-historial__monto { font-size: 0.88rem; font-weight: 800; white-space: nowrap; color: var(--colors-text); }
+.pref-historial__monto { font-size: 0.88rem; font-weight: var(--typography-weight-bold); white-space: nowrap; color: var(--colors-text); }
 .pref-historial__meta { margin: 0.2rem 0 0; font-size: 0.78rem; color: var(--colors-textMuted); }
 .pref-embed > .perfil-card__actions { margin-top: 1rem; }

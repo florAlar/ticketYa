@@ -53,7 +53,7 @@
   gap: 0.4rem;
   margin: 0 0 0.6rem;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--brand-light);
@@ -118,7 +118,7 @@
 .fila-wait__label {
   display: block;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--colors-textMuted);
@@ -127,11 +127,11 @@
   display: block;
   font-family: var(--fonts-title);
   font-size: 3.4rem;
-  font-weight: 800;
+  font-weight: var(--typography-weight-bold);
   line-height: 1;
   color: var(--brand);
 }
-.fila-wait__lead { margin: 0.4rem 0 0; font-size: 1.35rem; font-weight: 700; color: var(--colors-text); }
+.fila-wait__lead { margin: 0.4rem 0 0; font-size: 1.35rem; font-weight: var(--typography-weight-bold); color: var(--colors-text); }
 .fila-wait__hint { margin: 0; font-size: 0.88rem; color: var(--colors-textMuted); }
 
 /* Es tu turno: cartel grande en el color de marca */
@@ -141,7 +141,7 @@
   padding: 0.35rem 1rem;
   border-radius: 999px;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: var(--typography-weight-bold);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--brand-ink);
@@ -185,7 +185,7 @@
 }
 .fila-dots .is-done { color: rgba(255, 255, 255, 0.75); }
 .fila-dots .is-done .fila-dots__dot { background: rgba(255, 255, 255, 0.75); }
-.fila-dots .is-current { color: #fff; font-weight: 700; }
+.fila-dots .is-current { color: #fff; font-weight: var(--typography-weight-bold); }
 .fila-dots .is-current .fila-dots__dot { background: var(--brand); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 30%, transparent); }
 
 /* ---- Datos de la fila: una línea chica ---- */
@@ -211,10 +211,10 @@
   background: var(--card-bg);
   border: 1px solid var(--card-border);
 }
-.fila-admin summary { cursor: pointer; font-weight: 700; font-size: 0.9rem; }
+.fila-admin summary { cursor: pointer; font-weight: var(--typography-weight-bold); font-size: 0.9rem; }
 .fila-admin p { margin-top: 0.75rem; }
 .fila-admin__row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
-.fila-admin__row label { font-size: 0.9rem; font-weight: 600; }
+.fila-admin__row label { font-size: 0.9rem; font-weight: var(--typography-weight-semibold); }
 .fila-admin__input { width: 9rem; }
 
 @media (max-width: 768px) {
