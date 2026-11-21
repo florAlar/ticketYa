@@ -1,18 +1,46 @@
 import { useCallback, useMemo } from 'react'
 import useAsync from '../../hooks/useAsync'
 import { listMisEntradas } from '../../api/entradas'
+import { getEvento } from '../../api/eventos'
 import { listMisSolicitudes } from '../../api/soporteCliente'
 import {
   isEntradaReintegroCancelacion,
   isEntradaVisibleEnListado,
 } from '../../domain/entrada'
 
+/** La entrada no trae la portada: se completa con la del evento (una consulta por evento distinto). */
+async function conPortadas(entradas, opts) {
+  const ids = [...new Set(entradas.map((e) => e.idEvento).filter(Boolean))]
+  const eventos = new Map()
+  await Promise.all(
+    ids.map(async (id) => {
+      try {
+        eventos.set(id, await getEvento(id, opts))
+      } catch (err) {
+        if (err?.name === 'AbortError') throw err
+      }
+    })
+  )
+  return entradas.map((e) => {
+    const ev = eventos.get(e.idEvento)
+    if (!ev) return e
+    return {
+      ...e,
+      eventoImagenUrl: e.eventoImagenUrl || ev.imagenUrl,
+      eventoTipo: e.eventoTipo || ev.tipo,
+    }
+  })
+}
+
 /** Entradas + trámites del cliente, con agrupaciones para la UI. */
 export default function useMisEntradas({ user, token }) {
   const load = useCallback(
     async (signal) => {
       const ents = await listMisEntradas(user, { token, signal })
-      const listEnts = Array.isArray(ents) ? ents : []
+      const listEnts = await conPortadas(
+        Array.isArray(ents) ? ents : [],
+        { token, signal }
+      )
       const sols = await listMisSolicitudes(user, {
         token,
         signal,

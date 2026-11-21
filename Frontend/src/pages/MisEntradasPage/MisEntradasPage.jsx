@@ -1,15 +1,17 @@
-import { useCallback, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import useAuth from '../../hooks/useAuth'
 import { EmptyState, ErrorState, LoadingState } from '../../components/ui/AsyncState'
+import { isEntradaReintegroCancelacion } from '../../domain/entrada'
 import EntradaCard from './EntradaCard'
 import DevolucionesPanel from './DevolucionesPanel'
 import useMisEntradas from './useMisEntradas'
+import '../PerfilPage/PerfilPage.css'
 import './MisEntradasPage.css'
 
 const MisEntradasPage = () => {
   const { user, token } = useAuth()
-  const [showDevoluciones, setShowDevoluciones] = useState(false)
+  const [tab, setTab] = useState('proximas')
   const {
     status,
     error,
@@ -20,25 +22,31 @@ const MisEntradasPage = () => {
     tramitePorEntrada,
   } = useMisEntradas({ user, token })
 
-  const revealDevoluciones = useCallback(() => {
-    setShowDevoluciones(true)
-    requestAnimationFrame(() => {
-      document.getElementById('mis-devoluciones')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      })
-    })
-  }, [])
+  const { proximas, canceladas } = useMemo(
+    () => ({
+      proximas: listado.filter((e) => !isEntradaReintegroCancelacion(e)),
+      canceladas: listado.filter((e) => isEntradaReintegroCancelacion(e)),
+    }),
+    [listado]
+  )
+
+  const tabs = [
+    { id: 'proximas', label: 'Próximas', count: proximas.length },
+    ...(canceladas.length > 0
+      ? [{ id: 'canceladas', label: 'Canceladas', count: canceladas.length }]
+      : []),
+    { id: 'devoluciones', label: 'Devoluciones', count: solicitudes.length },
+  ]
+  const activa = tabs.some((t) => t.id === tab) ? tab : 'proximas'
+  const items = activa === 'canceladas' ? canceladas : proximas
 
   return (
     <section className="mis-entradas-page container-slim section-v-padding">
       <header className="mis-entradas-page__head">
         <h1 className="mis-entradas-page__title">Mis entradas</h1>
         <p className="mis-entradas-page__sub">
-          Entradas de tu cuenta
-          {user?.email ? ` (${user.email})` : ''}. El QR solo en tickets válidos.
-          Si el evento se suspende, tu entrada sigue vigente (con aviso). Si se
-          cancela, queda acá sin QR y el reintegro en devoluciones.
+          Tus entradas{user?.email ? ` (${user.email})` : ''}. El QR está en el
+          detalle de cada una.
         </p>
       </header>
 
@@ -46,56 +54,57 @@ const MisEntradasPage = () => {
 
       {status === 'error' && <ErrorState error={error} onRetry={reload} />}
 
-      {status === 'success' && listado.length === 0 && (
-        <EmptyState
-          title="No tenés entradas para mostrar."
-          action={
-            <Link className="btn btn-primary" to="/eventos">
-              Ver eventos
-            </Link>
-          }
-        >
-          Cuando compres, aparecen acá. Las usadas quedan fuera del listado
-          principal.
-        </EmptyState>
+      {status === 'success' && (
+        <>
+          <div className="perfil-tabs" role="tablist" aria-label="Mis entradas">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={activa === t.id}
+                className={`perfil-tabs__tab${activa === t.id ? ' is-active' : ''}`}
+                onClick={() => setTab(t.id)}
+              >
+                {t.label}
+                {t.count > 0 ? ` (${t.count})` : ''}
+              </button>
+            ))}
+          </div>
+
+          {activa === 'devoluciones' ? (
+            <DevolucionesPanel solicitudes={solicitudes} />
+          ) : items.length === 0 ? (
+            <EmptyState
+              title="No tenés entradas para mostrar."
+              action={
+                <Link className="btn btn-primary" to="/eventos">
+                  Ver eventos
+                </Link>
+              }
+            >
+              Cuando compres, aparecen acá. Las usadas quedan fuera del listado.
+            </EmptyState>
+          ) : (
+            <ul className="mis-entradas-list">
+              {items.map((e) => (
+                <EntradaCard
+                  key={e.id}
+                  entrada={e}
+                  pendiente={pendientePorEntrada.get(e.id)}
+                  tramite={tramitePorEntrada.get(e.id)}
+                  onVerDevoluciones={() => setTab('devoluciones')}
+                />
+              ))}
+            </ul>
+          )}
+        </>
       )}
-
-      {listado.length > 0 && (
-        <ul className="mis-entradas-list">
-          {listado.map((e) => (
-            <EntradaCard
-              key={e.id}
-              entrada={e}
-              pendiente={pendientePorEntrada.get(e.id)}
-              tramite={tramitePorEntrada.get(e.id)}
-              onVerDevoluciones={revealDevoluciones}
-            />
-          ))}
-        </ul>
-      )}
-
-      <div className="mis-entradas-devo-toggle">
-        <button
-          type="button"
-          className="btn"
-          onClick={() => setShowDevoluciones((v) => !v)}
-          aria-expanded={showDevoluciones}
-        >
-          {showDevoluciones ? 'Ocultar devoluciones' : 'Ver devoluciones'}
-          {solicitudes.length > 0 ? ` (${solicitudes.length})` : ''}
-        </button>
-      </div>
-
-      {showDevoluciones && <DevolucionesPanel solicitudes={solicitudes} />}
 
       <p className="mis-entradas-page__foot">
         <Link to="/soporte">Soporte</Link>
         {' · '}
-        <button
-          type="button"
-          className="mis-entradas-page__linkish"
-          onClick={reload}
-        >
+        <button type="button" className="mis-entradas-page__linkish" onClick={reload}>
           Actualizar
         </button>
       </p>
