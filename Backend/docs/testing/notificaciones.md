@@ -59,12 +59,15 @@ cd Backend
 Integración con MySQL real (Testcontainers; requiere Docker):
 
 ```bash
-(cd msvc-notificaciones && mvn -Pit verify)   # +1 IT: contexto completo contra mysql:8.4
+(cd msvc-notificaciones && mvn -Pit verify)   # +6 IT (2 clases): contexto MySQL + consumidores MySQL/Rabbit
 ```
 
 > `MsvcNotificacionesApplicationIT` levanta un contenedor MySQL 8.4, aplica el esquema con
 > `ddl-auto=create-drop`, desactiva los listeners de RabbitMQ y verifica que el contexto arranque.
-> Solo corre con el perfil `-Pit` (failsafe, patrón `*IT.java`); `mvn test` no lo ejecuta.
+> `NotificacionMensajesConsumeIT` usa MySQL + RabbitMQ reales y publica `evento.*`,
+> `compra.confirmada` y `devolucion.aprobada` para verificar PUSH/EMAIL, agrupación por
+> `clave_mensaje` e idempotencia. Solo corren con el perfil `-Pit` (failsafe, patrón `*IT.java`);
+> `mvn test` no los ejecuta.
 
 Cobertura específica de esta feature:
 
@@ -78,6 +81,7 @@ Cobertura específica de esta feature:
 | `NotificacionControllerTest` | bandeja agrupada por mensaje (PUSH + EMAIL → una entrada), `noLeidas` por mensaje, marcar leída actualiza ambos canales |
 | `NotificacionOpenApiTest` | contrato `/v3/api-docs`: tags, `operationId`, media types y security, sin base de datos |
 | `MsvcNotificacionesApplicationIT` | arranque del contexto completo con **MySQL real** (Testcontainers; `mvn -Pit verify`) |
+| `NotificacionMensajesConsumeIT` | consumidores reales con MySQL + Rabbit (evento, compra, devolución, idempotencia) |
 | `NotificacionController` (vía API e2e) | `X-User-Id`, dueño, paginación, `noLeidas`, marcar leída |
 | `EventChangePublisherTest` | routing keys `evento.cancelado/suspendido/modificado/publicado` |
 | `CompraEventPublisherTest` | routing key `compra.confirmada` y payload |

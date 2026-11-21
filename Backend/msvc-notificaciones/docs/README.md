@@ -93,7 +93,7 @@ docker compose up -d --build ms-notificaciones
 
 cd msvc-notificaciones
 mvn test              # 42 unitarios
-mvn -Pit verify       # +1 IT de contexto con MySQL real (Testcontainers)
+mvn -Pit verify       # +6 IT con MySQL + Rabbit reales (Testcontainers)
 ```
 
 - **Variables:** `SPRING_DATASOURCE_URL` (default `jdbc:mysql://localhost:3311/notificaciones`), `SPRING_RABBITMQ_*`, `SPRING_MAIL_HOST/PORT`, `TICKETYA_NOTIF_EMAIL_PROVIDER` (`mock`/`smtp`), `TICKETYA_NOTIF_ENVIO_INTERVALO_MS` (30 s), `TICKETYA_NOTIF_ENVIO_MAX_INTENTOS` (3).
