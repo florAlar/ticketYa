@@ -55,18 +55,18 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 ## 1. Documentación por microservicio (specs)
 
 Punto aparte: cada msvc (y el gateway) tiene `docs/` propio. Ahí viven las **specs del contexto** (OpenSpec u otro), contratos del bounded context, decisiones DDD y lo que alimenta OpenAPI/tests.  
-Estado actual: los 6 msvc tienen `docs/endpoints.md` y contrato en `docs/openapi/`; el gateway tiene `docs/api/gateway.md`. Falta la plantilla común `DOC-MS-00` y el flujo Spec-Driven (`DOC-MS-SYNC`).
+Estado actual: los 6 msvc tienen `docs/README.md` (contexto según plantilla), `docs/endpoints.md` y contrato en `docs/openapi/`; el gateway tiene `docs/api/gateway.md`. La plantilla vive en `specs/plantilla-docs-msvc.md`. Falta el flujo Spec-Driven (`DOC-MS-SYNC`).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
-| DOC-MS-00 | Definir plantilla común de `docs/` por msvc (alcance del contexto, agregados, API pública, modelo local, eventos/mensajes, criterios de aceptación, cómo correr) | Transversal | pendiente | Una sola convención para no divergir. |
+| DOC-MS-00 | Definir plantilla común de `docs/` por msvc (alcance del contexto, agregados, API pública, modelo local, eventos/mensajes, criterios de aceptación, cómo correr) | Transversal | hecho | 2026-11-21: plantilla en `specs/plantilla-docs-msvc.md` y esqueletos `docs/README.md` en los 6 msvc, con enlaces canónicos y secciones críticas completas. |
 | DOC-MS-GW | Specs + diseño de `APIGateway/docs/` (rutas, filtros, correlación, qué no hace el gateway) | E1 | hecho | `docs/api/gateway.md` (24 rutas, matriz RBAC, headers incl. `X-Correlation-Id`, errores) + `docs/observabilidad.md` (correlation id y bitácora). Actualizado el 2026-11-11. |
-| DOC-MS-EVE | Specs + diseño de `msvc-eventos/docs/` | E1 | parcial | `endpoints.md` msvc vivo (alta/publicación/cupo Feign) y contrato en `docs/openapi/msvc-eventos.json`. Falta la plantilla DOC-MS-00 completa. |
-| DOC-MS-VEN | Specs + diseño de `msvc-ventas/docs/` | E1 (+ fila E2) | parcial | 2026-11-19: `msvc-ventas/docs/endpoints.md` vivo con cupos, reportes y fila virtual (FIL-01…FIL-03, incluido el gate `tokenFila`); contrato en `docs/openapi/msvc-ventas.json` y requests en la colección Postman. Falta la plantilla formal DOC-MS-00. |
-| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | `endpoints.md` msvc con emisión/QR/devo y validación de acceso (E2-ACC-01). |
-| DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | parcial | `endpoints.md` auth JWT. Falta plantilla DOC-MS-00 completa. |
-| DOC-MS-PRE | Specs + diseño de `msvc-preferencias/docs/` (documentos Mongo, recs) | E2 | parcial | 2026-11-16: `endpoints.md` completo, `recomendaciones.md` (ingesta, algoritmo, pesos, backfill y simplificaciones), modelo en `modelo-mongodb.md` y OpenAPI generado. Falta la plantilla común DOC-MS-00. |
-| DOC-MS-NOT | Specs + diseño de `msvc-notificaciones/docs/` | E2 | parcial | `msvc-notificaciones/docs/endpoints.md` con bandeja, alta administrativa, estado de envío, eventos de broker y entrega; contrato en `docs/openapi/msvc-notificaciones.json`. Falta la plantilla DOC-MS-00. |
+| DOC-MS-EVE | Specs + diseño de `msvc-eventos/docs/` | E1 | parcial | 2026-11-21: `README.md` con la plantilla DOC-MS-00 (contexto, agregados, modelo, eventos, criterios y operación) + `endpoints.md` y OpenAPI. Falta revisión final del equipo. |
+| DOC-MS-VEN | Specs + diseño de `msvc-ventas/docs/` | E1 (+ fila E2) | parcial | 2026-11-21: `README.md` con la plantilla DOC-MS-00 (contexto, agregados, modelo, `compra.confirmada`, criterios y operación) + `endpoints.md` con cupos, reportes y fila virtual. Falta revisión final del equipo. |
+| DOC-MS-ENT | Specs + diseño de `msvc-entradas/docs/` | E1 (emisión/devo) / E2 (validación acceso) | parcial | 2026-11-21: `README.md` con la plantilla DOC-MS-00 (contexto, agregados, modelo, `devolucion.aprobada`, criterios y operación) + `endpoints.md` con emisión/QR/devo y validación de acceso. Falta revisión final del equipo. |
+| DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | parcial | 2026-11-21: `README.md` con la plantilla DOC-MS-00 (contexto, agregados, modelo, criterios y operación) + `endpoints.md` auth JWT. Falta revisión final del equipo. |
+| DOC-MS-PRE | Specs + diseño de `msvc-preferencias/docs/` (documentos Mongo, recs) | E2 | parcial | 2026-11-21: `README.md` con la plantilla DOC-MS-00 + `endpoints.md`, `recomendaciones.md`, modelo Mongo y OpenAPI. Falta revisión final del equipo. |
+| DOC-MS-NOT | Specs + diseño de `msvc-notificaciones/docs/` | E2 | parcial | 2026-11-21: `README.md` con la plantilla DOC-MS-00 + `endpoints.md` con bandeja, alta administrativa, estado, eventos de broker y entrega; OpenAPI actualizado. Falta revisión final del equipo. |
 | DOC-MS-SYNC | Mantener specs versionadas en Git y usarlas como guía antes de implementar cada feature (flujo Spec-Driven de la consigna) | Transversal | pendiente | Propuesta → requisitos → diseño → tareas → código. |
 
 ---
@@ -79,7 +79,7 @@ Estado actual: los 6 msvc tienen `docs/endpoints.md` y contrato en `docs/openapi
 | MOD-02 | Partir / complementar el modelo en **un DER (o vista) por microservicio** con claves y ownership de datos | E1 | hecho | `specs/diagramas/modelo.md` reescrito (2026-11-10): `classDiagram` global con un `namespace` por msvc (5 MySQL + Mongo), columnas reales verificadas contra `init.sql` y entidades JPA. + `modelo-por-microservicio.md`: 5 `erDiagram` (uno por msvc MySQL; Mongo en `modelo-mongodb.md`) con refs lógicas a entidades externas. Sintaxis Mermaid validada; render visual a revisar en el visor. |
 | MOD-03 | Documentar **entidades solapadas** entre BDs (mismos IDs lógicos sin FK cruzada: `idEvento`, `idCliente`, etc.) | E1 | hecho | Las 19 referencias lógicas entre msvc quedan dibujadas como líneas punteadas (columnas `REF`) en el diagrama de `modelo.md` (incluye `asiento_reservado`). |
 | MOD-04 | **Modelo de preferencias en MongoDB** (`specs/diagramas/modelo-mongodb.md`) | E2 | hecho | Doc + init.js INF-28. Código Spring Data / recs = E2-PRE-*. |
-| MOD-05 | Modelo local notificaciones (MySQL) alineado a ER + `notificaciones/init.sql` | E2 | hecho | Init + JPA (Plantilla/Notificacion/IntentoEnvio) en INF-27. `DOC-MS-NOT` queda parcial (`endpoints.md` + OpenAPI; falta plantilla DOC-MS-00). |
+| MOD-05 | Modelo local notificaciones (MySQL) alineado a ER + `notificaciones/init.sql` | E2 | hecho | Init + JPA (Plantilla/Notificacion/IntentoEnvio) en INF-27. `DOC-MS-NOT` queda parcial (`README.md` con plantilla + `endpoints.md` + OpenAPI; falta revisión final). |
 | MOD-06 | Actualizar diagramas E2 cuando entren fila, validaciones, notifs y recs | E2 | hecho | 2026-11-19: modelos y secuencias al día con el esquema real (21 tablas verificadas contra los `init.sql`; lugares con coordenadas, cupo por evento, control de acceso, reportes, alta de evento §8). La fila quedó documentada en FIL-04: Redis-only (D1, sin ER MySQL) en `modelo*.md`, `docs/modelo-datos.md` §9 y `specs/bases-de-datos.md:13`; secuencia completa en `diagramas-secuencia.md` §9. |
 
 ---
@@ -381,7 +381,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…19, 25, 27, 28 | E2-DEP-01 (corrida limpia completa) | — |
 | Frontend (ingreso SPA) | INF-20…25, E2-UI-02/03 (flag único de mock); **X-UI-01…06**, **X-QR-01/02**, **SEAT-05**, **E2-ACC-01** (escaneo), **E2-REP-01** (pantalla de reportes), **LUG-01/02/03/04** (panel de lugares, coordenadas, selector de lugar y sectores en el evento), **PAR-01** (panel de participantes), **E2-PRE-04** (recomendaciones en el front) | E2-UI-01, E2-UI-04 | X-ORG-01 |
-| Docs por msvc (specs) | **DOC-MS-GW** (`docs/api/gateway.md`) | DOC-MS-USU/EVE/VEN/ENT/PRE/NOT (`endpoints.md` + OpenAPI; falta plantilla DOC-MS-00) | DOC-MS-00/SYNC |
+| Docs por msvc (specs) | **DOC-MS-GW** (`docs/api/gateway.md`) y **DOC-MS-00** (`specs/plantilla-docs-msvc.md`) | DOC-MS-USU/EVE/VEN/ENT/PRE/NOT (`README.md` con plantilla + `endpoints.md` + OpenAPI; falta revisión final) | DOC-MS-SYNC |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA), **MOD-06** (al día con los `init.sql`: 21 tablas verificadas; fila en Redis, fuera del ER) | MOD-02, 03 | — |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | — |
@@ -427,4 +427,4 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - Los 6 microservicios tienen OpenAPI (`springdoc` + `OpenApiConfig` + spec en `docs/openapi/`) y Testcontainers con perfil `-Pit`; no se usan bases embebidas.  
 - Tests unitarios: gateway **146**, usuarios **58 + 1 IT**, eventos **203 + 1 IT**, ventas **219 + 20 IT**, entradas **85 + 2 IT**, preferencias **39 + 2 IT (5 casos)**, notificaciones **42 + 1 IT**.  
 - Postman: **216 requests / 15 carpetas**; carpetas 13 y 14 sin corrida Newman.  
-- Pendiente: `HIG-02` (lint FE), `E2-TST-01` (flujos cross-msvc), `E2-TST-03` (carga 25/50/100), `E2-DEP-01` (corrida limpia completa), resto de `E2-UI-01`, `ARQ-01`, `US-03`, `DOC-MS-00/SYNC` y `X-ORG-01/02`.  
+- Pendiente: `HIG-02` (lint FE), `E2-TST-01` (flujos cross-msvc), `E2-TST-03` (carga 25/50/100), `E2-DEP-01` (corrida limpia completa), resto de `E2-UI-01`, `ARQ-01`, `US-03`, `DOC-MS-SYNC` y `X-ORG-01/02`.
