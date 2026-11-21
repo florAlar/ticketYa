@@ -88,7 +88,7 @@ docker compose up -d --build ms-entradas
 
 cd msvc-entradas
 mvn test              # 85 unitarios
-mvn -Pit verify       # +2 IT con MySQL real (Testcontainers)
+mvn -Pit verify       # +4 IT con MySQL + Rabbit reales (Testcontainers)
 ```
 
 - **Variables:** `SPRING_DATASOURCE_URL` (default `jdbc:mysql://localhost:3310/entradas`), `SPRING_RABBITMQ_*`, `TICKETYA_URI_EVENTOS`, `TICKETYA_URI_VENTAS`, `TICKETYA_DEVOLUCION_HORAS` (72).

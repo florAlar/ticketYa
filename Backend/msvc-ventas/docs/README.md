@@ -93,7 +93,7 @@ docker compose up -d --build ms-ventas
 
 cd msvc-ventas
 mvn test              # 219 unitarios
-mvn -Pit verify       # +20 IT (MySQL, Redis; requiere Docker)
+mvn -Pit verify       # +22 IT (MySQL, Rabbit; requiere Docker)
 ```
 
 - **Variables:** `SPRING_DATASOURCE_URL` (default `jdbc:mysql://localhost:3309/ventas`), `SPRING_DATA_REDIS_HOST/PORT`, `SPRING_RABBITMQ_*`, `TICKETYA_URI_EVENTOS`, `TICKETYA_URI_ENTRADAS`, `TICKETYA_FILA_*`.

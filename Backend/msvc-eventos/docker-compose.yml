@@ -45,6 +45,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # El entrypoint de MySQL levanta un servidor temporal sin red mientras corre init.sql:
+      # sin start_period los sondeos fallidos pueden agotar los retries en el primer arranque.
+      start_period: 60s
 
 volumes:
   eventos_data:
