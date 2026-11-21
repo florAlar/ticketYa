@@ -11,10 +11,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 import ventas.clients.EntradasClient;
 import ventas.clients.EntradasClient.ResumenSector;
 import ventas.clients.EventosClient;
@@ -24,6 +22,7 @@ import ventas.dto.ReporteDTO;
 import ventas.entity.CupoSector;
 import ventas.exception.ForbiddenException;
 import ventas.exception.ResourceNotFoundException;
+import ventas.exception.ServiceUnavailableException;
 import ventas.observability.Bitacora;
 import ventas.repository.CompraRepository;
 import ventas.repository.CupoSectorRepository;
@@ -213,7 +212,7 @@ public class ReporteServiceImpl implements ReporteService {
         } catch (FeignException.NotFound e) {
             throw new ResourceNotFoundException("Evento no encontrado: " + idEvento);
         } catch (FeignException e) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "No se pudo consultar el evento (eventos)");
+            throw new ServiceUnavailableException("No se pudo consultar el evento (eventos)");
         }
         if (evento == null) {
             throw new ResourceNotFoundException("Evento no encontrado: " + idEvento);
@@ -230,8 +229,8 @@ public class ReporteServiceImpl implements ReporteService {
             return r != null ? r : List.of();
         } catch (FeignException e) {
             // Sin entradas no se pueden informar devoluciones ni ingresos: no se entrega un reporte engañoso.
-            throw new ResponseStatusException(
-                    HttpStatus.SERVICE_UNAVAILABLE, "No se pudo consultar las entradas del evento (entradas)");
+            throw new ServiceUnavailableException(
+                    "No se pudo consultar las entradas del evento (entradas)");
         }
     }
 }

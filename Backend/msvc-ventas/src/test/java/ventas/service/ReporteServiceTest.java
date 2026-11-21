@@ -19,8 +19,6 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 import ventas.clients.EntradasClient;
 import ventas.clients.EntradasClient.ResumenSector;
 import ventas.clients.EventosClient;
@@ -30,6 +28,7 @@ import ventas.dto.ReporteDTO;
 import ventas.entity.CupoSector;
 import ventas.exception.ForbiddenException;
 import ventas.exception.ResourceNotFoundException;
+import ventas.exception.ServiceUnavailableException;
 import ventas.repository.CompraRepository;
 import ventas.repository.CupoSectorRepository;
 
@@ -214,14 +213,14 @@ class ReporteServiceTest {
     @Test
     void siEventosOEntradasFallan_es503_yNoSeEntregaUnReporteParcial() {
         when(eventosClient.getEvento(EVENTO)).thenThrow(feign(500));
-        ResponseStatusException e1 =
-                assertThrows(ResponseStatusException.class, () -> service.reporte(EVENTO, ORG, "ORGANIZADOR"));
-        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, e1.getStatusCode());
+        ServiceUnavailableException e1 =
+                assertThrows(ServiceUnavailableException.class, () -> service.reporte(EVENTO, ORG, "ORGANIZADOR"));
+        assertTrue(e1.getMessage().contains("eventos"));
 
         doReturn(evento()).when(eventosClient).getEvento(EVENTO);
         when(entradasClient.resumenEvento(EVENTO)).thenThrow(feign(503));
-        ResponseStatusException e2 =
-                assertThrows(ResponseStatusException.class, () -> service.reporte(EVENTO, ORG, "ORGANIZADOR"));
-        assertTrue(e2.getReason().contains("entradas"));
+        ServiceUnavailableException e2 =
+                assertThrows(ServiceUnavailableException.class, () -> service.reporte(EVENTO, ORG, "ORGANIZADOR"));
+        assertTrue(e2.getMessage().contains("entradas"));
     }
 }

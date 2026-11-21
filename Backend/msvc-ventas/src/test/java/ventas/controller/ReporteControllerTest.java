@@ -21,6 +21,7 @@ import ventas.dto.ReporteDTO;
 import ventas.exception.ForbiddenException;
 import ventas.exception.GlobalExceptionHandler;
 import ventas.exception.ResourceNotFoundException;
+import ventas.exception.ServiceUnavailableException;
 import ventas.service.ReporteService;
 
 /** E2-REP-01: contrato HTTP de /reportes/eventos/{id}/** (identidad = headers del gateway). */
@@ -106,5 +107,18 @@ class ReporteControllerTest {
                 .thenThrow(new ResourceNotFoundException("Evento no encontrado"));
 
         pedir("", "ORGANIZADOR").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void dependenciaCaida_503ConCuerpoEstandar() throws Exception {
+        when(service.reporte(eq(EVENTO), eq(ORG), eq("ORGANIZADOR")))
+                .thenThrow(new ServiceUnavailableException("No se pudo consultar el evento (eventos)"));
+
+        pedir("", "ORGANIZADOR")
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.status").value(503))
+                .andExpect(jsonPath("$.error").value("Service Unavailable"))
+                .andExpect(jsonPath("$.message").value("No se pudo consultar el evento (eventos)"))
+                .andExpect(jsonPath("$.timestamp").exists());
     }
 }
