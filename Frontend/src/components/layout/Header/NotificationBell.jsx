@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { HiOutlineBell } from 'react-icons/hi'
 import useAuth from '../../../hooks/useAuth'
 import useAsync from '../../../hooks/useAsync'
@@ -19,6 +19,7 @@ const DROPDOWN_SIZE = 6
 
 export default function NotificationBell() {
   const { isAuthenticated, token } = useAuth()
+  const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef(null)
   const enabled = FEATURE.notificaciones && isAuthenticated && Boolean(token)
@@ -94,6 +95,12 @@ export default function NotificationBell() {
     }
   }
 
+  const openNotification = (notificacion) => {
+    markRead(notificacion)
+    setOpen(false)
+    navigate('/notificaciones')
+  }
+
   if (!enabled) {
     return null
   }
@@ -153,7 +160,7 @@ export default function NotificationBell() {
                     className={`notification-bell__item ${
                       n.leida ? '' : 'is-unread'
                     }`}
-                    onClick={() => markRead(n)}
+                    onClick={() => openNotification(n)}
                   >
                     <span className="notification-bell__item-top">
                       <span className="notification-bell__type">
