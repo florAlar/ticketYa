@@ -96,8 +96,7 @@ class CompraConfirmadaPublisherIT {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @BeforeEach
     void setUp() {
