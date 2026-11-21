@@ -140,6 +140,12 @@ Todas son opcionales en desarrollo; los compose aplican estos valores por defect
 | `RABBITMQ_PASSWORD` | `ticketya_dev` | Password del usuario `ticketya` en RabbitMQ |
 | `JWT_SECRET` | secreto de desarrollo | **Compartido** entre gateway y `msvc-usuarios` |
 | `TICKETYA_INTERNAL_TOKEN` | `ticketya_dev_internal` | Sella llamadas internas (fila virtual y backfill) |
+| `TICKETYA_FILA_PREFIX` | `fila` | Prefijo de las claves Redis de la fila virtual |
+| `TICKETYA_FILA_TTL_HOURS` | `24` | TTL de las claves de la fila |
+| `TICKETYA_FILA_TOKEN_TTL_MINUTES` | `10` | TTL del token de compra |
+| `TICKETYA_FILA_AUTO_ENABLED` | `true` | Job automático de tandas; `false` para B2/manual |
+| `TICKETYA_FILA_AUTO_TAMANIO` | `25` | Posiciones que abre cada tick automático |
+| `TICKETYA_FILA_AUTO_INTERVALO_MS` | `10000` | Frecuencia del job de tandas |
 | `TICKETYA_NOTIF_ENVIO_INTERVALO_MS` | `30000` | Frecuencia del worker de notificaciones |
 
 > Si rotás `JWT_SECRET`, usá el mismo valor en gateway y usuarios; si no, el gateway rechaza todos los tokens.

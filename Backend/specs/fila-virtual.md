@@ -679,7 +679,7 @@ Estos chequeos complementan al IT existente (`docs/testing/concurrencia.md`, `As
 
 ### Parte B — Escenario con fila
 
-**T-B.1 Preparación.** Evento PUBLICADO con `esAltaDemanda = true`, **sector general** y cupo suficiente. Mismo baseline SQL y mismo pool de usuarios. Configurar el contenedor de ventas con `TICKETYA_FILA_AUTO_TAMANIO`, `TICKETYA_FILA_AUTO_INTERVALO_MS` y `TICKETYA_FILA_AUTO_ENABLED` **[NV: cómo se inyectan en el compose de `msvc-ventas`]**.
+**T-B.1 Preparación.** Evento PUBLICADO con `esAltaDemanda = true`, **sector general** y cupo suficiente. Mismo baseline SQL y mismo pool de usuarios. Configurar el contenedor de ventas con `TICKETYA_FILA_AUTO_TAMANIO`, `TICKETYA_FILA_AUTO_INTERVALO_MS` y `TICKETYA_FILA_AUTO_ENABLED`: el compose de `msvc-ventas` ya los recibe desde `.env`/shell (`msvc-ventas/docker-compose.yml`, bloque `TICKETYA_FILA_*`).
 
 **T-B.2 Thread Group CLIENTES** (`docs/testing/carga/compra-con-fila.jmx`). Por hilo:
 
@@ -763,7 +763,7 @@ git diff --check && git status --short
 - **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests, 0 fallos/errores) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
 - **[V parcial]** Docker y JMeter: se ejecutó la corrida humo de 5 usuarios (0 % error) con JMeter 5.6.3 y el IT de Redis de la fila con Docker (`-Pit`). `E2-TST-03` sigue `parcial`: falta la corrida formal 25/50/100, la verificación de evicción de Redis y completar `docs/testing/carga.md`; no se inventaron métricas.
 - **[NV]** Configuración real de Redis (`maxmemory`, evicción, persistencia): la política `volatile-lru` con 256 MB proviene de una revisión del plan, no de una lectura del repo.
-- **[NV]** Credenciales de MySQL, forma de inyectar `TICKETYA_FILA_AUTO_*` al contenedor de ventas del compose y endpoint de health.
+- **[NV]** Credenciales de MySQL y endpoint de health. **[V]** `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
 - **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.
 - **[NV]** Si el tablero de Trello tiene una US de fila con CA propios.
 - **[V]** Formato de body y response de los 5 endpoints: definido acá, implementado y documentado en OpenAPI/Postman.

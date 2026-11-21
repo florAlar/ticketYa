@@ -35,6 +35,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-20 (completitud):** `msvc-eventos.json` suma `GET /lugares/geocodificar` y el schema `Coordenadas`; `msvc-ventas.json` suma `GET /compras/evento/{idEvento}`. `openapi-bundle.json` regenerado (eventos: 28 ops / 18 paths / 20 schemas; ventas: 28 ops / 26 paths / 30 schemas).
 >
 > **Actualizado 2026-11-20 (notificaciones):** se incorpora `msvc-notificaciones.json` al `openapi-bundle.json`. El detalle y el marcar leída documentan **404** cuando la notificación no existe o es de otro usuario (el msvc no revela su existencia; antes figuraba 403); `ApiError` refleja el formato real, incluyendo los campos del error por defecto de validación de Spring. El módulo de notificaciones aún no expone springdoc en runtime, por lo que su JSON se mantiene estáticamente.
+>
+> **Actualizado 2026-11-20 (fila virtual):** `msvc-ventas.json` documenta el **404** de `POST /eventos/{id}/fila/ingreso` (evento inexistente) y el campo `reingreso` en `FilaPosicion`; las respuestas 400/401/409 de `POST /reservas` usan el schema `ApiError` real. `openapi-bundle.json` regenerado.
 
 ## Regeneración (tras cambios en anotaciones)
 

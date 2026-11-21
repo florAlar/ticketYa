@@ -90,7 +90,7 @@ Abrí `report/index.html` al terminar.
 ## Variantes de la fila
  
 - **B1 (default):** la tanda la habilita automáticamente el job del servicio.
-- **B2 (habilitación manual):** levantar el servicio con `TICKETYA_FILA_AUTO_ENABLED=false` y agregar:
+- **B2 (habilitación manual):** definir `TICKETYA_FILA_AUTO_ENABLED=false` en `.env`/shell y recrear `ms-ventas` (`docker compose up -d --force-recreate ms-ventas`), y agregar:
 ```bash
 -JadminThreads=1 -JadminToken=<JWT_ADMIN> -JadminPaso=25 -JadminIntervalo=10000
 ```
