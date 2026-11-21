@@ -111,7 +111,8 @@ Usuarios: `demo@ticketya.com` / `demo1234`, `org@ticketya.com` / `org1234`,
 
 - **F6 (fila virtual):** escenario opcional, no implementado en esta iteración.
 - **Degradación con dependencia caída (F5 → 503):** requiere detener un contenedor a mitad del
-  test. Se cubre en los unitarios/ITs del reporte; el E2E valida el camino feliz.
+  test. Se cubre en los unitarios/controlador del reporte (excepción propia + cuerpo estándar); el
+  E2E valida el camino feliz.
 - **Carga y throughput:** `E2-TST-03`.
 - **Matriz completa de roles:** `E2-TST-02`.
 - **UI:** los E2E hablan solo con el gateway.

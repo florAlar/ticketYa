@@ -262,8 +262,9 @@ Backend/
 - [x] Los mensajes Rabbit se verifican por su efecto observable (DB, inbox, MailHog), no solo por el log.
 - [x] La reentrega del mismo `messageId`/`compraId`/`devolucionId` no duplica datos (ITs de idempotencia).
 - [x] Cada escenario es independiente y repetible.
-- [ ] El fallo de una dependencia se refleja en el status esperado (`503`) y no deja datos parciales.
-  (Fuera de alcance de esta iteración: cubierto por unitarios/ITs del reporte; ver §4.)
+- [x] El fallo de una dependencia se refleja en el status esperado (`503`) y no deja datos parciales
+  (cubierto por `ReporteServiceTest` y `ReporteControllerTest` de ventas: excepción propia + cuerpo
+  de error estándar; el E2E no tumba dependencias a mitad de corrida).
 - [x] El script deja el entorno limpio al terminar (incluso si falla).
 - [x] `mvn test` sigue sin Docker; `mvn -Pe2e verify` (o `scripts/e2e.sh`) es el único que levanta el stack.
 - [x] Se documenta la corrida en `docs/testing/integracion-msvc.md` con fecha, comandos y resultados.
