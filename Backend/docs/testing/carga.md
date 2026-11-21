@@ -5,6 +5,9 @@ Los planes JMeter y el andamiaje de verificación están listos. Se ejecutó una
 5 usuarios y 0 % de error** (JMeter 5.6.3). **Falta la corrida formal 25/50/100**: las tablas de
 resultados siguen vacías y no deben interpretarse como medidas. Ver `Pendiente de ejecución`.
 
+Plan de ejecución formal (matriz A/B, integridad SQL/Redis y evidencia):
+[`specs/carga-e2-tst-03.md`](../../specs/carga-e2-tst-03.md).
+
 Diseño: `Backend/specs/fila-virtual.md` §15. Antes de cada corrida: `cd Backend && docker compose down -v && docker compose up -d --build` (**`down -v` borra los datos de todas las bases**).
 
 ---
