@@ -46,11 +46,11 @@ Sin base de datos (unitarios y contrato OpenAPI; no requieren Docker):
 cd Backend
 
 (cd msvc-notificaciones && mvn test)   # 42 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP y OpenAPI
-(cd msvc-eventos        && mvn test)   # 193 tests: publicación/modificación/cancelación
-(cd msvc-ventas         && mvn test)   # 161 tests: compra/pago + evento compra.confirmada
+(cd msvc-eventos        && mvn test)   # 203 tests: publicación/modificación/cancelación
+(cd msvc-ventas         && mvn test)   # 219 tests: compra/pago + evento compra.confirmada
 (cd msvc-entradas       && mvn test)   # 85 tests: entradas/QR/devoluciones + evento devolucion.aprobada
-(cd msvc-preferencias   && mvn test)   # 12 tests: preferencias + matching
-(cd APIGateway          && mvn test)   # 44 tests: autorización de /api/notificaciones
+(cd msvc-preferencias   && mvn test)   # 39 tests: preferencias + matching
+(cd APIGateway          && mvn test)   # 146 tests: autorización de /api/notificaciones
 ```
 
 > No se usa H2 ni ninguna base embebida. `NotificacionOpenApiTest` valida `/v3/api-docs` con un
