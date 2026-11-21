@@ -13,8 +13,8 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 | --- | --- | --- |
 | GET /eventos/disponibilidad?ids= | **hecho** | Batch catálogo (máx 50 ids). 1 query `cupo_sector`. Sin filas → ítem agotado total 0 |
 | GET /eventos/{id}/disponibilidad | **hecho** | Cupos `cupo_sector`; 404 si no hay filas. DTO: disponibleTotal + nivelCupo + por sector `asientosOcupados[{fila,numero,estado}]` (solo sectores numerados; el resto del layout está libre) |
-| POST /eventos/{id}/cupos | **hecho** | Abre stock al publicar (body `{sectores:[{idSector,capacidadTotal≥1}]}`). Idempotente. Feign desde msvc-eventos; GW `/api/eventos/{id}/cupos` |
-| POST /eventos/{id}/cupos/liberacion | **hecho** | Devuelve stock por devolución aprobada. Body `{idSector, cantidad≥1}` o, en sector numerado, `{idSector, asientos:[{fila,numero}]}` (deben figurar VENDIDO; `cantidad` se ignora). Lock pesimista; `-vendida` `+disponible`. Feign msvc-entradas; GW order 9 |
+| POST /eventos/{id}/cupos | **hecho** | Abre stock al publicar (body `{sectores:[{idSector,capacidadTotal≥1}]}`). Idempotente. Feign desde msvc-eventos; GW `/api/eventos/{id}/cupos` (solo ADMIN) |
+| POST /eventos/{id}/cupos/liberacion | **hecho** | Devuelve stock por devolución aprobada. Body `{idSector, cantidad≥1}` o, en sector numerado, `{idSector, asientos:[{fila,numero}]}` (deben figurar VENDIDO; `cantidad` se ignora). Lock pesimista; `-vendida` `+disponible`. Feign msvc-entradas; GW order 9 (solo ADMIN) |
 | POST /reservas | **hecho** | TTL 10 min; lock pesimista cupo; precio vía Feign msvc-eventos; `X-User-Id`; opcional `Idempotency-Key` |
 | GET /reservas/{id} | **hecho** | Solo dueño; expira lazy si TTL vencido |
 | POST /reservas/{id}/confirmacion | **hecho** | PENDIENTE → CONFIRMADA |

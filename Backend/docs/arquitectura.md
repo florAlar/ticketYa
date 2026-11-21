@@ -119,7 +119,7 @@ se vacían). Detalle en el `README.md` raíz.
 
 ## 7. Despliegue
 
-`cd Backend && docker compose up -d --build` levanta gateway, microservicios, bases y frontend (15 contenedores). Puertos y diagrama Docker: `specs/infraestructura.md`.
+`cd Backend && docker compose up -d --build` levanta gateway, microservicios, bases, RabbitMQ, MailHog y frontend (17 contenedores). Puertos y diagrama Docker: `specs/infraestructura.md`.
 
 ## 8. Trazabilidad y bitácora
 

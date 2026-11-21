@@ -23,7 +23,7 @@ cd Backend
 docker compose up -d --build
 ```
 
-El primer build tarda unos minutos. Levanta 15 contenedores: gateway, 6 msvc, frontend (Nginx) y sus bases (MySQL, MongoDB, Redis).
+El primer build tarda unos minutos. Levanta 17 contenedores: gateway, 6 microservicios, frontend (Nginx), 5 MySQL, MongoDB, Redis, RabbitMQ y MailHog.
 
 Verificar:
 
@@ -59,7 +59,7 @@ curl -s http://localhost:8080/api/eventos                              # gateway
 | **3311** | MySQL de notificaciones | Solo `msvc-notificaciones` |
 | **27018** | MongoDB de preferencias (27017 interno) | Solo `msvc-preferencias` |
 | **6380** | Redis de ventas (6379 interno) | Solo `msvc-ventas` (fila virtual / locks) |
-| **5672** | RabbitMQ (AMQP) | `msvc-eventos`, `msvc-ventas`, `msvc-preferencias`, `msvc-notificaciones` (publican/consumen en `eventos.exchange`) |
+| **5672** | RabbitMQ (AMQP) | `msvc-eventos`, `msvc-ventas`, `msvc-entradas`, `msvc-preferencias`, `msvc-notificaciones` (publican/consumen en `eventos.exchange`) |
 | **15672** | RabbitMQ Management UI | Interfaz web para inspeccionar colas (`ticketya` / `ticketya_dev`) |
 | **1025** | MailHog SMTP | `msvc-notificaciones` (envío de emails de prueba) |
 | **8025** | MailHog Web UI | Para ver los emails enviados |

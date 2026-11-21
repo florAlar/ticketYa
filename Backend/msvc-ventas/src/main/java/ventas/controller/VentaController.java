@@ -115,7 +115,7 @@ public class VentaController {
             description = """
                     Crea/asegura el stock por sector al publicar. Idempotente por (idEvento, idSector):
                     si el cupo ya existe no resetea vendido/reservado.
-                    Uso principal: Feign desde msvc-eventos; vía gateway requiere ORGANIZADOR o ADMIN.
+                    Uso principal: Feign desde msvc-eventos; vía gateway requiere ADMIN.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({
@@ -142,7 +142,7 @@ public class VentaController {
             summary = "Liberar cupo por devolución",
             description = """
                     Devuelve unidades al disponible del sector (devolución aprobada).
-                    Uso principal: Feign desde msvc-entradas; vía gateway requiere ORGANIZADOR o ADMIN.
+                    Uso principal: Feign desde msvc-entradas; vía gateway requiere ADMIN.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({

@@ -7,8 +7,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | Archivo | Contenido |
 |---------|-----------|
 | `msvc-usuarios.json` | Contrato de usuarios/auth (12 ops / 10 paths) |
-| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (27 ops / 17 paths) |
-| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador y fila virtual (26 ops / 24 paths, 30 schemas) |
+| `msvc-eventos.json` | Contrato de eventos/lugares/participantes (28 ops / 18 paths) |
+| `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador y fila virtual (28 ops / 26 paths, 30 schemas) |
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
 | `msvc-preferencias.json` | Contrato de preferencias, historial y recomendaciones (13 ops / 11 paths, 11 schemas) |
 | `openapi-bundle.json` | Bundle consolidado: metadatos + los 5 specs bajo la clave `specs` |
@@ -21,7 +21,7 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-11 (lugares):** `msvc-eventos.json`: el lugar suma `latitud` y `longitud` opcionales (`LugarRequest`, `Lugar`, `LugarDetalle`) y `quitarCoordenadas` en el pedido. `openapi-bundle.json` regenerado.
 >
-> **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos: 26 operaciones / 17 paths.
+> **Actualizado 2026-11-11 (baja de lugares):** `msvc-eventos.json` suma `DELETE /lugares/{id}` (solo ADMIN; 409 si el lugar tiene eventos). Eventos (estado actual): 28 operaciones / 18 paths.
 >
 > **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
 
@@ -29,7 +29,9 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-16 (E2-PRE):** nuevo `msvc-preferencias.json` con preferencias, artistas, historial, recomendaciones propias/similares y backfill interno (`X-Internal-Token`). `openapi-bundle.json` regenerado con 5 specs.
 >
-> **Actualizado 2026-11-19 (FIL-04):** `msvc-ventas.json` suma la carpeta `Fila virtual` con los 5 endpoints (`POST/GET /eventos/{idEvento}/fila/ingreso|posicion|estado|validacion|habilitacion` en el contrato interno; el gateway los expone como `/api/eventos/{id}/fila/**`), los schemas `Fila*`, el schema de error `ApiError` con `code`/`extras` y los 8 códigos `FILA_*` en `x-error-codes`. `GET .../fila/estado` es público (sin `security`); los otros cuatro usan `bearerAuth`. `POST /reservas` documenta el campo opcional `tokenFila`. `openapi-bundle.json` regenerado (ventas: 26 ops / 24 paths / 30 schemas). Los paths internos usan `{idEvento}` porque ese es el nombre de la variable en `@RequestMapping`; la documentación de gateway/endpoints usa `{id}` como marcador equivalente.
+> **Actualizado 2026-11-19 (FIL-04):** `msvc-ventas.json` suma la carpeta `Fila virtual` con los 5 endpoints (`POST/GET /eventos/{idEvento}/fila/ingreso|posicion|estado|validacion|habilitacion` en el contrato interno; el gateway los expone como `/api/eventos/{id}/fila/**`), los schemas `Fila*`, el schema de error `ApiError` con `code`/`extras` y los 8 códigos `FILA_*` en `x-error-codes`. `GET .../fila/estado` es público (sin `security`); los otros cuatro usan `bearerAuth`. `POST /reservas` documenta el campo opcional `tokenFila`. `openapi-bundle.json` regenerado (ventas: 28 ops / 26 paths / 30 schemas). Los paths internos usan `{idEvento}` porque ese es el nombre de la variable en `@RequestMapping`; la documentación de gateway/endpoints usa `{id}` como marcador equivalente.
+>
+> **Actualizado 2026-11-20 (completitud):** `msvc-eventos.json` suma `GET /lugares/geocodificar` y el schema `Coordenadas`; `msvc-ventas.json` suma `GET /compras/evento/{idEvento}`. `openapi-bundle.json` regenerado (eventos: 28 ops / 18 paths / 20 schemas; ventas: 28 ops / 26 paths / 30 schemas).
 
 ## Regeneración (tras cambios en anotaciones)
 

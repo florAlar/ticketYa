@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19",
+  "generatedAt": "2026-11-20",
   "generator": "springdoc-openapi-starter-webmvc-ui 3.2.0",
   "openapi": "3.1.0",
   "microservices": {
@@ -9,9 +9,9 @@
       "schemas": 11
     },
     "msvc-eventos": {
-      "paths": 17,
-      "operations": 27,
-      "schemas": 19
+      "paths": 18,
+      "operations": 28,
+      "schemas": 20
     },
     "msvc-preferencias": {
       "paths": 11,
@@ -24,8 +24,8 @@
       "schemas": 8
     },
     "msvc-ventas": {
-      "paths": 24,
-      "operations": 26,
+      "paths": 26,
+      "operations": 28,
       "schemas": 30
     }
   },
@@ -1452,6 +1452,85 @@
         }
       ],
       "paths": {
+        "/lugares/geocodificar": {
+          "get": {
+            "tags": [
+              "Lugares"
+            ],
+            "summary": "Geocodificar dirección de un lugar",
+            "description": "Obtiene latitud y longitud a partir de dirección y ciudad (con caché y fallback resiliente). Solo ADMIN.",
+            "operationId": "geocodificar",
+            "parameters": [
+              {
+                "name": "direccion",
+                "in": "query",
+                "description": "Dirección (calle y número)",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Av. Figueroa Alcorta 7597"
+              },
+              {
+                "name": "ciudad",
+                "in": "query",
+                "description": "Ciudad",
+                "required": false,
+                "schema": {
+                  "type": "string"
+                },
+                "example": "Buenos Aires"
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Coordenadas encontradas",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Coordenadas"
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "Falta ciudad",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "403": {
+                "description": "Rol insuficiente",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "404": {
+                "description": "Sin coincidencias para la dirección",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "security": [
+              {
+                "bearerAuth": []
+              }
+            ]
+          }
+        },
         "/sectores/{id}": {
           "put": {
             "tags": [
@@ -1939,7 +2018,7 @@
               "Eventos"
             ],
             "summary": "Editar evento",
-            "description": "Actualiza un evento editable. Reemplaza lugar/sectores según el body.\nRequiere ser dueño del evento o ADMIN.\n",
+            "description": "Actualiza un evento editable. Reemplaza lugar/sectores según el body.\nRequiere ser dueño del evento o ADMIN.\n\nAdmite body parcial con solo {esAltaDemanda} (popup de publicación del front). Si el flag cambia en un evento no BORRADOR, sincroniza la fila en ventas.\n",
             "operationId": "actualizar_2",
             "parameters": [
               {
@@ -2841,7 +2920,7 @@
               "Eventos"
             ],
             "summary": "Publicar evento",
-            "description": "Valida nombre, fecha, lugar y al menos un sector con precio; abre el stock\nen msvc-ventas y pasa a PUBLICADO. Si la apertura de cupos falla, la\npublicación falla (no queda estado parcial). Dueño o ADMIN.\n",
+            "description": "Valida nombre, fecha, lugar y al menos un sector con precio; abre el stock\nen msvc-ventas y pasa a PUBLICADO. Si la apertura de cupos falla, la\npublicación falla (no queda estado parcial). Dueño o ADMIN.\n\nRegla de negocio: si el cupo total de los sectores activos supera 5000 personas, se fuerza esAltaDemanda=true aunque el body lo mande en false. Además se notifica a msvc-ventas para reanudar la fila virtual.\n",
             "operationId": "publicar",
             "parameters": [
               {
@@ -3027,7 +3106,7 @@
               "Eventos"
             ],
             "summary": "Cambiar estado del evento",
-            "description": "Transiciones de estado (SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO, …).\nPasar a PUBLICADO requiere rol ADMIN; desde BORRADOR solo se puede publicar.\n",
+            "description": "Transiciones de estado (SUSPENDIDO, CANCELADO, AGOTADO, FINALIZADO, …).\nPasar a PUBLICADO requiere rol ADMIN; desde BORRADOR solo se puede publicar.\n\nToda salida de PUBLICADO pausa la fila virtual; PUBLICADO la reanuda.\n",
             "operationId": "patchEstado",
             "parameters": [
               {
@@ -3309,6 +3388,22 @@
       },
       "components": {
         "schemas": {
+          "Coordenadas": {
+            "type": "object",
+            "description": "Coordenadas geográficas en grados decimales (WGS84)",
+            "properties": {
+              "latitud": {
+                "type": "number",
+                "description": "Latitud (-90 a 90)",
+                "example": -34.5453
+              },
+              "longitud": {
+                "type": "number",
+                "description": "Longitud (-180 a 180)",
+                "example": -58.4497
+              }
+            }
+          },
           "SectorRequest": {
             "type": "object",
             "description": "Alta o edición de un sector del lugar",
@@ -5889,9 +5984,62 @@
         {
           "name": "Fila virtual",
           "description": "Ingreso, posición, estado, tandas y token de alta demanda."
+        },
+        {
+          "name": "Interno",
+          "description": "Endpoints entre microservicios, fuera del gateway."
         }
       ],
       "paths": {
+        "/compras/evento/{idEvento}": {
+          "get": {
+            "tags": [
+              "Ventas"
+            ],
+            "summary": "Clientes con compra aprobada de un evento",
+            "description": "Uso interno (Feign msvc-notificaciones): ids de clientes a notificar ante una cancelación. No requiere identidad de usuario.",
+            "operationId": "listarClientesAprobadosPorEvento",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "description": "UUID del evento",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responses": {
+              "200": {
+                "description": "Ids de clientes (puede ser vacío)",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "400": {
+                "description": "idEvento inválido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "x-internal": {
+              "value": "true"
+            }
+          }
+        },
         "/reservas": {
           "post": {
             "tags": [
@@ -6292,7 +6440,7 @@
               "Ventas"
             ],
             "summary": "Abrir cupos comerciales del evento",
-            "description": "Crea/asegura el stock por sector al publicar. Idempotente por (idEvento, idSector):\nsi el cupo ya existe no resetea vendido/reservado.\nUso principal: Feign desde msvc-eventos; vía gateway requiere ORGANIZADOR o ADMIN.\n",
+            "description": "Crea/asegura el stock por sector al publicar. Idempotente por (idEvento, idSector):\nsi el cupo ya existe no resetea vendido/reservado.\nUso principal: Feign desde msvc-eventos; vía gateway requiere ADMIN.\n",
             "operationId": "abrirCupos",
             "parameters": [
               {
@@ -6360,7 +6508,7 @@
               "Ventas"
             ],
             "summary": "Liberar cupo por devolución",
-            "description": "Devuelve unidades al disponible del sector (devolución aprobada).\nUso principal: Feign desde msvc-entradas; vía gateway requiere ORGANIZADOR o ADMIN.\n",
+            "description": "Devuelve unidades al disponible del sector (devolución aprobada).\nUso principal: Feign desde msvc-entradas; vía gateway requiere ADMIN.\n",
             "operationId": "liberarCupo",
             "parameters": [
               {
@@ -7268,8 +7416,8 @@
               }
             ],
             "responses": {
-              "200": {
-                "description": "Reingreso con la misma posición",
+              "201": {
+                "description": "Primera entrada",
                 "content": {
                   "*/*": {
                     "schema": {
@@ -7285,8 +7433,8 @@
                   }
                 }
               },
-              "201": {
-                "description": "Primera entrada",
+              "200": {
+                "description": "Reingreso con la misma posición",
                 "content": {
                   "*/*": {
                     "schema": {
@@ -7798,6 +7946,40 @@
               }
             ]
           }
+        },
+        "/internas/fila/{idEvento}/invalidacion": {
+          "post": {
+            "tags": [
+              "Interno"
+            ],
+            "summary": "Sincronizar la fila tras un cambio del evento",
+            "description": "Lo invoca msvc-eventos por Feign al publicar, suspender/cancelar o cambiar esAltaDemanda. Descarta la caché del flag/estado (10 s) para que la fila se pause o se reanude de inmediato. No borra las claves Redis. No está expuesto por el API Gateway.\n",
+            "operationId": "invalidarCacheFila",
+            "parameters": [
+              {
+                "name": "idEvento",
+                "in": "path",
+                "required": true,
+                "description": "UUID del evento",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "security": [
+              {
+                "internalToken": []
+              }
+            ],
+            "responses": {
+              "204": {
+                "description": "Caché invalidada"
+              },
+              "401": {
+                "description": "X-Internal-Token ausente o inválido"
+              }
+            }
+          }
         }
       },
       "components": {
@@ -7935,7 +8117,7 @@
               "precioUnitario": {
                 "type": "number",
                 "description": "Precio unitario",
-                "example": 95000
+                "example": 95000.0
               },
               "asientos": {
                 "type": "array",
@@ -7985,7 +8167,7 @@
               "total": {
                 "type": "number",
                 "description": "Total de la reserva",
-                "example": 190000
+                "example": 190000.0
               },
               "detalles": {
                 "type": "array",
@@ -8039,7 +8221,7 @@
               "monto": {
                 "type": "number",
                 "description": "Importe pagado",
-                "example": 190000
+                "example": 190000.0
               },
               "estado": {
                 "type": "string",
@@ -8279,7 +8461,7 @@
               "total": {
                 "type": "number",
                 "description": "Importe total",
-                "example": 190000
+                "example": 190000.0
               },
               "moneda": {
                 "type": "string",
@@ -8409,22 +8591,22 @@
               "recaudacionBruta": {
                 "type": "number",
                 "description": "Recaudación bruta (compras aprobadas)",
-                "example": 21600000
+                "example": 21600000.0
               },
               "recaudacionDevuelta": {
                 "type": "number",
                 "description": "Monto de entradas devueltas",
-                "example": 1080000
+                "example": 1080000.0
               },
               "recaudacionAReintegrar": {
                 "type": "number",
                 "description": "Monto pendiente de reintegro por cancelación",
-                "example": 0
+                "example": 0.0
               },
               "recaudacionNeta": {
                 "type": "number",
                 "description": "Recaudación neta = bruta - devuelta - aReintegrar",
-                "example": 20520000
+                "example": 20520000.0
               }
             }
           },
@@ -8868,6 +9050,12 @@
             "description": "JWT emitido por POST /auth/login de msvc-usuarios.\nEl gateway valida la firma y propaga X-User-Id, X-User-Email,\nX-User-Role y X-User-Roles a este microservicio.\n",
             "scheme": "bearer",
             "bearerFormat": "JWT"
+          },
+          "internalToken": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "X-Internal-Token",
+            "description": "Token compartido entre microservicios (TICKETYA_INTERNAL_TOKEN). Solo llamadas internas."
           }
         }
       }

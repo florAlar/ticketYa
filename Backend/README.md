@@ -275,12 +275,14 @@ Dentro del módulo correspondiente:
 ```bash
 mvn test                              # unitarios
 mvn test -Dtest=ClaseTest             # una clase puntual
-mvn -Pit verify                       # integración con Testcontainers (requiere Docker)
+mvn -Pit verify                       # solo ventas/entradas/preferencias (requiere Docker)
 ```
+
+El perfil `it` está definido solo en `msvc-ventas`, `msvc-entradas` y `msvc-preferencias`; en el resto de los módulos, `mvn test` ejecuta los tests disponibles. Los IT levantan MySQL/Redis reales vía Testcontainers.
 
 > No ejecutes varios `mvn` en paralelo sobre el mismo `~/.m2`.
 
-Los tests de integración usan el perfil `it` y levantan MySQL/Redis reales vía Testcontainers. Informe de concurrencia: [`docs/testing/concurrencia.md`](docs/testing/concurrencia.md).
+Informe de concurrencia: [`docs/testing/concurrencia.md`](docs/testing/concurrencia.md).
 
 ---
 

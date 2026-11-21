@@ -26,10 +26,10 @@ Se utilizará una arquitectura Docker modular que permita desarrollar y ejecutar
 |---|---|
 | Usuarios | Spring Boot + MySQL |
 | Eventos | Spring Boot + MySQL + RabbitMQ (produce eventos) |
-| Ventas | Spring Boot + MySQL + Redis |
-| Entradas | Spring Boot + MySQL |
-| Preferencias | Spring Boot + MongoDB |
-| Notificaciones | Spring Boot + MySQL + RabbitMQ (consume eventos) |
+| Ventas | Spring Boot + MySQL + Redis + RabbitMQ (publica compras) |
+| Entradas | Spring Boot + MySQL + RabbitMQ (publica devoluciones) |
+| Preferencias | Spring Boot + MongoDB + RabbitMQ (consume compras) |
+| Notificaciones | Spring Boot + MySQL + RabbitMQ + MailHog (consume eventos y envía email) |
 | API Gateway | Spring Boot |
 
 Cada microservicio tendrá su propia base de datos lógica y será responsable exclusivo de administrar sus datos, una base por microservicio.
@@ -69,7 +69,7 @@ docker compose down
 - Cada microservicio y el API Gateway tienen su propio Dockerfile.
 - Cada microservicio tiene su propio docker-compose.yml, que levanta su aplicación y su base de datos (el Gateway solo la app).
 - El Compose general en Backend/ permite levantar todo el sistema con `include`.
-- El broker RabbitMQ se define una sola vez en `infrastructure/rabbitmq/docker-compose.yml` y lo incluyen los servicios que lo usan (`msvc-eventos`, `msvc-notificaciones`).
+- El broker RabbitMQ se define una sola vez en `infrastructure/rabbitmq/docker-compose.yml` y lo incluyen los servicios que lo usan (`msvc-eventos`, `msvc-ventas`, `msvc-entradas`, `msvc-preferencias`, `msvc-notificaciones`).
 - Utilizamos MySQL 8.4, MongoDB, Redis y RabbitMQ.
 - Los puertos se publican en localhost y coinciden con `EXPOSE` del Dockerfile y `server.port` del `application.yml` o `application.properties`.
 - Cada microservicio tiene su propia instancia de base de datos, no comparte contenedores MySQL con otros servicios.
@@ -90,6 +90,7 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 | ms-preferencias | 8085 | 8085 |
 | ms-notificaciones | 8086 | 8086 |
 | ms-frontend | 3000 | 80 |
+| ms-frontend (HTTP alternativo) | 80 | 80 |
 | db-mysql-usuarios | 3307 | 3306 |
 | db-mysql-eventos | 3308 | 3306 |
 | db-mysql-ventas | 3309 | 3306 |
@@ -99,6 +100,8 @@ Se asignan puertos locales diferenciados para evitar conflictos cuando se ejecut
 | db-redis-ventas | 6380 | 6379 |
 | rabbitmq | 5672 | 5672 |
 | rabbitmq (panel) | 15672 | 15672 |
+| mailhog (SMTP) | 1025 | 1025 |
+| mailhog (UI) | 8025 | 8025 |
 
 ### Consideraciones
 
