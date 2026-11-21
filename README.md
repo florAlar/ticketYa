@@ -197,7 +197,7 @@ mvn test -Dtest=ClaseTest             # una clase puntual
 mvn -Pit verify                       # integración con Testcontainers (requiere Docker)
 ```
 
-El perfil `it` está definido en `msvc-ventas`, `msvc-entradas` y `msvc-preferencias`; el resto ejecuta sus tests con `mvn test`. **No corras varios Maven en paralelo** sobre el mismo `~/.m2`.
+El perfil `it` está definido en los **6 microservicios**: `mvn -Pit verify` ejecuta las ITs (`*IT.java`) contra MySQL real con Testcontainers, y `mvn test` corre solo los unitarios sin Docker. **No corras varios Maven en paralelo** sobre el mismo `~/.m2`.
 
 Frontend:
 
