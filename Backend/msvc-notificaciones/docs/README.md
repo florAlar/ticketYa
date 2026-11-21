@@ -78,7 +78,7 @@ DLQs: `notificaciones.eventos.dlq`, `notificaciones.compras.dlq`, `notificacione
 | --- | --- | --- |
 | Evento cancelado/suspendido/modificado/publicado | Una entrada por mensaje con `canales` PUSH/EMAIL | `NotificacionServiceImplTest` |
 | Reentrega del mismo `messageId` | No duplica la notificación | `NotificacionServiceImplTest` |
-| Compra confirmada | Aviso EMAIL al cliente | `NotificacionServiceImplTest`, `CompraConfirmadaIngestIT` (preferencias) |
+| Compra confirmada | Aviso EMAIL al cliente | `NotificacionServiceImplTest` |
 | Devolución aprobada | Aviso PUSH + EMAIL con monto | `NotificacionServiceImplTest`, `DevolucionAprobadaContratoTest` |
 | Preferencia de canal desactivada | No se crea ese canal | `NotificacionServiceImplTest` |
 | Bandeja | Una entrada por mensaje y `noLeidas` por mensaje | `NotificacionControllerTest` |
