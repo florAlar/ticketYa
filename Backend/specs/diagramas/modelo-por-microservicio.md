@@ -261,9 +261,14 @@ erDiagram
         VARCHAR canal
         VARCHAR asunto
         TEXT contenido
+        VARCHAR destinatario "email resuelto (canal EMAIL)"
         DATETIME fecha_creacion
         DATETIME fecha_envio
         VARCHAR estado
+        TINYINT leida
+        DATETIME fecha_lectura
+        VARCHAR clave_idempotencia "tipo:canal:eventoId:messageId | CompraConfirmada:EMAIL:compraId"
+        VARCHAR clave_mensaje "identidad del mensaje sin canal; PUSH y EMAIL comparten valor"
     }
     INTENTO_ENVIO {
         CHAR36 id_intento PK

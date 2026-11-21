@@ -11,7 +11,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 | `msvc-ventas.json` | Contrato de disponibilidad/reservas/compras/pagos/reportes del organizador y fila virtual (28 ops / 26 paths, 30 schemas) |
 | `msvc-entradas.json` | Contrato de entradas/QR/devoluciones/validación de acceso (14 ops / 13 paths, 11 schemas) |
 | `msvc-preferencias.json` | Contrato de preferencias, historial y recomendaciones (13 ops / 11 paths, 11 schemas) |
-| `openapi-bundle.json` | Bundle consolidado: metadatos + los 5 specs bajo la clave `specs` |
+| `msvc-notificaciones.json` | Contrato de notificaciones: bandeja, alta administrativa y estado de envío (7 ops / 6 paths, 4 schemas). Mantenido estáticamente: el módulo aún no incluye springdoc. |
+| `openapi-bundle.json` | Bundle consolidado: metadatos + los 6 specs bajo la clave `specs` |
 
 > **Actualizado 2026-11-10:** los specs incluyen los asientos virtuales (`filas`/`asientosPorFila` en sectores; `asientos` en `POST /reservas`, `POST /eventos/{id}/cupos/liberacion` y `POST /entradas/emision`; `asientosOcupados` en disponibilidad; `fila`/`asiento` en la entrada).
 >
@@ -32,6 +33,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 > **Actualizado 2026-11-19 (FIL-04):** `msvc-ventas.json` suma la carpeta `Fila virtual` con los 5 endpoints (`POST/GET /eventos/{idEvento}/fila/ingreso|posicion|estado|validacion|habilitacion` en el contrato interno; el gateway los expone como `/api/eventos/{id}/fila/**`), los schemas `Fila*`, el schema de error `ApiError` con `code`/`extras` y los 8 códigos `FILA_*` en `x-error-codes`. `GET .../fila/estado` es público (sin `security`); los otros cuatro usan `bearerAuth`. `POST /reservas` documenta el campo opcional `tokenFila`. `openapi-bundle.json` regenerado (ventas: 28 ops / 26 paths / 30 schemas). Los paths internos usan `{idEvento}` porque ese es el nombre de la variable en `@RequestMapping`; la documentación de gateway/endpoints usa `{id}` como marcador equivalente.
 >
 > **Actualizado 2026-11-20 (completitud):** `msvc-eventos.json` suma `GET /lugares/geocodificar` y el schema `Coordenadas`; `msvc-ventas.json` suma `GET /compras/evento/{idEvento}`. `openapi-bundle.json` regenerado (eventos: 28 ops / 18 paths / 20 schemas; ventas: 28 ops / 26 paths / 30 schemas).
+>
+> **Actualizado 2026-11-20 (notificaciones):** se incorpora `msvc-notificaciones.json` al `openapi-bundle.json`. El detalle y el marcar leída documentan **404** cuando la notificación no existe o es de otro usuario (el msvc no revela su existencia; antes figuraba 403); `ApiError` refleja el formato real, incluyendo los campos del error por defecto de validación de Spring. El módulo de notificaciones aún no expone springdoc en runtime, por lo que su JSON se mantiene estáticamente.
 
 ## Regeneración (tras cambios en anotaciones)
 
@@ -49,6 +52,9 @@ curl -s http://localhost:8083/v3/api-docs -o docs/openapi/msvc-ventas.json      
 curl -s http://localhost:8084/v3/api-docs -o docs/openapi/msvc-entradas.json    # puerto 8084
 curl -s http://localhost:8085/v3/api-docs -o docs/openapi/msvc-preferencias.json # puerto 8085
 
+# msvc-notificaciones aún no expone /v3/api-docs: su JSON se mantiene a mano
+# y el bundle lo toma igual por el glob de msvc-*.json.
+
 # 3. Reconstruir el bundle consolidado
 python3 - <<'PY'
 import json, glob, os
@@ -58,7 +64,7 @@ for f in sorted(glob.glob(d+'/msvc-*.json')):
     name=os.path.basename(f).replace('.json','')
     specs[name]=json.load(open(f))
 bundle={
-    "generatedAt":"2026-11-19",
+    "generatedAt":"2026-11-20",
     "generator":"springdoc-openapi-starter-webmvc-ui 3.2.0",
     "openapi":"3.1.0",
     "microservices":{k:{"paths":len(v.get('paths',{})),"operations":sum(len(p) for p in v.get('paths',{}).values()),"schemas":len(v.get('components',{}).get('schemas',{}))} for k,v in specs.items()},

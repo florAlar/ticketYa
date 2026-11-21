@@ -134,16 +134,8 @@
               }
             }
           },
-          "403": {
-            "description": "La notificación pertenece a otro usuario",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" }
-              }
-            }
-          },
           "404": {
-            "description": "Notificación no encontrada",
+            "description": "Notificación no encontrada o pertenece a otro usuario (no se revela su existencia)",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ApiError" }
@@ -191,16 +183,8 @@
               }
             }
           },
-          "403": {
-            "description": "La notificación pertenece a otro usuario",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/ApiError" }
-              }
-            }
-          },
           "404": {
-            "description": "Notificación no encontrada",
+            "description": "Notificación no encontrada o pertenece a otro usuario (no se revela su existencia)",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ApiError" }
@@ -244,7 +228,7 @@
             }
           },
           "400": {
-            "description": "Datos inválidos",
+            "description": "Datos inválidos. En errores de validación del body, Spring puede devolver timestamp/status/error/path sin message.",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ApiError" }
@@ -419,9 +403,13 @@
       },
       "ApiError": {
         "type": "object",
+        "description": "Error de la API. Los errores de validación del body pueden devolver el formato por defecto de Spring (timestamp/status/error/path, sin message).",
         "properties": {
+          "timestamp": { "type": "string", "format": "date-time" },
+          "status": { "type": "integer", "format": "int32" },
           "error": { "type": "string" },
-          "message": { "type": "string" }
+          "message": { "type": "string", "nullable": true },
+          "path": { "type": "string", "nullable": true }
         }
       }
     },
