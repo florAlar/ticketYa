@@ -1,17 +1,34 @@
 import { Link } from 'react-router-dom'
+import {
+  HiOutlineCalendar,
+  HiOutlineLocationMarker,
+  HiOutlineTicket,
+  HiChevronRight,
+} from 'react-icons/hi'
 import { formatFecha, formatMoney } from '../../lib/format'
 import {
-  ENTRADA_ESTADO_LABELS,
-  ENTRADA_ESTADOS,
   isEntradaQrExponible,
   isEntradaReintegroCancelacion,
   isEntradaEventoSuspendido,
 } from '../../domain/entrada'
 import { DEVOLUCION_TIPO_LABELS } from '../../domain/devolucion'
-import { FEATURE } from '../../config/featureGates'
-import GateLink from '../../components/ui/GateLink'
+import EventCover from '../../components/ui/EventCover'
+import Badge from '../../components/ui/Badge'
 
-/** Card de una entrada del cliente. */
+const DIA_MS = 24 * 60 * 60 * 1000
+
+/** "Hoy", "Mañana", "Faltan 3 días" o null si ya pasó / no hay fecha. */
+function faltante(fecha) {
+  const t = fecha ? new Date(fecha).getTime() : NaN
+  if (Number.isNaN(t)) return null
+  const dias = Math.ceil((t - Date.now()) / DIA_MS)
+  if (dias < 0) return null
+  if (dias === 0) return 'Hoy'
+  if (dias === 1) return 'Mañana'
+  return `Faltan ${dias} días`
+}
+
+/** Entrada del cliente con forma de ticket: portada, datos y talón con la acción principal. */
 export default function EntradaCard({
   entrada: e,
   pendiente,
@@ -20,106 +37,91 @@ export default function EntradaCard({
 }) {
   const cancelada = isEntradaReintegroCancelacion(e)
   const suspendida = isEntradaEventoSuspendido(e)
-  const puedeReclamo =
-    !cancelada &&
-    e.estado === ENTRADA_ESTADOS.VENDIDA &&
-    !pendiente &&
-    isEntradaQrExponible(e)
   const showQr = isEntradaQrExponible(e)
+  const cuenta = cancelada ? null : faltante(e.eventoFecha)
+  const asiento =
+    e.fila != null && e.asiento != null ? `Fila ${e.fila} · Asiento ${e.asiento}` : null
+
+  const clases = ['entrada-card']
+  if (cancelada) clases.push('entrada-card--cancelada')
+  if (suspendida) clases.push('entrada-card--suspendida')
 
   return (
-    <li
-      className={
-        cancelada
-          ? 'mis-entradas-card mis-entradas-card--cancelada'
-          : suspendida
-            ? 'mis-entradas-card mis-entradas-card--suspendida'
-            : 'mis-entradas-card'
-      }
-    >
-      <div className="mis-entradas-card__body">
-        <h2>{e.eventoNombre}</h2>
-        <p>
-          {formatFecha(e.eventoFecha)}
-          {e.lugarCiudad ? ` · ${e.lugarCiudad}` : ''}
-        </p>
-        <p className="mis-entradas-page__muted">
-          {e.sectorNombre}
-          {e.fila != null && e.asiento != null
-            ? ` · Fila ${e.fila} Asiento ${e.asiento}`
-            : ''}
-          {' · '}
-          {formatMoney(e.precio)}
-          {!cancelada && (
-            <>
-              {' · '}
-              <strong>{ENTRADA_ESTADO_LABELS[e.estado] || e.estado}</strong>
-            </>
+    <li className={clases.join(' ')}>
+      <div className="entrada-card__cover">
+        <EventCover
+          evento={{
+            nombre: e.eventoNombre,
+            tipo: e.eventoTipo,
+            imagenUrl: e.eventoImagenUrl || e.imagenUrl,
+          }}
+          alt=""
+        />
+      </div>
+
+      <div className="entrada-card__body">
+        <div className="entrada-card__badges">
+          {cancelada && <Badge tone="danger">Evento cancelado</Badge>}
+          {suspendida && (
+            <Badge
+              tone="warning"
+              title="El organizador pausó la venta nueva. Tu entrada sigue vigente."
+            >
+              Evento suspendido
+            </Badge>
           )}
-        </p>
+          {pendiente && !cancelada && (
+            <Badge tone="info">
+              {DEVOLUCION_TIPO_LABELS[pendiente.tipo] || pendiente.tipo} pendiente
+            </Badge>
+          )}
+          {cuenta && <Badge tone="brand">{cuenta}</Badge>}
+        </div>
+
+        <h2 className="entrada-card__title">{e.eventoNombre}</h2>
+
+        <ul className="entrada-card__meta">
+          <li>
+            <HiOutlineCalendar aria-hidden /> {formatFecha(e.eventoFecha)}
+          </li>
+          {e.lugarCiudad && (
+            <li>
+              <HiOutlineLocationMarker aria-hidden /> {e.lugarCiudad}
+            </li>
+          )}
+          <li>
+            <HiOutlineTicket aria-hidden /> {e.sectorNombre}
+            {asiento ? ` · ${asiento}` : ''}
+          </li>
+        </ul>
 
         {cancelada && (
-          <>
-            <p className="mis-entradas-page__badge mis-entradas-page__badge--cancel">
-              Evento cancelado
-            </p>
-            <p className="mis-entradas-page__aviso">
-              No hay QR de ingreso. El reintegro lo gestiona la plataforma: te
-              vamos a avisar cuando se acredite el dinero.
-              {tramite?.id ? (
-                <>
-                  {' '}
-                  Trámite:{' '}
-                  <strong className="mis-entradas-page__mono">{tramite.id}</strong>
-                </>
-              ) : null}
-            </p>
-          </>
-        )}
-
-        {suspendida && !cancelada && (
-          <>
-            <p className="mis-entradas-page__badge mis-entradas-page__badge--suspend">
-              Evento suspendido
-            </p>
-            <p className="mis-entradas-page__aviso">
-              El organizador pausó la venta de entradas nuevas. Tu entrada sigue
-              vigente y el QR de ingreso se mantiene.
-            </p>
-          </>
-        )}
-
-        {pendiente && !cancelada && (
-          <p className="mis-entradas-page__badge">
-            {DEVOLUCION_TIPO_LABELS[pendiente.tipo] || pendiente.tipo} pendiente
+          <p className="entrada-card__aviso">
+            Sin QR de ingreso. El reintegro lo gestiona la plataforma
+            {tramite?.id ? (
+              <>
+                {' '}
+                · Trámite <span className="mis-entradas-page__mono">{tramite.id}</span>
+              </>
+            ) : null}
+            .
           </p>
         )}
       </div>
-      <div className="mis-entradas-card__actions">
+
+      <div className="entrada-card__stub">
+        <span className="entrada-card__price">{formatMoney(e.precio)}</span>
         {cancelada ? (
           <button type="button" className="btn" onClick={onVerDevoluciones}>
             Ver trámite
           </button>
-        ) : showQr ? (
-          <Link className="btn btn-primary" to={`/mis-entradas/${e.id}`}>
-            Ver QR
-          </Link>
         ) : (
-          <Link className="btn" to={`/mis-entradas/${e.id}`}>
-            Ver detalle
+          <Link className="btn btn-primary" to={`/mis-entradas/${e.id}`}>
+            {showQr ? 'Ver entrada' : 'Ver detalle'} <HiChevronRight aria-hidden />
           </Link>
-        )}
-        {puedeReclamo && (
-          <GateLink
-            enabled={FEATURE.devoluciones}
-            className="btn"
-            to={`/mis-entradas/${e.id}#reclamo`}
-          >
-            Reclamo / devolución
-          </GateLink>
         )}
         {pendiente && !cancelada && (
-          <button type="button" className="btn" onClick={onVerDevoluciones}>
+          <button type="button" className="entrada-card__link" onClick={onVerDevoluciones}>
             Ver solicitud
           </button>
         )}

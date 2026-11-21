@@ -200,3 +200,72 @@
   margin: 0;
   font-weight: 600;
 }
+
+/* ===== Card de entrada (listado) ===== */
+.entrada-card {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr) auto;
+  border-radius: var(--radius-lg, 20px);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.entrada-card:hover { transform: translateY(-2px); }
+
+.entrada-card__cover { position: relative; min-height: 9rem; background: #150d26; }
+.entrada-card__cover .event-cover { position: absolute; inset: 0; }
+
+.entrada-card__body { min-width: 0; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.entrada-card__badges { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.entrada-card__badges:empty { display: none; }
+.entrada-card__title { margin: 0; font-size: 1.1rem; line-height: 1.25; }
+.entrada-card__meta {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  color: var(--colors-textMuted);
+  font-size: 0.88rem;
+}
+.entrada-card__meta li { display: inline-flex; align-items: center; gap: 0.3rem; }
+.entrada-card__aviso { margin: 0.2rem 0 0; font-size: 0.85rem; color: var(--colors-textMuted); }
+
+/* Talón: separado por una línea de corte punteada */
+.entrada-card__stub {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 1rem 1.25rem;
+  min-width: 11rem;
+  border-left: 2px dashed var(--card-border);
+  text-align: center;
+}
+.entrada-card__stub .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.25rem; }
+.entrada-card__price { font-weight: 800; font-size: 1.05rem; }
+.entrada-card__link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--colors-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.entrada-card--cancelada .entrada-card__cover { filter: grayscale(0.7); }
+.entrada-card--cancelada { border-color: color-mix(in srgb, var(--tone-danger) 35%, var(--card-border)); }
+.entrada-card--suspendida { border-color: color-mix(in srgb, var(--tone-warning) 40%, var(--card-border)); }
+
+@media (max-width: 680px) {
+  .entrada-card { grid-template-columns: 1fr; }
+  .entrada-card__cover { min-height: 8rem; }
+  .entrada-card__stub { border-left: 0; border-top: 2px dashed var(--card-border); flex-direction: row; justify-content: space-between; align-items: center; }
+}
