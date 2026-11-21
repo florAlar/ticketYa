@@ -1,6 +1,6 @@
 # TicketYa
 
-Trabajo práctico de Arquitectura de Software (UNICEN): venta de entradas para eventos con **API Gateway + 6 microservicios Spring Boot** y una **SPA React**.
+Trabajo práctico: venta de entradas para eventos con **API Gateway + 6 microservicios Spring Boot** y una **SPA React**.
 
 El navegador habla **únicamente con el API Gateway** (`:8080`), que valida el JWT, aplica autorización por rol y enruta al microservicio correspondiente. Cada microservicio tiene su propia base de datos.
 
@@ -78,7 +78,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/         # fronte
 curl -s http://localhost:8080/api/eventos                               # gateway → 200 con eventos
 ```
 
-- Frontend: <http://localhost:3000> (y también <http://localhost> en el puerto 80).
+- Frontend: <http://localhost> (y también <http://localhost> en el puerto 3000).
 - Gateway: <http://localhost:8080>.
 - Estado del stack con smoke HTTP: `sudo ./scripts/status.sh --http` (desde `Backend/`).
 - Bajar: `docker compose down`. Reiniciar desde cero y borrar las bases: `docker compose down -v`.
@@ -230,7 +230,3 @@ Guías: [`Backend/docs/testing/`](Backend/docs/testing/) (concurrencia, notifica
 - **Ver logs de un servicio:** `docker compose logs -f ms-gateway` (o el contenedor que necesites).
 - **MailHog:** la bandeja web debe decir *Connected*; todos los emails de prueba llegan ahí.
 
-## Notas
-
-- No commitear `.env` reales (está en `.gitignore`). `Frontend/.env` se versiona a propósito: solo tiene la URL del gateway y el flag de mock.
-- Los scripts de infraestructura y el detalle de puertos internos están en [`Backend/infrastructure/`](Backend/infrastructure/).
