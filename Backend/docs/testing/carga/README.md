@@ -110,4 +110,5 @@ Abrí `report/index.html` al terminar.
 | Errores de conexión con `-Jhost=http://...` | `host` no lleva protocolo |
 | La corrida dura unos 5 minutos en vez de terminar sola | Agregar `-JloopForever=false` |
 | `usuarios.csv` no se encuentra | Pasar ruta absoluta en `-Jcsv` |
+| `409 FILA_TURNO_USADO` en el ingreso | El CSV reutiliza usuarios de una corrida anterior: elegir un `desde` (base) que no se solape con los rangos ya usados (`carga<base>..carga<base+N-1>`) |
  
