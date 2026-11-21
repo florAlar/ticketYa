@@ -1,10 +1,10 @@
 package notificaciones.exception;
 
-import java.time.Instant;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -12,31 +12,37 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
-        return body(HttpStatus.NOT_FOUND, ex.getMessage());
+    public ResponseEntity<ApiError> handleNotFound(ResourceNotFoundException ex, HttpServletRequest req) {
+        return body(HttpStatus.NOT_FOUND, ex.getMessage(), req);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<Map<String, Object>> handleUnauthorized(UnauthorizedException ex) {
-        return body(HttpStatus.UNAUTHORIZED, ex.getMessage());
+    public ResponseEntity<ApiError> handleUnauthorized(UnauthorizedException ex, HttpServletRequest req) {
+        return body(HttpStatus.UNAUTHORIZED, ex.getMessage(), req);
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
-        return body(HttpStatus.FORBIDDEN, ex.getMessage());
+    public ResponseEntity<ApiError> handleForbidden(ForbiddenException ex, HttpServletRequest req) {
+        return body(HttpStatus.FORBIDDEN, ex.getMessage(), req);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
-        return body(HttpStatus.BAD_REQUEST, ex.getMessage());
+    public ResponseEntity<ApiError> handleBadRequest(IllegalArgumentException ex, HttpServletRequest req) {
+        return body(HttpStatus.BAD_REQUEST, ex.getMessage(), req);
     }
 
-    private static ResponseEntity<Map<String, Object>> body(HttpStatus status, String message) {
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("timestamp", Instant.now().toString());
-        payload.put("status", status.value());
-        payload.put("error", status.getReasonPhrase());
-        payload.put("message", message);
-        return ResponseEntity.status(status).body(payload);
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex, HttpServletRequest req) {
+        String mensaje = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return body(HttpStatus.BAD_REQUEST, mensaje, req);
+    }
+
+    private static ResponseEntity<ApiError> body(
+            HttpStatus status, String message, HttpServletRequest req) {
+        return ResponseEntity.status(status)
+                .body(ApiError.of(status.value(), status.getReasonPhrase(), message, req.getRequestURI()));
     }
 }

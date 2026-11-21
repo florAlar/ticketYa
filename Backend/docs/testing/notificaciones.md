@@ -38,12 +38,14 @@ curl -s http://localhost:8025/api/v2/messages | head -c 300
 
 ---
 
-## 1. Tests automáticos (sin Docker)
+## 1. Tests automáticos
+
+Sin base de datos (unitarios y contrato OpenAPI; no requieren Docker):
 
 ```bash
 cd Backend
 
-(cd msvc-notificaciones && mvn test)   # 42 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP
+(cd msvc-notificaciones && mvn test)   # 42 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP y OpenAPI
 (cd msvc-eventos        && mvn test)   # 193 tests: publicación/modificación/cancelación
 (cd msvc-ventas         && mvn test)   # 161 tests: compra/pago + evento compra.confirmada
 (cd msvc-entradas       && mvn test)   # 85 tests: entradas/QR/devoluciones + evento devolucion.aprobada
@@ -51,8 +53,18 @@ cd Backend
 (cd APIGateway          && mvn test)   # 44 tests: autorización de /api/notificaciones
 ```
 
-> `MsvcNotificacionesApplicationTests.contextLoads` necesita MySQL en `localhost:3311`; sin la base
-> levanta el error de dialecto de Hibernate. Los tests unitarios restantes corren sin Docker.
+> No se usa H2 ni ninguna base embebida. `NotificacionOpenApiTest` valida `/v3/api-docs` con un
+> slice web y dependencias mockeadas; no abre conexiones.
+
+Integración con MySQL real (Testcontainers; requiere Docker):
+
+```bash
+(cd msvc-notificaciones && mvn -Pit verify)   # +1 IT: contexto completo contra mysql:8.4
+```
+
+> `MsvcNotificacionesApplicationIT` levanta un contenedor MySQL 8.4, aplica el esquema con
+> `ddl-auto=create-drop`, desactiva los listeners de RabbitMQ y verifica que el contexto arranque.
+> Solo corre con el perfil `-Pit` (failsafe, patrón `*IT.java`); `mvn test` no lo ejecuta.
 
 Cobertura específica de esta feature:
 
@@ -64,6 +76,8 @@ Cobertura específica de esta feature:
 | `NotificacionEnvioServiceTest` | `PENDIENTE → ENVIADA/FALLIDA`, reintentos, máximo, canal sin proveedor |
 | `SmtpEmailProviderTest` | envío SMTP al email resuelto y fallback al destinatario por defecto |
 | `NotificacionControllerTest` | bandeja agrupada por mensaje (PUSH + EMAIL → una entrada), `noLeidas` por mensaje, marcar leída actualiza ambos canales |
+| `NotificacionOpenApiTest` | contrato `/v3/api-docs`: tags, `operationId`, media types y security, sin base de datos |
+| `MsvcNotificacionesApplicationIT` | arranque del contexto completo con **MySQL real** (Testcontainers; `mvn -Pit verify`) |
 | `NotificacionController` (vía API e2e) | `X-User-Id`, dueño, paginación, `noLeidas`, marcar leída |
 | `EventChangePublisherTest` | routing keys `evento.cancelado/suspendido/modificado/publicado` |
 | `CompraEventPublisherTest` | routing key `compra.confirmada` y payload |
@@ -547,6 +561,8 @@ docker compose exec -T db-mongo-preferencias \
       Metallica en Buenos Aires.
 - [ ] `DevolucionAprobada` aparece **una sola vez** con `canales: ["PUSH","EMAIL"]` al aprobar una devolución, con el monto en el contenido y el correo en MailHog.
 - [ ] `GET /api/notificaciones/me` devuelve `noLeidas` y `PATCH .../leida` lo baja.
+- [ ] `http://localhost:8086/v3/api-docs` y `http://localhost:8086/swagger-ui/index.html` responden 200.
+- [ ] La carpeta `14 Notificaciones` de Postman recorre alta → bandeja → detalle → lectura → estado sin fallos.
 - [ ] `intento_envio` tiene filas `OK` por cada envío.
 - [ ] Reenviar el mismo mensaje de Rabbit no duplica la notificación.
 - [ ] Sin `Authorization` la API responde `401`; un cliente no puede leer notificaciones ajenas (`404`).

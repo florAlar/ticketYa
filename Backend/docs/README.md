@@ -18,7 +18,7 @@ Backend/specs/
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
 | Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
-| Colección Postman | listo | [`postman/`](./postman/) (205 requests, 0 fallos, incluye asientos, control de acceso, reportes y lugares) |
+| Colección Postman | listo | [`postman/`](./postman/) (216 requests en 15 carpetas; última corrida completa verificada 193/0 sin las carpetas 13 y 14, e incluye asientos, control de acceso, reportes, lugares y preferencias; las carpetas 13 y 14 aún no tienen corrida Newman) |
 | Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
 | Trazabilidad y bitácora (correlation id, log por servicio) | listo | [`observabilidad.md`](./observabilidad.md) |
 | README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
