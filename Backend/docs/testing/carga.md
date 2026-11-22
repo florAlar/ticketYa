@@ -1,10 +1,10 @@
 # Prueba de carga — flujo de compra (E2-TST-03)
 
-**Estado: CORRIDA FORMAL EJECUTADA (2026-11-21) — resultado PARCIAL por hallazgos.**
-Se corrió la matriz A/B con 25/50/100 usuarios. El escenario B (fila) cerró con **0 errores** en los
-tres puntos; A tuvo un fallo en 50 usuarios. La prueba encontró dos defectos que impiden dar
-`E2-TST-03` por cerrado: **una emisión duplicada** y **timeouts de Feign a eventos mapeados a 400**.
-Ver `Hallazgos` al final.
+**Estado: CORRIDA COMPLETA (2026-11-21) — hecha.**
+Se corrió la matriz A/B con 25/50/100 usuarios. B (fila) cerró con **0 errores** en los tres puntos;
+A tuvo un fallo en 50 usuarios y la integridad detectó una emisión duplicada. Ambos defectos se
+corrigieron y se validaron con los reintentos A25/A50 y B25, todos con 0 errores y sin duplicados.
+Ver `Hallazgos` y `Reintento post-fix`.
 
 Plan de ejecución formal (matriz A/B, integridad SQL/Redis y evidencia):
 [`specs/carga-e2-tst-03.md`](../../specs/carga-e2-tst-03.md).
@@ -143,28 +143,38 @@ Comprobaciones:
 
 ## Hallazgos
 
-1. **Emisión duplicada (bloqueante para integridad).** Una compra de 1 entrada terminó con 2 filas
-   en `entrada` (`3d558321-0f73-4649-97f3-dc21981f994d`, A25). `EntradaServiceImpl.emitir` hace
-   *check-then-insert* sin lock; los reintentos de `EmisionEntradasService` (Feign con timeout) pueden
-   ejecutar la emisión dos veces. Requiere idempotencia transaccional por compra (claim/lock), no solo
-   un `findByIdCompra` previo. Mientras no se corrija, un cliente podría ingresar dos veces.
-2. **Timeout de Feign a eventos mapeado a 400.** `VentaServiceImpl.fetchEvento` traduce cualquier
-   `FeignException` a `IllegalArgumentException` (400). Bajo carga el detalle de evento tardó 3,7 s
-   y superó el `readTimeout` de 3 s, cortando la compra de A50. Corresponde un **503** (igual que en
-   reportes) y evaluar retry/backoff o subir el timeout.
-3. **Arranque en frío de ventas.** El primer B25 tras recrear `ms-ventas` agotó el pool Hikari
-   (`maximum-pool-size=10`) y devolvió 500 con esperas de 30 s. En caliente, B25/B50/B100 dieron 0
-   errores. Mitigación: warm-up antes de medir y/o subir el pool; documentar la capacidad real.
+1. **Emisión duplicada — corregido.** Una compra de 1 entrada había terminado con 2 filas en
+   `entrada` (`3d558321-…`, A25) porque `emitir` hacía *check-then-insert* sin lock y ventas
+   reintentaba la emisión. **Fix:** tabla `emision_compra` (claim por compra) insertada en la misma
+   transacción que las entradas; si el claim ya existe, `emitir` responde 503 y ventas reintenta.
+   Verificado con `EmisionConcurrenciaIT` (8 hilos sobre la misma compra → 2 entradas) y con el
+   reintento de A25/A50 (sin duplicados).
+2. **Timeout de Feign a eventos mapeado a 400 — corregido.** `VentaServiceImpl.fetchEvento` traduce
+   `FeignException` a **503** (`ServiceUnavailableException`) en lugar de 400; el reintento de A50
+   cerró sin errores. Se mantiene el `readTimeout` de 3 s (fail-fast) y el warm-up previo a medir.
+3. **Arranque en frío de ventas — mitigado.** El primer punto tras recrear `ms-ventas` agotaba el
+   pool Hikari (10) y devolvía 500. **Fix:** `maximum-pool-size=30` (`TICKETYA_DB_POOL`) y
+   `CannotCreateTransactionException` → **503**; además, warm-up descartado antes de cada familia.
 4. **Tiempo en fila dependiente del ramp.** El scheduler abre turnos al ritmo de `activos`; el
    indicador “ingreso → validación” no es una medida pura de la cola. Para comparar escenarios,
    fijar el ramp o habilitar tandas por ADMIN (B2).
 
+## Reintento post-fix (2026-11-21)
+
+| Punto | Transacciones OK/KO | Errores HTTP | p95 global | Duplicados |
+|---|---|---|---|---|
+| A25 (normal) | 25 / 0 | — | 5559 ms | 0 |
+| A50 (normal) | 50 / 0 | — | 6736 ms | 0 |
+| B25 (fila) | 25 / 0 | — | 564 ms | 0 |
+
+En los tres: `entradas = compras`, una fila de `emision_compra` por compra, invariante de cupo OK y
+`evicted_keys = 0`. El escenario B50/B100 ya había cerrado con 0 errores en la matriz original.
+
 ## Conclusión
 
-**Parcial.** La matriz 25/50/100 se ejecutó y el escenario con fila cerró con **0 errores** en los
-tres puntos (hasta **45,3 RPS** y p95 global de 1,7 s a 100 usuarios). El escenario normal tuvo un
-fallo de dependencia en 50 usuarios (timeout → 400) y la verificación de integridad detectó **una
-entrada duplicada**. `E2-TST-03` no se cierra hasta corregir los hallazgos 1 y 2 y repetir A50/A25
-sobre un stack limpio.
+**Hecha.** La matriz 25/50/100 se ejecutó; los dos defectos detectados (emisión duplicada y
+timeout→400) están corregidos y validados con los reintentos A25/A50 y con un IT de concurrencia.
+B cerró con 0 errores en los tres puntos (hasta **45,3 RPS** y p95 global de 1,7 s a 100 usuarios).
+Queda como límite del entorno que la carga y los contenedores comparten CPU/RAM.
 
 Plan y criterios: [`specs/carga-e2-tst-03.md`](../../specs/carga-e2-tst-03.md).

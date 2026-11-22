@@ -20,6 +20,7 @@ Backend/specs/
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
 | Colección Postman | listo | [`postman/`](./postman/) (216 requests en 15 carpetas; última corrida completa verificada 193/0 sin las carpetas 13 y 14, e incluye asientos, control de acceso, reportes, lugares y preferencias; las carpetas 13 y 14 aún no tienen corrida Newman) |
 | Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
+| Prueba de carga del flujo de compra (`E2-TST-03`) | listo | [`testing/carga.md`](./testing/carga.md) — matriz 25/50/100 normal y con fila; reintentos post-fix sin errores |
 | Trazabilidad y bitácora (correlation id, log por servicio) | listo | [`observabilidad.md`](./observabilidad.md) |
 | README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
 | Datos de prueba | listo | seeds en `Backend/infrastructure/` (ver `infrastructure/mysql/README.md`) |

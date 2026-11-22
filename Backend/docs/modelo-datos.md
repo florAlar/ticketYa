@@ -194,7 +194,12 @@ erDiagram
 erDiagram
     ENTRADA ||--o{ DEVOLUCION : puede_tener
     ENTRADA ||--o{ VALIDACION_ACCESO : registra
+    EMISION_COMPRA ||--o{ ENTRADA : "claim de emision"
 
+    EMISION_COMPRA {
+        CHAR36 id_compra PK "ref ventas; claim de emision"
+        DATETIME fecha_claim
+    }
     ENTRADA {
         CHAR36 id_entrada PK
         CHAR36 id_compra "ref ventas"
@@ -228,6 +233,8 @@ erDiagram
 ```
 
 `VALIDACION_ACCESO` existe en el esquema pero se usa recién en la Entrega 2. Estados de entrada: `VENDIDA`, `USADA`, `DEVUELTA`, `A_REINTEGRAR`.
+
+`EMISION_COMPRA` es el claim idempotente de emisión: una fila por compra, insertada en la misma transacción que las entradas. Si ventas reintenta la emisión (timeout de Feign) o el job y el post-pago se cruzan, solo la transacción que obtiene el claim crea las entradas; el resto recibe 503 y reintenta. Un rollback libera el claim.
 
 ## 5. msvc-notificaciones (MySQL `notificaciones`, E2)
 
