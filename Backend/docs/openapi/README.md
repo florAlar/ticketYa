@@ -135,5 +135,5 @@ PY
 
 - Los paths documentados son internos (sin `/api`); el gateway aplica `StripPrefix=1` y el RBAC se documenta en `docs/api/gateway.md`.
 - No hay Newman collection en esta fase; la colección Postman (v2.1 + entorno `local` con auto-login) se entrega como parte de los artefactos E1 aparte de este bundle.
-- Los webhooks no aparecen en los specs; la fila virtual (`/fila`, FIL-01…FIL-04) y los reportes sí están documentados.
+- La fila virtual (`/fila`, FIL-01…FIL-04) y los reportes están documentados en los specs.
 - Los errores de fila se documentan en cada respuesta con `x-error-codes` (`FILA_*`) y el payload `ApiError`; `code` y `extras` aparecen solo cuando la excepción los trae.

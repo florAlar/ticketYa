@@ -182,7 +182,6 @@ Servicio: msvc-ventas | Prefijos: /reservas, /compras, /pagos, /reportes + /even
 - POST /compras/{id}/pagos — Iniciar pago
 - GET /compras/{id}/pagos — Consultar pagos de la compra
 - POST /pagos/{id}/reintentos — Reintentar pago permitido
-- POST /pagos/webhooks/{proveedor} — Webhook pasarela (firma; no confiar solo en browser)
 
 ### Reportes
 
