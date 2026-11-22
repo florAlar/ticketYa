@@ -193,6 +193,8 @@ public class EntradaController {
             @ApiResponse(responseCode = "404", description = "Entrada inexistente",
                     content = @Content(schema = @Schema(implementation = java.util.Map.class))),
             @ApiResponse(responseCode = "409", description = "Entrada no devoluble o plazo vencido",
+                    content = @Content(schema = @Schema(implementation = java.util.Map.class))),
+            @ApiResponse(responseCode = "503", description = "No se pudo validar la fecha del evento",
                     content = @Content(schema = @Schema(implementation = java.util.Map.class)))
     })
     @PostMapping("/entradas/{id}/devoluciones")

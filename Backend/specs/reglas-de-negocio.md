@@ -51,7 +51,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 
 - Alta pública → siempre **CLIENTE**.  
 - Cuentas demo de prueba (cliente, org, admin, acceso) viven en datos seed para el TP.  
-- ADMIN puede **listar usuarios**, **activar/desactivar** y **asignar roles** por API (el front de admin usuarios todavía no está del todo cableado: list/estado/roles sí existen en backend; otras acciones de UI pueden seguir apagadas).
+- ADMIN puede **listar usuarios**, **activar/desactivar** y **asignar roles** por API. En el front, `/gestion/usuarios` tiene listado, estado y roles cableados; alta de personal de acceso, asignación de eventos y borrado siguen sin API (gate apagado).
 
 ### **Descartado** — extensión a organizador (X-ORG-01)
 
@@ -173,7 +173,7 @@ Si no hay disponible, el checkout no debe dejar comprar.
 
 - El código usable se muestra solo si la entrada está **VENDIDA** y el evento **no está cancelado**.  
 - Si se aprueba una devolución o hay reintegro por cancelación, el QR se **invalida** (deja de servir un pantallazo viejo).  
-- Marcar la entrada como **usada en la puerta** = segunda entrega (aún no).
+- Marcar la entrada como **usada en la puerta**: **hecho (E2-ACC-01)**; validación atómica por QR y un QR no ingresa dos veces.
 
 ### Devolución pedida por el cliente
 
@@ -282,7 +282,7 @@ Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por s
 ### Documentación y entrega
 
 20. Qué entra sí o sí en `Backend/docs/` para la primera entrega formal (US, diagramas, Postman, tests).  
-21. Alinear textos viejos (endpoints globales vs reglas reales de suspender/org, “scaffold pendiente” en microservicios.md, etc.) sin reescribir historia a mano alzada.
+21. ~~Alinear textos viejos (endpoints globales vs reglas reales de suspender/org, “scaffold pendiente” en microservicios.md, etc.).~~ → **Resuelto (2026-11-22):** auditoría documental completa; `microservicios.md` ya describe el estado implementado y no quedan referencias activas a “scaffold”.
 
 ---
 

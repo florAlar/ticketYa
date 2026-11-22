@@ -303,7 +303,7 @@
               "Entradas"
             ],
             "summary": "Solicitar devolución",
-            "description": "Solicita devolución de una entrada propia VENDIDA dentro del plazo\n(hasta 72 h antes del evento).\nEstado de la devolución: PENDIENTE → cola de admin.\nEntradas USADA / DEVUELTA / A_REINTEGRAR → 409.\n",
+            "description": "Solicita devolución de una entrada propia VENDIDA dentro del plazo\n(hasta 72 h antes del evento).\nEstado de la devolución: PENDIENTE → cola de admin.\nEntradas USADA / DEVUELTA / A_REINTEGRAR → 409.\nSi no se puede obtener la fecha del evento → 503.",
             "operationId": "solicitarDev",
             "parameters": [
               {
@@ -368,6 +368,16 @@
               },
               "409": {
                 "description": "Entrada no devoluble o plazo vencido",
+                "content": {
+                  "*/*": {
+                    "schema": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "503": {
+                "description": "No se pudo validar la fecha del evento",
                 "content": {
                   "*/*": {
                     "schema": {
