@@ -36,7 +36,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 23 | `clientes-preferencias` | 62 | `/api/clientes`, `/api/clientes/**` | — | ms-preferencias:8085 | 1 | — |
 | 24 | `notificaciones` | 70 | `/api/notificaciones`, `/api/notificaciones/**` | — | ms-notificaciones:8086 | 1 | — |
 
-**Rutas implementadas:** `/api/eventos/{id}/fila/**` (fila virtual, FIL-01…FIL-03) ya está implementada en ms-ventas con Redis; ingreso/posición/validación requieren JWT (CLIENTE u ORGANIZADOR), `GET .../fila/estado` es público y `POST .../fila/habilitacion` es exclusivo de ADMIN. Preferencias, recomendaciones, historial, notificaciones, reportes y validaciones también están implementados.
+**Rutas implementadas:** `/api/eventos/{id}/fila/**` (fila virtual, FIL-01…FIL-04) ya está implementada en ms-ventas con Redis; ingreso/posición/validación requieren JWT (CLIENTE u ORGANIZADOR), `GET .../fila/estado` es público y `POST .../fila/habilitacion` es exclusivo de ADMIN. Preferencias, recomendaciones, historial, notificaciones, reportes y validaciones también están implementados.
 
 ---
 
