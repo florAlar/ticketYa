@@ -66,6 +66,7 @@ class EntradaServiceValidacionTest {
                 mock(VentasClient.class),
                 repo,
                 mock(org.springframework.context.ApplicationEventPublisher.class),
+                mock(entradas.repository.EmisionClaimRepository.class),
                 72L);
     }
 

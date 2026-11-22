@@ -18,6 +18,7 @@ import entradas.entity.Devolucion;
 import entradas.entity.Entrada;
 import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
+import entradas.repository.EmisionClaimRepository;
 import entradas.repository.EntradaRepository;
 import entradas.repository.ValidacionAccesoRepository;
 import java.math.BigDecimal;
@@ -48,10 +49,13 @@ class EntradaServiceAsientosTest {
         entradaRepository = mock(EntradaRepository.class);
         devolucionRepository = mock(DevolucionRepository.class);
         ventasClient = mock(VentasClient.class);
+        EmisionClaimRepository claims = mock(EmisionClaimRepository.class);
+        when(claims.reclamar(anyString())).thenReturn(true);
         service = new EntradaServiceImpl(
                 entradaRepository, devolucionRepository, new EntradaMapper(),
                 mock(EventosClient.class), ventasClient, mock(ValidacionAccesoRepository.class),
-                mock(org.springframework.context.ApplicationEventPublisher.class), 72L);
+                mock(org.springframework.context.ApplicationEventPublisher.class),
+                claims, 72L);
         when(entradaRepository.findByIdCompra(ID_COMPRA)).thenReturn(new ArrayList<>());
         when(entradaRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
     }

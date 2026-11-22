@@ -24,6 +24,15 @@ CREATE TABLE IF NOT EXISTS entrada (
   KEY ix_entrada_evento (id_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Claim de emisión por compra: una sola fila evita duplicados si ventas reintenta la emisión
+-- (timeout de Feign) o si el job y el post-pago se cruzan. Se inserta en la misma transacción
+-- que las entradas; un rollback libera el claim.
+CREATE TABLE IF NOT EXISTS emision_compra (
+  id_compra   CHAR(36)    NOT NULL COMMENT 'ref lógica ventas.compra',
+  fecha_claim DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  PRIMARY KEY (id_compra)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS devolucion (
   id_devolucion    CHAR(36)       NOT NULL,
   id_entrada       CHAR(36)       NOT NULL,

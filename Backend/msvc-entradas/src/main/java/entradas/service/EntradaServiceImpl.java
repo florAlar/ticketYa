@@ -36,9 +36,11 @@ import entradas.entity.ValidacionAcceso;
 import entradas.exception.BusinessConflictException;
 import entradas.exception.ForbiddenException;
 import entradas.exception.ResourceNotFoundException;
+import entradas.exception.ServiceUnavailableException;
 import entradas.mapper.EntradaMapper;
 import entradas.messaging.DevolucionAprobadaEvent;
 import entradas.repository.DevolucionRepository;
+import entradas.repository.EmisionClaimRepository;
 import entradas.repository.EntradaRepository;
 import entradas.repository.ValidacionAccesoRepository;
 import entradas.observability.Bitacora;
@@ -79,6 +81,7 @@ public class EntradaServiceImpl implements EntradaService {
         private final VentasClient ventasClient;
         private final ValidacionAccesoRepository validacionAccesoRepository;
                 private final ApplicationEventPublisher eventPublisher;
+                private final EmisionClaimRepository emisionClaimRepository;
                 private final long plazoDevolucionHoras;
 
                 public EntradaServiceImpl(
@@ -89,6 +92,7 @@ public class EntradaServiceImpl implements EntradaService {
                         VentasClient ventasClient,
                         ValidacionAccesoRepository validacionAccesoRepository,
                         ApplicationEventPublisher eventPublisher,
+                        EmisionClaimRepository emisionClaimRepository,
                         @Value("${ticketya.entradas.plazo-devolucion-horas:72}") long plazoDevolucionHoras) {
                     this.entradaRepository = entradaRepository;
                     this.devolucionRepository = devolucionRepository;
@@ -97,6 +101,7 @@ public class EntradaServiceImpl implements EntradaService {
                     this.ventasClient = ventasClient;
                     this.validacionAccesoRepository = validacionAccesoRepository;
                     this.eventPublisher = eventPublisher;
+                    this.emisionClaimRepository = emisionClaimRepository;
                     this.plazoDevolucionHoras = plazoDevolucionHoras;
                 }
 
@@ -107,6 +112,14 @@ public class EntradaServiceImpl implements EntradaService {
         List<Entrada> existentes = entradaRepository.findByIdCompra(request.idCompra());
         if (!existentes.isEmpty()) {
             return mapEnriquecidas(existentes);
+        }
+
+        // Claim atómico por compra: si ventas reintenta (timeout de Feign) o el job y el
+        // post-pago se cruzan, solo una emisión crea las entradas. El INSERT IGNORE bloquea
+        // hasta que la transacción dueña commitea; si ya existía, se pide reintento.
+        if (!emisionClaimRepository.reclamar(request.idCompra())) {
+            throw new ServiceUnavailableException(
+                    "Emisión en curso para la compra " + request.idCompra());
         }
 
         LocalDateTime now = nowUtc();

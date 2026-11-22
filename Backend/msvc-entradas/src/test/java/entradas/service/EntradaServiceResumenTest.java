@@ -10,6 +10,7 @@ import entradas.clients.VentasClient;
 import entradas.dto.ResumenSectorDTO;
 import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
+import entradas.repository.EmisionClaimRepository;
 import entradas.repository.EntradaRepository;
 import entradas.repository.ValidacionAccesoRepository;
 import java.math.BigDecimal;
@@ -32,7 +33,8 @@ class EntradaServiceResumenTest {
         repo = mock(EntradaRepository.class);
         service = new EntradaServiceImpl(repo, mock(DevolucionRepository.class), new EntradaMapper(),
                 mock(EventosClient.class), mock(VentasClient.class), mock(ValidacionAccesoRepository.class),
-                mock(org.springframework.context.ApplicationEventPublisher.class), 72L);
+                mock(org.springframework.context.ApplicationEventPublisher.class),
+                mock(EmisionClaimRepository.class), 72L);
     }
 
     @Test

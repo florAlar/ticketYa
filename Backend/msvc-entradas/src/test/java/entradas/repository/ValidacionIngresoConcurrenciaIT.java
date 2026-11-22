@@ -109,6 +109,7 @@ class ValidacionIngresoConcurrenciaIT {
                 mock(VentasClient.class),
                 validacionRepository,
                 mock(org.springframework.context.ApplicationEventPublisher.class),
+                new entradas.repository.EmisionClaimRepository(jdbc),
                 72L);
         tx = new TransactionTemplate(txManager);
     }
