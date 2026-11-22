@@ -1,6 +1,6 @@
 # TicketYa
 
-Trabajo práctico: venta de entradas para eventos con **API Gateway + 6 microservicios Spring Boot** y una **SPA React**.
+Trabajo práctico: venta de entradas para eventos con **API Gateway +  microservicios Spring Boot** y una **SPA React**.
 
 El navegador habla **únicamente con el API Gateway** (`:8080`), que valida el JWT, aplica autorización por rol y enruta al microservicio correspondiente. Cada microservicio tiene su propia base de datos.
 
@@ -20,6 +20,7 @@ ticketYa/
 │   └── docker-compose.yml    # stack completo (include de todos los compose)
 ├── Frontend/                 # SPA React (Vite) — habla solo con el gateway
 ├── .env.example              # variables opcionales del backend
+├── start.sh                  # arranque opcional para Linux/macOS/Unix
 └── README.md
 ```
 
@@ -38,6 +39,7 @@ ticketYa/
 
 - [Funcionalidad principal](#funcionalidad-principal)
 - [Inicio rápido (Docker)](#inicio-rápido-docker)
+- [Inicio rápido opcional con start.sh](#inicio-rápido-opcional-con-startsh)
 - [Servicios y puertos](#servicios-y-puertos)
 - [Usuarios demo](#usuarios-demo)
 - [Autenticación](#autenticación)
@@ -84,6 +86,109 @@ curl -s http://localhost:8080/api/eventos                               # gatewa
 - Bajar: `docker compose down`. Reiniciar desde cero y borrar las bases: `docker compose down -v`.
 
 > Los `init.sql` / `init.js` de `Backend/infrastructure/` solo corren sobre volúmenes nuevos. Si cambia el esquema, recreá las bases con `docker compose down -v && docker compose up -d --build`.
+
+## Inicio rápido opcional con start.sh
+
+> **Opcional.** `start.sh` es un atajo para **Linux, macOS o cualquier sistema Unix-like** con Bash. No reemplaza el flujo manual de la sección anterior: si preferís controlar cada comando, usá `docker compose` directamente.
+
+El script está en la raíz del repositorio y automatiza el arranque, la espera y la verificación del stack completo.
+
+### Requisitos
+
+| Requisito | Detalle |
+| --- | --- |
+| Sistema | Linux, macOS o cualquier Unix-like con Bash. |
+| Docker | Docker Engine/Desktop + **Docker Compose v2**. |
+| Permisos | El usuario debe poder ejecutar Docker (grupo `docker` activo) o ejecutar el script con `sudo`. |
+| Utilidades | `curl` y `ss` o `lsof`. |
+| Puertos libres | `80`, `3000`, `8080`–`8086`, `3307`–`3311`, `5672`, `6380`, `1025`, `8025`, `15672`, `27018`. |
+| Recursos | Espacio en disco y RAM suficientes para los 17 contenedores. |
+
+Si el usuario no está en el grupo `docker`, la opción recomendada es:
+
+```bash
+sudo usermod -aG docker "$USER"
+newgrp docker
+# o cerrar sesión y volver a entrar
+```
+
+También se puede ejecutar con `sudo`, pero los contenedores quedarán administrados por root y después necesitarás `sudo` para verlos o bajarlos.
+
+```bash
+sudo ./start.sh
+```
+
+### Uso
+
+```bash
+# desde la raíz del repositorio
+chmod +x start.sh
+
+#Si el usuario esta en el grupo Docker
+./start.sh              # usa las imágenes existentes; construye solo si falta alguna
+./start.sh --rebuild    # fuerza el rebuild de todas las imágenes
+
+#Si el usuario no esta en el grupo Docker
+sudo ./start.sh
+```
+
+> Si `./start.sh` responde `Permiso denegado`, ejecutá `chmod +x start.sh`.
+
+`--rebuild` es el único parámetro. No borra volúmenes: los datos existentes se conservan.
+
+### Qué hace
+
+1. Comprueba permisos:
+   - que `start.sh` sea ejecutable;
+   - que Docker esté accesible;
+   - que Docker Compose v2 esté disponible.
+2. Comprueba los requisitos:
+   - `curl` y `ss`/`lsof`;
+   - `Backend/docker-compose.yml` válido;
+   - puertos libres;
+   - espacio en disco y RAM disponible.
+3. Limpia contenedores/redes anteriores con `docker compose down --remove-orphans`
+   (**sin `-v`**, así conserva los volúmenes).
+4. Verifica si faltan imágenes:
+   - si falta alguna, hace `docker compose build`;
+   - con `--rebuild`, reconstruye siempre.
+5. Levanta primero las bases e infraestructura y espera sus healthchecks.
+6. Levanta gateway, microservicios y frontend.
+7. Verifica los **17 contenedores**:
+   - HTTP para gateway, 6 microservicios, frontend, MailHog y RabbitMQ management;
+   - `healthy` para MySQL, MongoDB, Redis y RabbitMQ.
+8. Muestra las URLs:
+   - `http://localhost`
+   - `http://localhost:3000`
+   - `http://localhost:8080`
+9. Queda esperando input:
+    - `d`: detiene TicketYa y apaga los contenedores **conservando los datos**;
+    - en modo no interactivo (sin TTY), no se queda esperando: deja el stack levantado e indica cómo bajarlo.
+
+
+### Detener el stack
+
+Desde la misma terminal donde quedó esperando el script:
+
+```text
+Presioná "d" para detener:
+```
+
+También se puede bajar manualmente:
+
+```bash
+cd Backend
+docker compose down
+```
+
+Para borrar también los datos:
+
+```bash
+docker compose down -v
+```
+
+### Windows
+En Windows se puede usar desde **WSL2** o **Git Bash**, que proveen un entorno Unix-like, con Docker Desktop corriendo.
 
 ## Servicios y puertos
 
