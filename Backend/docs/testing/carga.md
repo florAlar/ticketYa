@@ -19,13 +19,13 @@ Diseño: `Backend/specs/fila-virtual.md` §15. Antes de cada corrida: `cd Backen
 |---|---|
 | Gateway | `http://localhost:8080` (todas las requests van por él; **no** enviar `X-User-Id`, lo inyecta el gateway desde el JWT) |
 | Servicios | 17 contenedores del compose raíz, todos arriba y bases `healthy` |
-| Smoke | `curl -sf http://localhost:8080/actuator/health` **[NV]** |
+| Smoke | `curl -sf http://localhost:8080/actuator/health` **[V]** |
 | MySQL ventas | `db-mysql-ventas` |
 | Redis ventas | `db-redis-ventas` |
 | JMeter | 5.6.x, ejecución en modo no GUI |
 | Limitación | La carga y los contenedores corren en la misma máquina: las latencias incluyen contención de CPU/RAM |
 
-**[NV]** Credenciales de MySQL en el compose, política real de `maxmemory`/evicción de Redis y persistencia (AOF/RDB). Ver puntos abiertos 8–10 de la spec.
+**[NV]** Credenciales de MySQL en el compose. **[V]** `redis.conf`: `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida midió `evicted_keys=0`.
 
 ---
 

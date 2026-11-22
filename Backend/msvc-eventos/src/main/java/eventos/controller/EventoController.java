@@ -96,7 +96,7 @@ public class EventoController {
                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
                 @Parameter(description = "Fecha hasta (ISO yyyy-MM-dd)", example = "2026-12-31")
                 @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
-                @Parameter(description = "Orden: fecha | precio | nombre", example = "fecha")
+                @Parameter(description = "Orden: fecha | precio | relevancia", example = "fecha")
                 @RequestParam(required = false, defaultValue = "fecha") String orden,
                 @Parameter(description = "Página (0-based)", example = "0")
                 @RequestParam(required = false, defaultValue = "0") int page,

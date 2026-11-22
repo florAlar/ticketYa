@@ -43,9 +43,10 @@ serialización, routing, idempotencia y consistencia eventual** que un test aisl
 | `JwtGatewayIntegrationTest` / `AutorizacionPorRolMatrixTest` | Filtro JWT y RBAC del gateway con tokens reales | Downstreams mockeados; no es un flujo de negocio completo |
 | Postman (carpetas 07, 09, 10, 14) | Flujos reales contra el stack, con login y datos seed | Ejecución manual; no forma parte de `mvn test` ni de CI |
 
-**Brecha:** no existe un test automatizado que arranque dos o más microservicios y verifique un
-flujo de negocio completo. Los ITs actuales prueban cada servicio contra su infraestructura, pero no
-el contrato entre servicios.
+**Brecha original (previa a esta implementación):** no existía un test automatizado que arrancara
+dos o más microservicios y verificara un flujo de negocio completo. Los ITs de borde prueban cada
+servicio contra su infraestructura, pero no el contrato entre servicios. **Hoy queda cubierta por el
+Nivel 2 (`e2e-tests`, F1–F5).**
 
 ## 4. Estrategia
 
@@ -105,7 +106,7 @@ porque da diagnósticos más precisos y no depende de todo el stack.
   en rollback, contra RabbitMQ real.
 - `DevolucionAprobadaPublisherIT` (2 tests): misma semántica para `devolucion.aprobada`.
 - Los tres corren con `mvn -Pit verify` y `@Testcontainers(disabledWithoutDocker = true)`.
-- Corrida real 2026-11-21 con Docker: notificaciones **6 OK**, ventas **22 OK**, entradas **4 OK**
+- Corrida real 2026-11-21 con Docker: notificaciones **6 OK**, ventas **22 OK**, entradas **5 OK**
   y preferencias **5 OK** (incluye los ITs de concurrencia de cada módulo).
 
 ### Implementación actual del Nivel 2 (2026-11-21)

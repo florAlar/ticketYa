@@ -2797,7 +2797,7 @@
               {
                 "name": "orden",
                 "in": "query",
-                "description": "Orden: fecha | precio | nombre",
+                "description": "Orden: fecha | precio | relevancia",
                 "required": false,
                 "schema": {
                   "type": "string",

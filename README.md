@@ -78,7 +78,7 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3000/         # fronte
 curl -s http://localhost:8080/api/eventos                               # gateway → 200 con eventos
 ```
 
-- Frontend: <http://localhost> (y también <http://localhost> en el puerto 3000).
+- Frontend: <http://localhost> (y también <http://localhost:3000>).
 - Gateway: <http://localhost:8080>.
 - Estado del stack con smoke HTTP: `sudo ./scripts/status.sh --http` (desde `Backend/`).
 - Bajar: `docker compose down`. Reiniciar desde cero y borrar las bases: `docker compose down -v`.
