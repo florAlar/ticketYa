@@ -59,3 +59,38 @@ INSERT INTO usuario_rol (id_usuario, id_rol) VALUES
   ('b0000000-0000-4000-8000-000000000003', 'a0000000-0000-4000-8000-000000000003'),
   ('b0000000-0000-4000-8000-000000000004', 'a0000000-0000-4000-8000-000000000004')
 ON DUPLICATE KEY UPDATE id_rol = VALUES(id_rol);
+
+
+-- ============================================================================
+-- Plataforma en funcionamiento: más clientes, un segundo organizador y una cuenta inactiva.
+-- Contraseñas: clientes e inactiva = demo1234 · metal@ (organizador) = org1234.
+-- ============================================================================
+INSERT INTO usuario (id_usuario, nombre, apellido, email, password_hash, ciudad, activo) VALUES
+  ('b0000000-0000-4000-8000-000000000005', 'Lucía', 'Gómez', 'lucia@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'Buenos Aires', 1),
+  ('b0000000-0000-4000-8000-000000000006', 'Martín', 'Pérez', 'martin@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'Córdoba', 1),
+  ('b0000000-0000-4000-8000-000000000007', 'Sofía', 'Ramírez', 'sofia@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'Rosario', 1),
+  ('b0000000-0000-4000-8000-000000000008', 'Nicolás', 'Torres', 'nicolas@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'Buenos Aires', 1),
+  ('b0000000-0000-4000-8000-000000000009', 'Camila', 'Díaz', 'camila@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'Mendoza', 1),
+  ('b0000000-0000-4000-8000-000000000010', 'Tomás', 'Acosta', 'tomas@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'La Plata', 1),
+  ('b0000000-0000-4000-8000-000000000011', 'Metal', 'Producciones', 'metal@ticketya.com',
+   '$2b$10$CSRgH3jW4WQhtaYtR4jGxuhAMxfxrdbnt2/cEF11yUfjpHdBg132K', 'Buenos Aires', 1),
+  ('b0000000-0000-4000-8000-000000000012', 'Cuenta', 'Inactiva', 'inactivo@ticketya.com',
+   '$2b$10$ObI../Q7KOx.axynvCYGNu/EYUEvAXD9LD3.tNnoTiGcyAjU.E2J6', 'Buenos Aires', 0)
+ON DUPLICATE KEY UPDATE email = VALUES(email), ciudad = VALUES(ciudad), activo = VALUES(activo);
+
+INSERT INTO usuario_rol (id_usuario, id_rol) VALUES
+  ('b0000000-0000-4000-8000-000000000005', 'a0000000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000006', 'a0000000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000007', 'a0000000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000008', 'a0000000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000009', 'a0000000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000010', 'a0000000-0000-4000-8000-000000000001'),
+  ('b0000000-0000-4000-8000-000000000011', 'a0000000-0000-4000-8000-000000000002'),
+  ('b0000000-0000-4000-8000-000000000012', 'a0000000-0000-4000-8000-000000000001')
+ON DUPLICATE KEY UPDATE id_rol = VALUES(id_rol);

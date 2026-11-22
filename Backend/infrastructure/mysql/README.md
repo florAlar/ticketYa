@@ -65,3 +65,46 @@ Los `init.sql` son idempotentes (`CREATE TABLE IF NOT EXISTS` y `ON DUPLICATE KE
 - El sector numerado guarda `filas` y `asientos_por_fila`; su capacidad es el producto. No hay filas de asiento libres en ninguna tabla (las tablas `asiento` y `precio_asiento` se eliminaron).
 - Solo `ventas.asiento_reservado` guarda asientos, y únicamente los **tomados** (RESERVADO | VENDIDO). Clave única: evento + sector + fila + número.
 - Seeds: los 3 sectores numerados (Platea `…012` 100×250, Cadeira `…014` 80×250, Club Wembley `…016` 72×250) mantienen su capacidad (25.000 / 20.000 / 18.000).
+
+## Seed "plataforma en funcionamiento"
+
+Además del seed mínimo, cada `init.sql` (y `mongodb/preferencias/init.js`) trae al final un bloque
+que simula una plataforma con movimiento: eventos en todos los estados, ventas, entradas y notificaciones.
+Mismo estilo que el catálogo base: recitales de metal y deportes extremos. Los eventos del catálogo base no
+se modificaron (nombres, bandas e imágenes); solo se ajustaron sus cupos para que aparezcan los badges de cupo.
+
+**Cuentas nuevas** (contraseña `demo1234`, salvo `metal@` = `org1234`)
+
+| Email | Rol | Nota |
+|---|---|---|
+| `lucia@`, `martin@`, `sofia@`, `nicolas@`, `camila@`, `tomas@` `ticketya.com` | CLIENTE | `b0000000-0000-4000-8000-0000000000{05..10}` (ids decimales `…05` a `…10`) |
+| `metal@ticketya.com` | ORGANIZADOR | segundo organizador (`…11`): sus eventos no los ve `org@` |
+| `inactivo@ticketya.com` | CLIENTE | cuenta desactivada (`…12`) |
+
+**Eventos agregados** (`d0000000-0000-4000-8000-0000000000{16..21}`, ids hexadecimales)
+
+| Estado | Eventos |
+|---|---|
+| `PUBLICADO` con cupo casi agotado | Sepultura (< 20 libres, «Últimos lugares»), Mastodon (< 50), Judas Priest (< 100), Red Bull Rampage (< 100) |
+| `PUBLICADO` con fecha cercana | Supercross Indoor (2026-11-22), Sepultura (2026-11-24), Mastodon (2026-12-05) |
+| `PUBLICADO` con poca venta | X Games |
+| `AGOTADO` | Lamb of God (más Oasis del catálogo base) |
+| `SUSPENDIDO` | WRC Rally de Argentina (más UCL Final del catálogo base) |
+| `FINALIZADO` | Motocross de las Naciones, Pantera (fechas pasadas, con entradas `USADA`) |
+| `BORRADOR` | Megadeth (completo, sin publicar), Metal Fest Argentina (incompleto, sin sectores) |
+
+También se ajustaron los cupos de Iron Maiden, Rammstein, Foo Fighters, Boca vs River y UFC (catálogo base).
+
+**Ventas y entradas** (`f0000000-…` y `aa000000-…`): 21 compras de 7 clientes con compras `APROBADA` con
+emisión `EMITIDA`/`PENDIENTE`/`FALLIDA`, una `RECHAZADA` (pago rechazado) y una reserva `EXPIRADA`; 22 entradas
+(`VENDIDA`, `USADA`, `DEVUELTA`, `A_REINTEGRAR`), 5 devoluciones (`PENDIENTE`, `APROBADA`, `RECHAZADA`,
+`EN_CURSO`), 5 validaciones de puerta (`VALIDA` y `YA_USADA`) y los asientos vendidos de los sectores numerados.
+
+**Notificaciones y Mongo:** 12 notificaciones (leídas, sin leer, `PENDIENTE` y `FALLIDA`), preferencias de los
+6 clientes nuevos y su historial de compras.
+
+Notas:
+- `cantidad_vendida` de los cupos es la cifra "de mercado" (decenas de miles) y **no** coincide con la cantidad
+  de filas de `entrada`: el seed solo materializa unas pocas entradas, igual que el catálogo base.
+- Las fechas son fijas y están pensadas para el 2026-11-21: Supercross, Sepultura, Mastodon, Lamb of God y los
+  dos `FINALIZADO` quedan en el pasado con el tiempo. Se actualizan editando el `init.sql` de eventos.

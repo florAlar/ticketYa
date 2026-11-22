@@ -375,3 +375,115 @@ UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/th
 UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Basketball_arena_match_sport_game_lakers_tribune_fans-1223638.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000009';
 UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/6/69/Khalifa_Stadium%2C_Doha%2C_Brazil_vs_Argentina_%282010%29.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000000e';
 UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/78/UEFA_Champions_League_Final_Cardiff_2017_adjusted.jpg/1280px-UEFA_Champions_League_Final_Cardiff_2017_adjusted.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000002';
+
+
+-- ============================================================================
+-- Plataforma en funcionamiento: eventos en todos los estados (BORRADOR, PUBLICADO, SUSPENDIDO,
+-- AGOTADO, FINALIZADO), con fechas cercanas y lejanas. Misma línea: metal y deportes extremos.
+-- Las portadas quedan en NULL: el front dibuja una portada generada.
+-- ============================================================================
+INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio, fecha_fin, estado, id_lugar, fecha_publicacion, es_alta_demanda) VALUES
+  ('d0000000-0000-4000-8000-000000000016', 'b0000000-0000-4000-8000-000000000011',
+   'Sepultura — Roots Bloody Roots Night', 'Sepultura celebra uno de los discos más influyentes del metal latinoamericano con una noche dedicada a Roots y a sus clásicos de siempre. La banda brasileña combina thrash, groove y percusión de raíz en un sonido propio, reconocido en todo el mundo, y su repertorio en vivo es una descarga continua de energía.\n\nEs un recital pensado para el pogo y el coro colectivo: riffs pesados, ritmos tribales y temas que el público sabe de memoria. El show recorre distintas etapas de la banda y no deja respiro de principio a fin.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'RECITAL',
+   '2026-11-24 21:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000006', '2026-10-26 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000017', 'b0000000-0000-4000-8000-000000000011',
+   'Mastodon — Hushed and Grim Live', 'Mastodon presenta Hushed and Grim Live, un repaso por su repertorio más pesado y ambicioso. La banda de Atlanta mezcla metal progresivo, sludge y pasajes melódicos, con canciones largas, cambios de compás y una complejidad técnica que se disfruta tanto en el estudio como en vivo.\n\nComo invitado participa Gojira, la banda francesa de metal progresivo, de modo que la noche reúne a dos de los nombres más sólidos de la escena actual. Conviene llegar temprano para ver los dos sets completos.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'RECITAL',
+   '2026-12-05 21:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000006', '2026-10-28 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000018', 'b0000000-0000-4000-8000-000000000002',
+   'Judas Priest — Invincible Shield Tour', 'Judas Priest llega con Invincible Shield Tour, la gira de su disco más reciente y una de las más esperadas del heavy metal clásico. Más de cinco décadas de trayectoria los convirtieron en referentes del género, con su estética de cuero y tachas, sus guitarras dobles y la voz inconfundible de Rob Halford.\n\nEl repertorio combina los himnos de siempre con canciones del último álbum, en un show de estadio con producción completa y mucho público coreando de principio a fin. Es una cita para varias generaciones de fans del metal.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'RECITAL',
+   '2027-02-14 21:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000001', '2026-10-29 12:00:00.000', 1),
+  ('d0000000-0000-4000-8000-000000000019', 'b0000000-0000-4000-8000-000000000011',
+   'Megadeth — Symphony of Destruction Night', 'Noche de thrash técnico con Megadeth, la banda de Dave Mustaine, con riffs veloces, solos extensos y un repertorio que repasa los discos que definieron el género, como Rust in Peace y Peace Sells.\n\nEste evento está en preparación: todavía no está a la venta y los datos pueden cambiar hasta su publicación. Cuando se publique vas a poder elegir sector y comprar tus entradas desde esta misma página.', 'RECITAL',
+   '2027-03-20 21:00:00.000', NULL, 'BORRADOR',
+   'c0000000-0000-4000-8000-000000000001', NULL, 0),
+  ('d0000000-0000-4000-8000-00000000001a', 'b0000000-0000-4000-8000-000000000002',
+   'Metal Fest Argentina — Edición 2027', 'Metal Fest Argentina es un festival de metal pensado en dos escenarios, con bandas locales e internacionales a lo largo de una jornada completa de música pesada en vivo.\n\nPor ahora es un borrador: no tiene lugar definitivo ni sectores configurados, y la grilla de bandas y las fechas pueden cambiar. Cuando se confirme y se publique, vas a ver el detalle completo y vas a poder comprar entradas desde esta misma página.', 'FESTIVAL',
+   '2027-05-01 14:00:00.000', NULL, 'BORRADOR',
+   'c0000000-0000-4000-8000-000000000006', NULL, 0),
+  ('d0000000-0000-4000-8000-00000000001b', 'b0000000-0000-4000-8000-000000000002',
+   'Motocross de las Naciones — Gran Final', 'El Motocross de las Naciones es la competencia por equipos más importante del motocross mundial: cada país presenta a sus mejores pilotos y compite en carreras de saltos, barro y velocidad en las que se define la nación campeona.\n\nEste evento ya se realizó y la venta de entradas está cerrada. Quienes compraron conservan su historial en Mis entradas.', 'DEPORTE',
+   '2026-10-18 13:00:00.000', NULL, 'FINALIZADO',
+   'c0000000-0000-4000-8000-000000000005', '2026-08-20 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-00000000001c', 'b0000000-0000-4000-8000-000000000011',
+   'Pantera — Reunion Show', 'Pantera volvió a los escenarios con un show de reencuentro que repasó los temas más pesados del groove metal de los años noventa, con riffs secos, baterías contundentes y una energía que cautivó a fans de todas las edades.\n\nEste evento ya se realizó y la venta de entradas está cerrada. Quienes compraron conservan su historial en Mis entradas.', 'RECITAL',
+   '2026-11-08 21:00:00.000', NULL, 'FINALIZADO',
+   'c0000000-0000-4000-8000-000000000001', '2026-09-25 12:00:00.000', 1),
+  ('d0000000-0000-4000-8000-00000000001d', 'b0000000-0000-4000-8000-000000000002',
+   'Red Bull Rampage — Freeride Extremo', 'Red Bull Rampage reúne a los mejores riders de mountain bike freeride del mundo en una competencia sobre acantilados y líneas imposibles, donde cada bajada combina saltos enormes, giros en el aire y un riesgo extremo.\n\nEs una de las pruebas más espectaculares de los deportes extremos. El público sigue la competencia en vivo mientras los riders presentan sus recorridos, y la jornada cierra con la definición de los premios.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'DEPORTE',
+   '2027-03-06 11:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000005', '2026-11-02 12:00:00.000', 1),
+  ('d0000000-0000-4000-8000-00000000001e', 'b0000000-0000-4000-8000-000000000011',
+   'WRC — Rally de Argentina', 'El Mundial de Rally (WRC) llega a la Argentina con tramos de tierra, velocidad y paisajes de montaña, donde los mejores pilotos y copilotos compiten contra el cronómetro en caminos muy exigentes.\n\nPor el momento la venta de entradas nuevas está pausada mientras se confirman los tramos. Quienes ya compraron conservan su entrada y no tienen que hacer ningún trámite.\n\nSi la venta se reanuda, vas a poder volver a elegir tu sector desde esta misma página.', 'DEPORTE',
+   '2027-05-15 09:00:00.000', NULL, 'SUSPENDIDO',
+   'c0000000-0000-4000-8000-000000000005', '2026-10-30 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-00000000001f', 'b0000000-0000-4000-8000-000000000011',
+   'Lamb of God — Omens World Tour', 'Lamb of God presenta Omens World Tour, una gira del groove metal de Virginia con una puesta demoledora: riffs pesados, baterías aplastantes y un frontman que no deja de moverse durante todo el show.\n\nLas entradas para esta fecha se encuentran agotadas. Si se liberan lugares por devoluciones, vas a poder verlos en esta misma página.', 'RECITAL',
+   '2026-12-12 21:00:00.000', NULL, 'AGOTADO',
+   'c0000000-0000-4000-8000-000000000006', '2026-09-30 12:00:00.000', 1),
+  ('d0000000-0000-4000-8000-000000000020', 'b0000000-0000-4000-8000-000000000002',
+   'X Games — Buenos Aires', 'Los X Games reúnen a las mayores estrellas de los deportes extremos en tres disciplinas, skate, BMX y moto freestyle, con trucos, saltos y competencias de altísimo nivel durante tres días.\n\nEs un evento pensado para toda la familia, con pruebas durante toda la jornada y mucho ambiente en las tribunas. Conviene planificar la visita según las competencias que más te interesen.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'DEPORTE',
+   '2027-02-27 12:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000005', '2026-11-05 12:00:00.000', 0),
+  ('d0000000-0000-4000-8000-000000000021', 'b0000000-0000-4000-8000-000000000002',
+   'Supercross Indoor — Gran Final', 'La gran final de supercross bajo techo se corre sobre una pista de tierra con rampas gigantes, curvas cerradas y saltos en serie, donde los pilotos pelean cada posición en carreras muy cortas y de máxima intensidad.\n\nAl ser bajo techo, el público está muy cerca de la acción y vive cada vuelta con el ruido de los motores. Es una de las noches más vistosas del motociclismo de competición.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'DEPORTE',
+   '2026-11-22 20:00:00.000', NULL, 'PUBLICADO',
+   'c0000000-0000-4000-8000-000000000006', '2026-10-20 12:00:00.000', 0)
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion), tipo = VALUES(tipo),
+  fecha_inicio = VALUES(fecha_inicio), estado = VALUES(estado), id_lugar = VALUES(id_lugar), es_alta_demanda = VALUES(es_alta_demanda);
+
+INSERT INTO precio_sector (id, id_evento, id_sector, precio, moneda, activo) VALUES
+  ('e0000000-0000-4000-8000-00000000002a', 'd0000000-0000-4000-8000-000000000016', 'c0000000-0000-4000-8000-00000000001b', 70000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000002b', 'd0000000-0000-4000-8000-000000000016', 'c0000000-0000-4000-8000-00000000001c', 130000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000002c', 'd0000000-0000-4000-8000-000000000017', 'c0000000-0000-4000-8000-00000000001b', 78000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000002d', 'd0000000-0000-4000-8000-000000000017', 'c0000000-0000-4000-8000-00000000001c', 140000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000002e', 'd0000000-0000-4000-8000-000000000018', 'c0000000-0000-4000-8000-000000000011', 105000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000002f', 'd0000000-0000-4000-8000-000000000018', 'c0000000-0000-4000-8000-000000000012', 190000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000030', 'd0000000-0000-4000-8000-000000000019', 'c0000000-0000-4000-8000-000000000011', 100000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000031', 'd0000000-0000-4000-8000-000000000019', 'c0000000-0000-4000-8000-000000000012', 185000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000032', 'd0000000-0000-4000-8000-00000000001b', 'c0000000-0000-4000-8000-000000000019', 45000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000033', 'd0000000-0000-4000-8000-00000000001b', 'c0000000-0000-4000-8000-00000000001a', 110000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000034', 'd0000000-0000-4000-8000-00000000001c', 'c0000000-0000-4000-8000-000000000011', 120000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000035', 'd0000000-0000-4000-8000-00000000001c', 'c0000000-0000-4000-8000-000000000012', 210000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000036', 'd0000000-0000-4000-8000-00000000001d', 'c0000000-0000-4000-8000-000000000019', 65000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000037', 'd0000000-0000-4000-8000-00000000001d', 'c0000000-0000-4000-8000-00000000001a', 150000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000038', 'd0000000-0000-4000-8000-00000000001e', 'c0000000-0000-4000-8000-000000000019', 85000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-000000000039', 'd0000000-0000-4000-8000-00000000001e', 'c0000000-0000-4000-8000-00000000001a', 170000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000003a', 'd0000000-0000-4000-8000-00000000001f', 'c0000000-0000-4000-8000-00000000001b', 95000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000003b', 'd0000000-0000-4000-8000-00000000001f', 'c0000000-0000-4000-8000-00000000001c', 180000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000003c', 'd0000000-0000-4000-8000-000000000020', 'c0000000-0000-4000-8000-000000000019', 55000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000003d', 'd0000000-0000-4000-8000-000000000020', 'c0000000-0000-4000-8000-00000000001a', 125000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000003e', 'd0000000-0000-4000-8000-000000000021', 'c0000000-0000-4000-8000-00000000001b', 60000.00, 'ARS', 1),
+  ('e0000000-0000-4000-8000-00000000003f', 'd0000000-0000-4000-8000-000000000021', 'c0000000-0000-4000-8000-00000000001c', 120000.00, 'ARS', 1)
+ON DUPLICATE KEY UPDATE precio = VALUES(precio), activo = VALUES(activo);
+
+INSERT INTO participante (id, nombre, tipo, descripcion) VALUES
+  ('p0000000-0000-4000-8000-00000000001a', 'Sepultura', 'BANDA', 'Thrash / groove metal brasilero'),
+  ('p0000000-0000-4000-8000-00000000001b', 'Mastodon', 'BANDA', 'Metal progresivo y sludge'),
+  ('p0000000-0000-4000-8000-00000000001c', 'Judas Priest', 'BANDA', 'Heavy metal clásico'),
+  ('p0000000-0000-4000-8000-00000000001d', 'Megadeth', 'BANDA', 'Thrash metal'),
+  ('p0000000-0000-4000-8000-00000000001e', 'Pantera', 'BANDA', 'Groove metal'),
+  ('p0000000-0000-4000-8000-00000000001f', 'Lamb of God', 'BANDA', 'Groove metal'),
+  ('p0000000-0000-4000-8000-000000000020', 'Red Bull Rampage', 'ORGANIZACION', 'Mountain bike freeride'),
+  ('p0000000-0000-4000-8000-000000000021', 'WRC', 'ORGANIZACION', 'Campeonato Mundial de Rally'),
+  ('p0000000-0000-4000-8000-000000000022', 'X Games', 'ORGANIZACION', 'Deportes extremos'),
+  ('p0000000-0000-4000-8000-000000000023', 'Supercross', 'ORGANIZACION', 'Motociclismo de pista cerrada'),
+  ('p0000000-0000-4000-8000-000000000024', 'Motocross de las Naciones', 'ORGANIZACION', 'Motocross por equipos')
+ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), tipo = VALUES(tipo), descripcion = VALUES(descripcion);
+
+INSERT INTO evento_participante (id_evento, id_participante, rol, orden) VALUES
+  ('d0000000-0000-4000-8000-000000000016', 'p0000000-0000-4000-8000-00000000001a', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000017', 'p0000000-0000-4000-8000-00000000001b', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000017', 'p0000000-0000-4000-8000-000000000002', 'TELONERO', 1),
+  ('d0000000-0000-4000-8000-000000000018', 'p0000000-0000-4000-8000-00000000001c', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000019', 'p0000000-0000-4000-8000-00000000001d', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-00000000001b', 'p0000000-0000-4000-8000-000000000024', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-00000000001c', 'p0000000-0000-4000-8000-00000000001e', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-00000000001d', 'p0000000-0000-4000-8000-000000000020', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-00000000001e', 'p0000000-0000-4000-8000-000000000021', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-00000000001f', 'p0000000-0000-4000-8000-00000000001f', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000020', 'p0000000-0000-4000-8000-000000000022', 'PRINCIPAL', 0),
+  ('d0000000-0000-4000-8000-000000000021', 'p0000000-0000-4000-8000-000000000023', 'PRINCIPAL', 0)
+ON DUPLICATE KEY UPDATE rol = VALUES(rol), orden = VALUES(orden);
