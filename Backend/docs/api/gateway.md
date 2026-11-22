@@ -16,7 +16,7 @@ Todas las rutas viven en `APIGateway/src/main/resources/application.yml` bajo `s
 | 3 | `eventos-cupos-liberacion-ventas` | 9 | `/api/eventos/{id}/cupos/liberacion` | POST | ms-ventas:8083 | 1 | Uso interno Feign msvc-entradas |
 | 4 | `eventos-cupos-ventas` | 10 | `/api/eventos/{id}/cupos` | POST | ms-ventas:8083 | 1 | Uso interno Feign msvc-eventos |
 | 5 | `eventos-fila-ventas` | 11 | `/api/eventos/{id}/fila/**` | — | ms-ventas:8083 | 1 | Fila virtual implementada (FIL-01/02/03): ingreso, posición y validación requieren JWT (CLIENTE u ORGANIZADOR); `GET .../fila/estado` es público; habilitación solo ADMIN |
-| 6 | `eventos-validaciones-entradas` | 12 | `/api/eventos/{id}/validaciones` | — | ms-entradas:8084 | 1 | Control de acceso QR (E2-ACC-01): POST PERSONAL_ACCESO/ADMIN; GET PERSONAL_ACCESO, ORGANIZADOR dueño o ADMIN |
+| 6 | `eventos-validaciones-entradas` | 12 | `/api/eventos/{id}/validaciones` | — | ms-entradas:8084 | 1 | Control de acceso QR (E2-ACC-01): POST PERSONAL_ACCESO/ADMIN; GET ORGANIZADOR dueño o ADMIN (el msvc rechaza PERSONAL_ACCESO con 403) |
 | 7 | `eventos-recomendaciones-preferencias` | 13 | `/api/eventos/{id}/recomendaciones` | — | ms-preferencias:8085 | 1 | — |
 | 8 | `eventos` | 20 | `/api/eventos`, `/api/eventos/**` | — | ms-eventos:8082 | 1 | Catch-all eventos/lugares |
 | 9 | `lugares` | 21 | `/api/lugares`, `/api/lugares/**` | — | ms-eventos:8082 | 1 | — |
@@ -76,7 +76,7 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 |-----|------------------|------|
 | `CLIENTE` | `/api/usuarios/me/**`, `/api/auth/**`, compras propias (`/api/reservas/**`, `/api/compras/**`, `/api/pagos/**`, `/api/entradas/**`, `/api/devoluciones/**`), disponibilidad GET, fila (`POST .../fila/ingreso`, `GET .../fila/posicion`, `POST .../fila/validacion`), `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/clientes/**`, `/api/notificaciones/me/**`, `GET /api/eventos/**` (excepto `/validaciones`) | El msvc filtra recursos por `X-User-Id`; `GET .../fila/estado` es público y `POST .../fila/habilitacion` da 403 |
 | `ORGANIZADOR` | `/api/eventos/**` (excepto `POST /api/eventos/{id}/validaciones`), `GET /api/lugares/**`, `GET /api/sectores/**` (solo lectura: elige un lugar al crear el evento), `POST /api/participantes` (alta; editar y eliminar `PUT/DELETE /api/participantes/{id}` son solo ADMIN), `/api/organizadores/**`, `/api/reportes/**`, `GET /api/eventos/{id}/validaciones`, `/api/usuarios/me/**`, `/api/auth/**`, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Revalida localmente en msvc-eventos (dueño del evento) |
-| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `/api/eventos/{id}/validaciones` (POST/GET), `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Validación de ingreso en evento |
+| `PERSONAL_ACCESO` | `/api/usuarios/me/**`, `/api/auth/**`, `POST /api/eventos/{id}/validaciones`, `/api/preferencias/**`, `/api/recomendaciones/**`, `/api/notificaciones/me/**`, compras propias (self-service) | Validación de ingreso en evento; `GET .../validaciones` lo rechaza el msvc (403) |
 | `ADMIN` | Todo | Short-circuit en `hasPermission` |
 
 ### 3.2 Exclusivas de ADMIN (403 para cualquier otro rol)

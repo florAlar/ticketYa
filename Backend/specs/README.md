@@ -36,6 +36,7 @@ La Parte A de una feature puede adelantarse si desbloquea un entregable obligato
 | Alcance y entregables | `consigna.md` | No se modifica; manda sobre todo |
 | Estado y prioridad | `backlog.md` | Una fila por US; `hecho`/`parcial`/`pendiente` |
 | Reglas transversales | `reglas-de-negocio.md` | Decisiones de negocio y puntos abiertos |
+| Política de roles | `politica-de-roles.md` | Aprovisionamiento, permisos y matriz (X-ORG-02) |
 | Contrato HTTP | `endpoints.md` + `docs/openapi/` + `<msvc>/docs/endpoints.md` | Paths, roles, códigos, DTOs |
 | Comunicación | `comunicacion.md` | Gateway, Feign, Rabbit, idempotencia y fallos |
 | Mapa de servicios | `microservicios.md` | Responsabilidades, APIs y límites |
