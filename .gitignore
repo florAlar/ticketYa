@@ -12,3 +12,7 @@ Backend/docs/testing/carga/*.jtl
 Backend/docs/testing/carga/report-*/
 Backend/docs/testing/carga/report/
 jmeter.log
+
+# Documento de entrega formal (se envía por mail, no se versiona) y temporales de Word
+ENTREGA-2.docx
+~$*

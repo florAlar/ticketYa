@@ -49,7 +49,6 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 | INF-25 | `Dockerfile` multi-stage del Frontend + servicio en compose/nginx del monorepo | Transversal | hecho | `Frontend/Dockerfile` + `ms-frontend` :3000; conf nginx proxy `/api/` → `ms-gateway`. Include en `Backend/docker-compose.yml`. |
 | INF-27 | **Spring reconoce init.sql** (datasource + JPA validate + entidades/repos = schema) | E1 | hecho | 5 msvc MySQL: `ddl-auto=validate`, JDBC a `db-mysql-*`, entidades/repos al init, arranque OK + smoke `GET /`. Seeds solo init.sql. Verificado 2026-11-06. |
 | INF-28 | init Mongo preferencias (`infrastructure/mongodb/preferencias/init.js`) colecciones + índices según `modelo-mongodb.md` | E2 | hecho | Colecciones `preferencias_clientes` + `interacciones_eventos`; índices idCliente/idEvento; seed demo alineado a UUIDs MySQL. Montado en `db-mongo-preferencias`. URI compose con `${MONGO_PASSWORD:-mongo_dev}`. Verificado mongosh 2026-11-06. |
-| INF-29 | Índice de la Entrega 2 en la raíz (`ENTREGA-2.docx`, Word editable para exportar a PDF): cada punto de la consigna §6 con su enlace en el repo | Transversal | hecho | 2026-11-22: Documento de 1 página: la lista del Entregable 2 de la consigna con un enlace por ítem a GitHub (`blob/main`); los enlaces funcionan una vez que la rama esté en `main`. Los criterios de aceptación (US-03) enlazan al tablero Trello. |
 
 ---
 
