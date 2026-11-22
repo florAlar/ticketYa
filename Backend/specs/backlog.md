@@ -188,7 +188,7 @@ Identificación E1: sin JWT formal; `X-User-Id` / header de rol (o equivalente) 
 | ID | Tarea | Estado | Notas |
 | --- | --- | --- | --- |
 | HIG-01 | `msvc-notificaciones`: `contextLoads` falla sin MySQL (único test del módulo) | hecho | 2026-11-21: sin bases embebidas (se descartó H2). `mvn test` corre 42 unitarios, incluido `NotificacionOpenApiTest` (slice web con `/v3/api-docs`, sin conexión). El arranque completo se valida con `MsvcNotificacionesApplicationIT` contra MySQL 8.4 real vía Testcontainers (`mvn -Pit verify`, requiere Docker). |
-| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | pendiente | `npm run build` OK. 2026-11-11: siguen los mismos 12 errores preexistentes; los cambios de esa fecha no agregaron ninguno. |
+| HIG-02 | Frontend `npm run lint`: 12 errores (3 `opts` sin usar, 3 `react-refresh/only-export-components`, 6 `setState` síncrono en effect) | hecho | 2026-11-21: `npm run lint` → **0 errores / 0 warnings** en 185 archivos y `npm run build` OK. Los 12 errores preexistentes se resolvieron con el rediseño del front (E2-UI-04). El script quedó con `--max-warnings=0` para evitar regresiones. |
 | HIG-03 | `msvc-preferencias`: sin tests | hecho | 2026-11-16: 39 unitarios + 2 ITs (`RecomendacionMongoIT` con Mongo real, `CompraConfirmadaIngestIT` con Rabbit + Mongo e idempotencia; 5 casos en total). Se corren con `mvn -Pit verify`. |
 | HIG-04 | Entorno local: `~/.m2/.../org.jacoco.build-0.8.8.pom` truncado → `mvn test` en ventas no resolvía jacoco | hecho | Causa: la corrida en paralelo de 7 `mvn` (2026-11-10) escribió a la vez el mismo archivo del repo local. Re-ejecutado en solitario: ventas 109 tests OK. Evitar correr varios `mvn` en paralelo sobre el mismo `~/.m2`. |
 | HIG-05 | READMEs raíz/Backend: texto "sin API de negocio aún / scaffold" desactualizado | hecho | README raíz y de Frontend reescritos (2026-11-11); ya no dicen "sin API de negocio aún". |
@@ -367,7 +367,7 @@ Origen: faltan el alta de lugares desde el panel de admin y la ubicación por la
 10. **FE sesión 2026-11-07 (a)** — X-QR-01/02, X-UI-02/03/04; GW org PATCH estado (E2-SEC-02 parcial).  
 11. **FE/BE sesión 2026-11-07 (b)** — **hecho:** cupo al publicar (E1-VEN-02b + Feign EVE); form alta (borrador laxo / publicar completo / sin ilimitado); checkout sin stock bloquea; toast demo; admin sin CTA Acceso; editar borrador.  
 12. **FE residual — hecho 2026-11-11:** demock admin usuarios **selectivo** (E2-UI-02) — list/estado/roles reales; alta acceso + eventosAsignados + DELETE quedan OFF.  
-13. E1-TST + INF-17 (Postman) — **hecho**; E1-REL (README) — **hecho**. Higiene HIG-01…06 resuelta salvo HIG-02 (lint FE).  
+13. E1-TST + INF-17 (Postman) — **hecho**; E1-REL (README) — **hecho**. Higiene HIG-01…06 resuelta; HIG-02 (lint FE) verificado el 2026-11-21 con 0 errores.  
 14. E2: ACC scan → PRE → NOT → FILA/REP → NFR → DEP/TST; X-ORG-01 si producto.  
 15. **Hecho:** E2-ACC-01, E2-REP-01, E2-NFR-01/02/03, LUG-01/02/03/04, PAR-01, E2-PRE-01…04, E2-NOT-01/02, E2-FILA-01/02 y SEAT-01…07. Estado vigente en §9.
 
@@ -390,7 +390,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…**06** (`consistencia-y-compensaciones.md`, `decisiones-tecnologicas.md`); **API-01/02/03**, **INF-13**, **API-04** (notificaciones + fila en OpenAPI, bundle con 6 specs y diagramas alineados) | **ARQ-01** | US-03 |
 | Código de negocio (E1 + E2) | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos); **E2-FILA-01** (FIL-01…04: fila, tandas, token y gate), **E2-FILA-02** (popup de alta demanda al publicar, umbral 5000 y pausa/reanudación por estado); **E2-ACC-01** (control de acceso QR); **E2-REP-01** (reportes del organizador); **E2-NFR-01/02/03** (caché, resiliencia y correlation id + bitácora); **LUG-01/02/03/04** (lugares con coordenadas y geocodificación con patrón adaptador); **E2-PRE-01…03**; **E2-NOT-01/02** | — | — |
 | Extra producto | X-UI-01…06, X-QR-01/02 | — | X-ORG-01/02 |
-| Testing / Postman / README | E1-TST-01/02, **E2-TST-01** (ITs de borde 37 OK + E2E F1–F5 5/5), **E2-TST-02**, **E2-TST-03** (matriz 25/50/100 + reintentos post-fix), **E2-DEP-01** (stack completo + front + Newman 216/587/0), INF-17, README raíz + Backend + FE; Postman 216 requests/15 carpetas (corrida 2026-11-21: 216 requests, 587 assertions, 0 fallos, incluidas 13 y 14); tests gateway **146**, ventas **221 + 22 IT**, usuarios 58 + 1 IT, eventos 203 + 1 IT, entradas **86 + 5 IT**, preferencias 39 + 2 IT (5 casos), notificaciones 42 + 6 IT; ITs con Testcontainers (`-Pit`: MySQL, Mongo, Redis, Rabbit) | — | HIG-02 (lint FE) |
+| Testing / Postman / README | E1-TST-01/02, **E2-TST-01** (ITs de borde 37 OK + E2E F1–F5 5/5), **E2-TST-02**, **E2-TST-03** (matriz 25/50/100 + reintentos post-fix), **E2-DEP-01** (stack completo + front + Newman 216/587/0), INF-17, README raíz + Backend + FE; Postman 216 requests/15 carpetas (corrida 2026-11-21: 216 requests, 587 assertions, 0 fallos, incluidas 13 y 14); tests gateway **146**, ventas **221 + 22 IT**, usuarios 58 + 1 IT, eventos 203 + 1 IT, entradas **86 + 5 IT**, preferencias 39 + 2 IT (5 casos), notificaciones 42 + 6 IT; ITs con Testcontainers (`-Pit`: MySQL, Mongo, Redis, Rabbit) | — | — |
 
 > `X-ACC-01` quedó **descartado** (2026-11-11): cualquier `PERSONAL_ACCESO` valida cualquier evento; se documenta como simplificación.
 
@@ -406,7 +406,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 
 **Verificación real 2026-11-10 (tests locales, Docker apagado):**  
 - Unitarias OK: gateway 23, usuarios 51, eventos 119, entradas 54, ventas 139 (HIG-04 resuelto; eventos/ventas/entradas incluyen los tests de asientos virtuales). Preferencias sin tests; notificaciones `contextLoads` falla sin MySQL.  
-- FE: `build` OK, `lint` 12 errores preexistentes (HIG-02; los cambios de SEAT-05 no agregaron ninguno). Sin test runner de UI: lógica de dominio y render del `SeatPicker` verificados con scripts descartables.  
+- FE: `build` OK; `lint` **0 errores / 0 warnings** (HIG-02 cerrado 2026-11-21; esta nota original era del 2026-11-10). Sin test runner de UI: lógica de dominio y render del `SeatPicker` verificados con scripts descartables.  
 - Sin verificar: stack compose, smoke, IT Testcontainers, Postman (HIG-06). **Asientos virtuales (SEAT-01…05) sin probar contra MySQL/Redis/gateway reales**: scripts `04-*.sql` sin ejecutar, flujo reserva→pago→emisión→devolución con asientos solo cubierto por unitarios y mocks.  
 - **Decisión 2026-11-10 (resuelve la pregunta 6 de `reglas-de-negocio.md`):** modelo híbrido — sector numerado por asiento concreto (virtual, solo se guarda el tomado), sector general por cupo; precio por sector.  
 - E2 sin código de negocio: ACC, FILA, PRE (solo docs Mongo + repos), NOT (solo entidades/service stub), REP, NFR-01/02/03.  
@@ -427,4 +427,4 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - Los 6 microservicios tienen OpenAPI (`springdoc` + `OpenApiConfig` + spec en `docs/openapi/`) y Testcontainers con perfil `-Pit`; no se usan bases embebidas.  
 - Tests unitarios: gateway **146**, usuarios **58 + 1 IT**, eventos **203 + 1 IT**, ventas **221 + 22 IT**, entradas **86 + 5 IT**, preferencias **39 + 2 IT (5 casos)**, notificaciones **42 + 6 IT**.  
 - Postman: **216 requests / 15 carpetas**; corrida completa 2026-11-21 por el proxy Nginx: **587 assertions, 0 fallos** (incluye 13 Fila virtual y 14 Notificaciones).  
-- Pendiente: `HIG-02` (lint FE), resto de `E2-UI-01`, `ARQ-01`, `US-03`, `DOC-MS-SYNC` y `X-ORG-01/02`.
+- Pendiente: resto de `E2-UI-01`, `ARQ-01`, `US-03`, `DOC-MS-SYNC` y `X-ORG-01/02`.
