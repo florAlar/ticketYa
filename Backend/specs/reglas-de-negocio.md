@@ -178,7 +178,7 @@ Si no hay disponible, el checkout no debe dejar comprar.
 ### Devolución pedida por el cliente
 
 - Solo entrada vendida y no usada.  
-- Plazo: **72 horas** contadas desde la **emisión** (no desde la fecha del show, según lo documentado en entradas).  
+- Plazo: **hasta 72 horas antes del evento** (fechaInicio del evento − 72 h). Si no se puede obtener la fecha del evento, la solicitud falla con 503 (no se asume otro plazo).
 - Admin **aprueba o rechaza**.  
 - Si aprueba: entrada devuelta, QR invalidado, **se libera 1 lugar** del sector en ventas, reintegro mock.
 
@@ -268,7 +268,7 @@ Marcar acá lo que **hay que acordar o alinear**. No son tareas de código por s
 
 ### Devoluciones
 
-13. Las 72 h: confirmar con el grupo si queda **desde emisión** (como entradas hoy) o **hasta 72 h antes del evento** (texto de consigna). Hay que **elegir una** y unificar consigna / implementación / doc formal.  
+13. ~~Las 72 h: confirmar con el grupo si queda desde emisión o hasta 72 h antes del evento.~~ → **Resuelta (2026-11-21):** la devolución se permite **hasta 72 h antes del evento**; la fecha se obtiene por Feign de eventos y, si no está disponible, la solicitud responde **503**.
 14. ¿El organizador ve devoluciones de sus eventos o solo admin?  
 15. Transferencia de entrada a otro usuario: hoy no hay API; ¿E2, extra, o fuera de alcance?
 

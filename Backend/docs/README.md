@@ -61,6 +61,6 @@ operación). La plantilla común es [`DOC-MS-00`](../specs/plantilla-docs-msvc.m
 
 - **Asientos numerados:** implementados como asientos virtuales (layout `filas` × `asientosPorFila`; solo se persisten los tomados en `ventas.asiento_reservado`). Los sectores generales siguen vendiéndose por cantidad. Ver `specs/diagramas/diagramas-secuencia.md` §5. Las tablas `asiento` y `precio_asiento` de eventos se eliminaron (SEAT-07).
 - **Prueba de concurrencia del mismo asiento:** unitaria (lock emulado) y de integración con MySQL real (`AsientoReservadoConcurrenciaIT`, perfil `-Pit`). Ver `testing/concurrencia.md` §3.3.
-- **Devoluciones:** el plazo de 72 h se cuenta desde la emisión de la entrada (la consigna dice "antes del evento"). Decisión pendiente en `specs/reglas-de-negocio.md` §9.13.
+- **Devoluciones:** se pueden solicitar **hasta 72 h antes del evento** (fechaInicio − 72 h). La fecha se consulta a msvc-eventos; si no está disponible, la solicitud responde **503**.
 - **Pago rechazado:** libera el cupo y cancela la reserva; para reintentar hay que crear una reserva nueva.
 - **Cancelación de evento:** el aviso de reintegro a entradas es *best-effort*.

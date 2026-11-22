@@ -225,7 +225,7 @@ Servicio: msvc-entradas | Prefijos: /entradas, /devoluciones + /eventos/{idEvent
 
 ### Devoluciones
 
-- POST /entradas/{id}/devoluciones — Solicitar devolución (CLIENTE; p.ej. plazo 72h, no usada)
+- POST /entradas/{id}/devoluciones — Solicitar devolución (CLIENTE; hasta 72 h antes del evento, no usada)
 - GET /devoluciones/{id} — Consultar solicitud propia
 - GET /devoluciones — Listar solicitudes pendientes (ADMIN)
 - POST /devoluciones/{id}/aprobacion — Aprobar devolución + reintegro (ADMIN)

@@ -16,7 +16,7 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 | GET /entradas | **hecho** | Propias (`X-User-Id`). Enriquece `eventoNombre`/`lugar*`/`sectorNombre` vía Feign msvc-eventos (best-effort). |
 | GET /entradas/{id} | **hecho** | Dueño **o ADMIN** (mismo método). Cliente: solo propias; ADMIN: cualquier id. |
 | GET /entradas/{id}/qr | **hecho** | Dueño; **solo VENDIDA** y evento no CANCELADO. USADA/DEVUELTA/A_REINTEGRAR → 409. |
-| POST /entradas/{id}/devoluciones | **hecho** | 72h desde emisión; solo VENDIDA no usada |
+| POST /entradas/{id}/devoluciones | **hecho** | Hasta 72 h antes del evento; solo VENDIDA no usada; 503 si no se puede obtener la fecha |
 | GET /devoluciones | **hecho** | Cliente: propias; ADMIN: pendientes |
 | GET /devoluciones/{id} | **hecho** | |
 | POST /devoluciones/{id}/aprobacion\|rechazo | **hecho** | ADMIN; aprueba → entrada DEVUELTA + **invalida codigo_qr** (INV-*) + Feign ventas `POST …/cupos/liberacion` fail-hard (1 unidad del sector) + publica `devolucion.aprobada` al broker (PUSH + EMAIL al cliente) |
@@ -63,7 +63,7 @@ Consumidor: `msvc-notificaciones` (cola `notificaciones.devoluciones`). Contrato
 `specs/comunicacion.md`.
 
 ### Config
-- `ticketya.entradas.plazo-devolucion-horas` (72)
+- `ticketya.entradas.plazo-devolucion-horas` (72 horas antes del evento)
 - `ticketya.uri.eventos` (Feign enriquecimiento)
 - `SPRING_RABBITMQ_*` (broker; Docker: `rabbitmq:5672`)
 

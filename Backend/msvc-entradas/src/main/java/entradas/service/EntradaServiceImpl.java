@@ -208,10 +208,17 @@ public class EntradaServiceImpl implements EntradaService {
         if (entrada.getFechaValidacion() != null || EST_USADA.equals(entrada.getEstado())) {
             throw new BusinessConflictException("Entrada ya usada; no se puede devolver");
         }
-        LocalDateTime limite = entrada.getFechaEmision().plusHours(plazoDevolucionHoras);
+        EventoDetalleFeignDTO evento = fetchEventoCached(entrada.getIdEvento(), new HashMap<>());
+        if (evento == null || evento.getFechaInicio() == null) {
+            throw new ServiceUnavailableException(
+                    "No se pudo validar la fecha del evento para la devolución");
+        }
+        LocalDateTime limite = evento.getFechaInicio().minusHours(plazoDevolucionHoras);
         if (nowUtc().isAfter(limite)) {
             throw new BusinessConflictException(
-                    "Plazo de devolución vencido (" + plazoDevolucionHoras + " h desde emisión)");
+                    "Plazo de devolución vencido (hasta "
+                            + plazoDevolucionHoras
+                            + " h antes del evento)");
         }
         boolean hayPendiente = devolucionRepository.findByEntradaIdEntrada(idEntrada).stream()
                 .anyMatch(d -> DEV_PENDIENTE.equals(d.getEstado()));

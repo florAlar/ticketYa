@@ -637,7 +637,7 @@ El código HTTP final lo define el `GlobalExceptionHandler` del msvc (se verific
 | TST-ENT-06 | EntradaServiceImpl | obtener inexistente | 404 |
 | TST-ENT-07 | EntradaServiceImpl | QR de VENDIDA con evento vigente | QR devuelto |
 | TST-ENT-08 | EntradaServiceImpl | QR de USADA / DEVUELTA / A_REINTEGRAR / evento cancelado | 409 |
-| TST-ENT-09 | EntradaServiceImpl | solicitar devolución dentro de 72 h | devolución PENDIENTE |
+| TST-ENT-09 | EntradaServiceImpl | solicitar devolución hasta 72 h antes del evento | devolución PENDIENTE |
 | TST-ENT-10 | EntradaServiceImpl | devolución fuera de plazo | 409 |
 | TST-ENT-11 | EntradaServiceImpl | devolución de entrada USADA | 409 |
 | TST-ENT-12 | EntradaServiceImpl | segunda devolución PENDIENTE | 409 |
@@ -905,6 +905,7 @@ registro de ejecución está en §17.
 | 1.2 | 2026-11-10 | D-16/R-05 actualizados: asientos virtuales en sectores numerados implementados (eventos, ventas, entradas, frontend). Cambia el contrato de `POST /reservas` (`asientos`), `GET /eventos/{id}/disponibilidad` (`asientosOcupados`), `POST /entradas/emision` (`asientos`), `POST /eventos/{id}/cupos/liberacion` (`asientos`) y los sectores (`filas`, `asientosPorFila`). El bundle OpenAPI y la colección Postman requieren regeneración/ampliación (SEAT-04) |
 | 1.3 | 2026-11-20 | §1 actualizado: los endpoints E2 que figuraban como no implementados ya están hechos (fila, QR, reportes, recomendaciones); preferencias y notificaciones implementados; estado real de tests E2 (integración y carga parciales). Se elimina el estado de “bloqueada por Plan mode” |
 | 1.4 | 2026-11-21 | Cierre de `E2-TST-01` (ITs de borde + E2E F1–F5) y `E2-TST-03` (matriz de carga 25/50/100 + reintentos post-fix): ambos quedan **hechos**. Se agrega `emision_compra` al modelo de datos (22 tablas) |
+| 1.5 | 2026-11-21 | Devoluciones alineadas a la consigna: **hasta 72 h antes del evento** (fechaInicio − 72 h) en lugar de 72 h desde la emisión. Si no se puede obtener la fecha del evento, responde 503 |
 
 ---
 

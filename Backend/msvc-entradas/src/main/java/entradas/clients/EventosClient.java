@@ -1,5 +1,6 @@
 package entradas.clients;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -23,6 +24,8 @@ public interface EventosClient {
     class EventoDetalleFeignDTO {
         private String id;
         private String nombre;
+        /** Inicio del evento; base para el plazo de devolución (72 h antes). */
+        private LocalDateTime fechaInicio;
         /** PUBLICADO | CANCELADO | … — para política de exposición de QR. */
         private String estado;
         /** Para que un ORGANIZADOR solo consulte las validaciones de sus propios eventos. */

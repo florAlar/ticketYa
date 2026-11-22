@@ -48,7 +48,7 @@ cd Backend
 (cd msvc-notificaciones && mvn test)   # 42 tests: fan-out, idempotencia, bandeja agrupada, envío, API/contrato, SMTP y OpenAPI
 (cd msvc-eventos        && mvn test)   # 203 tests: publicación/modificación/cancelación
 (cd msvc-ventas         && mvn test)   # 221 tests: compra/pago + evento compra.confirmada
-(cd msvc-entradas       && mvn test)   # 86 tests: entradas/QR/devoluciones + evento devolucion.aprobada
+(cd msvc-entradas       && mvn test)   # 87 tests: entradas/QR/devoluciones + evento devolucion.aprobada
 (cd msvc-preferencias   && mvn test)   # 39 tests: preferencias + matching
 (cd APIGateway          && mvn test)   # 146 tests: autorización de /api/notificaciones
 ```
