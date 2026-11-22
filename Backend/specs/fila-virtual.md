@@ -399,7 +399,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 - **CA-0a.1** Este documento queda en `Backend/specs/fila-virtual.md`, validado por el equipo (sección 3 completa).
 - **CA-0a.2** `specs/backlog.md:83` (MOD-06) pasa a: `Falta sólo la fila (FIL-01…FIL-04); notificaciones y recomendaciones ya documentadas en los diagramas.`
-- **CA-0a.3** Se cierran los puntos abiertos 1–7 y 11 de la sección 16; los puntos 8–10 quedan como **[NV]** para la prueba de carga.
+- **CA-0a.3** Se cierran los puntos abiertos 1–7 y 11 de la sección 16; los puntos 8–10 quedaron **[V]** en la corrida de carga del 2026-11-21 (§16).
 - **CA-0a.4** Cero cambios de código.
 
 **Pasos:** `git status --short` vacío → crear `specs/fila-virtual.md` → corregir `backlog.md:83` → `git diff --check` → commit.
@@ -626,13 +626,13 @@ FROM cupo_sector
 WHERE id_evento = :idEvento AND id_sector = :idSector;
 ```
 
-Comando **[NV]** (verificar usuario y contraseña en el compose): `docker compose exec -T db-mysql-ventas mysql -u<usuario> -p<clave> ventas -e "<SQL>"`.
+Comando **[V]** (usuario `ticketya` / clave `${MYSQL_PASSWORD:-ticketya_dev}`, según `msvc-ventas/docker-compose.yml` y `.env.example`): `docker compose exec -T db-mysql-ventas mysql -uticketya -pticketya_dev ventas -e "<SQL>"`.
 
 **T-A.3 Pool de usuarios.**
 
 - `usuarios.csv` con columnas `email,token`: un JWT por usuario virtual, firmado (HS256) con el secreto compartido del gateway. Verificar los nombres de los claims y el formato del secreto contra un token real obtenido por login. Debe tener **tantas filas como usuarios concurrentes**, y cada hilo toma una fila distinta.
 - Con `max-entradas-cliente-evento = 6`, un mismo usuario recibe 409 muy pronto. Diseñar `iteraciones × entradas por reserva ≤ 6`, o ampliar el pool.
-- **[NV]** Si algún servicio valida al usuario contra `msvc-usuarios`, los usuarios del pool deben existir (seed o registro previo).
+- **[V]** Ningún servicio valida al usuario contra `msvc-usuarios` en el flujo de compra (JWT stateless); solo `msvc-notificaciones` resuelve el email de forma *fail-soft*, así que los usuarios del pool no necesitan existir para la carga.
 
 **T-A.4 Plan `docs/testing/carga/compra-normal.jmx`.**
 
@@ -769,9 +769,9 @@ git diff --check && git status --short
 - **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests en esa corrida, 0 fallos/errores; hoy la suite tiene 221) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
 - **[V]** Docker y JMeter: matriz **25/50/100** ejecutada (normal y con fila) y reintentos post-fix; `E2-TST-03` **hecho** y `docs/testing/carga.md` completo. Se midió `evicted_keys=0` y se corrigieron los hallazgos de emisión duplicada y timeout→503.
 - **[V]** Configuración real de Redis: `redis.conf` define `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida de carga midió `evicted_keys=0`.
-- **[NV]** Credenciales de MySQL en el compose. **[V]** Endpoint de health y `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
+- **[V]** Credenciales de MySQL en el compose: usuario `ticketya` y `MYSQL_PASSWORD=${MYSQL_PASSWORD:-ticketya_dev}` en `db-mysql-ventas` (ver `.env.example`). **[V]** Endpoint de health y `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
 - **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.
-- **[NV]** Si el tablero de Trello tiene una US de fila con CA propios.
+- **[NV]** Si el tablero de Trello tiene una US de fila con CA propios (no verificable desde el repo; §16.11 fija que no bloquea).
 - **[V]** Formato de body y response de los 5 endpoints: definido acá, implementado y documentado en OpenAPI/Postman.
 - **[V]** Consulta `SUM(cantidad_disponible)` por evento: agregada al repositorio y usada por `FilaTandaScheduler`.
 - **[V]** Secuencia de pago y verificación de emisión en los planes JMeter: copiada de la colección Postman E1 (sin ejecutar).
