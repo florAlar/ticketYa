@@ -7,28 +7,21 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 | `TicketYa-E1.postman_collection.json` | 216 requests en 15 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados, `internalToken`) |
 
-**Actualizado 2026-11-16:** se agregó la carpeta `12 Preferencias, historial y recomendaciones`
-(7 requests: preferencias, artistas, historial, recomendaciones propias/similares y backfill).
-La verificación funcional de esos endpoints se hizo contra el stack real (200/401/403/404
-según corresponda); la corrida Newman completa queda pendiente.
-**Actualizado 2026-11-19 (FIL-04):** se agregó la carpeta `13 Fila virtual` (5 requests:
-ingreso, posición, habilitación ADMIN, validación y estado público), con `eventoFilaId`,
-`hastaPosicionFila`, `posicionFila`, `estadoFila` y `tokenFila` en el environment. Requiere un
-evento `PUBLICADO` con `esAltaDemanda=true`; **[NV]** la corrida Newman de la carpeta 13 (no se
-ejecutó en este entorno).
-**Actualizado 2026-11-20:** la publicación de un evento (carpeta 02) ahora dispara la regla de
-alta demanda: si el cupo total de los sectores vendidos supera 5000, `msvc-eventos` fuerza
-`esAltaDemanda=true` aunque el request lo mande en `false`. El front muestra el popup de
-confirmación antes de publicar; desde la API la regla se comprueba en el detalle del evento.
-Además, suspender/cancelar pausa la fila y publicar/republicar la reanuda mediante
-`POST /internas/fila/{idEvento}/invalidacion` (llamada Feign de eventos a ventas, no expuesta por
-el gateway ni incluida como request de esta colección).
-**Actualizado 2026-11-21 (E2-NOT):** se agregó la carpeta `14 Notificaciones` (11 requests:
-alta administrativa, bandeja propia, detalle, marcado de lectura, filtro `leida=false`, estado
-de envío y RBAC). Es autónoma: crea su propia notificación para el usuario demo y captura
-`notificacionId`. **[NV]** falta la corrida Newman de esta carpeta.
+**Corrida completa 2026-11-21:** **216 requests, 587 assertions, 0 fallos** por el proxy Nginx
+(`baseUrl=http://localhost:3000`), incluidas las carpetas **13 Fila virtual** y
+**14 Notificaciones**, que antes no tenían corrida Newman.
 
-**Última corrida Newman verificada (2026-11-11):** 193 requests, 540 assertions, 0 fallos (sin las carpetas 13 y 14).
+**Ajustes 2026-11-21 (gate de fila + dominio completo):**
+- Las carpetas 09 (asientos) y 10 (control de acceso) usan el evento **normal**
+  `eventoNormalSeedId` = `d000…006` (Foo Fighters) y sus sectores
+  `sectorNumeradoNormalSeedId` (`c000…016`) / `sectorGeneralNormalSeedId` (`c000…015`). El seed
+  Metallica es de alta demanda y exige `tokenFila`, por lo que no sirve para reservar sin fila.
+- `04.03 Abrir cupos` usa `token_admin` (el endpoint es solo ADMIN).
+- `08.01 Health` usa `gatewayUrl` (directo al gateway): a través de `:3000`, `/` sirve la SPA.
+- Variables nuevas en el environment: `eventoNormalSeedId`, `sectorGeneralNormalSeedId`,
+  `sectorNumeradoNormalSeedId` y `gatewayUrl`. `eventoFilaId` queda apuntando al seed Metallica.
+- Se mantiene la regla de publicación de alta demanda (>5000 de cupo) y la pausa/reanudación de la
+  fila al suspender/cancelar/publicar.
 
 ## Requisitos
 
@@ -48,6 +41,13 @@ de envío y RBAC). Es autónoma: crea su propia notificación para el usuario de
 
 ```bash
 cd Backend/docs/postman
+# dominio completo (SPA/Nginx → gateway); requiere ms-frontend arriba en :3000
+docker run --rm --network host -v "$PWD":/etc/newman postman/newman \
+  run TicketYa-E1.postman_collection.json \
+  -e TicketYa-local.postman_environment.json \
+  --env-var baseUrl=http://localhost:3000
+
+# o directo al gateway
 docker run --rm --network host -v "$PWD":/etc/newman postman/newman \
   run TicketYa-E1.postman_collection.json \
   -e TicketYa-local.postman_environment.json
