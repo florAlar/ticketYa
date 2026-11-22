@@ -7,7 +7,11 @@
 
 > **Especificación ejecutable paso a paso:** `especificacion-paso-a-paso.md` (mismo directorio). Este archivo es el resumen de decisiones, auditoría inicial y alcance por US.
 
-> Estado: **histórico (superseded)**. La implementación (FIL-01…FIL-05), la UI de fila y
+> **Numeración:** este plan usaba `FIL-02`=estado, `FIL-03`=tandas, `FIL-04`=token/gate y
+> `FIL-05`=cierre. La implementación final fue `FIL-01`=ingreso/posición/estado, `FIL-02`=tandas,
+> `FIL-03`=token/gate y `FIL-04`=cierre de contrato (commits del 2026-11-19).
+
+> Estado: **histórico (superseded)**. La implementación (FIL-01…FIL-04), la UI de fila y
 > `E2-TST-03` están cerradas y verificadas.
 > Todas las rutas son relativas a `ticketYa/`.
 > Convención: **[V]** verificado en esta pasada · **[I]** inferido del código · **[NV]** no verificado / no ejecutado.
@@ -49,15 +53,15 @@ No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en
 3. **Fail-closed en endpoints de fila / fail-open dentro de `crearReserva`.** Si Redis cae: `503` en `ingreso`, `posicion`, `validacion`, `estado` y `habilitacion` (se pierde el orden); en `crearReserva` se registra en bitácora y se continúa (no se pierde integridad: MySQL sigue con lock de `cupo_sector` y `uk_asiento_evento_sector_fila_numero`, `init.sql:71,85`). Patrón de referencia: `StockCache.java:28-73` es fail-open; acá se diverge a propósito y se documenta. **Reemplazado:** la implementación final es **fail-closed** también en el gate (D3 de `specs/fila-virtual.md`); ver §2.1.
 4. **Sin UI de fila.** Queda fuera. El front ya cubre los flujos principales del cliente; la consigna prioriza backend. **Reemplazado:** la UI de fila se implementó en 2026-11-20 (`FilaVirtualPage`); ver §2.1.
 
-### Numeración vigente
+### Numeración (histórica)
 
-**`0a` → `TST-CARGA-01` (Parte A) → `FIL-01` → `FIL-02` → `FIL-03` → `FIL-04` → `TST-CARGA-01` (Parte B) → `FIL-05`.**
+**`0a` → `FIL-01` → `FIL-02` → `FIL-03` → `FIL-04` → `TST-CARGA-01` (Partes A y B).**
 
-- Queda **vigente**: `0a`, `FIL-01…FIL-05`, `TST-CARGA-01`.
-- Queda **descartada** la numeración vieja en la que `FIL-03`=estado/tandas, `FIL-04`=token y `FIL-05`=gate. Ahora: `FIL-02`=estado, `FIL-03`=tandas/habilitación, `FIL-04`=token **y gate juntos**.
-- `TST-CARGA-01` es **una sola US con dos pasos/commit**:
-  - **Parte A**: escenario de compra normal. Se hace **antes** de la fila para asegurar cuanto antes el entregable que la consigna exige (`consigna.md:171`).
-  - **Parte B**: escenario con fila. Se hace **después de `FIL-04`**, cuando el gate y la habilitación ya existen.
+- Esta sección conserva la numeración del plan, ya reemplazada: en la implementación final
+  `FIL-01` incluye ingreso/posición/estado, `FIL-02` las tandas, `FIL-03` el token/gate y
+  `FIL-04` el cierre de contrato (docs only). Ver `specs/fila-virtual.md` §12 y §18.
+- `TST-CARGA-01` es **una sola US con dos pasos**: Parte A (compra normal) y Parte B (con fila,
+  después de que existan el gate y la habilitación).
 - `0b` es opcional y no está en la secuencia salvo autorización explícita.
 
 ## 2.1 Diferencias con la implementación final

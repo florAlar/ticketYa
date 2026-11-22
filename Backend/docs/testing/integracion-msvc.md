@@ -134,7 +134,7 @@ Tiempos de la corrida: `ReporteOrganizadorE2E` 70 s, `EventoNotificacionesE2E` 3
 | --- | --- | --- |
 | `msvc-notificaciones` | `mvn -Pit verify` | `NotificacionMensajesConsumeIT` 5 + `MsvcNotificacionesApplicationIT` 1 → **6 OK** |
 | `msvc-ventas` | `mvn -Pit verify` | `CompraConfirmadaPublisherIT` 2 + `FilaRedisStoreIT` 15 + `AsientoReservadoConcurrenciaIT` 4 + `CupoSectorConcurrenciaIT` 1 → **22 OK** |
-| `msvc-entradas` | `mvn -Pit verify` | `DevolucionAprobadaPublisherIT` 2 + `ValidacionIngresoConcurrenciaIT` 2 → **4 OK** |
+| `msvc-entradas` | `mvn -Pit verify` | `DevolucionAprobadaPublisherIT` 2 + `ValidacionIngresoConcurrenciaIT` 2 + `EmisionConcurrenciaIT` 1 → **5 OK** |
 | `msvc-preferencias` | `mvn -Pit verify` | `CompraConfirmadaIngestIT` 1 + `RecomendacionMongoIT` 4 → **5 OK** |
 
 Los ITs requieren Docker y se ejecutan con el grupo activo (`sg docker -c 'mvn -Pit verify'` si la

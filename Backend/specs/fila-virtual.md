@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-04 en backend (2026-11-19) y pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
+| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-03 en backend y FIL-04 de cierre documental (2026-11-19), más la pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
 | **Fecha** | 2026-11-19 |
 | **Destino en el repo** | `Backend/specs/fila-virtual.md` (commit `0a`) |
 | **Servicio principal** | `msvc-ventas` (+ un ajuste en `APIGateway`) |
@@ -375,7 +375,10 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 **Numeración:**
 
-**`0a` → `TST-CARGA-01/A` → `FIL-01` → `FIL-02` → `FIL-03` → `FIL-04` → `TST-CARGA-01/B` → `FIL-05`**
+**`0a` → `FIL-01` → `FIL-02` → `FIL-03` → `FIL-04` → `TST-CARGA-01` (Partes A y B)**
+
+> Numeración efectivamente usada en los commits del 2026-11-19. `FIL-04` es el cierre de contrato
+> (docs only); la corrida de carga se ejecutó después, el 2026-11-21.
 
 **Reglas de trabajo**
 
@@ -754,13 +757,12 @@ git diff --check && git status --short
 | Commit | US | Código | Tests | Docs que se tocan |
 |---|---|---|---|---|
 | 1 | `0a` | — | — | `specs/fila-virtual.md`, `backlog.md:83` |
-| 2 | `TST-CARGA-01/A` | — | JMeter + SQL + `evicted_keys` | `docs/testing/carga*`, `.gitignore`, `backlog.md:242` (parcial) |
-| 3 | `FIL-01` | store, service, controller, ingreso/posición, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, controller, gateway | `endpoints.md` (3 filas), docs de ventas, `backlog.md:221` (en curso) |
-| 4 | `FIL-02` | `estado` público | store + controller | `endpoints.md:211`, nota en backlog |
-| 5 | `FIL-03` | `habilitar`, scheduler automático, RBAC | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
-| 6 | `FIL-04` | `validar`, consumir/restaurar token, gate fail-closed | `FilaServiceTest`, `VentaServiceImplTest`, IT, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia |
+| 2 | `FIL-01` | store Redis (Lua), service, controller, ingreso/posición/estado público, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, `FilaControllerTest`, gateway | `endpoints.md` (ingreso/posición/estado), docs de ventas, `backlog.md:221` (en curso) |
+| 3 | `FIL-02` | `habilitar`, `FilaTandaScheduler`, lock de instancia y RBAC ADMIN | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
+| 4 | `FIL-03` | `validar`, consumir/restaurar token y gate fail-closed en `POST /reservas` | `FilaServiceTest`, `VentaServiceImplTest`, IT de consumo, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia §9 |
+| 5 | `FIL-04` | — (docs only): cierre de contrato y checklist final | `mvn test` de ventas y gateway | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
+| 6 | `TST-CARGA-01/A` | — | JMeter compra normal + SQL + `evicted_keys` | `docs/testing/carga*`, `.gitignore`, `backlog.md:242` (parcial) |
 | 7 | `TST-CARGA-01/B` | — | JMX con fila (B1 auto, B2 admin) + verificaciones SQL/Redis; matriz 25/50/100 ejecutada | `docs/testing/carga*` (hecho, incluye post-fix) |
-| 8 | `FIL-05` | — | checklist final: 0 resultados en el grep de "no implementada"; suites Maven OK | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
 
 ## 19. No verificado y supuestos
 

@@ -5,6 +5,10 @@
 > en [`docs/testing/carga.md`](../../docs/testing/carga.md). En particular, el gate final es
 > **fail-closed** (503) y las tandas son **automáticas** con override ADMIN.
 
+> **Numeración:** este runbook numera el cierre de contrato como `FIL-05`; en la implementación
+> final el cierre es `FIL-04` y las tandas/token corren un número menos (`FIL-02`/`FIL-03`).
+> Los nombres se conservan como registro del plan.
+
 > Este documento es el **runbook** del plan. El documento `fila-virtual-y-carga.md` es el resumen/decisiones; acá está el desglose ejecutable.
 > Modo plan original: **no se ejecutó nada**. Este runbook ya se implementó; los comandos y snippets
 > quedan como registro de la especificación.
