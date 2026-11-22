@@ -307,8 +307,8 @@ WHERE c.id_evento = :idEvento AND c.id_sector = :idSector;
 grep -rn '/fila' Backend/msvc-ventas/docs Backend/docs/openapi
 grep -n 'E2-FILA-01\|E2-TST-03' Backend/specs/backlog.md
 grep -rni 'sin implementar\|no implementada' Backend/docs Backend/specs | grep -i fila
-mvn -q -f Backend/msvc-ventas/pom.xml test          # [NV] ejecutar recién en la implementación
-mvn -q -f Backend/APIGateway/pom.xml test           # [NV] ejecutar recién en la implementación
+mvn -q -f Backend/msvc-ventas/pom.xml test          # [V] ejecutado en FIL-01…FIL-04
+mvn -q -f Backend/APIGateway/pom.xml test           # [V] ejecutado en FIL-01…FIL-04
 git status --short
 ```
 
@@ -322,10 +322,10 @@ Cada commit deja el repo compilable y con tests verdes. El riesgo concentrado es
 > ejecutaron; los `.jmx` y el informe están en `docs/testing/carga/` y `docs/testing/carga.md`.
 > Lo que sigue es el registro de supuestos del plan, no el estado actual.
 
-- **[NV]** No ejecuté Maven, Docker Compose ni JMeter durante el plan.
-- **[NV]** No existe hoy informe ni `.jmx` de carga versionado (búsqueda en `Backend/docs/`).
-- **[NV]** No comprobé si el tablero Trello tiene una US de fila con CA propios que debamos importar en vez de escribir `specs/fila-virtual.md` (`README.md:96`).
-- **[NV]** No verifiqué que JMeter esté instalado en el entorno; la consigna dice "por ejemplo, con JMeter", así que se puede sustituir por otra herramienta si hace falta, manteniendo el mismo informe.
+- **[NV → V, resuelto 2026-11-21]** No ejecuté Maven, Docker Compose ni JMeter durante el plan; al implementar se ejecutaron los tres (JMeter 5.6.3).
+- **[NV → V, resuelto 2026-11-21]** No existe hoy informe ni `.jmx` de carga versionado (búsqueda en `Backend/docs/`). Hoy están en `docs/testing/carga/` y `docs/testing/carga.md`.
+- **[NV]** No comprobé si el tablero Trello tiene una US de fila con CA propios que debamos importar en vez de escribir `specs/fila-virtual.md` (`README.md:96`). *(No verificable desde el repo; no bloquea.)*
+- **[NV → V, resuelto 2026-11-21]** No verifiqué que JMeter esté instalado en el entorno; la consigna dice "por ejemplo, con JMeter", así que se puede sustituir por otra herramienta si hace falta, manteniendo el mismo informe. Se usó JMeter 5.6.3.
 - **[I]** Formato exacto de body/response de los 5 endpoints: `endpoints.md:206-212` sólo da la firma de una línea. Se define durante `FIL-01…FIL-04` y se versiona en `FIL-05`.
 - **[I]** Los mocks de `VentaServiceImplTest` devolverán `false` para `esAltaDemanda` → sin regresión en el flujo normal.
-- **[NV]** La numeración vieja que se descartó no debe quedar sin marcar en ningún doc; `0a` la fija por escrito y este archivo la conserva sólo en §5–§10, etiquetada como "(plan original)".
+- **[NV → V, resuelto 2026-11-22]** La numeración vieja que se descartó no debe quedar sin marcar en ningún doc; `0a` la fija por escrito y este archivo la conserva sólo en §5–§10, etiquetada como "(plan original)".

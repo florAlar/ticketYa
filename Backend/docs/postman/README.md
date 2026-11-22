@@ -107,7 +107,7 @@ publicar evento (abre cupos) → reservar → confirmar → comprar (`Idempotenc
 - **Fijas (seed):** `baseUrl`, `entradasDirectUrl`, IDs de usuarios, evento publicado y cancelado, lugar, sectores y participante.
 - **Capturadas por scripts:** `reservaId`, `compraId`, `pagoId`, `entradaId`, `entrada2Id`, `devolucionId`, entre otras. Se llenan solas al correr la colección en orden.
 - **`idempotencyKey`:** se genera una nueva en cada request que la necesita.
-- **Fila virtual:** `eventoFilaId` (evento `PUBLICADO` con `esAltaDemanda=true`, **[NV]** se configura a mano), `hastaPosicionFila` (default `100`, override ADMIN) y las capturadas `posicionFila`, `estadoFila` y `tokenFila`.
+- **Fila virtual:** `eventoFilaId` (evento `PUBLICADO` con `esAltaDemanda=true`; el environment trae por defecto Metallica `d0000000-0000-4000-8000-000000000001`, **[V]** se configura a mano solo si se usa otro evento), `hastaPosicionFila` (default `100`, override ADMIN) y las capturadas `posicionFila`, `estadoFila` y `tokenFila`.
 - **Notificaciones:** `notificacionId` la captura la carpeta 14 al crear el aviso; no requiere configuración previa.
 
 ## Brechas conocidas de E1 (documentadas, no ocultas)

@@ -73,7 +73,7 @@ Cada paso tiene: **Entrada** → **Acciones** → **Archivos** → **Verificaci�
 > Se hace **antes** de la fila. No depende de `FIL-*`. Es el entregable exigido por `consigna.md:171`.
 
 ### PASO T-A.1 — Levantar entorno
-- **Acciones**: `cd Backend && docker compose up -d --build` **[NV]** confirmar nombre de servicios.
+- **Acciones**: `cd Backend && docker compose up -d --build` **[V]** (servicios `ms-*`/`db-*`, p. ej. `db-mysql-ventas`).
 - **Verificación**: `curl -sf http://localhost:8080/actuator/health` (o el smoke del gateway) → 200.
 - **Salida**: stack listo.
 
@@ -414,8 +414,8 @@ Cada paso tiene: **Entrada** → **Acciones** → **Archivos** → **Verificaci�
 
 ## Supuestos y no verificados
 
-- **[NV]** No ejecuté Maven, Docker ni JMeter; ningún comando de este runbook fue probado.
-- **[NV]** Nombre real del servicio MySQL en Compose para el `docker compose exec`; ajustar si no es `mysql`.
+- **[NV → V, resuelto 2026-11-21]** No ejecuté Maven, Docker ni JMeter; ningún comando de este runbook fue probado. Al implementar se ejecutaron Maven, Docker Compose y JMeter (5.6.3).
+- **[NV → V, resuelto 2026-11-22]** Nombre real del servicio MySQL en Compose para el `docker compose exec`: es `db-mysql-ventas` (no `mysql`).
 - **[I]** Secuencia exacta de login/pago del flujo E1 en JMeter: copiarla de la colección Postman existente.
 - **[I]** Valor `"PUBLICADO"` confirmado en `EventoServiceImpl.java:76`; estados de reserva `PENDIENTE|CONFIRMADA|CANCELADA|EXPIRADA` en `VentaServiceImpl.java:67-70`; compra `APROBADA` en `:74`.
-- **[NV]** Trello puede tener una US de fila con CA propios (`README.md:96`); `0a` versiona la nuestra de todos modos.
+- **[NV]** Trello puede tener una US de fila con CA propios (`README.md:96`); `0a` versiona la nuestra de todos modos. *(No verificable desde el repo; no bloquea.)*

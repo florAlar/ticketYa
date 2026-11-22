@@ -25,7 +25,7 @@ Diseño: `Backend/specs/fila-virtual.md` §15. Antes de cada corrida: `cd Backen
 | JMeter | 5.6.x, ejecución en modo no GUI |
 | Limitación | La carga y los contenedores corren en la misma máquina: las latencias incluyen contención de CPU/RAM |
 
-**[NV]** Credenciales de MySQL en el compose. **[V]** `redis.conf`: `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida midió `evicted_keys=0`.
+**[V]** Credenciales de MySQL en el compose: `db-mysql-ventas` con usuario `ticketya` y `MYSQL_PASSWORD=${MYSQL_PASSWORD:-ticketya_dev}` (root: `${MYSQL_ROOT_PASSWORD:-root_dev}`, ver `.env.example` raíz), usadas para los snapshots de cupo/entradas. **[V]** `redis.conf`: `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida midió `evicted_keys=0`.
 
 ---
 
@@ -47,7 +47,7 @@ Diseño: `Backend/specs/fila-virtual.md` §15. Antes de cada corrida: `cd Backen
 | `-JadminPaso` | 25 | Incremento de `hastaPosicion` por tick del ADMIN en B2 |
 | `-JadminIntervalo` | 10000 | Intervalo del hilo ADMIN (ms) en B2 |
 
-El pool debe tener al menos `usuarios` filas y cumplir `iteraciones × cantidad ≤ 6` (límite `max-entradas-cliente-evento`). El token se firma con el secreto compartido gateway/usuarios; verificar claims contra un token real de login. **[NV]** Si algún servicio valida al usuario contra `msvc-usuarios`, los usuarios del pool deben existir.
+El pool debe tener al menos `usuarios` filas y cumplir `iteraciones × cantidad ≤ 6` (límite `max-entradas-cliente-evento`). El token se firma con el secreto compartido gateway/usuarios; verificar claims contra un token real de login. **[V]** Ningún servicio valida al usuario contra `msvc-usuarios` en el flujo de compra (el JWT es stateless y el gateway valida la firma); solo `msvc-notificaciones` consulta `GET /usuarios/{id}` para resolver el email de forma *fail-soft*, así que los usuarios del pool no necesitan existir para la carga.
 
 ---
 
