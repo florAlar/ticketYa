@@ -57,9 +57,9 @@ Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs
 | Docs de estado | `docs/api/gateway.md:18,39` y `docs/openapi/README.md:120` dicen "no implementada" | Sin implementación | **[V]** coincide |
 | Comunicación / BD | `specs/comunicacion.md:140`, `specs/bases-de-datos.md:13` | Redis disponible (`RedisConfig.java:12-15`), sin tabla de fila en `init.sql:8-85` | **[V]** coincide |
 | Reglas de negocio | `specs/reglas-de-negocio.md:42` "pendiente E2"; decisión 16 abierta en `:265` | Sin implementación | **[V]** coincide |
-| `E2-TST-03` | `backlog.md:242` pendiente; la consigna lo exige (`consigna.md:73,159-163,171`) | Sin informe ni `.jmx` versionado | **[V]** entregable en cero |
+| `E2-TST-03` | `backlog.md:242` pendiente; la consigna lo exige (`consigna.md:73,159-163,171`) | Sin informe ni `.jmx` versionado | **[V]** entregable en cero *(hoy **hecho**: `docs/testing/carga.md`)* |
 
-**Estado de las inconsistencias detectadas (actualizado 2026-11-20):** ya resueltas — `docs/openapi/README.md` documenta fila y reportes; `specs/microservicios.md` y `specs/arquitectura.md` reflejan el estado implementado; `specs/documentacion-y-validacion.md` y `specs/reglas-de-negocio.md` ya no marcan fila, preferencias ni notificaciones como pendientes. Siguen fuera de alcance de esta spec: el resumen histórico de `backlog.md:377-390,419` conserva filas anteriores a E2-PRE/E2-NOT, y `README.md` / `Frontend/README.md` aún presentan como apagados algunos flujos que `featureGates.js` tiene activos.
+**Estado de las inconsistencias detectadas (actualizado 2026-11-20):** ya resueltas — `docs/openapi/README.md` documenta fila y reportes; `specs/microservicios.md` y `specs/arquitectura.md` reflejan el estado implementado; `specs/documentacion-y-validacion.md` y `specs/reglas-de-negocio.md` ya no marcan fila, preferencias ni notificaciones como pendientes. Queda como registro histórico el resumen de `backlog.md:377-390,419`, que conserva filas anteriores a E2-PRE/E2-NOT; los READMEs ya reflejan los gates activos.
 
 ## 3. Decisiones de diseño
 

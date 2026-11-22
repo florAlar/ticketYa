@@ -904,6 +904,7 @@ registro de ejecución está en §17.
 | 1.1 | 2026-11-08 | Ratificados D-13 (O2), D-14 (alcance cobertura), D-15 (M1) y D-16 (concurrencia por cupo de sector) |
 | 1.2 | 2026-11-10 | D-16/R-05 actualizados: asientos virtuales en sectores numerados implementados (eventos, ventas, entradas, frontend). Cambia el contrato de `POST /reservas` (`asientos`), `GET /eventos/{id}/disponibilidad` (`asientosOcupados`), `POST /entradas/emision` (`asientos`), `POST /eventos/{id}/cupos/liberacion` (`asientos`) y los sectores (`filas`, `asientosPorFila`). El bundle OpenAPI y la colección Postman requieren regeneración/ampliación (SEAT-04) |
 | 1.3 | 2026-11-20 | §1 actualizado: los endpoints E2 que figuraban como no implementados ya están hechos (fila, QR, reportes, recomendaciones); preferencias y notificaciones implementados; estado real de tests E2 (integración y carga parciales). Se elimina el estado de “bloqueada por Plan mode” |
+| 1.4 | 2026-11-21 | Cierre de `E2-TST-01` (ITs de borde + E2E F1–F5) y `E2-TST-03` (matriz de carga 25/50/100 + reintentos post-fix): ambos quedan **hechos**. Se agrega `emision_compra` al modelo de datos (22 tablas) |
 
 ---
 

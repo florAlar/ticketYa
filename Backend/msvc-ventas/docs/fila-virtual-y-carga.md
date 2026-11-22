@@ -14,7 +14,10 @@
 
 ---
 
-## 1. Chequeo único backlog ↔ código real (sólo esta vez)
+## 1. Chequeo único backlog ↔ código real (sólo esta vez) — histórico
+
+> Registro del 2026-11-19. Los estados "pendiente" de la tabla ya se cerraron; ver §2.1 y
+> `specs/fila-virtual.md`.
 
 No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en el mismo commit**.
 

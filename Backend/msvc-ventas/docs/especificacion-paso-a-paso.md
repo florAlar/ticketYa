@@ -6,7 +6,8 @@
 > **fail-closed** (503) y las tandas son **automáticas** con override ADMIN.
 
 > Este documento es el **runbook** del plan. El documento `fila-virtual-y-carga.md` es el resumen/decisiones; acá está el desglose ejecutable.
-> Modo plan: **no se ejecutó nada**. Los comandos y snippets son la especificación para la implementación.
+> Modo plan original: **no se ejecutó nada**. Este runbook ya se implementó; los comandos y snippets
+> quedan como registro de la especificación.
 > Rutas relativas a `ticketYa/`. Convención **[V]** verificado · **[I]** inferido · **[NV]** no verificado.
 
 ---
