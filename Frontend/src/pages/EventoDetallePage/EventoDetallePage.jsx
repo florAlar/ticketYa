@@ -214,7 +214,15 @@ const EventoDetallePage = () => {
             <div className="evento-body">
               <div className="evento-body__main">
                 {evento.descripcion && (
-                  <p className="evento-detalle-page__desc">{evento.descripcion}</p>
+                  <div className="evento-detalle-page__desc">
+                    {evento.descripcion
+                      .split(/\n{2,}/)
+                      .map((p) => p.trim())
+                      .filter(Boolean)
+                      .map((p, i) => (
+                        <p key={i}>{p}</p>
+                      ))}
+                  </div>
                 )}
                 <EventoCuandoDonde evento={evento} />
               </div>

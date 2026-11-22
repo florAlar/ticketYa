@@ -32,15 +32,15 @@ function logoDe(id) {
  */
 const BANDAS = [
   { id: 'metallica', nombre: 'Metallica', match: /metallica/i, imageUrl: metallica, position: 'center 40%', acento: '#e6d200' },
+  { id: 'iron-maiden', nombre: 'Iron Maiden', match: /iron maiden/i, imageUrl: ironMaiden, position: 'center 40%', lineas: ['Iron', 'Maiden'], acento: '#2a7bff' },
   { id: 'boca', nombre: 'Boca Juniors', match: /boca/i, imageUrl: boca, position: 'center 55%', lineas: ['Boca', 'Juniors'], escala: 0.8, acento: '#f2a900' },
-  { id: 'ghost', nombre: 'Ghost', match: /ghost/i, imageUrl: ghost, position: 'center 35%', acento: '#3d8bff' },
-  { id: 'formula1', nombre: 'Fórmula 1', match: /formula 1/i, imageUrl: formula1, position: 'center 50%', escala: 0.8, acento: '#2f5bff' },
   { id: 'rammstein', nombre: 'Rammstein', match: /rammstein/i, imageUrl: rammstein, position: 'center 45%', acento: '#ff7a33' },
   { id: 'motogp', nombre: 'MotoGP', match: /motogp/i, imageUrl: motogp, position: 'center 60%', escala: 0.8, acento: '#e8333d' },
-  { id: 'iron-maiden', nombre: 'Iron Maiden', match: /iron maiden/i, imageUrl: ironMaiden, position: 'center 40%', lineas: ['Iron', 'Maiden'], acento: '#2a7bff' },
   { id: 'dakar', nombre: 'Dakar Rally', match: /dakar/i, imageUrl: dakar, position: 'center 35%', lineas: ['Dakar', 'Rally'], acento: '#ff6a13' },
   { id: 'rhcp', nombre: 'Red Hot Chili Peppers', match: /red hot chili/i, imageUrl: rhcp, position: 'center 35%', lineas: ['Red Hot', 'Chili Peppers'], acento: '#ff2a82' },
   { id: 'ufc', nombre: 'UFC', match: /ufc/i, imageUrl: ufc, position: 'center 45%', escala: 0.78, acento: '#4a5bff' },
+  { id: 'ghost', nombre: 'Ghost', match: /ghost/i, imageUrl: ghost, position: 'center 35%', acento: '#3d8bff' },
+  { id: 'formula1', nombre: 'Fórmula 1', match: /formula 1/i, imageUrl: formula1, position: 'center 50%', escala: 0.8, acento: '#2f5bff' },
 ]
 
 export const HERO_BANDAS = BANDAS.map((b) => ({ ...b, logoUrl: logoDe(b.id) }))
