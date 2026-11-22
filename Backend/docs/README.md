@@ -18,7 +18,7 @@ Backend/specs/
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
 | Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
-| Colección Postman | listo | [`postman/`](./postman/) (216 requests en 15 carpetas; última corrida completa verificada 193/0 sin las carpetas 13 y 14, e incluye asientos, control de acceso, reportes, lugares y preferencias; las carpetas 13 y 14 aún no tienen corrida Newman) |
+| Colección Postman | listo | [`postman/`](./postman/) (216 requests en 15 carpetas; corrida completa 2026-11-21 por el proxy Nginx: 216 requests, 587 assertions, 0 fallos, incluidas las carpetas 13 y 14) |
 | Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
 | Prueba de carga del flujo de compra (`E2-TST-03`) | listo | [`testing/carga.md`](./testing/carga.md) — matriz 25/50/100 normal y con fila; reintentos post-fix sin errores |
 | Trazabilidad y bitácora (correlation id, log por servicio) | listo | [`observabilidad.md`](./observabilidad.md) |
