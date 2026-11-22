@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-04 en backend (2026-11-19) y pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` sigue **parcial** (humo OK; falta la corrida formal 25/50/100). |
+| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-04 en backend (2026-11-19) y pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
 | **Fecha** | 2026-11-19 |
 | **Destino en el repo** | `Backend/specs/fila-virtual.md` (commit `0a`) |
 | **Servicio principal** | `msvc-ventas` (+ un ajuste en `APIGateway`) |
@@ -32,7 +32,7 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 - Gate en `crearReserva` para eventos con `esAltaDemanda = true`.
 - Pantalla de fila en el SPA: estado público, turno propio con polling, validación del token y override ADMIN (2026-11-20).
 - Tests unitarios, de integración con Redis real y de concurrencia.
-- Prueba de carga con informe (E2-TST-03) — **parcial**: corrida humo de 5 usuarios OK; falta la formal 25/50/100 y completar `docs/testing/carga.md`.
+- Prueba de carga con informe (E2-TST-03) — **hecho**: matriz 25/50/100 normal y con fila, más los reintentos post-fix; ver `docs/testing/carga.md`.
 
 **No incluye**
 
@@ -45,7 +45,7 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 
 Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs.
 
-> **Registro histórico (2026-11-19).** La tabla refleja el estado previo a la implementación. Hoy `E2-FILA-01` (FIL-01…FIL-04), `API-04` (fila en OpenAPI), `DOC-MS-VEN` (sección `/fila`), el contrato de `specs/endpoints.md` y las reglas de `specs/reglas-de-negocio.md` están actualizados. Solo `E2-TST-03` sigue parcial (corrida humo con JMeter; falta la formal 25/50/100).
+> **Registro histórico (2026-11-19).** La tabla refleja el estado previo a la implementación. Hoy `E2-FILA-01` (FIL-01…FIL-04), `API-04` (fila en OpenAPI), `DOC-MS-VEN` (sección `/fila`), el contrato de `specs/endpoints.md` y las reglas de `specs/reglas-de-negocio.md` están actualizados. `E2-TST-03` también quedó **hecho** con la matriz 25/50/100 y los reintentos post-fix.
 
 | Entrada | Backlog / doc | Código real | Resultado |
 |---|---|---|---|
@@ -375,7 +375,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 **Numeración:**
 
-**`0a` → `TST-CARGA-01/A` → `FIL-01` → `FIL-02` → `FIL-03` → `TST-CARGA-01/B` → `FIL-04`**
+**`0a` → `TST-CARGA-01/A` → `FIL-01` → `FIL-02` → `FIL-03` → `FIL-04` → `TST-CARGA-01/B` → `FIL-05`**
 
 **Reglas de trabajo**
 
@@ -729,11 +729,11 @@ Agregar la sección `Resultados (con fila)` a `docs/testing/carga.md`, `backlog.
 7. **Prefijo de configuración real:** `ticketya.fila.*`. El bloque existente de ventas es `ticketya.ventas.*` (`application.yml:37-46`).
 11. **US de Trello:** `0a` versiona esta especificación de todos modos; no bloquea.
 
-**Pendientes de verificar en la prueba de carga (no bloquean la implementación):**
+**Verificados en la corrida de carga (2026-11-21):**
 
-8. **Configuración real de Redis:** `maxmemory`, política de evicción y persistencia (AOF o RDB).
-9. **Pool de usuarios de la carga:** ¿hay que crear los usuarios en `msvc-usuarios` o alcanza con JWT firmados?
-10. **Credenciales de MySQL en el compose** para los comandos de verificación.
+8. **Configuración real de Redis:** `maxmemory 256mb` con `volatile-lru`; `evicted_keys=0` en todas las corridas.
+9. **Pool de usuarios:** `generar-usuarios.sh` registró los usuarios y renovó los JWT (1 h) antes de cada corrida.
+10. **Credenciales de MySQL** del compose usadas para los snapshots de cupo/entradas.
 
 ## 17. Checklist después de cada commit
 
@@ -748,20 +748,24 @@ git diff --check && git status --short
 
 ## 18. Matriz de trazabilidad
 
+> Numeración **final**. La corrida de carga real se ejecutó después de FIL-04; resultados en
+> `docs/testing/carga.md`.
+
 | Commit | US | Código | Tests | Docs que se tocan |
 |---|---|---|---|---|
 | 1 | `0a` | — | — | `specs/fila-virtual.md`, `backlog.md:83` |
 | 2 | `TST-CARGA-01/A` | — | JMeter + SQL + `evicted_keys` | `docs/testing/carga*`, `.gitignore`, `backlog.md:242` (parcial) |
-| 3 | `FIL-01` | store, service, controller, Feign, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, controller, gateway | `endpoints.md` (3 filas), docs de ventas, `backlog.md:221` (en curso) |
-| 4 | `FIL-02` | `habilitar`, scheduler, RBAC | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
-| 5 | `FIL-03` | `validar`, consumir y restaurar, gate | `FilaServiceTest`, `VentaServiceImplTest`, IT, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia |
-| 6 | `TST-CARGA-01/B` | — | planes JMeter con fila (+ ADMIN en B2) y verificaciones SQL/Redis; humo 5 usuarios OK, falta 25/50/100 | `docs/testing/carga*` (parcial: humo sin métricas formales) |
-| 7 | `FIL-04` | — | checklist final: 0 resultados en el grep de "no implementada"; suites Maven OK | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
+| 3 | `FIL-01` | store, service, controller, ingreso/posición, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, controller, gateway | `endpoints.md` (3 filas), docs de ventas, `backlog.md:221` (en curso) |
+| 4 | `FIL-02` | `estado` público | store + controller | `endpoints.md:211`, nota en backlog |
+| 5 | `FIL-03` | `habilitar`, scheduler automático, RBAC | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
+| 6 | `FIL-04` | `validar`, consumir/restaurar token, gate fail-closed | `FilaServiceTest`, `VentaServiceImplTest`, IT, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia |
+| 7 | `TST-CARGA-01/B` | — | JMX con fila (B1 auto, B2 admin) + verificaciones SQL/Redis; matriz 25/50/100 ejecutada | `docs/testing/carga*` (hecho, incluye post-fix) |
+| 8 | `FIL-05` | — | checklist final: 0 resultados en el grep de "no implementada"; suites Maven OK | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
 
 ## 19. No verificado y supuestos
 
 - **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests, 0 fallos/errores) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
-- **[V parcial]** Docker y JMeter: se ejecutó la corrida humo de 5 usuarios (0 % error) con JMeter 5.6.3 y el IT de Redis de la fila con Docker (`-Pit`). `E2-TST-03` sigue `parcial`: falta la corrida formal 25/50/100, la verificación de evicción de Redis y completar `docs/testing/carga.md`; no se inventaron métricas.
+- **[V]** Docker y JMeter: matriz **25/50/100** ejecutada (normal y con fila) y reintentos post-fix; `E2-TST-03` **hecho** y `docs/testing/carga.md` completo. Se midió `evicted_keys=0` y se corrigieron los hallazgos de emisión duplicada y timeout→503.
 - **[NV]** Configuración real de Redis (`maxmemory`, evicción, persistencia): la política `volatile-lru` con 256 MB proviene de una revisión del plan, no de una lectura del repo.
 - **[NV]** Credenciales de MySQL y endpoint de health. **[V]** `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
 - **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.

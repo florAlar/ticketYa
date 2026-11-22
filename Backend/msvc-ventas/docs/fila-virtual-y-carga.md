@@ -1,8 +1,14 @@
 # Plan de implementación — Fila virtual + prueba de carga (Entrega 2)
 
+> **HISTÓRICO (2026-11-19).** Este documento es el plan previo a la implementación. La
+> especificación vigente es [`specs/fila-virtual.md`](../../specs/fila-virtual.md) y los resultados
+> de carga están en [`docs/testing/carga.md`](../../docs/testing/carga.md). Varias decisiones fueron
+> reemplazadas durante la implementación; ver **Diferencias con la implementación final** (§2.1).
+
 > **Especificación ejecutable paso a paso:** `especificacion-paso-a-paso.md` (mismo directorio). Este archivo es el resumen de decisiones, auditoría inicial y alcance por US.
 
-> Estado: **plan**. No se modificó ningún archivo del repositorio.
+> Estado: **histórico (superseded)**. La implementación (FIL-01…FIL-05), la UI de fila y
+> `E2-TST-03` están cerradas y verificadas.
 > Todas las rutas son relativas a `ticketYa/`.
 > Convención: **[V]** verificado en esta pasada · **[I]** inferido del código · **[NV]** no verificado / no ejecutado.
 
@@ -37,8 +43,8 @@ No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en
 
 1. **Redis-only.** Fila, posiciones, tanda y token viven en Redis (`StringRedisTemplate`, `RedisConfig.java:12-15`). **No hay tablas MySQL nuevas ni Rabbit** para la fila. `VentaQueueProducer/Consumer` siguen vacíos; no se usan. Justificación formal en `specs/consigna.md:148` y en el doc creado en `0a`.
 2. **Gate sólo si `esAltaDemanda = true`.** Protege el flujo E1 y los requests de Postman existentes. Hoy el flag no llega a ventas: agregarlo a `EventosClient.java:23-30` (sí existe en `Evento.java:53-54` y `EventoMapper.java:35`).
-3. **Fail-closed en endpoints de fila / fail-open dentro de `crearReserva`.** Si Redis cae: `503` en `ingreso`, `posicion`, `validacion`, `estado` y `habilitacion` (se pierde el orden); en `crearReserva` se registra en bitácora y se continúa (no se pierde integridad: MySQL sigue con lock de `cupo_sector` y `uk_asiento_evento_sector_fila_numero`, `init.sql:71,85`). Patrón de referencia: `StockCache.java:28-73` es fail-open; acá se diverge a propósito y se documenta.
-4. **Sin UI de fila.** Queda fuera. El front ya cubre los flujos principales del cliente; la consigna prioriza backend.
+3. **Fail-closed en endpoints de fila / fail-open dentro de `crearReserva`.** Si Redis cae: `503` en `ingreso`, `posicion`, `validacion`, `estado` y `habilitacion` (se pierde el orden); en `crearReserva` se registra en bitácora y se continúa (no se pierde integridad: MySQL sigue con lock de `cupo_sector` y `uk_asiento_evento_sector_fila_numero`, `init.sql:71,85`). Patrón de referencia: `StockCache.java:28-73` es fail-open; acá se diverge a propósito y se documenta. **Reemplazado:** la implementación final es **fail-closed** también en el gate (D3 de `specs/fila-virtual.md`); ver §2.1.
+4. **Sin UI de fila.** Queda fuera. El front ya cubre los flujos principales del cliente; la consigna prioriza backend. **Reemplazado:** la UI de fila se implementó en 2026-11-20 (`FilaVirtualPage`); ver §2.1.
 
 ### Numeración vigente
 
@@ -50,6 +56,24 @@ No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en
   - **Parte A**: escenario de compra normal. Se hace **antes** de la fila para asegurar cuanto antes el entregable que la consigna exige (`consigna.md:171`).
   - **Parte B**: escenario con fila. Se hace **después de `FIL-04`**, cuando el gate y la habilitación ya existen.
 - `0b` es opcional y no está en la secuencia salvo autorización explícita.
+
+## 2.1 Diferencias con la implementación final
+
+Este plan se escribió antes de codificar. Estas son las decisiones que cambiaron y el estado real
+(la fuente de verdad es `specs/fila-virtual.md`):
+
+| Tema | En este plan | Implementación final |
+| --- | --- | --- |
+| Redis caído en `crearReserva` | **Fail-open** (bitácora y continuar) | **Fail-closed:** `503 FILA_NO_DISPONIBLE` también en el gate (D3 de `fila-virtual.md`). La fila es control de acceso, no un caché. |
+| Habilitación de tandas | Manual con hilo ADMIN obligatorio en la carga | **Tanda automática** (`FilaTandaScheduler`, `TICKETYA_FILA_AUTO_*`); el hilo ADMIN es solo el override B2. |
+| Consumo del token | Después de confirmar la reserva | **Atómico al inicio del gate** (`SET fila:{evento}:usados`) + restauración en `afterCompletion` si hay rollback. |
+| UI de fila | Fuera de alcance | Implementada en el SPA: `FilaVirtualPage` y ruta `/eventos/:eventoId/fila` (2026-11-20). |
+| Prueba de carga | Sin `.jmx` ni informe | `docs/testing/carga/` + `docs/testing/carga.md`: matriz 25/50/100 normal y con fila, más reintentos post-fix. |
+| Estado | `E2-TST-03` pendiente | `E2-TST-03` **hecho**; `E2-DEP-01` **hecho**; `E2-FILA-01` **hecho**. |
+
+La auditoría de §1 y los estados del backlog que cita son **históricos** (2026-11-19). Además, la
+corrida real encontró dos defectos ajenos a la fila que ya se corrigieron: emisión de entradas
+duplicada por reintentos (`emision_compra`) y timeout de Feign a eventos mapeado a 400 (hoy 503).
 
 ---
 
@@ -161,7 +185,7 @@ No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en
   - Sin token / token inválido → `409` y **no se descuenta cupo**.
   - Evento normal → comportamiento idéntico al actual.
   - Token de un solo uso, consumido al reservar **[I]**: consumirlo justo después de confirmar la reserva para no quemarlo si la transacción falla.
-- **Fail-open dentro de `crearReserva`**: si Redis falla al validar, `Bitacora.registrar(...)` y continuar. La integridad la sigue garantizando MySQL (`cupo_sector` con `SELECT … FOR UPDATE`, `init.sql:71`, y `uk_asiento_evento_sector_fila_numero`, `init.sql:85`).
+- **Fail-open dentro de `crearReserva`**: si Redis falla al validar, `Bitacora.registrar(...)` y continuar. La integridad la sigue garantizando MySQL (`cupo_sector` con `SELECT … FOR UPDATE`, `init.sql:71`, y `uk_asiento_evento_sector_fila_numero`, `init.sql:85`). **Reemplazado:** fail-closed (503) también en el gate; ver §2.1.
 - `EventosClient.java:23-30` incorpora `esAltaDemanda` (hoy ausente, aunque `Evento.java:53-54` / `EventoMapper.java:35` lo exponen).
 - `ReservaCreateRequestDTO` incorpora `tokenFila` opcional.
 
@@ -182,7 +206,7 @@ No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en
 **Criterios de aceptación**
 - Thread Group de CLIENTES sobre evento `esAltaDemanda=true`:
   `ingreso → posicion (poll) → validacion/token → crearReserva`.
-- **Thread Group aparte con JWT de ADMIN** que llama a `POST /api/eventos/{id}/fila/habilitacion` con `hastaPosicion` **creciente por tandas** (p. ej. +N cada X segundos) mientras los clientes esperan. Sin este hilo la validación se traba y la corrida no avanza.
+- **Thread Group aparte con JWT de ADMIN** que llama a `POST /api/eventos/{id}/fila/habilitacion` con `hastaPosicion` **creciente por tandas** (p. ej. +N cada X segundos) mientras los clientes esperan. Sin este hilo la validación se traba y la corrida no avanza. **Reemplazado:** la tanda automática es el modo B1 por defecto; el hilo ADMIN es solo el override B2 (ver `docs/testing/carga/README.md`).
 - Clientes con posición fuera de tanda hacen poll hasta obtener token o hasta un timeout configurado; el timeout se contabiliza como error/espera, no como éxito.
 - Métricas separadas por escenario: latencia de `ingreso`, tiempo de espera en fila, `validacion`, `crearReserva`, RPS y errores (`409` fuera de tanda, `503` Redis, timeouts).
 - Misma verificación SQL de no doble venta que la Parte A (§10), ejecutada al terminar la corrida.
@@ -282,6 +306,10 @@ Cada commit deja el repo compilable y con tests verdes. El riesgo concentrado es
 ---
 
 ## 13. No verificado / supuestos
+
+> **Actualización post-implementación (2026-11-21):** Maven, Docker Compose, JMeter y Newman se
+> ejecutaron; los `.jmx` y el informe están en `docs/testing/carga/` y `docs/testing/carga.md`.
+> Lo que sigue es el registro de supuestos del plan, no el estado actual.
 
 - **[NV]** No ejecuté Maven, Docker Compose ni JMeter durante el plan.
 - **[NV]** No existe hoy informe ni `.jmx` de carga versionado (búsqueda en `Backend/docs/`).

@@ -1,5 +1,10 @@
 # Especificación operativa paso a paso — Fila virtual + prueba de carga
 
+> **HISTÓRICO (2026-11-19).** Runbook del plan previo, no del estado actual. La especificación
+> vigente es [`specs/fila-virtual.md`](../../specs/fila-virtual.md) y los resultados de carga están
+> en [`docs/testing/carga.md`](../../docs/testing/carga.md). En particular, el gate final es
+> **fail-closed** (503) y las tandas son **automáticas** con override ADMIN.
+
 > Este documento es el **runbook** del plan. El documento `fila-virtual-y-carga.md` es el resumen/decisiones; acá está el desglose ejecutable.
 > Modo plan: **no se ejecutó nada**. Los comandos y snippets son la especificación para la implementación.
 > Rutas relativas a `ticketYa/`. Convención **[V]** verificado · **[I]** inferido · **[NV]** no verificado.
@@ -294,13 +299,13 @@ Cada paso tiene: **Entrada** → **Acciones** → **Archivos** → **Verificaci�
 - **Acciones**:
   1. Obtener `EventoDetalleFeignDTO` vía `EventosClient`.
   2. **Antes de `lockCupo` (`:335`)**, si `Boolean.TRUE.equals(dto.getEsAltaDemanda())`: exigir `body.tokenFila()` no vacío y válido para el `userId`; si no → 409 sin tocar cupo.
-  3. Si Redis falla en esa validación: `Bitacora.registrar("FILA_REDIS_FAILOPEN", idEvento, idReserva, "token=<...>")` y continuar (**fail-open** decided).
+  3. Si Redis falla en esa validación: `Bitacora.registrar("FILA_REDIS_FAILOPEN", idEvento, idReserva, "token=<...>")` y continuar (**fail-open** decided). **Reemplazado:** la implementación final es **fail-closed** (503 `FILA_NO_DISPONIBLE`); ver D3 de `specs/fila-virtual.md`.
   4. Evento normal (`false`/`null`) → flujo sin cambios.
   5. Tras éxito, consumir token (F.4).
 
 ### PASO F.6 — Tests
 - **Archivos**: `FilaServiceTest.java` (nuevo), `VentaServiceImplTest.java`, `ReservaAsientoConcurrenciaTest.java` (sólo si aplica).
-- **CA**: token vigente ✓; expirado/fuera de tanda → 409; sin token en alta demanda → 409 y `cantidad_disponible` sin cambio; Redis down en alta demanda → reserva igual OK + bitácora; evento normal sin token → OK. **[I]** Los mocks actuales devuelven `false` por defecto → sin regresión.
+- **CA**: token vigente ✓; expirado/fuera de tanda → 409; sin token en alta demanda → 409 y `cantidad_disponible` sin cambio; Redis down en alta demanda → **503 (fail-closed, reemplaza el “reserva igual OK” del plan)**; evento normal sin token → OK. **[I]** Los mocks actuales devuelven `false` por defecto → sin regresión.
 
 ### PASO F.7 — Docs del cambio
 - **Acciones**: `Backend/specs/endpoints.md:210`; `Backend/specs/comunicacion.md:140`; sección nueva en `Backend/specs/diagramas/diagramas-secuencia.md`; `Backend/specs/fila-virtual.md` §6 con el detalle fail-closed vs fail-open.
