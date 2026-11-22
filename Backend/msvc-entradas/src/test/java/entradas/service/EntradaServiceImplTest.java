@@ -45,8 +45,10 @@ import entradas.entity.Devolucion;
 import entradas.entity.Entrada;
 import entradas.exception.BusinessConflictException;
 import entradas.exception.ResourceNotFoundException;
+import entradas.exception.ServiceUnavailableException;
 import entradas.mapper.EntradaMapper;
 import entradas.repository.DevolucionRepository;
+import entradas.repository.EmisionClaimRepository;
 import entradas.repository.EntradaRepository;
 import entradas.repository.ValidacionAccesoRepository;
 import feign.FeignException;
@@ -73,6 +75,9 @@ class EntradaServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private EmisionClaimRepository emisionClaimRepository;
+
     private EntradaServiceImpl service;
 
     private static final String ID_ENTRADA = "e0000000-0000-4000-8000-000000000001";
@@ -89,7 +94,8 @@ class EntradaServiceImplTest {
         service = new EntradaServiceImpl(
                 entradaRepository, devolucionRepository, entradaMapper,
                 eventosClient, ventasClient, mock(ValidacionAccesoRepository.class),
-                eventPublisher, 72L);
+                eventPublisher, emisionClaimRepository, 72L);
+        when(emisionClaimRepository.reclamar(anyString())).thenReturn(true);
     }
 
     private Entrada entradaVendida() {
@@ -168,6 +174,16 @@ class EntradaServiceImplTest {
 
         assertEquals(2, res.size());
         verify(entradaRepository).saveAll(anyList());
+    }
+
+    @Test
+    void emitir_siOtraEmisionTieneElClaim_503() {
+        when(entradaRepository.findByIdCompra(ID_COMPRA)).thenReturn(new ArrayList<>());
+        when(emisionClaimRepository.reclamar(ID_COMPRA)).thenReturn(false);
+
+        assertThrows(ServiceUnavailableException.class, () -> service.emitir(
+                new EmitirEntradasRequestDTO(ID_COMPRA, ID_CLIENTE, ID_EVENTO, List.of(item()))));
+        verify(entradaRepository, never()).saveAll(anyList());
     }
 
     @Test

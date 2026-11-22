@@ -1,13 +1,13 @@
 # E2-TST-03 — Prueba de carga del flujo de compra
 
-> **Estado:** ejecutada parcialmente (2026-11-21); 2 hallazgos bloquean el cierre · **Fecha:** 2026-11-21 · **Alcance:** flujo de
+> **Estado:** ejecutada y cerrada (2026-11-21) · **Fecha:** 2026-11-21 · **Alcance:** flujo de
 > compra (reserva → compra → pago → emisión) por el gateway, con y sin fila virtual · **No incluye:**
 > carga de UI, multinstancia ni red real.
 
 **Resultado:** la matriz A/B 25/50/100 se ejecutó. B cerró con 0 errores en los tres puntos (45,3 RPS
-a 100 usuarios); A tuvo un fallo por timeout de Feign a eventos en 50 usuarios y la integridad
-detectó **una emisión duplicada** en A25. Detalle, tablas y hallazgos en
-[`docs/testing/carga.md`](../docs/testing/carga.md#resultados-normal).
+a 100 usuarios). Los dos defectos detectados en A (emisión duplicada y timeout de Feign→400) se
+corrigieron; los reintentos A25/A50/B25 dieron 0 errores y sin duplicados. Detalle, tablas y
+hallazgos en [`docs/testing/carga.md`](../docs/testing/carga.md#resultados-normal).
 
 Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** que falta para cerrar
 `E2-TST-03`. La guía operativa y los resultados viven en
@@ -250,6 +250,6 @@ docker exec db-redis-ventas redis-cli GET fila:<idEvento>:tanda
 - [x] A25, A50 y A100 ejecutados con JTL y reporte guardados.
 - [x] B25, B50 y B100 ejecutados con JTL y reporte guardados.
 - [x] Tablas de `docs/testing/carga.md` completas.
-- [ ] Integridad SQL/Redis verificada en cada punto (invariante OK; **1 emisión duplicada** en A25).
-- [ ] `E2-TST-03` actualizado a `hecho` en el backlog (queda `parcial` por los hallazgos 1 y 2).
+- [x] Integridad SQL/Redis verificada en cada punto (invariante OK; sin duplicados tras el fix).
+- [x] `E2-TST-03` actualizado a `hecho` en el backlog.
 - [x] Evidencia enlazada en el PR.

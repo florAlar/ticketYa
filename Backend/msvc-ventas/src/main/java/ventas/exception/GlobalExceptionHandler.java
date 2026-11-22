@@ -39,6 +39,13 @@ public class GlobalExceptionHandler {
         return body(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
     }
 
+    /** Pool de conexiones agotado o base caída: es reintentable, no un 500 genérico. */
+    @ExceptionHandler(org.springframework.transaction.CannotCreateTransactionException.class)
+    public ResponseEntity<Map<String, Object>> handleSinConexion(
+            org.springframework.transaction.CannotCreateTransactionException ex) {
+        return body(HttpStatus.SERVICE_UNAVAILABLE, "Base de datos no disponible, reintentar");
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
         return body(HttpStatus.BAD_REQUEST, ex.getMessage());

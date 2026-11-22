@@ -18,6 +18,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import feign.FeignException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -51,6 +52,7 @@ import ventas.entity.Reserva;
 import ventas.exception.BusinessConflictException;
 import ventas.exception.FilaException;
 import ventas.exception.ResourceNotFoundException;
+import ventas.exception.ServiceUnavailableException;
 import ventas.mapper.VentaMapper;
 import ventas.redis.StockCache;
 import ventas.repository.CompraRepository;
@@ -494,6 +496,16 @@ class VentaServiceImplTest {
         when(eventosClient.getEvento(ID_EVENTO)).thenReturn(evento);
 
         assertThrows(BusinessConflictException.class,
+                () -> service.crearReserva(ID_CLIENTE, req, null));
+    }
+
+    @Test
+    void crearReserva_siEventosFalla_503() {
+        ReservaCreateRequestDTO req = new ReservaCreateRequestDTO(
+                ID_EVENTO, List.of(crearItem(ID_SECTOR, 1)));
+        when(eventosClient.getEvento(ID_EVENTO)).thenThrow(mock(FeignException.class));
+
+        assertThrows(ServiceUnavailableException.class,
                 () -> service.crearReserva(ID_CLIENTE, req, null));
     }
 
