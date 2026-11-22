@@ -23,7 +23,7 @@
 
 ## Estado de implementación
 
-- E1 y E2 implementados, salvo la extensión CLIENTE → ORGANIZADOR (X-ORG-01) y la transferencia de entradas, que no tienen API.
+- E1 y E2 implementados, salvo la transferencia de entradas, que no tiene API; el alta de organizador es manual por un ADMIN (X-ORG-01 descartado).
 - Seguridad: JWT emitido por `msvc-usuarios` y validado en `APIGateway`; autorización por rol en cada endpoint.
 - Comunicación: REST con OpenFeign para el flujo transaccional y RabbitMQ para eventos de dominio; Redis en ventas para stock, idempotencia y fila virtual.
 - Detalle de responsabilidades y estado por feature: [microservicios.md](./microservicios.md) y [backlog.md](./backlog.md).

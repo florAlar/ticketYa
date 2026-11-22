@@ -28,9 +28,9 @@ export default function OrganizadorInfo({ onCrearCuenta, onVerDemo }) {
             <div>
               <strong>Activá el perfil de organizador</strong>
               <p>
-                Desde tu perfil pedís la cuenta de organizador.{' '}
+                Un administrador te asigna el rol de organizador sobre tu cuenta de cliente.{' '}
                 <Link className="org-info__link" to="/cuenta/organizador">
-                  Ver cómo
+                  Ver guía
                 </Link>
               </p>
             </div>

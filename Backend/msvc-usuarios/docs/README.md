@@ -22,7 +22,7 @@
 ## 1. Alcance y límites
 
 - **Es responsable de:** alta de clientes, login, refresh/logout stateless, perfil propio, administración de usuarios y asignación de roles, hash BCrypt y emisión de JWT.
-- **No es responsable de:** autorización por endpoint (la aplica `APIGateway`), preferencias/historial (msvc-preferencias), datos de eventos/compras/entradas ni solicitudes de extensión a organizador (X-ORG-01, pendiente).
+- **No es responsable de:** autorización por endpoint (la aplica `APIGateway`), preferencias/historial (msvc-preferencias), datos de eventos/compras/entradas ni de la extensión self-service a organizador (X-ORG-01 descartado; el rol lo asigna un ADMIN).
 - **Consumidores:** el gateway para `/api/auth/**` y `/api/usuarios/**`; el frontend para login/registro/perfil; los demás msvc solo reciben `X-User-Id`, `X-User-Email` y `X-User-Role(s)` ya verificados por el gateway.
 - **Dependencias síncronas:** ninguna hacia otros microservicios.
 - **Dependencias asíncronas:** ninguna.
@@ -98,5 +98,5 @@ mvn -Pit verify       # +1 IT de contexto con MySQL real (Testcontainers)
 | Tema | Estado | Nota |
 | --- | --- | --- |
 | Refresh tokens / revocación | `pendiente` | Logout stateless: no invalida tokens emitidos |
-| Extensión CLIENTE → ORGANIZADOR (X-ORG-01) | `pendiente` | Diseño en `specs/backlog.md` §7.3.1; hoy solo seeds/ADMIN asignan el rol |
+| Extensión CLIENTE → ORGANIZADOR (X-ORG-01) | `descartado` | El rol lo asigna un ADMIN (`PUT /usuarios/{id}/roles`); no hay autoservicio. Diseño histórico en `specs/backlog.md` §7.3.1 |
 | Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |

@@ -71,12 +71,6 @@ export const FEATURE = {
 
   /** Bandeja y campanita de notificaciones — E2-NOT (GET/PATCH /notificaciones/me) */
   notificaciones: !USE_MOCK,
-
-  /**
-   * Solicitud CLIENTE → ORGANIZADOR (X-ORG-01).
-   * CTA visible en /perfil; OFF hasta API de solicitudes + cola admin.
-   */
-  solicitudOrganizador: false,
 }
 
 export const GATE_HINT = 'Sin backend cableado — flujo no disponible'

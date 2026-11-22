@@ -30,7 +30,7 @@ const OrganizerAccountPage = () => {
         <h1 className="auth-box__title">¿Organizás eventos?</h1>
         <p className="auth-box__lead">
           No hay alta pública de organizador. Primero creás una cuenta cliente;
-          el rol de organizador lo habilita la plataforma (o un admin).
+          el rol de organizador lo asigna un administrador de la plataforma.
         </p>
 
         <ul className="cuenta-roles-list">

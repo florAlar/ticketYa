@@ -58,8 +58,8 @@ códigos) está en `specs/endpoints.md`, `docs/openapi/` y en el `endpoints.md` 
 - **Verificado 2026-11-21:** E2E F1–F5 5/5, 37 ITs de borde, matriz de carga 25/50/100 (normal y
   fila), Postman 216 requests/587 assertions/0 fallos y corrida limpia del dominio completo
   (`E2-DEP-01`).
-- **Pendiente funcional:** extensión CLIENTE → ORGANIZADOR (`X-ORG-01`) y transferencia de entradas
-  (sin API). El resto del backlog es documental (`US-03`).
+- **Pendiente funcional:** transferencia de entradas (sin API). El alta de organizador es manual por
+  ADMIN (`X-ORG-01` quedó descartado). El resto del backlog es documental (`US-03`).
 
 ## 5. Documentación y Compose
 
