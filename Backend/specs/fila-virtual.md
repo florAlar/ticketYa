@@ -769,7 +769,7 @@ git diff --check && git status --short
 - **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests en esa corrida, 0 fallos/errores; hoy la suite tiene 221) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
 - **[V]** Docker y JMeter: matriz **25/50/100** ejecutada (normal y con fila) y reintentos post-fix; `E2-TST-03` **hecho** y `docs/testing/carga.md` completo. Se midió `evicted_keys=0` y se corrigieron los hallazgos de emisión duplicada y timeout→503.
 - **[V]** Configuración real de Redis: `redis.conf` define `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida de carga midió `evicted_keys=0`.
-- **[NV]** Credenciales de MySQL y endpoint de health. **[V]** `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
+- **[NV]** Credenciales de MySQL en el compose. **[V]** Endpoint de health y `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
 - **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.
 - **[NV]** Si el tablero de Trello tiene una US de fila con CA propios.
 - **[V]** Formato de body y response de los 5 endpoints: definido acá, implementado y documentado en OpenAPI/Postman.
