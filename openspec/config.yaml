@@ -1,0 +1,16 @@
+schema: spec-driven
+
+context: |
+  Este es un proyecto java con SpringBoot en el Backend.
+  Como base de datos se usa un MYSQL.
+  Idioma: Espanol. Todos los artefactos en espanol.
+
+# Reglas por artefacto (restricciones adicionales)
+rules:
+  proposal:
+    - Mantener proposals bajo 500 palabras
+    - Enfocarse en el "por que", no en el "como"
+  specs:
+    - Usar formato Given/When/Then para todos los escenarios
+  tasks:
+    - Maximo 10 tareas por cambio
