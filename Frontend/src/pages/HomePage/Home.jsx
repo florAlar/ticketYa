@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import Hero from '../../components/home/Hero/Hero'
 import EventSection from '../../components/home/events/EventSection'
 import HomeRecomendados from '../../components/preferencias/HomeRecomendados'
@@ -10,16 +11,17 @@ const Home = () => {
       <Hero />
       <div id="explorar">
         {homeSections.map((section) => (
-          <EventSection
-            key={section.id}
-            title={section.title}
-            filter={section.filter}
-            layout={section.layout}
-            card={section.card}
-            linkToAll={section.linkToAll}
-          />
+          <Fragment key={section.id}>
+            <EventSection
+              title={section.title}
+              filter={section.filter}
+              layout={section.layout}
+              card={section.card}
+              linkToAll={section.linkToAll}
+            />
+            {section.id === 'recitales' && <HomeRecomendados />}
+          </Fragment>
         ))}
-        <HomeRecomendados />
       </div>
     </div>
   )

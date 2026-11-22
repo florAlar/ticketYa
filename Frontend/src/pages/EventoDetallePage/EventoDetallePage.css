@@ -15,8 +15,16 @@
   max-width: 52rem;
   margin: 0 0 1.75rem;
   font-size: 0.95rem;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--colors-textSecondary);
+}
+
+.evento-detalle-page__desc p {
+  margin: 0 0 1rem;
+}
+
+.evento-detalle-page__desc p:last-child {
+  margin-bottom: 0;
 }
 
 /* ---- Hero: el texto va siempre en blanco, apoyado en la imagen ---- */

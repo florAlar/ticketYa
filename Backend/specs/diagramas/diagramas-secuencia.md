@@ -3,6 +3,8 @@
 Fuente: `msvc-ventas` (`VentaServiceImpl`, `EmisionEntradasService`, `ReservaExpirationJob`) y [`reglas-de-negocio.md`](../reglas-de-negocio.md) §5–§6.
 Las rutas son las públicas del gateway (`/api/...`).
 
+> **Vista de conjunto:** la §10 reúne en un único diagrama la compra de una entrada numerada con el pago rechazado y el vencimiento de reserva (lo que pide la consigna).
+
 ## Estados que intervienen
 
 | Entidad | Estados |
@@ -389,6 +391,82 @@ sequenceDiagram
 ```
 
 Un token = una reserva, aun con 20 hilos concurrentes: el consumo es atómico. Redis caído en alta demanda → 503 fail-closed y el cupo no se toca; en eventos normales el flujo no consulta la fila.
+
+## 10. Compra de una entrada numerada — diagrama consolidado (éxito, pago rechazado y vencimiento)
+
+Diagrama único que pide la consigna (§5.B): compra de una entrada **numerada** (asiento concreto) y sus dos variantes de falla, el **pago rechazado** y el **vencimiento de la reserva**. Es la vista de conjunto; el detalle de cada tramo está en §1 (compra), §2 (pago rechazado), §3 (vencimiento) y §5 (asientos).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Cliente
+    participant GW as API Gateway
+    participant V as msvc-ventas
+    participant R as Redis
+    participant J as Job de expiración (cada 30 s)
+    participant N as msvc-entradas
+
+    Note over C,N: 1) Reserva temporal del asiento (TTL 10 min)
+    C->>GW: POST /api/reservas {idEvento, items[{idSector, asientos:[{fila:"C", numero:14}]}]}
+    GW->>V: crear reserva (X-User-Id desde el JWT)
+    V->>V: validar layout del sector y límite de 6 entradas por cliente y evento
+    V->>V: SELECT cupo_sector FOR UPDATE (serializa el sector)
+    alt el asiento ya está RESERVADO o VENDIDO
+        V-->>C: 409 asiento no disponible (no se toma nada)
+    else asiento libre
+        V->>V: INSERT asiento_reservado (RESERVADO) + disponible -= 1, reservada += 1
+        V->>R: hold ventas:reserva:{id} (TTL 10 min)
+        V-->>C: 201 reserva PENDIENTE (vence en 10 min)
+    end
+
+    Note over C,N: 2) Confirmación y compra
+    C->>GW: POST /api/reservas/{id}/confirmacion
+    GW->>V: confirmar
+    V-->>C: reserva CONFIRMADA
+    C->>GW: POST /api/compras {idReserva} + Idempotency-Key
+    GW->>V: crear compra
+    V-->>C: 201 compra PENDIENTE_PAGO
+
+    Note over C,N: 3) Desenlace: el cliente paga a tiempo o la reserva vence
+    alt A. Pago aprobado (camino feliz)
+        C->>GW: POST /api/compras/{id}/pagos {resultado: APROBAR}
+        GW->>V: procesar pago
+        V->>V: pago APROBADO, compra APROBADA, reserva COMPRADA
+        V->>V: asiento RESERVADO → VENDIDO, reservada -= 1, vendida += 1
+        V->>R: liberar hold
+        V-->>C: 201 pago APROBADO
+        V->>N: POST /entradas/emision (tras el commit; idempotente por compra)
+        N->>N: una entrada por asiento, con fila, numero y codigoQR único
+        N-->>V: entrada emitida
+        C->>GW: GET /api/entradas
+        GW->>N: listar entradas del cliente
+        N-->>C: entrada VENDIDA con QR
+    else B. Pago rechazado
+        C->>GW: POST /api/compras/{id}/pagos {resultado: RECHAZAR}
+        GW->>V: procesar pago
+        V->>V: pago RECHAZADO, compra RECHAZADA
+        V->>V: DELETE asiento_reservado (el asiento queda libre)
+        V->>V: reservada -= 1, disponible += 1, reserva CANCELADA
+        V->>R: liberar hold
+        V-->>C: 201 pago RECHAZADO (sin entradas; para reintentar hay que crear otra reserva)
+    else C. Vencimiento de la reserva (no se completa el pago)
+        J->>V: expirarReservasVencidas()
+        V->>V: reservas activas con fechaExpiracion < ahora y sin compra APROBADA
+        V->>V: compra PENDIENTE_PAGO → RECHAZADA (si existía)
+        V->>V: DELETE asiento_reservado (el asiento queda libre)
+        V->>V: reservada -= 1, disponible += 1, reserva EXPIRADA
+        V->>R: liberar hold
+        C->>GW: POST /api/compras/{id}/pagos (tarde)
+        GW->>V: procesar pago
+        V-->>C: 409 Conflict (reserva no activa o expirada)
+    end
+
+    Note over C,N: En B y C el asiento y el cupo vuelven a estar disponibles para otro cliente
+```
+
+Notas:
+- La expiración también ocurre de forma *lazy*: `GET /reservas/{id}` con el TTL vencido expira la reserva en el momento.
+- Si la emisión (paso A) falla, se reintenta 3 veces de inmediato y luego un job cada 30 s (`emisionEstado` PENDIENTE → EMITIDA | FALLIDA). El pago y el asiento vendido **no** se revierten (ver `docs/consistencia-y-compensaciones.md`).
 
 ## Garantía de no doble venta
 

@@ -4,12 +4,12 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 
 | Archivo | Contenido |
 |---------|-----------|
-| `TicketYa-E1.postman_collection.json` | 216 requests en 15 carpetas, con tests en español, captura de IDs y auto-login |
+| `TicketYa-E1.postman_collection.json` | 222 requests en 15 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados, `internalToken`) |
 
 > El archivo conserva el nombre `TicketYa-E1` por compatibilidad; la colección cubre **E1 + E2**.
 
-**Corrida completa 2026-11-21:** **216 requests, 587 assertions, 0 fallos** por el proxy Nginx
+**Corrida completa 2026-11-22:** **222 requests, 605 assertions, 0 fallos** por el proxy Nginx
 (`baseUrl=http://localhost:3000`), incluidas las carpetas **13 Fila virtual** y
 **14 Notificaciones**, que antes no tenían corrida Newman.
 
@@ -84,7 +84,7 @@ identidad sale siempre del token verificado.
 |---------|----------|-----------|
 | 00 Auth | 9 | login de los 4 roles, registro, refresh, logout, 401 y 409 |
 | 01 Usuarios | 9 | perfil propio, listado, estado, roles; 403 y 404 |
-| 02 Eventos | 27 | catálogo con filtros, detalle, borrador → edición → precio → participantes → publicación → reprogramación, borrado, y LUG-04: el evento elige un lugar y sus sectores (cupo propio; 400 si el sector no tiene id, es de otro lugar, supera la capacidad o se intenta cambiar su layout), edición de borrador con lista completa de sectores, cambio de lugar y borrador sin lugar ("Por definir") |
+| 02 Eventos | 33 | catálogo con filtros, detalle, borrador → edición → precio → participantes → publicación → reprogramación, borrado, y LUG-04: el evento elige un lugar y sus sectores (cupo propio; 400 si el sector no tiene id, es de otro lugar, supera la capacidad o se intenta cambiar su layout), edición de borrador con lista completa de sectores, cambio de lugar y borrador sin lugar ("Por definir") y portada (`imagenUrl` absoluta o relativa, 400 si el esquema no es http(s) o supera 500 caracteres, `""` en PUT la quita) |
 | 03 Lugares y participantes | 37 | CRUD de lugares, sectores (el numerado se crea con `filas` y `asientosPorFila`), asientos virtuales y participantes, coordenadas opcionales del lugar (latitud/longitud: alta, 400 si falta una o está fuera de rango, edición, `quitarCoordenadas` y detalle de evento), y baja de lugares (solo ADMIN: 409 si tiene eventos, 403 para organizador, 204 y luego 404), alta y edición de lugares y sectores solo ADMIN (403 para el organizador, que sí puede leerlos) |
 | 04 Ventas | 21 | disponibilidad, cupos, reserva (idempotente, renovación, confirmación, cancelación), compra, pago APROBAR y RECHAZAR |
 | 05 Entradas | 4 | emisión idempotente, listado, detalle y QR |
