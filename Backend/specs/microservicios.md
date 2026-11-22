@@ -56,7 +56,7 @@ códigos) está en `specs/endpoints.md`, `docs/openapi/` y en el `endpoints.md` 
   historial (MongoDB), notificaciones (PUSH mock + EMAIL SMTP), reportes del organizador, JWT + RBAC,
   caché/resiliencia, correlation id + bitácora y geocodificación.
 - **Verificado 2026-11-21:** E2E F1–F5 5/5, 37 ITs de borde, matriz de carga 25/50/100 (normal y
-  fila), Postman 216 requests/587 assertions/0 fallos y corrida limpia del dominio completo
+  fila), Postman 222 requests/605 assertions/0 fallos y corrida limpia del dominio completo
   (`E2-DEP-01`).
 - **Pendiente funcional:** transferencia de entradas (sin API); el alta de organizador es manual por
   ADMIN (`X-ORG-01` quedó descartado). No hay otras brechas de negocio; quedan ajustes opcionales de
