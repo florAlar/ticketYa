@@ -59,15 +59,15 @@
 
 .ticket__cover {
   position: relative;
-  min-height: 14rem;
-  flex: none;
+  min-height: 24rem;
+  flex: 1;
   background: #150d26;
 }
 .ticket__cover .event-cover { position: absolute; inset: 0; }
 .ticket__shade {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(12, 7, 24, 0.25) 0%, rgba(12, 7, 24, 0.2) 35%, rgba(12, 7, 24, 0.88) 100%);
+  background: linear-gradient(180deg, rgba(12, 7, 24, 0.55) 0%, rgba(12, 7, 24, 0.12) 32%, rgba(12, 7, 24, 0.2) 55%, rgba(12, 7, 24, 0.9) 100%);
 }
 .ticket__badges { position: absolute; top: 1rem; left: 1rem; z-index: 2; }
 .ticket__title {
@@ -94,25 +94,48 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
 }
 
-.ticket__grid {
+/* Datos de la entrada: arriba a la derecha de la foto */
+.ticket__data {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: 1.1rem 1.5rem;
+  gap: 0.55rem;
+  max-width: 55%;
   margin: 0;
-  padding: 1.4rem 1.5rem 1.6rem;
+  padding: 0.7rem 0.95rem;
+  border-radius: 14px;
+  background: rgba(12, 7, 24, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(6px);
+  color: #fff;
+  text-align: right;
 }
-.ticket__grid dt {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  margin-bottom: 0.2rem;
-  font-size: 0.7rem;
+.ticket__data dt {
+  margin-bottom: 0.1rem;
+  font-size: 0.65rem;
   font-weight: var(--typography-weight-bold);
-  letter-spacing: 0.09em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--colors-textMuted);
+  color: rgba(255, 255, 255, 0.68);
 }
-.ticket__grid dd { margin: 0; font-size: 1rem; font-weight: var(--typography-weight-semibold); }
+.ticket__data dd { margin: 0; font-size: 0.98rem; font-weight: var(--typography-weight-semibold); }
+
+/* Fecha y lugar: bajo el título */
+.ticket__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.4rem;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.95rem;
+  font-weight: var(--typography-weight-semibold);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
+}
+.ticket__meta li { display: inline-flex; align-items: center; gap: 0.4rem; }
+.ticket__meta svg { flex: none; width: 1.1rem; height: 1.1rem; color: var(--brand-tint); }
 .ticket__mono { font-family: var(--fonts-mono); letter-spacing: 0.04em; }
 
 /* Línea de corte con muescas */
@@ -164,13 +187,23 @@
   color: var(--colors-textMuted);
   word-break: break-all;
 }
+.ticket__compra {
+  align-self: stretch;
+  margin: auto 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--colors-border);
+  font-size: 0.78rem;
+  color: var(--colors-textMuted);
+}
+.ticket__compra .ticket__mono { color: var(--colors-text); font-weight: var(--typography-weight-semibold); }
 .ticket__noqr { color: var(--colors-textSecondary); font-size: 0.9rem; }
 .ticket__noqr strong { display: block; margin-bottom: 0.4rem; color: var(--colors-text); }
 .ticket__noqr p { margin: 0; line-height: 1.5; }
-.ticket--cancelada .ticket__cover { filter: grayscale(0.7); }
+.ticket--cancelada .ticket__cover .event-cover { filter: grayscale(0.7); }
 
 @media (max-width: 800px) {
   .ticket { grid-template-columns: 1fr; }
+  .ticket__cover { min-height: 22rem; }
   .ticket__tear {
     width: auto;
     height: 0;

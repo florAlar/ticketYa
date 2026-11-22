@@ -1,5 +1,5 @@
 import { QRCodeSVG } from 'qrcode.react'
-import { HiOutlineCalendar, HiOutlineLocationMarker, HiOutlineTicket } from 'react-icons/hi'
+import { HiOutlineCalendar, HiOutlineLocationMarker } from 'react-icons/hi'
 import { formatFecha } from '../../lib/format'
 import { ENTRADA_ESTADOS, ENTRADA_ESTADO_LABELS } from '../../domain/entrada'
 import EventCover from '../../components/ui/EventCover'
@@ -10,8 +10,9 @@ const ESTADO_TONE = {
 }
 
 /**
- * Entrada con forma de ticket: portada y datos a la izquierda, talón con el QR a la
- * derecha (separados por una línea de corte). El QR es el código único de la entrada.
+ * Entrada con forma de ticket: la portada ocupa todo el lado izquierdo (con los datos de la
+ * entrada arriba a la derecha y fecha y lugar bajo el título) y el talón con el QR queda a la
+ * derecha, separado por una línea de corte. El N.º de compra va al pie del talón.
  */
 const EntradaTicket = ({ entrada, evento, mostrarQr, cancelada }) => {
   const lugar = [entrada.lugarNombre || evento?.lugar?.nombre, entrada.lugarCiudad || evento?.lugar?.ciudad].filter(Boolean).join(' · ')
@@ -39,46 +40,39 @@ const EntradaTicket = ({ entrada, evento, mostrarQr, cancelada }) => {
               {cancelada ? 'Evento cancelado' : estadoLabel}
             </Badge>
           </div>
+
+          <dl className="ticket__data">
+            <div>
+              <dt>N.º de entrada</dt>
+              <dd className="ticket__mono">{String(entrada.id).slice(0, 8)}</dd>
+            </div>
+            <div>
+              <dt>Sector</dt>
+              <dd>{entrada.sectorNombre || '—'}</dd>
+            </div>
+            {asiento && (
+              <div>
+                <dt>Asiento</dt>
+                <dd>{asiento}</dd>
+              </div>
+            )}
+          </dl>
+
           <div className="ticket__title">
             <p className="ticket__eyebrow">Entrada</p>
             <h2>{entrada.eventoNombre}</h2>
+            <ul className="ticket__meta">
+              <li>
+                <HiOutlineCalendar aria-hidden />
+                <span>{formatFecha(entrada.eventoFecha || evento?.fechaInicio)}</span>
+              </li>
+              <li>
+                <HiOutlineLocationMarker aria-hidden />
+                <span>{lugar || '—'}</span>
+              </li>
+            </ul>
           </div>
         </div>
-
-        <dl className="ticket__grid">
-          <div>
-            <dt>
-              <HiOutlineCalendar aria-hidden /> Fecha
-            </dt>
-            <dd>{formatFecha(entrada.eventoFecha || evento?.fechaInicio)}</dd>
-          </div>
-          <div>
-            <dt>
-              <HiOutlineLocationMarker aria-hidden /> Lugar
-            </dt>
-            <dd>{lugar || '—'}</dd>
-          </div>
-          <div>
-            <dt>
-              <HiOutlineTicket aria-hidden /> Sector
-            </dt>
-            <dd>{entrada.sectorNombre || '—'}</dd>
-          </div>
-          {asiento && (
-            <div>
-              <dt>Asiento</dt>
-              <dd>{asiento}</dd>
-            </div>
-          )}
-          <div>
-            <dt>N.º de entrada</dt>
-            <dd className="ticket__mono">{String(entrada.id).slice(0, 8)}</dd>
-          </div>
-          <div>
-            <dt>Compra</dt>
-            <dd className="ticket__mono">{String(entrada.idCompra || '—').slice(0, 8)}</dd>
-          </div>
-        </dl>
       </div>
 
       <div className="ticket__tear" aria-hidden />
@@ -111,6 +105,10 @@ const EntradaTicket = ({ entrada, evento, mostrarQr, cancelada }) => {
             </p>
           </div>
         )}
+
+        <p className="ticket__compra">
+          Compra <span className="ticket__mono">{String(entrada.idCompra || '—').slice(0, 8)}</span>
+        </p>
       </div>
     </article>
   )
