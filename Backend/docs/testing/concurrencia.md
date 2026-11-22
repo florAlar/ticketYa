@@ -103,7 +103,7 @@ Mismo patrón que 3.2, aplicado al **mismo asiento** de un sector numerado y sob
 | IT mismo asiento, con lock (MySQL real) | 2 | 1 | 1 | no | no |
 | IT mismo asiento, solo clave única (MySQL real) | 8 | 1 | 7 | no | no |
 
-`mvn test` de msvc-ventas: **109 tests, 0 fallos**. `mvn verify -Pit`: **BUILD SUCCESS** (1 test de integración del cupo + 4 del asiento, 0 fallos; corrida del 2026-11-10).
+`mvn test` de msvc-ventas: **221 tests, 0 fallos** (estado actual; esta sección se documentó originalmente con 109 tests el 2026-11-10). `mvn verify -Pit`: **BUILD SUCCESS** (22 ITs, incluidos los de cupo y asiento; corrida del 2026-11-10 para los escenarios de esta tabla).
 
 ## 5. Métricas de latencia y throughput
 
