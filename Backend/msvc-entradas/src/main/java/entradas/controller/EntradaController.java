@@ -172,14 +172,15 @@ public class EntradaController {
         return entradaService.qrMia(requireUser(userId), id);
     }
 
-    /** Solicitar devolución de una entrada propia (plazo 72 h desde emisión). */
+    /** Solicitar devolución de una entrada propia (hasta 72 h antes del evento). */
     @Operation(
             summary = "Solicitar devolución",
             description = """
-                    Solicita devolución de una entrada propia VENDIDA dentro del plazo
-                    (72 h por defecto desde la emisión).
+                    Solicita devolución de una entrada propia VENDIDA hasta 72 h antes del evento
+                    (fechaInicio del evento − 72 h; configurable).
                     Estado de la devolución: PENDIENTE → cola de admin.
-                    Entradas USADA / DEVUELTA / A_REINTEGRAR → 409.
+                    Entradas USADA / DEVUELTA / A_REINTEGRAR → 409. Si no se puede obtener la
+                    fecha del evento → 503.
                     """,
             security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses({

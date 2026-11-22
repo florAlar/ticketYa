@@ -18,6 +18,7 @@ import static org.mockito.Mockito.when;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -302,10 +303,19 @@ class EntradaServiceImplTest {
 
     // ---------- solicitarDevolucion ----------
 
+    private void eventoConFechaInicio(LocalDateTime fechaInicio) {
+        EventoDetalleFeignDTO evento = new EventoDetalleFeignDTO();
+        evento.setId(ID_EVENTO);
+        evento.setFechaInicio(fechaInicio);
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(evento);
+    }
+
     @Test
     void solicitarDevolucion_ok_devuelveDto() {
         Entrada e = entradaVendida();
-        e.setFechaEmision(LocalDateTime.now().minusHours(1));
+        // La emisión es vieja: el plazo ahora depende de la fecha del evento, no de la emisión.
+        e.setFechaEmision(LocalDateTime.now(ZoneOffset.UTC).minusHours(500));
+        eventoConFechaInicio(LocalDateTime.now(ZoneOffset.UTC).plusDays(30));
         DevolucionResponseDTO dto = new DevolucionResponseDTO();
         dto.setId(ID_DEVOLUCION);
         when(entradaRepository.findById(ID_ENTRADA)).thenReturn(Optional.of(e));
@@ -331,7 +341,9 @@ class EntradaServiceImplTest {
     @Test
     void solicitarDevolucion_plazoVencido_throws() {
         Entrada e = entradaVendida();
-        e.setFechaEmision(LocalDateTime.now().minusHours(100));
+        e.setFechaEmision(LocalDateTime.now(ZoneOffset.UTC).minusHours(1));
+        // Faltan 71 h para el evento: ya está fuera de la ventana de 72 h.
+        eventoConFechaInicio(LocalDateTime.now(ZoneOffset.UTC).plusHours(71));
         when(entradaRepository.findById(ID_ENTRADA)).thenReturn(Optional.of(e));
 
         assertThrows(BusinessConflictException.class,
@@ -339,9 +351,20 @@ class EntradaServiceImplTest {
     }
 
     @Test
+    void solicitarDevolucion_eventoSinFecha_throws503() {
+        Entrada e = entradaVendida();
+        when(entradaRepository.findById(ID_ENTRADA)).thenReturn(Optional.of(e));
+        when(eventosClient.getEvento(ID_EVENTO)).thenReturn(null);
+
+        assertThrows(ServiceUnavailableException.class,
+                () -> service.solicitarDevolucion(ID_CLIENTE, ID_ENTRADA, null));
+    }
+
+    @Test
     void solicitarDevolucion_yaExistePendiente_throws() {
         Entrada e = entradaVendida();
-        e.setFechaEmision(LocalDateTime.now().minusHours(1));
+        e.setFechaEmision(LocalDateTime.now(ZoneOffset.UTC).minusHours(1));
+        eventoConFechaInicio(LocalDateTime.now(ZoneOffset.UTC).plusDays(30));
         Devolucion pendiente = new Devolucion();
         pendiente.setEstado("PENDIENTE");
         when(entradaRepository.findById(ID_ENTRADA)).thenReturn(Optional.of(e));

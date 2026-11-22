@@ -138,7 +138,7 @@ sequenceDiagram
 
     C->>GW: POST /api/entradas/{id}/devoluciones
     GW->>N: solicitar devolución
-    N->>N: validar: entrada VENDIDA, no usada, dentro de 72 h
+    N->>N: validar: VENDIDA, no usada, hasta 72 h antes del evento (fecha por Feign)
     N-->>C: 201 devolución PENDIENTE
 
     A->>GW: POST /api/devoluciones/{id}/aprobacion

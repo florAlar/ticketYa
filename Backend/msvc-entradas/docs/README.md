@@ -31,7 +31,7 @@
 | Agregado / entidad raíz | Entidades relacionadas | Invariantes principales |
 | --- | --- | --- |
 | `Entrada` | `ValidacionAcceso` | `codigo_qr` único; estados `VENDIDA` → `USADA`/`DEVUELTA`/`A_REINTEGRAR`; el QR solo se expone si está `VENDIDA` y el evento no está `CANCELADO`; una entrada por asiento |
-| `Devolucion` | `Entrada` | `PENDIENTE` → `APROBADA`/`RECHAZADA`; `EN_CURSO` para reintegro por cancelación; solo `VENDIDA` no usada y dentro de 72 h desde la emisión |
+| `Devolucion` | `Entrada` | `PENDIENTE` → `APROBADA`/`RECHAZADA`; `EN_CURSO` para reintegro por cancelación; solo `VENDIDA` no usada y **hasta 72 h antes del evento** (fechaInicio − 72 h; 503 si no se puede validar) |
 | `ValidacionAcceso` | `Entrada` | Registro de todo intento; validación atómica por QR (`SELECT … FOR UPDATE`); resultados `VALIDA`, `YA_USADA`, `OTRO_EVENTO`, `NO_VALIDA`, `EVENTO_CANCELADO` |
 
 Aprobar una devolución: entrada → `DEVUELTA`, QR invalidado (`INV-*`), liberación de cupo en ventas **fail-hard** y publicación de `devolucion.aprobada` después del commit. Si falla la liberación, hay rollback y no se publica.

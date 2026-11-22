@@ -303,7 +303,7 @@
               "Entradas"
             ],
             "summary": "Solicitar devolución",
-            "description": "Solicita devolución de una entrada propia VENDIDA dentro del plazo\n(72 h por defecto desde la emisión).\nEstado de la devolución: PENDIENTE → cola de admin.\nEntradas USADA / DEVUELTA / A_REINTEGRAR → 409.\n",
+            "description": "Solicita devolución de una entrada propia VENDIDA dentro del plazo\n(hasta 72 h antes del evento).\nEstado de la devolución: PENDIENTE → cola de admin.\nEntradas USADA / DEVUELTA / A_REINTEGRAR → 409.\n",
             "operationId": "solicitarDev",
             "parameters": [
               {
