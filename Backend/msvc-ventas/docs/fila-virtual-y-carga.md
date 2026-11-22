@@ -42,7 +42,7 @@ No se repetirá esta auditoría. Desde acá, cada US actualiza backlog/docs **en
 - Resumen §9 y nota final de `Backend/specs/backlog.md:377-390,419` siguen marcando E2-PRE/NOT/HIG como pendientes, aunque las filas `:223-243` y el código las dan por hechas.
 - `Backend/docs/openapi/README.md:120` también lista `/reportes` como no implementado (sí lo está, `Backend/specs/backlog.md:228`). La parte `/fila` de esa misma línea sí se corrige en `FIL-05`.
 - `README.md:89` y `Frontend/README.md:32,47` dicen que QR/reportes/preferencias están apagados, pero `Frontend/src/config/featureGates.js:58,64,67,73` los tiene en `!USE_MOCK`.
-- `Backend/specs/microservicios.md` y `Backend/specs/arquitectura.md` siguen con lenguaje de "scaffold".
+- `Backend/specs/microservicios.md` y `Backend/specs/arquitectura.md` seguían con lenguaje de "scaffold" (corregido 2026-11-22).
 
 ---
 
