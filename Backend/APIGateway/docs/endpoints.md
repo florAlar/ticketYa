@@ -105,7 +105,7 @@ Endpoint principal (catálogo público): GET /api/eventos
 
 Ejemplo: GET /api/eventos?tipo=recital&ciudad=Tandil&fechaDesde=2027-01-01&fechaHasta=2027-01-31&participante=123&organizador=456&orden=fecha&page=0&size=20
 
-Query: tipo | organizador | participante | ciudad | fechaDesde | fechaHasta | precioMin | precioMax | orden(fecha|precio|relevancia) | page | size
+Query: tipo | organizador | participante | ciudad | estado | fechaDesde | fechaHasta | orden(fecha|precio|relevancia) | page | size
 
 ### Recursos de primer nivel:
 

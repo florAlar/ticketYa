@@ -1,6 +1,6 @@
-# Colección Postman — TicketYa E1
+# Colección Postman — TicketYa (E1 + E2)
 
-Colección **Postman v2.1** con el environment `TicketYa local` para probar la API de E1 a través del API Gateway.
+Colección **Postman v2.1** con el environment `TicketYa local` para probar la API de E1 y E2 a través del API Gateway.
 
 | Archivo | Contenido |
 |---------|-----------|

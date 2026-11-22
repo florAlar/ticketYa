@@ -101,7 +101,7 @@ Prefijo configurable, por defecto `fila` (`ticketya.fila.key-prefix`).
 
 ### Scripts Lua
 
-Se ejecutan con `StringRedisTemplate.execute(script, keys, args)`. **[NV]** Ninguno se ejecutó todavía: el IT con Testcontainers (sección 14) es el que los valida.
+Se ejecutan con `StringRedisTemplate.execute(script, keys, args)`. **Validados por `FilaRedisStoreIT` con Redis real (Testcontainers); ver sección 14.**
 
 **`ingresar`** — idempotente; devuelve siempre un número.
 
@@ -365,7 +365,7 @@ El TTL de la reserva es de 10 min (`application.yml:38`) y el del token se aline
 | `FILA_TOKEN_INVALIDO` | 409 | Token inexistente, vencido, usado o de otro cliente |
 | `FILA_NO_DISPONIBLE` | 503 | Redis no responde |
 
-Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIBLE`. **Nunca hay fallback a MySQL.** Usar el mecanismo de errores ya existente en ventas **[NV]**.
+Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIBLE`. **Nunca hay fallback a MySQL.** Se usa `FilaException` + `GlobalExceptionHandler`, que agregan `code`/`extras` al payload.
 
 ## 11. Observabilidad
 
@@ -567,9 +567,9 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 **Riesgos y limitaciones conocidas**
 
-1. **Evicción de Redis.** Se reportó **[NV, no verificado en el repo]** que `redis.conf` define `maxmemory 256mb` con `volatile-lru`. Como todas las claves de la fila llevan TTL, Redis podría desalojarlas si el caché de stock llena la memoria. La probabilidad es baja pero el efecto es silencioso y grave. Mitigación: verificar la política real; medir `evicted_keys` en cada corrida de carga (debe ser 0); si hay evicción, subir `maxmemory` o separar la fila en otra instancia (fuera de alcance).
-2. **Persistencia de Redis no verificada [NV].** Si no hay AOF o RDB, un reinicio borra posiciones, tanda, tokens y `usados`. Documentarlo o activar AOF.
-3. **Scripts Lua sin ejecutar [NV].** Los valida el IT con Testcontainers.
+1. **Evicción de Redis.** `redis.conf` define `maxmemory 256mb` con `volatile-lru`. Como todas las claves de la fila llevan TTL, Redis podría desalojarlas si el caché de stock llena la memoria. La corrida de carga midió `evicted_keys=0`; si apareciera evicción, subir `maxmemory` o separar la fila en otra instancia (fuera de alcance).
+2. **Persistencia de Redis.** `redis.conf` tiene `appendonly yes` (AOF); un reinicio no debería borrar posiciones, tanda, tokens ni `usados`.
+3. **Scripts Lua.** Validados por `FilaRedisStoreIT` con Redis real (Testcontainers).
 4. **Desfase del flag.** Una suspensión o cancelación del evento puede tardar hasta `evento-cache-ttl-seconds` en reflejarse en la fila.
 5. **Polling sin límite.** `posicion` y `estado` no tienen rate limit.
 6. **Lecturas no atómicas.** `posicion` y `estado` pueden mostrar un valor desfasado por un instante. No afecta decisiones: las decisiones se toman dentro de scripts atómicos.
@@ -611,7 +611,7 @@ Antes de cada corrida, para partir de un seed conocido: `cd Backend && docker co
 
 ### Parte A — Compra normal
 
-**T-A.1 Entorno.** Levantar el stack y esperar a que todos los servicios estén "Up" y las bases "healthy". Smoke: `curl -sf http://localhost:8080/actuator/health` **[NV]**.
+**T-A.1 Entorno.** Levantar el stack y esperar a que todos los servicios estén "Up" y las bases "healthy". Smoke: `curl -sf http://localhost:8080/actuator/health` **[V]**.
 
 **T-A.2 Datos y baseline.**
 
@@ -768,7 +768,7 @@ git diff --check && git status --short
 
 - **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests, 0 fallos/errores) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
 - **[V]** Docker y JMeter: matriz **25/50/100** ejecutada (normal y con fila) y reintentos post-fix; `E2-TST-03` **hecho** y `docs/testing/carga.md` completo. Se midió `evicted_keys=0` y se corrigieron los hallazgos de emisión duplicada y timeout→503.
-- **[NV]** Configuración real de Redis (`maxmemory`, evicción, persistencia): la política `volatile-lru` con 256 MB proviene de una revisión del plan, no de una lectura del repo.
+- **[V]** Configuración real de Redis: `redis.conf` define `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida de carga midió `evicted_keys=0`.
 - **[NV]** Credenciales de MySQL y endpoint de health. **[V]** `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.
 - **[V]** El mecanismo de errores de ventas es `FilaException` (con `code`, `HttpStatus` y `extras`) + `GlobalExceptionHandler`, que agrega `code`/extras al payload cuando existen; está documentado en `ApiError` del OpenAPI.
 - **[NV]** Si el tablero de Trello tiene una US de fila con CA propios.

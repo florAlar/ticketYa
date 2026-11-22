@@ -65,7 +65,7 @@ En real esas facades responden 501 hasta que el BE los defina.
 | GET | `/api/eventos/{id}/disponibilidad` | público | checkout + detalle (`getDisponibilidadEvento`) |
 | GET | `/api/eventos/disponibilidad?ids=` | público | batch catálogo (`getDisponibilidadBatch` → badges home) |
 
-Query catálogo (back): `tipo`, `ciudad`, `fechaDesde`, `fechaHasta`, `participante`, `organizador`, `precioMin`, `precioMax`, `orden`, `page`, `size`.
+Query catálogo (back): `tipo`, `ciudad`, `estado`, `fechaDesde`, `fechaHasta`, `participante`, `organizador`, `orden`, `page`, `size`.
 El front mapea `sort`→`orden`, `limit`→`size` al salir a red.
 
 ---

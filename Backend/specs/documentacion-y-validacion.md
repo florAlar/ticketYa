@@ -72,7 +72,7 @@ más el gateway documentado como capa de ruteo/RBAC, más 6 endpoints smoke `GET
 - Pruebas de integración entre microservicios, seguridad y carga (consigna E2 §F): seguridad **hecha**
   (E2-TST-02); integración **hecha** (E2-TST-01: ITs de borde y E2E F1–F5) y carga **hecha**
   (E2-TST-03: matriz 25/50/100 y reintentos post-fix).
-- Newman / CI: sigue fuera de alcance.
+- CI: fuera de alcance. La colección se corre manualmente con Postman/Newman (ver `docs/postman/README.md`).
 
 ---
 
@@ -782,7 +782,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 - Español, Markdown, tablas con `ID | … | Entrega | Estado | Notas` (igual que `backlog.md`).
 - Encabezado por feature, historias por rol, criterios en **Dado que / Cuando / Entonces**.
 - IDs: `US-F<nn>-<nn>`; features `F-01…`.
-- Sin diagramas de secuencia (tanda posterior).
+- Los diagramas de secuencia viven en `specs/diagramas/diagramas-secuencia.md` y no se duplican en cada historia.
 - Fuente de verdad funcional: `specs/consigna.md`, `specs/reglas-de-negocio.md`, `specs/endpoints.md`.
 
 ### 12.2 Inventario
@@ -865,7 +865,7 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 | US-01 features + US | Fase 6 | P6.1–P6.3 |
 | US-02 criterios E1 | Fase 6 | P6.2 |
 | DOC-MS-GW | P1.5 (`docs/api/gateway.md`) | P1.5 |
-| INF-19/ARQ-* | **Fuera de alcance** (tanda posterior) | — |
+| INF-19/ARQ-* | Fuera de esta spec; cubiertos en `backlog.md` (INF-19 y ARQ-01…06 **hechos**) | — |
 
 ---
 
@@ -906,6 +906,7 @@ registro de ejecución está en §17.
 | 1.3 | 2026-11-20 | §1 actualizado: los endpoints E2 que figuraban como no implementados ya están hechos (fila, QR, reportes, recomendaciones); preferencias y notificaciones implementados; estado real de tests E2 (integración y carga parciales). Se elimina el estado de “bloqueada por Plan mode” |
 | 1.4 | 2026-11-21 | Cierre de `E2-TST-01` (ITs de borde + E2E F1–F5) y `E2-TST-03` (matriz de carga 25/50/100 + reintentos post-fix): ambos quedan **hechos**. Se agrega `emision_compra` al modelo de datos (22 tablas) |
 | 1.5 | 2026-11-21 | Devoluciones alineadas a la consigna: **hasta 72 h antes del evento** (fechaInicio − 72 h) en lugar de 72 h desde la emisión. Si no se puede obtener la fecha del evento, responde 503 |
+| 1.6 | 2026-11-22 | Reauditoría completa: filtros de catálogo alineados (`estado`, sin `precioMin/Max`), `orden=relevancia` en OpenAPI/controller, ITs de entradas 5, Circuit Breaker justificado y notas de Redis/fila verificadas |
 
 ---
 
