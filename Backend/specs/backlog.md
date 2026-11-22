@@ -55,7 +55,7 @@ Tareas de base ya encaradas. No son features de negocio; desbloquean E1/E2.
 ## 1. Documentación por microservicio (specs)
 
 Punto aparte: cada msvc (y el gateway) tiene `docs/` propio. Ahí viven las **specs del contexto** (OpenSpec u otro), contratos del bounded context, decisiones DDD y lo que alimenta OpenAPI/tests.  
-Estado actual: los 6 msvc tienen `docs/README.md` (contexto según plantilla), `docs/endpoints.md` y contrato en `docs/openapi/`; el gateway tiene `docs/api/gateway.md`. La plantilla vive en `specs/plantilla-docs-msvc.md`. Falta el flujo Spec-Driven (`DOC-MS-SYNC`).
+Estado actual: los 6 msvc tienen `docs/README.md` (contexto según plantilla), `docs/endpoints.md` y contrato en `docs/openapi/`; el gateway tiene `docs/api/gateway.md`. La plantilla vive en `specs/plantilla-docs-msvc.md` y el flujo Spec-Driven en `specs/README.md` (`DOC-MS-SYNC`, hecho).
 
 | ID | Tarea | Entrega | Estado | Notas |
 | --- | --- | --- | --- | --- |
@@ -67,7 +67,7 @@ Estado actual: los 6 msvc tienen `docs/README.md` (contexto según plantilla), `
 | DOC-MS-USU | Specs + diseño de `msvc-usuarios/docs/` | E1 (mínimo id) / E2 (JWT) | hecho | 2026-11-21: `README.md` con la plantilla DOC-MS-00 (contexto, agregados, modelo, criterios y operación) + `endpoints.md` auth JWT. Revisión final 2026-11-21: README, endpoints y OpenAPI verificados contra el código. |
 | DOC-MS-PRE | Specs + diseño de `msvc-preferencias/docs/` (documentos Mongo, recs) | E2 | hecho | 2026-11-21: `README.md` con la plantilla DOC-MS-00 + `endpoints.md`, `recomendaciones.md`, modelo Mongo y OpenAPI. Revisión final 2026-11-21: README, endpoints y OpenAPI verificados contra el código. |
 | DOC-MS-NOT | Specs + diseño de `msvc-notificaciones/docs/` | E2 | hecho | 2026-11-21: `README.md` con la plantilla DOC-MS-00 + `endpoints.md` con bandeja, alta administrativa, estado, eventos de broker y entrega; OpenAPI actualizado. Revisión final 2026-11-21: README, endpoints y OpenAPI verificados contra el código. |
-| DOC-MS-SYNC | Mantener specs versionadas en Git y usarlas como guía antes de implementar cada feature (flujo Spec-Driven de la consigna) | Transversal | pendiente | Propuesta → requisitos → diseño → tareas → código. |
+| DOC-MS-SYNC | Mantener specs versionadas en Git y usarlas como guía antes de implementar cada feature (flujo Spec-Driven de la consigna) | Transversal | hecho | 2026-11-21: flujo documentado en `specs/README.md` (propuesta → requisitos → diseño → tareas → implementación, convenciones, DoD y checklists). Aplicado en `fila-virtual.md`, `integracion-entre-msvc.md` y `carga-e2-tst-03.md`; las specs se actualizan en el mismo PR que el código. |
 
 ---
 
@@ -381,7 +381,7 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | --- | --- | --- | --- |
 | Infra / scaffold / smoke / compose | INF-01…19, 25, 27, 28, **E2-DEP-01** (stack completo + front + Newman completo) | — | — |
 | Frontend (ingreso SPA) | INF-20…25, E2-UI-02/03 (flag único de mock); **X-UI-01…06**, **X-QR-01/02**, **SEAT-05**, **E2-ACC-01** (escaneo), **E2-REP-01** (pantalla de reportes), **LUG-01/02/03/04** (panel de lugares, coordenadas, selector de lugar y sectores en el evento), **PAR-01** (panel de participantes), **E2-PRE-04** (recomendaciones en el front) | E2-UI-01, E2-UI-04 | X-ORG-01 |
-| Docs por msvc (specs) | **DOC-MS-GW** (`docs/api/gateway.md`), **DOC-MS-00** (`specs/plantilla-docs-msvc.md`) y **DOC-MS-USU/EVE/VEN/ENT/PRE/NOT** (`README.md` con plantilla + `endpoints.md` + OpenAPI, revisados 2026-11-21) | — | DOC-MS-SYNC |
+| Docs por msvc (specs) | **DOC-MS-GW** (`docs/api/gateway.md`), **DOC-MS-00** (`specs/plantilla-docs-msvc.md`), **DOC-MS-USU/EVE/VEN/ENT/PRE/NOT** (`README.md` con plantilla + `endpoints.md` + OpenAPI, revisados 2026-11-21) y **DOC-MS-SYNC** (flujo en `specs/README.md`) | — | — |
 | Modelo datos | MOD-01, MOD-04 (Mongo doc+init), MOD-05 (notif JPA), **MOD-06** (al día con los `init.sql`: 22 tablas verificadas, incluida `emision_compra`; fila en Redis, fuera del ER) | MOD-02, 03 | — |
 | MySQL init schema+seed | INF-10 (mysql), INF-15 | — | — |
 | Mongo init preferencias | INF-28 + docs Spring | — | — |
@@ -427,4 +427,4 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - Los 6 microservicios tienen OpenAPI (`springdoc` + `OpenApiConfig` + spec en `docs/openapi/`) y Testcontainers con perfil `-Pit`; no se usan bases embebidas.  
 - Tests unitarios: gateway **146**, usuarios **58 + 1 IT**, eventos **203 + 1 IT**, ventas **221 + 22 IT**, entradas **86 + 5 IT**, preferencias **39 + 2 IT (5 casos)**, notificaciones **42 + 6 IT**.  
 - Postman: **216 requests / 15 carpetas**; corrida completa 2026-11-21 por el proxy Nginx: **587 assertions, 0 fallos** (incluye 13 Fila virtual y 14 Notificaciones).  
-- Pendiente: resto de `E2-UI-01`, `US-03`, `DOC-MS-SYNC` y `X-ORG-01/02`.
+- Pendiente: resto de `E2-UI-01`, `US-03` y `X-ORG-01/02`.
