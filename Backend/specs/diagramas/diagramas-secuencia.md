@@ -214,7 +214,7 @@ sequenceDiagram
     P->>GW: POST /api/eventos/{idEvento}/validaciones {codigoQR, dispositivo}
     GW->>GW: valida JWT y rol (PERSONAL_ACCESO o ADMIN)
     GW->>N: POST /eventos/{idEvento}/validaciones (X-User-Id, X-User-Role)
-    N->>E: GET /eventos/{idEvento} (estado del evento; best-effort)
+    N->>E: GET /eventos/{idEvento} (estado del evento, best-effort)
     N->>DB: SELECT entrada WHERE codigo_qr = ? FOR UPDATE
     alt no existe ninguna entrada con ese QR
         N-->>P: 404 (no se registra: no hay entrada)
@@ -378,10 +378,10 @@ sequenceDiagram
         V->>R: Lua consumirToken (compare-and-delete)
         V->>DB: SELECT ... FOR UPDATE + descuento de cupo
         alt commit
-            V-->>C: 200 reserva; bitácora FILA_TOKEN_CONSUMIDO
+            V-->>C: 200 reserva, bitácora FILA_TOKEN_CONSUMIDO
         else rollback (límite, asiento único, excepción)
             V->>R: Lua restaurarToken (afterCompletion)
-            V-->>C: 409/5xx; bitácora FILA_TOKEN_RESTAURADO
+            V-->>C: 409/5xx, bitácora FILA_TOKEN_RESTAURADO
         end
     else evento normal
         V->>DB: flujo actual, sin consultar Redis
