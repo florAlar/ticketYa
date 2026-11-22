@@ -99,4 +99,4 @@ mvn -Pit verify       # +1 IT de contexto con MySQL real (Testcontainers)
 | --- | --- | --- |
 | Refresh tokens / revocación | `pendiente` | Logout stateless: no invalida tokens emitidos |
 | Extensión CLIENTE → ORGANIZADOR (X-ORG-01) | `pendiente` | Diseño en `specs/backlog.md` §7.3.1; hoy solo seeds/ADMIN asignan el rol |
-| Aplicación de DOC-MS-00 | `parcial` | README completo; falta revisión final del equipo |
+| Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |

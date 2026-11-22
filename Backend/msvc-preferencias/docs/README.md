@@ -104,4 +104,4 @@ mvn -Pit verify       # +2 IT (Mongo real + Rabbit/Mongo; requiere Docker)
 | Co-compra precomputada | `pendiente` | Se calcula on-the-fly con 2 consultas; suficiente para el alcance |
 | Interacciones por vista | `pendiente` | Solo se registra compra; la vista queda como mejora |
 | Consistencia eventual | `hecho` | El historial aparece cuando Rabbit entrega el mensaje |
-| Aplicación de DOC-MS-00 | `parcial` | README completo; falta revisión final del equipo |
+| Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |

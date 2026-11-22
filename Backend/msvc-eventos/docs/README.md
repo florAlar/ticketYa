@@ -110,4 +110,4 @@ mvn -Pit verify       # +1 IT de contexto con MySQL real (Testcontainers)
 | Reintegro al cancelar | `parcial` | Feign a entradas best-effort; si entradas cae, el evento queda CANCELADO igual |
 | `destacado` | `pendiente` | Sin columna en el esquema: siempre `false` |
 | Alta demanda | `hecho` | Umbral 5000 y sincronización de fila con ventas |
-| Aplicación de DOC-MS-00 | `parcial` | README completo; falta revisión final del equipo |
+| Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |
