@@ -766,7 +766,7 @@ git diff --check && git status --short
 
 ## 19. No verificado y supuestos
 
-- **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests, 0 fallos/errores) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
+- **[V]** Maven sí se ejecutó en cada bloque: `mvn -q -f Backend/msvc-ventas/pom.xml test` (212 tests en esa corrida, 0 fallos/errores; hoy la suite tiene 221) y `mvn -q -f Backend/APIGateway/pom.xml test` (OK).
 - **[V]** Docker y JMeter: matriz **25/50/100** ejecutada (normal y con fila) y reintentos post-fix; `E2-TST-03` **hecho** y `docs/testing/carga.md` completo. Se midió `evicted_keys=0` y se corrigieron los hallazgos de emisión duplicada y timeout→503.
 - **[V]** Configuración real de Redis: `redis.conf` define `maxmemory 256mb`, `volatile-lru` y `appendonly yes`; la corrida de carga midió `evicted_keys=0`.
 - **[NV]** Credenciales de MySQL y endpoint de health. **[V]** `TICKETYA_FILA_AUTO_*` se inyecta por `msvc-ventas/docker-compose.yml` desde `.env`/shell.

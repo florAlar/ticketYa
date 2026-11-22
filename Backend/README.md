@@ -316,7 +316,7 @@ Informe de concurrencia: [`docs/testing/concurrencia.md`](docs/testing/concurren
 | [`docs/api/gateway.md`](docs/api/gateway.md) | Rutas, rutas públicas y matriz RBAC |
 | [`docs/openapi/`](docs/openapi/) | OpenAPI por microservicio + bundle |
 | [`docs/postman/`](docs/postman/) | Colección Postman + environment |
-| [`docs/testing/`](docs/testing/) | Concurrencia, notificaciones y carga |
+| [`docs/testing/`](docs/testing/) | Concurrencia, integración, notificaciones y carga |
 
 ### Specs de trabajo (`specs/`)
 

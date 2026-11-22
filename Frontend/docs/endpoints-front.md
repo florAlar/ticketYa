@@ -164,8 +164,12 @@ Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `Prefere
 | `/notificaciones` | GET `/api/notificaciones/me` · PATCH `.../{id}/leida` · GET/PUT `/api/preferencias/me/notificaciones` |
 | `/soporte/devolucion` | POST `/api/entradas/{id}/devoluciones` |
 | `/soporte/transferencia` | **no está en back** — shell UI |
+| `/gestion` | GET `/api/eventos` o `/api/organizadores/me/eventos` · GET `/api/eventos/disponibilidad` (resumen; ADMIN suma usuarios y cola de devoluciones) |
 | `/gestion/eventos` | GET `/api/organizadores/me/eventos` o GET `/api/eventos` |
 | `/gestion/eventos/nuevo` | POST `/api/eventos` (si se crea publicando, antes pasa por el popup de alta demanda) |
+| `/gestion/eventos/:id/editar` | GET/PUT `/api/eventos/{id}` |
+| `/gestion/eventos/:id/reportes` | GET `/api/reportes/eventos/{id}` |
+| `/gestion/entradas/:id` | GET `/api/entradas/{id}` (ADMIN) |
 | publicar / estado | GET `/api/eventos/{id}` (para el cupo total del popup) · PUT `/api/eventos/{id}` con `{esAltaDemanda}` si el flag cambia · POST `.../publicacion` · PATCH `.../estado` |
 | `/gestion/usuarios` | GET `/api/usuarios` · PATCH `.../estado` · PUT `.../roles` |
 | `/gestion/participantes` | GET/POST `/api/participantes` · PUT/DELETE `/api/participantes/{id}` (ADMIN; 409 si el nombre existe / si participa en eventos) — gate `FEATURE.participantes` |

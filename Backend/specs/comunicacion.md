@@ -118,8 +118,9 @@ Payload (JSON):
 
 El envío es **dual** para eventos: se crea una entrega por cada canal que tenga plantilla
 activa (`PUSH` y/o `EMAIL`), pero ambas comparten `clave_mensaje` y la bandeja las muestra como
-una sola notificación. Las plantillas EMAIL de eventos están en la migración
-`04-plantillas-email-eventos.sql`.
+una sola notificación. Las plantillas EMAIL de eventos están en
+`infrastructure/mysql/notificaciones/init.sql` (y en la migración manual
+`04-plantillas-email-eventos.sql` para volúmenes ya creados).
 
 `ciudad` y `artistas` solo se completan en `EventoPublicado`. `fecha` es `fechaInicio` (ISO-8601 sin
 zona); `occurredAt` es UTC con `Z` y puede traer nanosegundos.

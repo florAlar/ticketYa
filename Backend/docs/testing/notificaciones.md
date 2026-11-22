@@ -517,6 +517,10 @@ Si **no** hiciste `down -v`, el esquema viejo no tiene `leida`, `fecha_lectura` 
 ```bash
 docker compose exec -T db-mysql-notificaciones \
   mysql -uroot -proot_dev notificaciones \
+  < infrastructure/mysql/notificaciones/migrations/01-evento-cancelado-push.sql
+
+docker compose exec -T db-mysql-notificaciones \
+  mysql -uroot -proot_dev notificaciones \
   < infrastructure/mysql/notificaciones/migrations/02-leida-y-plantillas.sql
 
 docker compose exec -T db-mysql-notificaciones \

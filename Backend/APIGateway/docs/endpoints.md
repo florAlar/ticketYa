@@ -27,7 +27,7 @@ Protegido: Bearer JWT válido + rol:
 | ADMIN | todo |
 | ORGANIZADOR | eventos/lugares/…, reportes, me, GET validaciones; **también** entradas/compras/devoluciones propias (Mis entradas) |
 | CLIENTE | reservas/compras/entradas/devoluciones, disponibilidad, me, preferencias |
-| PERSONAL_ACCESO | me + POST/GET validaciones; **también** entradas/compras propias |
+| PERSONAL_ACCESO | me + POST validaciones; **también** entradas/compras propias. `GET .../validaciones` lo rechaza el msvc (403) |
 
 401/403 JSON: `{"error","message"}` como el ejemplo.
 
