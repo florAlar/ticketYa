@@ -154,7 +154,7 @@ Preferencias y recomendaciones: `HomeRecomendados`, `EventosSimilares`, `Prefere
 |---|---|
 | `/login` | POST `/api/auth/login`, `/api/auth/register` |
 | `/perfil` | GET/PATCH `/api/usuarios/me` · GET/PUT `/api/preferencias/me` · GET `/api/clientes/{id}/historial` |
-| `/` | GET `/api/eventos` (secciones home) · GET `/api/recomendaciones/me` (logueado) |
+| `/` | GET `/api/eventos` (secciones home; «Destacados» pide `?destacado=true&size=200&fechaDesde=<hoy>` y descarta en el cliente los que ya pasaron) · GET `/api/recomendaciones/me` (logueado) |
 | `/eventos` | JWT · sidebar filtros · GET `/api/eventos` (+ batch disponibilidad) |
 | `/eventos/:id` | GET `/api/eventos/{id}` · GET `/api/eventos/{id}/recomendaciones` · GET `/api/eventos/{id}/fila/estado` (alta demanda) |
 | `/eventos/:id/fila` | POST `.../fila/ingreso` · GET `.../fila/posicion` (polling) · POST `.../fila/validacion` · GET `.../fila/estado` · POST `.../fila/habilitacion` (ADMIN) |

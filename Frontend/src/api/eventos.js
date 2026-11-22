@@ -17,6 +17,10 @@ function applyFilter(items, filter = {}) {
   if (filter.destacados === true || filter.destacado === true) {
     list = list.filter((e) => e.destacado)
   }
+  if (filter.soloFuturos === true) {
+    const ahora = Date.now()
+    list = list.filter((e) => new Date(e.fechaInicio).getTime() >= ahora)
+  }
   if (filter.tipo) {
     list = list.filter(
       (e) => String(e.tipo).toUpperCase() === String(filter.tipo).toUpperCase()
@@ -135,8 +139,26 @@ export async function listEventos(filter = {}, opts = {}) {
   delete serverFilter.q
   delete serverFilter.esAltaDemanda
   delete serverFilter.incluirSuspendidos
+  // destacado se filtra en el servidor (evento.destacado)
+  const soloDestacados =
+    serverFilter.destacados === true ||
+    serverFilter.destacado === true ||
+    serverFilter.destacados === 'true' ||
+    serverFilter.destacado === 'true'
   delete serverFilter.destacados
   delete serverFilter.destacado
+  if (soloDestacados) serverFilter.destacado = true
+  // soloFuturos: el servidor corta por día (fechaDesde) y el cliente por la hora exacta
+  const soloFuturos = serverFilter.soloFuturos === true
+  delete serverFilter.soloFuturos
+  if (soloFuturos && !serverFilter.fechaDesde) {
+    const hoy = new Date()
+    serverFilter.fechaDesde = [
+      hoy.getFullYear(),
+      String(hoy.getMonth() + 1).padStart(2, '0'),
+      String(hoy.getDate()).padStart(2, '0'),
+    ].join('-')
+  }
   if (incluirSuspendidos && !serverFilter.estado) {
     serverFilter.estado = 'TODOS'
   }
@@ -144,6 +166,7 @@ export async function listEventos(filter = {}, opts = {}) {
     signal: opts.signal,
   })
   let list = unwrapEventosList(data)
+  if (soloFuturos) list = applyFilter(list, { soloFuturos: true })
   // post-filtro FE para campos no cableados en listar BE
   if (q || alta === true || alta === 'true') {
     list = applyFilter(list, { q, esAltaDemanda: alta })

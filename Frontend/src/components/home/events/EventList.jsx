@@ -80,7 +80,9 @@ const EventList = ({
       ? 'event-list event-list--row'
       : layout === 'grid-4'
         ? 'event-list event-list--grid-4'
-        : 'event-list event-list--grid'
+        : layout === 'grid-featured'
+          ? 'event-list event-list--grid-featured'
+          : 'event-list event-list--grid'
 
   if (status === 'loading') {
     return (

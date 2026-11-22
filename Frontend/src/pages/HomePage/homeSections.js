@@ -1,20 +1,21 @@
 /**
  * Secciones de Home: solo catálogo comprable (PUBLICADO).
- * Suspendidos no van en vitrina de inicio.
+ * Suspendidos no van en vitrina de inicio. Ningún carrusel muestra eventos que ya pasaron (soloFuturos).
  */
 export const homeSections = [
   {
     id: 'destacados',
     title: 'Destacados',
-    filter: { destacados: true, limit: 8 },
-    layout: 'grid',
+    // Todos los destacados que todavía no pasaron (200 = tope de página del backend)
+    filter: { destacados: true, soloFuturos: true, limit: 200 },
+    layout: 'grid-featured',
     card: 'featured',
     linkToAll: '/eventos',
   },
   {
     id: 'recitales',
     title: 'Recitales',
-    filter: { tipo: 'RECITAL', limit: 8 },
+    filter: { tipo: 'RECITAL', soloFuturos: true, limit: 8 },
     layout: 'row',
     card: 'standard',
     linkToAll: '/eventos?tipo=RECITAL',
@@ -22,7 +23,7 @@ export const homeSections = [
   {
     id: 'deportes',
     title: 'Deportes',
-    filter: { tipo: 'DEPORTE', limit: 8 },
+    filter: { tipo: 'DEPORTE', soloFuturos: true, limit: 8 },
     layout: 'row',
     card: 'standard',
     linkToAll: '/eventos?tipo=DEPORTE',

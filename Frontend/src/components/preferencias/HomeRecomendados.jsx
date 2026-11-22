@@ -31,13 +31,19 @@ const HomeRecomendados = () => {
     )
   }
 
-  if (status !== 'success' || items.length === 0) return null
+  // Igual que el resto de los carruseles de la home: nada que ya haya pasado
+  const ahora = Date.now()
+  const vigentes = items.filter(
+    (e) => !e?.fechaInicio || new Date(e.fechaInicio).getTime() >= ahora
+  )
+
+  if (status !== 'success' || vigentes.length === 0) return null
 
   return (
     <RecomendacionesBlock
       title="Recomendados para vos"
       subtitle="Según tus gustos y lo que compraron clientes parecidos."
-      items={items}
+      items={vigentes}
       linkToAll="/eventos"
     />
   )

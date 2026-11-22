@@ -56,6 +56,36 @@
   padding-bottom: 1rem;
 }
 
+/* Destacados de la home: 4 columnas (2 filas completas con 8 eventos), 2 en tablet y 1 en móvil */
+.event-list--grid-featured {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding-bottom: 1rem;
+}
+
+.event-list--grid-featured .event-list__item {
+  min-width: 0;
+}
+
+/* Altura fija de 300 px (las cards estándar son 4:5): los destacados ocupan menos pantalla */
+.event-list--grid-featured .event-card {
+  aspect-ratio: auto;
+  height: 300px;
+}
+
+@media (max-width: 1100px) {
+  .event-list--grid-featured {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .event-list--grid-featured {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Página de búsqueda / catálogo: tantas columnas como entren (cards de ~260 px mínimo) */
 .event-list--grid-4 {
   display: grid;
