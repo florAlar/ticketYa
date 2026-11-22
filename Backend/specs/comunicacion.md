@@ -28,7 +28,29 @@
 | `/eventos/{idEvento}/validaciones` | msvc-entradas |
 | `/eventos/{id}/recomendaciones` | msvc-preferencias |
 
-### Fila virtual → reserva (FIL-03)
+### Síncrono entre microservicios (Feign)
+
+Además del gateway, los servicios se llaman por **REST síncrono** con OpenFeign. Todas las llamadas
+propagan `X-Correlation-Id`; las rutas internas (`/internas/**`, `/fila/**`) exigen
+`X-Internal-Token` (`ticketya.interno.token`), que agrega el cliente Feign y sella el gateway.
+
+| Origen → Destino | Endpoint | Cuándo / para qué | Ante fallo |
+| --- | --- | --- | --- |
+| eventos → ventas | `POST /eventos/{id}/cupos` | publicar/alta publicada: abrir stock por sector | **fail-hard**: rollback, no se publica |
+| eventos → ventas | `POST /internas/fila/{idEvento}/invalidacion` | cambio de estado o flag de alta demanda: pausar/reanudar fila | best-effort (log) |
+| eventos → entradas | `POST /eventos/{id}/reintegro-cancelacion` | cancelar evento: marcar entradas `A_REINTEGRAR` | best-effort |
+| ventas → eventos | `GET /eventos/{id}` | reserva: precio por sector y `esAltaDemanda` | **503** (reintentable) |
+| ventas → entradas | `POST /entradas/emision` | pago aprobado: emitir entradas/QR | claim idempotente; reintentos + job; `503` si otra emisión está en curso |
+| ventas → entradas | `GET /eventos/{id}/entradas/resumen` | reportes: devueltas/usadas/a reintegrar | **503** sin reporte parcial |
+| entradas → ventas | `POST /eventos/{id}/cupos/liberacion` | aprobar devolución: liberar 1 cupo | **fail-hard**: rollback y no publica |
+| entradas → eventos | `GET /eventos/{id}` | enriquecer entradas y validar QR | best-effort (campos `null`) / estado del evento |
+| preferencias → eventos | `GET /eventos`, `GET /eventos/{id}` | matching, historial y recomendaciones | best-effort |
+| preferencias → ventas | `GET /internas/compras` | backfill de compras al historial | best-effort |
+| notificaciones → ventas | `GET /compras/evento/{id}` | fan-out a compradores de un evento | sin destinatarios, no genera avisos |
+| notificaciones → preferencias | `POST /preferencias/clientes/matching`, `GET /preferencias/clientes/{id}/notificaciones` | elegir destinatarios y canales | fallback permisivo (envía igual) |
+| notificaciones → usuarios | `GET /usuarios/{id}` | resolver el email del destinatario | usa `destino-default` |
+
+### Fila virtual → reserva (FIL-04)
 
 El flujo de acceso a un evento de alta demanda es **REST síncrono** y no introduce mensajes nuevos:
 
@@ -92,7 +114,7 @@ Payload (JSON):
 | `EventoCancelado` | `evento.cancelado` | `PATCH /eventos/{id}/estado` → `CANCELADO` | compradores con compra APROBADA (PUSH + EMAIL) |
 | `EventoSuspendido` | `evento.suspendido` | `PATCH .../estado` → `SUSPENDIDO` | compradores con compra APROBADA (PUSH + EMAIL) |
 | `EventoModificado` | `evento.modificado` | `PUT /eventos/{id}`, `PATCH .../fecha` con cambios reales | compradores con compra APROBADA (PUSH + EMAIL) |
-| `EventoPublicado` | `evento.publicado` | `POST /eventos/{id}/publicacion` o alta con `publicarAlFinal` | clientes con artista favorito + ciudad (PUSH + EMAIL) |
+| `EventoPublicado` | `evento.publicado` | `POST /eventos/{id}/publicacion` o alta con `estado=PUBLICADO` | clientes con artista favorito + ciudad (PUSH + EMAIL) |
 
 El envío es **dual** para eventos: se crea una entrega por cada canal que tenga plantilla
 activa (`PUSH` y/o `EMAIL`), pero ambas comparten `clave_mensaje` y la bandeja las muestra como
@@ -183,9 +205,11 @@ Un job `@Scheduled` (30 s por defecto) toma hasta 50 notificaciones `PENDIENTE` 
 
 | Header | Uso |
 | --- | --- |
-| `Authorization: Bearer …` | JWT (E2); E1 puede usar id por header/param según diseño |
+| `Authorization: Bearer …` | JWT obligatorio en el gateway; la identidad sale del token verificado |
+| `X-User-Id`, `X-User-Role`, `X-User-Roles` | Los inyecta el gateway desde el JWT; si el cliente los manda, se descartan |
+| `X-Internal-Token` | Sello para rutas internas (`/internas/**`, `/fila/**`); lo agrega el gateway/Feign y se descarta el del cliente |
 | `Content-Type: application/json` | Cuerpos JSON |
-| `Idempotency-Key` | Compras/pagos/reservas (anti reintento duplicado) |
-| `X-Correlation-Id` | Seguimiento entre servicios; el gateway puede generarlo |
+| `Idempotency-Key` | Reservas (opcional) y compras (obligatoria); evita duplicados por reintento |
+| `X-Correlation-Id` | El gateway lo valida o genera, lo devuelve en la respuesta y se propaga a logs y llamadas Feign |
 
 Contrato de rutas: `specs/endpoints.md`. Vista front: `Frontend/docs/endpoints-front.md`.

@@ -68,10 +68,10 @@ Reglas de la arquitectura:
 | **API Gateway** | 8080 | — | Punto único de entrada, enrutado por prefijo (`/api/...` → servicio), CORS, identificación del usuario y propagación de `X-User-*`, generación del `X-Correlation-Id` y autorización por rol |
 | **msvc-usuarios** | 8081 | MySQL | Cuentas, login/registro, roles, perfil |
 | **msvc-eventos** | 8082 | MySQL | Eventos, **lugares** (con latitud/longitud opcionales) y sus **sectores** (los carga el ADMIN), participantes, precio y cupo de cada sector por evento, publicación, estados y búsqueda. Los asientos son virtuales: no hay tabla de asientos |
-| **msvc-ventas** | 8083 | MySQL + Redis | Disponibilidad y cupos, reservas temporales, compras, pagos (mock), emisión de entradas, anti doble venta y **reportes del organizador** (ventas, ocupación y recaudación) |
+| **msvc-ventas** | 8083 | MySQL + Redis | Disponibilidad y cupos, reservas temporales, compras, pagos (mock), **fila virtual** (Redis), anti doble venta y **reportes del organizador** (ventas, ocupación y recaudación). Solicita la emisión de entradas a entradas (idempotente) |
 | **msvc-entradas** | 8084 | MySQL | Entradas con QR único, devoluciones, reintegro por cancelación y **control de acceso**: validación del QR en la puerta (un QR ingresa una sola vez) con auditoría de intentos. Publica `DevolucionAprobada` al broker |
-| msvc-preferencias | 8085 | MongoDB | *(E2)* preferencias (categorías, ciudades, artistas), preferencias de canal de notificación y matching artista + ciudad |
-| msvc-notificaciones | 8086 | MySQL | *(E2)* bandeja de avisos, plantillas, entrega push/email (adaptadores mock) y registro de intentos |
+| msvc-preferencias | 8085 | MongoDB | *(E2)* preferencias (categorías, ciudades, artistas), preferencias de canal de notificación, matching artista + ciudad, historial de compras y recomendaciones |
+| msvc-notificaciones | 8086 | MySQL | *(E2)* bandeja de avisos, plantillas, entrega PUSH mock + EMAIL SMTP real (MailHog en local) y registro de intentos |
 
 ## 3. APIs públicas por servicio
 
@@ -106,6 +106,9 @@ Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad`, `/ev
 | ventas → entradas | Al consultar un reporte | `GET /eventos/{id}/entradas/resumen`: entradas del evento por sector y estado (devueltas, usadas, a reintegrar y montos). Interno: el gateway no lo expone. Si falla, el reporte responde 503 |
 | ventas → eventos | Al consultar un reporte | `GET /eventos/{id}`: sectores y dueño del evento (un organizador solo ve los reportes de sus eventos) |
 | entradas → eventos | Al validar o listar validaciones | `GET /eventos/{id}`: estado del evento (cancelado no permite ingreso) y dueño del evento |
+| notificaciones → preferencias | Al crear avisos | `POST /preferencias/clientes/matching` y `GET /preferencias/clientes/{id}/notificaciones`: destinatarios y canales |
+| notificaciones → ventas | Al avisar por evento | `GET /compras/evento/{id}`: compradores con compra APROBADA |
+| notificaciones → usuarios | Al crear un aviso EMAIL | `GET /usuarios/{id}`: resolver el email (si falla, destinatario default) |
 
 Headers relevantes: `X-User-Id`, `X-User-Role` (identidad), `Idempotency-Key` (reservas y compras) y `X-Correlation-Id` (trazabilidad: lo genera el gateway y lo propagan los servicios y las llamadas Feign).
 
