@@ -53,7 +53,9 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 - Cuentas demo de prueba (cliente, org, admin, acceso) viven en datos seed para el TP.  
 - ADMIN puede **listar usuarios**, **activar/desactivar** y **asignar roles** por API (el front de admin usuarios todavía no está del todo cableado: list/estado/roles sí existen en backend; otras acciones de UI pueden seguir apagadas).
 
-### Diseño acordado pero **no implementado** (extensión a organizador)
+### **Descartado** — extensión a organizador (X-ORG-01)
+
+> El rol ORGANIZADOR lo asigna un ADMIN; no hay solicitud self-service. El diseño siguiente queda como registro histórico.
 
 Ser organizador **requiere autorización del administrador de la platafoprma**. No hay “registrarme como organizador” abierto.
 

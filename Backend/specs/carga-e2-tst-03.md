@@ -9,8 +9,7 @@ a 100 usuarios). Los dos defectos detectados en A (emisión duplicada y timeout 
 corrigieron; los reintentos A25/A50/B25 dieron 0 errores y sin duplicados. Detalle, tablas y
 hallazgos en [`docs/testing/carga.md`](../docs/testing/carga.md#resultados-normal).
 
-Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** que falta para cerrar
-`E2-TST-03`. La guía operativa y los resultados viven en
+Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** (ejecutada y cerrada el 2026-11-21). La guía operativa y los resultados viven en
 [`docs/testing/carga.md`](../docs/testing/carga.md); los planes JMeter y los scripts en
 [`docs/testing/carga/`](../docs/testing/carga/).
 

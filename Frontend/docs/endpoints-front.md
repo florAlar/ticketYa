@@ -84,12 +84,11 @@ Flujo back completo: reserva → compra (+ Idempotency-Key) → pagos. El simula
 
 **Sectores numerados (asientos virtuales):** el checkout muestra `SeatPicker` (elegir fila → asientos, hasta 6). `comprarEntrada({ idEvento, idSector, asientos })` envía `items: [{ idSector, asientos: [{ fila, numero }] }]`; en sector general sigue `{ idSector, cantidad: 1 }`. Un 409 por asiento tomado quita solo los asientos en conflicto de la selección. Las entradas traen `fila` y `asiento`. Los forms de gestión envían `filas` y `asientosPorFila` (la capacidad se deriva).
 
-**No en back (solo mock UI):** cola compuesta admin de cancelados/reintegros manuales.
-Admin pendientes reales: `GET /api/devoluciones`.
+**Cola admin:** `GET /api/devoluciones`, aprobación/rechazo y `POST /api/eventos/{id}/reintegro-cancelacion` (`FEATURE.adminColaVentas`).
 
 ---
 
-## 3.1 Fila virtual — msvc-ventas (FIL-01…FIL-03)
+## 3.1 Fila virtual — msvc-ventas (FIL-01…FIL-04)
 
 | Método | Path | Auth | Front |
 |---|---|---|---|

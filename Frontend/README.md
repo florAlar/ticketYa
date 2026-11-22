@@ -29,7 +29,7 @@ VITE_API_BASE_URL=http://localhost:8080
 VITE_USE_MOCK=false
 ```
 
-- `VITE_USE_MOCK=false` (default): **todo** contra el gateway real. Las funciones que el backend aún no implementa (transferencia, escaneo QR, reportes, preferencias, alta/baja de personal de acceso, solicitud de organizador, reintegro por entrada) aparecen deshabilitadas (`src/config/featureGates.js`).
+- `VITE_USE_MOCK=false` (default): **todo** contra el gateway real. Quedan deshabilitadas solo las funciones sin API: **transferencia de entradas**, **alta/baja/asignación de personal de acceso** y **reintegro por una entrada individual** (`src/config/featureGates.js`). Escaneo QR, reportes, preferencias y recomendaciones están cableados.
 - `VITE_USE_MOCK=true`: **todo** en mock local (localStorage), sin backend; solo para demo offline.
 
 ## Docker (imagen Nginx)
@@ -44,7 +44,7 @@ docker compose up -d --build
 ```
 
 - UI: http://localhost:3000
-- Nginx proxy `/api/` → `ms-gateway:8080` (rutas de negocio del gateway = API-05, aún pendientes)
+- Nginx proxy `/api/` → `ms-gateway:8080` (rutas de negocio del gateway implementadas: API-05).
 
 ## Estructura `src/`
 
@@ -78,8 +78,8 @@ Rutas vivas: solo `src/routes/AppRoutes.jsx` (Home, eventos, fila virtual, check
 
 ## Capas que se conservan a propósito
 
-- `EventCardCompact` + key `compact` en el registry → home por preferencias (msvc futuro).
-- Shells `/soporte/transferencia` y `/acceso/scan` → UI lista; API real al cablear gateway.
+- `EventCardCompact` + key `compact` en el registry → home por preferencias (E2-PRE-04, cableado).
+- Shell `/soporte/transferencia` → UI sin API; `/acceso/scan` ya está cableado a `POST /api/eventos/{id}/validaciones`.
 - `docs/endpoints-front.md` → contrato del cruce back (auth, eventos, ventas, entradas, preferencias, …).
 
 ## Cuentas demo (mock)

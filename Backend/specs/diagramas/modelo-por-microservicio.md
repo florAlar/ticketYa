@@ -202,6 +202,10 @@ erDiagram
         DATETIME fecha_emision
         DATETIME fecha_validacion
     }
+    EMISION_COMPRA {
+        CHAR36 id_compra PK "ref lógica ventas.compra"
+        DATETIME fecha_claim
+    }
     DEVOLUCION {
         CHAR36 id_devolucion PK
         CHAR36 id_entrada FK
@@ -233,6 +237,7 @@ erDiagram
 
     ENTRADA ||--o{ DEVOLUCION : "puede tener"
     ENTRADA ||--o{ VALIDACION_ACCESO : registra
+    EMISION_COMPRA ||--o{ ENTRADA : "claim de emision"
     ENTRADA }o..|| EXT_COMPRA : "id_compra (ref lógica)"
     ENTRADA }o..|| EXT_USUARIO : "id_cliente (ref lógica)"
     VALIDACION_ACCESO }o..|| EXT_USUARIO : "id_personal_acceso (ref lógica)"

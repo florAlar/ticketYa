@@ -66,7 +66,7 @@ Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs
 Marcar cada casilla cuando el equipo esté de acuerdo.
 
 - [x] **D1. Redis-only.** Fila, posiciones, tanda y token viven en Redis (`StringRedisTemplate`, `RedisConfig.java:12-15`). Sin tablas MySQL nuevas ni RabbitMQ. Justificación formal en `consigna.md:148`.
-- [x] **D2. Gate solo si `esAltaDemanda = true`.** Protege el flujo E1 y los 193 requests de Postman. El flag existe en `Evento.java:53-54` y `EventoMapper.java:35`, pero no llega a ventas: se agrega a `EventosClient.EventoDetalleFeignDTO` (`:23-30`).
+- [x] **D2. Gate solo si `esAltaDemanda = true`.** Protege el flujo E1 y los 216 requests de Postman. El flag existe en `Evento.java:53-54` y `EventoMapper.java:35`, pero no llega a ventas: se agrega a `EventosClient.EventoDetalleFeignDTO` (`:23-30`).
 - [x] **D3. Fail-closed en toda la fila, incluido el gate.** Si Redis falla: **503** en `ingreso`, `posicion`, `estado`, `validacion`, `habilitacion` y en `POST /reservas` **de eventos de alta demanda**. Los eventos normales no se ven afectados, porque no consultan Redis para la fila. *Motivo:* la fila es control de acceso. Su propósito es evitar que todos golpeen el lock de MySQL; con Redis caído, el fail-open produciría exactamente eso. La integridad de la venta la garantiza MySQL en ambos casos, así que lo que se decide es la equidad. Es además más simple de implementar y de testear (sin bitácora especial). Se diverge a propósito de `StockCache` (`:28-73`), que es fail-open porque es un caché.
 - [x] **D4. Apertura de tandas automática, con override de ADMIN.**
   - Un job programado avanza la tanda en +N posiciones cada X segundos, topeado por el cupo disponible (sección 7).
@@ -503,7 +503,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 - **CA-3.7** Si la reserva falla y la transacción hace rollback (límite por cliente, unique key de asientos, excepción), el token **se restaura** y el cliente puede reintentar.
 - **CA-3.8** Tras una reserva confirmada, el cliente queda en `usados`: no puede ingresar ni validar de nuevo en ese evento.
 - **CA-3.9** Redis caído en un evento de alta demanda → **503** y no se descuenta cupo. Un evento normal con Redis caído funciona igual (D3).
-- **CA-3.10** Evento normal: comportamiento idéntico al actual. **La suite completa de ventas y los 193 requests de Postman siguen pasando.**
+- **CA-3.10** Evento normal: comportamiento idéntico al actual. **La suite completa de ventas y los 216 requests de Postman siguen pasando.**
 - **CA-3.11** Un reintento con la misma `Idempotency-Key` no exige token.
 
 **Pasos y archivos**

@@ -158,6 +158,10 @@ namespace msvc_entradas {
         +DATETIME fecha_emision
         +DATETIME fecha_validacion
     }
+    class emision_compra {
+        +CHAR36 id_compra PK
+        +DATETIME fecha_claim
+    }
     class devolucion {
         +CHAR36 id_devolucion PK
         +CHAR36 id_entrada FK
@@ -253,6 +257,7 @@ compra "1" -- "0..*" pago : registra
 
 entrada "1" -- "0..*" devolucion : puede tener
 entrada "1" -- "0..*" validacion_acceso : registra
+emision_compra "1" -- "0..*" entrada : claim de emision
 
 plantilla_notificacion "0..1" -- "0..*" notificacion : utiliza
 notificacion "1" -- "0..*" intento_envio : registra
