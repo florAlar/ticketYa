@@ -20,10 +20,10 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 
 | Acción | Quién |
 | --- | --- |
-| Ver catálogo / detalle de evento | Cualquiera (público) |
+| Ver catálogo / detalle de evento | Cualquiera (público). El organizador ve en el catálogo solo eventos publicados de todos; en su panel, solo los suyos |
 | Registrarse / iniciar sesión | Público → queda CLIENTE al registrarse |
 | Editar mi perfil (nombre, apellido, ciudad) | Usuario logueado |
-| Crear / editar borrador de evento | ORGANIZADOR (dueño) o ADMIN |
+| Crear / editar borrador de evento | ORGANIZADOR (dueño) o ADMIN. Un organizador **nunca** modifica eventos de otro; solo ADMIN modifica cualquier recurso (ver «Alcance del organizador sobre los eventos», §4) |
 | Publicar evento | ORGANIZADOR (dueño) o ADMIN; antes de publicar el front pide confirmar si es de alta demanda (ver §4) |
 | Suspender evento | ORGANIZADOR **solo los propios**; ADMIN cualquiera. Pausa la fila virtual del evento |
 | Cancelar evento | **ADMIN** (dispara reintegro de entradas vendidas) |
@@ -112,6 +112,13 @@ Aplica a **todo tipo de evento**, sin importar quién lo creó ni si quien publi
 - El listado público, por defecto, muestra eventos **publicados** (y en la demo operable también se contemplan agotados en catálogo según seed/config de trabajo).  
 - Filtros previstos: tipo, ciudad, fechas, organizador, participante (artista), orden, paginación.  
 - Admin puede pedir ver **todos** los estados en gestión.
+
+### Alcance del organizador sobre los eventos
+
+- **Catálogo (público):** el organizador ve, como cualquier persona, solo los eventos **publicados** de todos los organizadores. No ve borradores ni otros estados internos de eventos ajenos.
+- **Panel de gestión:** el organizador ve y administra **únicamente sus propios eventos**, en todos los estados (borrador, publicado, suspendido, etc.). El resumen y sus estadísticas se calculan solo sobre esos eventos. Los listados globales (todos los eventos, todos los usuarios, cola de ventas y devoluciones) son solo de ADMIN.
+- **Modificar eventos ajenos:** un organizador **no puede** modificar (editar, publicar, suspender, cambiar fecha ni asociar artistas) un evento de otro organizador, ni ver sus reportes. **Solo el ADMIN puede modificar cualquier recurso** de la plataforma.
+- **Estado de aplicación (2026-11-21):** editar, publicar, suspender y ver reportes ya validan al dueño en el backend. **Pendiente en `msvc-eventos`:** `GET /eventos?estado=TODOS` hoy responde a cualquier usuario autenticado con eventos de todos los estados (incluidos borradores ajenos); debe quedar limitado a ADMIN, y para el resto devolver solo publicados (más los propios, en el caso del organizador).
 
 ### Participantes
 
