@@ -222,6 +222,7 @@ Guías: [`Backend/docs/testing/`](Backend/docs/testing/) (concurrencia, notifica
 | Qué | Dónde |
 | --- | --- |
 | Consigna, backlog, reglas de negocio y decisiones del equipo | [`Backend/specs/`](Backend/specs/) |
+| Flujo Spec-Driven (propuesta → requisitos → diseño → tareas → código) | [`Backend/specs/README.md`](Backend/specs/README.md) |
 | Entrega formal: arquitectura, modelo de datos, observabilidad, OpenAPI, Postman y testing | [`Backend/docs/`](Backend/docs/README.md) |
 | Rutas, rutas públicas y matriz RBAC del gateway | [`Backend/docs/api/gateway.md`](Backend/docs/api/gateway.md) |
 | Contrato de cada microservicio | `Backend/<msvc>/docs/endpoints.md` |

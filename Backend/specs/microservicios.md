@@ -59,7 +59,7 @@ códigos) está en `specs/endpoints.md`, `docs/openapi/` y en el `endpoints.md` 
   fila), Postman 216 requests/587 assertions/0 fallos y corrida limpia del dominio completo
   (`E2-DEP-01`).
 - **Pendiente funcional:** extensión CLIENTE → ORGANIZADOR (`X-ORG-01`) y transferencia de entradas
-  (sin API). El resto del backlog es documental (`US-03`, `DOC-MS-SYNC`).
+  (sin API). El resto del backlog es documental (`US-03`).
 
 ## 5. Documentación y Compose
 

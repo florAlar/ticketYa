@@ -320,8 +320,12 @@ Informe de concurrencia: [`docs/testing/concurrencia.md`](docs/testing/concurren
 
 ### Specs de trabajo (`specs/`)
 
+El flujo completo (propuesta → requisitos → diseño → tareas → implementación, DoD y checklists) está
+en [`specs/README.md`](specs/README.md).
+
 | Archivo | Contenido |
 | --- | --- |
+| [`specs/README.md`](specs/README.md) | Flujo Spec-Driven, convenciones, DoD y checklists |
 | [`specs/consigna.md`](specs/consigna.md) | Enunciado del TP |
 | [`specs/backlog.md`](specs/backlog.md) | Tareas y estado E1/E2 |
 | [`specs/reglas-de-negocio.md`](specs/reglas-de-negocio.md) | Reglas y decisiones pendientes |
