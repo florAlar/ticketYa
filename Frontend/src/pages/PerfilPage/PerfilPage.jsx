@@ -5,8 +5,7 @@ import useAsync from '../../hooks/useAsync'
 import { getMe, patchMe } from '../../api/auth'
 import { isAbortError } from '../../api/http'
 import { ROLE_LABELS, normalizeRol } from '../../auth/roles'
-import { FEATURE, GATE_HINT } from '../../config/featureGates'
-import GateButton from '../../components/ui/GateButton'
+import { FEATURE } from '../../config/featureGates'
 import Badge from '../../components/ui/Badge'
 import { ErrorState, LoadingState } from '../../components/ui/AsyncState'
 import PreferenciasForm from '../../components/preferencias/PreferenciasForm'
@@ -264,23 +263,12 @@ const PerfilPage = () => {
   const orgCard = isCliente && profile && !editing && (
     <aside className="perfil-card perfil-org" aria-label="Cuenta organizador">
       <p>
-        <strong>¿Querés organizar eventos?</strong> Un cliente pide la extensión y un admin la
-        autoriza (todavía no está cableado al backend).
+        <strong>¿Querés organizar eventos?</strong> Un administrador puede asignarte el rol de
+        organizador sobre tu cuenta actual.
       </p>
       <div className="perfil-org__actions">
-        <GateButton
-          enabled={FEATURE.solicitudOrganizador}
-          className="btn btn-secondary btn-sm"
-          title={
-            FEATURE.solicitudOrganizador
-              ? 'Enviar solicitud de organizador'
-              : GATE_HINT
-          }
-        >
-          Solicitar cuenta
-        </GateButton>
         <Link className="btn btn-secondary btn-sm" to="/cuenta/organizador">
-          Ver guía de roles
+          Cómo ser organizador
         </Link>
       </div>
     </aside>
