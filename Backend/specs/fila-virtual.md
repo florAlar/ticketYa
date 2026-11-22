@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Decisiones D1–D10 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-03 en backend y FIL-04 de cierre documental (2026-11-19), más la pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
+| **Estado** | Decisiones D1–D11 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-03 en backend y FIL-04 de cierre documental (2026-11-19), más la pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
 | **Fecha** | 2026-11-19 |
 | **Destino en el repo** | `Backend/specs/fila-virtual.md` (commit `0a`) |
 | **Servicio principal** | `msvc-ventas` (+ un ajuste en `APIGateway`) |
@@ -547,7 +547,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 - **CA-4.3** `docs/api/gateway.md:18,39` pasan a "implementada", con el RBAC (`:74-92`) y la ruta pública de `estado`.
 - **CA-4.4** `specs/diagramas/modelo*.md`, `docs/modelo-datos.md` y `specs/bases-de-datos.md:13`: nota de que la fila vive en Redis y **no** entra al ER de MySQL, con la justificación de D1.
 - **CA-4.5** `specs/backlog.md`: `:221` hecho, `:117` "falta sólo notificaciones", `:65` DOC-MS-VEN, `:83` MOD-06 cerrado, `:388` resumen. `reglas-de-negocio.md:42` actualizado.
-- **CA-4.6** Checklist final (sección 17) con 0 resultados en el grep de "no implementada".
+- **CA-4.6** Checklist final (sección 17) sin coincidencias en el grep de "no implementada" fuera de la tabla histórica de §2.
 
 **Commit:** `docs(fila): cierre de contrato y backlog (FIL-04)`
 
@@ -743,7 +743,7 @@ Agregar la sección `Resultados (con fila)` a `docs/testing/carga.md`, `backlog.
 ```bash
 grep -rn '/fila' Backend/msvc-ventas/docs Backend/docs/openapi
 grep -n 'E2-FILA-01\|E2-TST-03' Backend/specs/backlog.md
-grep -rniE 'sin impl[e]mentar|no implem[e]ntada' Backend/docs Backend/specs | grep -i fila   # debe dar 0 (FIL-04); [e] evita que el propio comando coincida
+grep -rniE 'sin impl[e]mentar|no implem[e]ntada' Backend/docs Backend/specs | grep -i fila   # solo la tabla histórica de §2 (FIL-04); [e] evita que el propio comando coincida
 mvn -q -f Backend/msvc-ventas/pom.xml test     # ejecutado en FIL-01…FIL-04
 mvn -q -f Backend/APIGateway/pom.xml test      # ejecutado en FIL-01…FIL-04
 git diff --check && git status --short
