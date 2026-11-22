@@ -39,7 +39,7 @@ la verificación del responsable del repositorio y su **commit manual**.
 | # | Entregable | Artefacto | Fase |
 |---|---|---|---|
 | 1 | Contrato OpenAPI vivo por microservicio | `/v3/api-docs` + Swagger UI por msvc | 1 |
-| 2 | Especificación OpenAPI versionada | `Backend/docs/openapi/*.yaml` + bundle consolidado | 2 |
+| 2 | Especificación OpenAPI versionada | `Backend/docs/openapi/*.json` + `openapi-bundle.json` | 2 |
 | 3 | Tests unitarios de lógica de negocio | `src/test/java/**` + JaCoCo ≥ 90 % (alcance §9.2) | 3 |
 | 4 | Prueba de no doble venta | Unitaria (build normal) + integración MySQL (`-Pit`) | 4 |
 | 5 | Colección de requests | `Backend/docs/postman/*.postman_collection.json` + environment | 5 |
@@ -461,6 +461,9 @@ posterior o generación estática). No se replica a los otros módulos hasta que
 
 ## 8. Fase 2 — Bundle estático consolidado
 
+> **Histórico (plan original).** La entrega final usa JSON (`msvc-*.json` + `openapi-bundle.json`) y no
+> incluye `bundle.sh`; la fuente vigente es [`docs/openapi/README.md`](../docs/openapi/README.md).
+
 ### 8.1 Estructura
 
 ```text
@@ -665,7 +668,7 @@ El código HTTP final lo define el `GlobalExceptionHandler` del msvc (se verific
 | TST-GW-12 | JwtUtil (gateway) | generar/validar/expirar/ firma inválida | comportamiento esperado |
 | TST-GW-13 | SecurityConfig | preflight CORS desde `:5173` y `:3000` | 200 + headers permitidos |
 
-**Total unitarios: ~95 casos.** Se pueden agrupar en un método por regla cuando compartan setup,
+**Total de esta matriz: ~95 casos.** Se pueden agrupar en un método por regla cuando compartan setup,
 sin bajar la cobertura del alcance.
 
 ### 9.4 Pasos y aceptación
@@ -907,6 +910,7 @@ registro de ejecución está en §17.
 | 1.4 | 2026-11-21 | Cierre de `E2-TST-01` (ITs de borde + E2E F1–F5) y `E2-TST-03` (matriz de carga 25/50/100 + reintentos post-fix): ambos quedan **hechos**. Se agrega `emision_compra` al modelo de datos (22 tablas) |
 | 1.5 | 2026-11-21 | Devoluciones alineadas a la consigna: **hasta 72 h antes del evento** (fechaInicio − 72 h) en lugar de 72 h desde la emisión. Si no se puede obtener la fecha del evento, responde 503 |
 | 1.6 | 2026-11-22 | Reauditoría completa: filtros de catálogo alineados (`estado`, sin `precioMin/Max`), `orden=relevancia` en OpenAPI/controller, ITs de entradas 5, Circuit Breaker justificado y notas de Redis/fila verificadas |
+| 1.7 | 2026-11-22 | Tercera reauditoría: `GET .../validaciones` (PERSONAL_ACCESO 403), migraciones manuales de notificaciones, índice de testing, rutas del front, enlaces y recuentos corregidos |
 
 ---
 
@@ -924,9 +928,10 @@ registro de ejecución está en §17.
 Comando de build verificado (M1):
 
 ```bash
+# Ejecutar desde Backend/
 docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp \
   -v "$HOME/.m2:/var/m2" \
-  -v "/home/soledad/Escritorio/ticketYa/ticketYa/Backend":/w \
+  -v "$PWD":/w \
   -w /w/<msvc> \
   maven:3.9-eclipse-temurin-17 \
   mvn -B -ntp -Dmaven.repo.local=/var/m2/repository <goals>

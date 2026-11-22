@@ -47,7 +47,8 @@ La emisión es **idempotente por compra** con el claim `emision_compra`: si vent
 | `POST/GET` | `/entradas/{id}/devoluciones`, `/devoluciones`, `/devoluciones/{id}` | JWT / ADMIN | Solicitud y consulta |
 | `POST` | `/devoluciones/{id}/aprobacion`, `/devoluciones/{id}/rechazo` | ADMIN | Resolver devolución |
 | `POST` | `/eventos/{id}/reintegro-cancelacion` | Interno | Marcar entradas `A_REINTEGRAR` |
-| `POST/GET` | `/eventos/{id}/validaciones` | `PERSONAL_ACCESO`/`ADMIN`; GET también organizador dueño | Control de acceso |
+| `POST` | `/eventos/{id}/validaciones` | `PERSONAL_ACCESO`/`ADMIN` | Escanear y marcar la entrada como usada |
+| `GET` | `/eventos/{id}/validaciones` | `ADMIN` / `ORGANIZADOR` dueño; `PERSONAL_ACCESO` → 403 | Consultar intentos de ingreso |
 | `GET` | `/eventos/{id}/entradas/resumen` | Interno (Feign ventas) | Resumen para reportes |
 
 Detalle completo en [`endpoints.md`](endpoints.md). Swagger: `http://localhost:8084/swagger-ui/index.html`.
@@ -91,11 +92,11 @@ cd Backend
 docker compose up -d --build ms-entradas
 
 cd msvc-entradas
-mvn test              # 86 unitarios
+mvn test              # 87 unitarios
 mvn -Pit verify       # +5 IT con MySQL + Rabbit reales (Testcontainers)
 ```
 
-- **Variables:** `SPRING_DATASOURCE_URL` (default `jdbc:mysql://localhost:3310/entradas`), `SPRING_RABBITMQ_*`, `TICKETYA_URI_EVENTOS`, `TICKETYA_URI_VENTAS`, `TICKETYA_DEVOLUCION_HORAS` (72).
+- **Variables:** `SPRING_DATASOURCE_URL` (default `jdbc:mysql://localhost:3310/entradas`), `SPRING_RABBITMQ_*`, `TICKETYA_URI_EVENTOS`, `TICKETYA_URI_VENTAS`, `TICKETYA_DEVOLUCION_HORAS` (72 h antes del evento).
 - **Smoke:** `GET /` → `microservicio entradas ok!`; OpenAPI en `/v3/api-docs`.
 - **Seeds:** entradas y devolución pendiente demo en `infrastructure/mysql/entradas/init.sql`.
 

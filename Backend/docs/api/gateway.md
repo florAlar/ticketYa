@@ -86,10 +86,10 @@ Decisión fina en `JwtAuthenticationFilter.hasPermission()`. Los roles válidos 
 | `/api/usuarios` | GET |
 | `/api/usuarios/{id}` | GET (fuera de `/api/usuarios/me`) |
 | `/api/usuarios/{id}/estado` | PATCH |
-| `/api/usuarios/{id}/roles` | GET / PUT / PATCH |
+| `/api/usuarios/{id}/roles` | GET / PUT (el gateway también permite PATCH; el msvc solo implementa GET/PUT) |
 | `/api/devoluciones/{id}/aprobacion` | POST |
 | `/api/devoluciones/{id}/rechazo` | POST |
-| `/api/reportes/**` | DELETE |
+| `/api/reportes/**` | DELETE (regla del gateway; no hay endpoint DELETE de reportes) |
 | `/api/lugares/**`, `/api/sectores/**` | POST / PUT / PATCH / DELETE (alta, edición y baja de lugares y sectores; LUG-01/LUG-04) |
 | `/api/lugares/geocodificar` | GET (geocodificación de lugares por dirección y ciudad; LUG-03) |
 | `/api/eventos/{id}/fila/habilitacion` | POST (fijar la tanda; FIL-02. El msvc-ventas revalida `X-User-Role = ADMIN`) |

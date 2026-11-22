@@ -44,7 +44,7 @@ Mongo preferencias: `../mongodb/preferencias/` (aparte). No hay loader por msvc 
 
 - FK **físicas** solo dentro de la misma DB.
 - Cross-msvc: columnas comentadas `ref lógica` (CHAR 36), sin FK.
-- **Un único `init.sql` por base**: es la fuente de verdad del esquema y del seed demo. No hay scripts de migración sueltos.
+- **Un único `init.sql` por base**: es la fuente de verdad del esquema y del seed demo para volúmenes nuevos. `notificaciones/migrations/` conserva migraciones **manuales** para volúmenes ya creados; el entrypoint de MySQL no las ejecuta (solo procesa `init.sql` en el primer arranque).
 
 ## Re-aplicar / actualizar el esquema
 
