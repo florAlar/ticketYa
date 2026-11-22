@@ -41,11 +41,13 @@ CREATE TABLE IF NOT EXISTS evento (
   id_lugar           CHAR(36)     NOT NULL,
   fecha_publicacion  DATETIME(3)  NULL,
   es_alta_demanda    TINYINT(1)   NOT NULL DEFAULT 0,
+  destacado          TINYINT(1)   NOT NULL DEFAULT 0 COMMENT 'se muestra en la sección Destacados de la home',
   imagen_url         VARCHAR(500) NULL COMMENT 'portada: URL http(s) o ruta relativa que sirve el front; NULL = portada generada',
   PRIMARY KEY (id),
   KEY ix_evento_estado (estado),
   KEY ix_evento_tipo (tipo),
   KEY ix_evento_organizador (id_organizador),
+  KEY ix_evento_destacado (destacado, estado),
   CONSTRAINT fk_evento_lugar FOREIGN KEY (id_lugar) REFERENCES lugar (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -379,17 +381,17 @@ UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/th
 
 -- ============================================================================
 -- Plataforma en funcionamiento: eventos en todos los estados (BORRADOR, PUBLICADO, SUSPENDIDO,
--- AGOTADO, FINALIZADO), con fechas cercanas y lejanas. Misma línea: metal y deportes extremos.
--- Las portadas quedan en NULL: el front dibuja una portada generada.
+-- AGOTADO, FINALIZADO), todos con fecha futura. Misma línea: metal y deportes extremos.
+-- Las portadas apuntan a fotos externas (ver más abajo), no a archivos del repo.
 -- ============================================================================
 INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio, fecha_fin, estado, id_lugar, fecha_publicacion, es_alta_demanda) VALUES
   ('d0000000-0000-4000-8000-000000000016', 'b0000000-0000-4000-8000-000000000011',
    'Sepultura — Roots Bloody Roots Night', 'Sepultura celebra uno de los discos más influyentes del metal latinoamericano con una noche dedicada a Roots y a sus clásicos de siempre. La banda brasileña combina thrash, groove y percusión de raíz en un sonido propio, reconocido en todo el mundo, y su repertorio en vivo es una descarga continua de energía.\n\nEs un recital pensado para el pogo y el coro colectivo: riffs pesados, ritmos tribales y temas que el público sabe de memoria. El show recorre distintas etapas de la banda y no deja respiro de principio a fin.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'RECITAL',
-   '2026-11-24 21:00:00.000', NULL, 'PUBLICADO',
+   '2027-01-23 21:00:00.000', NULL, 'PUBLICADO',
    'c0000000-0000-4000-8000-000000000006', '2026-10-26 12:00:00.000', 0),
   ('d0000000-0000-4000-8000-000000000017', 'b0000000-0000-4000-8000-000000000011',
    'Mastodon — Hushed and Grim Live', 'Mastodon presenta Hushed and Grim Live, un repaso por su repertorio más pesado y ambicioso. La banda de Atlanta mezcla metal progresivo, sludge y pasajes melódicos, con canciones largas, cambios de compás y una complejidad técnica que se disfruta tanto en el estudio como en vivo.\n\nComo invitado participa Gojira, la banda francesa de metal progresivo, de modo que la noche reúne a dos de los nombres más sólidos de la escena actual. Conviene llegar temprano para ver los dos sets completos.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'RECITAL',
-   '2026-12-05 21:00:00.000', NULL, 'PUBLICADO',
+   '2027-01-30 21:00:00.000', NULL, 'PUBLICADO',
    'c0000000-0000-4000-8000-000000000006', '2026-10-28 12:00:00.000', 0),
   ('d0000000-0000-4000-8000-000000000018', 'b0000000-0000-4000-8000-000000000002',
    'Judas Priest — Invincible Shield Tour', 'Judas Priest llega con Invincible Shield Tour, la gira de su disco más reciente y una de las más esperadas del heavy metal clásico. Más de cinco décadas de trayectoria los convirtieron en referentes del género, con su estética de cuero y tachas, sus guitarras dobles y la voz inconfundible de Rob Halford.\n\nEl repertorio combina los himnos de siempre con canciones del último álbum, en un show de estadio con producción completa y mucho público coreando de principio a fin. Es una cita para varias generaciones de fans del metal.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'RECITAL',
@@ -404,12 +406,12 @@ INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio,
    '2027-05-01 14:00:00.000', NULL, 'BORRADOR',
    'c0000000-0000-4000-8000-000000000006', NULL, 0),
   ('d0000000-0000-4000-8000-00000000001b', 'b0000000-0000-4000-8000-000000000002',
-   'Motocross de las Naciones — Gran Final', 'El Motocross de las Naciones es la competencia por equipos más importante del motocross mundial: cada país presenta a sus mejores pilotos y compite en carreras de saltos, barro y velocidad en las que se define la nación campeona.\n\nEste evento ya se realizó y la venta de entradas está cerrada. Quienes compraron conservan su historial en Mis entradas.', 'DEPORTE',
-   '2026-10-18 13:00:00.000', NULL, 'FINALIZADO',
+   'Motocross de las Naciones — Gran Final', 'El Motocross de las Naciones es la competencia por equipos más importante del motocross mundial: cada país presenta a sus mejores pilotos y compite en carreras de saltos, barro y velocidad en las que se define la nación campeona.\n\nEste evento fue dado por finalizado: la venta de entradas está cerrada. Quienes compraron conservan su historial en Mis entradas.', 'DEPORTE',
+   '2027-01-16 13:00:00.000', NULL, 'FINALIZADO',
    'c0000000-0000-4000-8000-000000000005', '2026-08-20 12:00:00.000', 0),
   ('d0000000-0000-4000-8000-00000000001c', 'b0000000-0000-4000-8000-000000000011',
-   'Pantera — Reunion Show', 'Pantera volvió a los escenarios con un show de reencuentro que repasó los temas más pesados del groove metal de los años noventa, con riffs secos, baterías contundentes y una energía que cautivó a fans de todas las edades.\n\nEste evento ya se realizó y la venta de entradas está cerrada. Quienes compraron conservan su historial en Mis entradas.', 'RECITAL',
-   '2026-11-08 21:00:00.000', NULL, 'FINALIZADO',
+   'Pantera — Reunion Show', 'Pantera presenta su show de reencuentro, que repasa los temas más pesados del groove metal de los años noventa, con riffs secos, baterías contundentes y una energía que cautiva a fans de todas las edades.\n\nEste evento fue dado por finalizado: la venta de entradas está cerrada. Quienes compraron conservan su historial en Mis entradas.', 'RECITAL',
+   '2027-01-09 21:00:00.000', NULL, 'FINALIZADO',
    'c0000000-0000-4000-8000-000000000001', '2026-09-25 12:00:00.000', 1),
   ('d0000000-0000-4000-8000-00000000001d', 'b0000000-0000-4000-8000-000000000002',
    'Red Bull Rampage — Freeride Extremo', 'Red Bull Rampage reúne a los mejores riders de mountain bike freeride del mundo en una competencia sobre acantilados y líneas imposibles, donde cada bajada combina saltos enormes, giros en el aire y un riesgo extremo.\n\nEs una de las pruebas más espectaculares de los deportes extremos. El público sigue la competencia en vivo mientras los riders presentan sus recorridos, y la jornada cierra con la definición de los premios.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'DEPORTE',
@@ -421,7 +423,7 @@ INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio,
    'c0000000-0000-4000-8000-000000000005', '2026-10-30 12:00:00.000', 0),
   ('d0000000-0000-4000-8000-00000000001f', 'b0000000-0000-4000-8000-000000000011',
    'Lamb of God — Omens World Tour', 'Lamb of God presenta Omens World Tour, una gira del groove metal de Virginia con una puesta demoledora: riffs pesados, baterías aplastantes y un frontman que no deja de moverse durante todo el show.\n\nLas entradas para esta fecha se encuentran agotadas. Si se liberan lugares por devoluciones, vas a poder verlos en esta misma página.', 'RECITAL',
-   '2026-12-12 21:00:00.000', NULL, 'AGOTADO',
+   '2027-02-06 21:00:00.000', NULL, 'AGOTADO',
    'c0000000-0000-4000-8000-000000000006', '2026-09-30 12:00:00.000', 1),
   ('d0000000-0000-4000-8000-000000000020', 'b0000000-0000-4000-8000-000000000002',
    'X Games — Buenos Aires', 'Los X Games reúnen a las mayores estrellas de los deportes extremos en tres disciplinas, skate, BMX y moto freestyle, con trucos, saltos y competencias de altísimo nivel durante tres días.\n\nEs un evento pensado para toda la familia, con pruebas durante toda la jornada y mucho ambiente en las tribunas. Conviene planificar la visita según las competencias que más te interesen.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'DEPORTE',
@@ -429,10 +431,36 @@ INSERT INTO evento (id, id_organizador, nombre, descripcion, tipo, fecha_inicio,
    'c0000000-0000-4000-8000-000000000005', '2026-11-05 12:00:00.000', 0),
   ('d0000000-0000-4000-8000-000000000021', 'b0000000-0000-4000-8000-000000000002',
    'Supercross Indoor — Gran Final', 'La gran final de supercross bajo techo se corre sobre una pista de tierra con rampas gigantes, curvas cerradas y saltos en serie, donde los pilotos pelean cada posición en carreras muy cortas y de máxima intensidad.\n\nAl ser bajo techo, el público está muy cerca de la acción y vive cada vuelta con el ruido de los motores. Es una de las noches más vistosas del motociclismo de competición.\n\nRecordá tener tu entrada a mano: la encontrás en Mis entradas con su código QR, que se valida una sola vez en el acceso.', 'DEPORTE',
-   '2026-11-22 20:00:00.000', NULL, 'PUBLICADO',
+   '2027-02-20 20:00:00.000', NULL, 'PUBLICADO',
    'c0000000-0000-4000-8000-000000000006', '2026-10-20 12:00:00.000', 0)
 ON DUPLICATE KEY UPDATE nombre = VALUES(nombre), descripcion = VALUES(descripcion), tipo = VALUES(tipo),
   fecha_inicio = VALUES(fecha_inicio), estado = VALUES(estado), id_lugar = VALUES(id_lugar), es_alta_demanda = VALUES(es_alta_demanda);
+
+-- Portadas: fotos externas de Wikimedia Commons (licencias libres; autoría en la ficha de cada archivo).
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/76/Sepultura_Live_at_Olinda_Classic_Hall_2024.jpg/1280px-Sepultura_Live_at_Olinda_Classic_Hall_2024.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000016';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e4/Ursynalia_2012%2C_Mastodon_12.jpg/1280px-Ursynalia_2012%2C_Mastodon_12.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000017';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Judas_Priest_-_Wacken_Open_Air_2018_01.jpg/1280px-Judas_Priest_-_Wacken_Open_Air_2018_01.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000018';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6c/Megadeth_at_the_O2_Arena%2C_London%2C_26_October_2025.jpg/1280px-Megadeth_at_the_O2_Arena%2C_London%2C_26_October_2025.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000019';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Nightwish_-_Wacken_Open_Air_2018-3919.jpg/1280px-Nightwish_-_Wacken_Open_Air_2018-3919.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000001a';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/RickyCarmichaelMay2007.jpg/1280px-RickyCarmichaelMay2007.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000001b';
+UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/a/a4/Pantera_1987-2003_lineup.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000001c';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/CWX_WHISTLER_joyride_byKikeAbelleira-7303263.jpg/1280px-CWX_WHISTLER_joyride_byKikeAbelleira-7303263.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000001d';
+UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/9/98/Petter_Solberg_-_2006_Rally_Argentina.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000001e';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e2/2015_RiP_Lamb_of_God_-_by_2eight_-_8SC9743.jpg/1280px-2015_RiP_Lamb_of_God_-_by_2eight_-_8SC9743.jpg' WHERE id = 'd0000000-0000-4000-8000-00000000001f';
+UPDATE evento SET imagen_url = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a7/Brian_Deegan_jumping_at_X_Games_17_in_Los_Angeles.jpg/1280px-Brian_Deegan_jumping_at_X_Games_17_in_Los_Angeles.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000020';
+UPDATE evento SET imagen_url = 'https://upload.wikimedia.org/wikipedia/commons/3/35/JeremyMcGrathCrandon2009_%28cropped2%29.jpg' WHERE id = 'd0000000-0000-4000-8000-000000000021';
+
+-- Sección «Destacados» de la home: eventos publicados marcados (la home muestra todos los que todavía no pasaron).
+UPDATE evento SET destacado = 1 WHERE id IN (
+  'd0000000-0000-4000-8000-000000000001', -- Metallica
+  'd0000000-0000-4000-8000-000000000004', -- Iron Maiden
+  'd0000000-0000-4000-8000-000000000005', -- Rammstein
+  'd0000000-0000-4000-8000-000000000006', -- Foo Fighters
+  'd0000000-0000-4000-8000-000000000007', -- Coldplay
+  'd0000000-0000-4000-8000-000000000012', -- Boca Juniors vs River Plate
+  'd0000000-0000-4000-8000-000000000014', -- MotoGP
+  'd0000000-0000-4000-8000-000000000018'  -- Judas Priest
+);
 
 INSERT INTO precio_sector (id, id_evento, id_sector, precio, moneda, activo) VALUES
   ('e0000000-0000-4000-8000-00000000002a', 'd0000000-0000-4000-8000-000000000016', 'c0000000-0000-4000-8000-00000000001b', 70000.00, 'ARS', 1),

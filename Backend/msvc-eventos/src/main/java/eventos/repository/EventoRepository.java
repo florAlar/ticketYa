@@ -37,6 +37,7 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
                       )
                       and (:fechaDesde is null or e.fechaInicio >= :fechaDesde)
                       and (:fechaHasta is null or e.fechaInicio <= :fechaHasta)
+                      and (:destacado is null or e.destacado = :destacado)
                       and (
                         :participante is null
                         or exists (
@@ -64,6 +65,7 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
                       )
                       and (:fechaDesde is null or e.fechaInicio >= :fechaDesde)
                       and (:fechaHasta is null or e.fechaInicio <= :fechaHasta)
+                      and (:destacado is null or e.destacado = :destacado)
                       and (
                         :participante is null
                         or exists (
@@ -81,6 +83,7 @@ public interface EventoRepository extends JpaRepository<Evento, String> {
             @Param("fechaDesde") LocalDateTime fechaDesde,
             @Param("fechaHasta") LocalDateTime fechaHasta,
             @Param("participante") String participante,
+            @Param("destacado") Boolean destacado,
             Pageable pageable);
 
     @EntityGraph(attributePaths = "lugar")

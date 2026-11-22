@@ -62,6 +62,7 @@ erDiagram
         VARCHAR estado
         DATETIME fecha_publicacion
         BOOL es_alta_demanda
+        BOOL destacado
         VARCHAR imagen_url
     }
     PRECIO_SECTOR {

@@ -31,6 +31,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 | GET/POST/PUT/DELETE /participantes | **hecho** | Artistas/bandas (E1-EVE-06). PAR-01: alta ORG/ADMIN con control de duplicados y tipo válido; editar y eliminar solo ADMIN. |
 | GET/PUT /eventos/{id}/participantes | **hecho** | Listar / reemplazar set (ids o items con rol/orden) |
 | GET /eventos?participante= | **hecho** | Filtro por id de artista |
+| GET /eventos?destacado= | **hecho** | `true` = solo los eventos marcados como destacados de la home; `false` = solo los no destacados; ausente = todos. Se combina con el resto de los filtros (por defecto el catálogo trae PUBLICADO y AGOTADO) |
 
 Smoke: `GET /` → `microservicio eventos ok!`
 
@@ -49,7 +50,7 @@ Respuesta listado:
 { "content": [ /* EventoResponseDTO */ ], "page", "size", "totalElements", "totalPages" }
 ```
 
-`EventoResponseDTO`: `id`, `nombre`, `tipo`, `fechaInicio`, `lugar{nombre,ciudad}`, `imagenUrl` (URL o ruta relativa; `null` si no tiene), `precioDesde`, `destacado` (false), `estado`, `idOrganizador`, `esAltaDemanda`.
+`EventoResponseDTO`: `id`, `nombre`, `tipo`, `fechaInicio`, `lugar{nombre,ciudad}`, `imagenUrl` (URL o ruta relativa; `null` si no tiene), `precioDesde`, `destacado`, `estado`, `idOrganizador`, `esAltaDemanda`.
 
 Detalle: + `descripcion`, `fechaFin`, `fechaPublicacion`, `lugar{id,nombre,direccion,ciudad,sectores[]}`, `sectores[]` precio/moneda, `participantes[]` (id,nombre,tipo,descripcion,rol,orden).
 
@@ -98,6 +99,7 @@ Authz: lectura abierta (GET). Alta `POST /participantes` y PUT asociación: **OR
   "fechaInicio": "2026-12-01T21:00:00",
   "estado": "BORRADOR",
   "esAltaDemanda": false,
+  "destacado": true,
   "imagenUrl": "https://ejemplo.com/portada.jpg",
   "idLugar": "c0000000-0000-4000-8000-000000000001",
   "sectores": [
@@ -134,7 +136,7 @@ Estados: `BORRADOR` | `PUBLICADO` | `AGOTADO` | `SUSPENDIDO` | `CANCELADO` | `FI
 | Cancelación → reintegro entradas | Feign **best-effort** (header interno ADMIN); si entradas cae, evento igual queda CANCELADO |
 | Cupo ventas al publicar | **hecho** — `doPublicar` Feign `POST msvc-ventas /eventos/{id}/cupos` fail-hard si ventas cae |
 | imagenUrl | **hecho** — columna `evento.imagen_url` (VARCHAR 500, NULL). Se envía en `POST`/`PUT /eventos`: `http(s)://…` o ruta relativa que empieza con `/` (`//…`, `javascript:` y otros esquemas → 400; máx. 500). En `PUT`, `""` la quita y ausente no la toca. El archivo no vive en el backend: es una URL externa o un archivo del front (`Frontend/public/img/eventos/`). Sin imagen el front dibuja una portada generada |
-| destacado | Sin columna en init → siempre false |
+| destacado | **hecho** — columna `evento.destacado` (TINYINT(1) NOT NULL DEFAULT 0, índice `ix_evento_destacado (destacado, estado)`). Se envía en `POST`/`PUT /eventos` (en `POST` ausente = `false`; en `PUT` ausente no lo toca) y se devuelve en el catálogo y el detalle. `GET /eventos?destacado=true` alimenta la sección «Destacados» de la home. Lo puede cambiar el dueño del evento o ADMIN, igual que el resto de la configuración |
 | Authz participantes | **hecho** — alta ORG/ADMIN; editar/eliminar solo ADMIN; asociar dueño/ADMIN; GET público |
 | Notifs al cancelar/cambiar fecha | E2-NOT |
 

@@ -355,4 +355,16 @@ class EventoMapperTest {
         assertEquals(LUGAR_ID, lugarDetalle.getId());
         assertEquals("Estadio", lugarDetalle.getNombre());
     }
+
+    @Test
+    void destacado_seMapeaDesdeLaEntidad() {
+        EventoMapper mapper = new EventoMapper();
+        Evento e = eventoConLugar();
+        org.junit.jupiter.api.Assertions.assertFalse(mapper.toCatalogo(e, BigDecimal.TEN).isDestacado());
+
+        e.setDestacado(true);
+        org.junit.jupiter.api.Assertions.assertTrue(mapper.toCatalogo(e, BigDecimal.TEN).isDestacado());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                mapper.toDetalle(e, BigDecimal.TEN, List.of(), List.of()).isDestacado());
+    }
 }

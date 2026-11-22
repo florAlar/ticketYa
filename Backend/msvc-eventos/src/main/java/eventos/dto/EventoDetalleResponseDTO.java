@@ -47,7 +47,7 @@ public class EventoDetalleResponseDTO {
     @Schema(description = "Precio mínimo del evento", example = "25000.00")
     private BigDecimal precioDesde;
 
-    @Schema(description = "Destacado (false en E1)", example = "false")
+    @Schema(description = "Aparece en la sección Destacados de la home", example = "false")
     private boolean destacado;
 
     @Schema(description = "Estado", example = "PUBLICADO")

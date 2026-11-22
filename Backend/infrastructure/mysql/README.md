@@ -86,19 +86,19 @@ se modificaron (nombres, bandas e imágenes); solo se ajustaron sus cupos para q
 | Estado | Eventos |
 |---|---|
 | `PUBLICADO` con cupo casi agotado | Sepultura (< 20 libres, «Últimos lugares»), Mastodon (< 50), Judas Priest (< 100), Red Bull Rampage (< 100) |
-| `PUBLICADO` con fecha cercana | Supercross Indoor (2026-11-22), Sepultura (2026-11-24), Mastodon (2026-12-05) |
+| `PUBLICADO` con fecha más próxima | Sepultura (2027-01-23), Mastodon (2027-01-30), Supercross Indoor (2027-02-20) |
 | `PUBLICADO` con poca venta | X Games |
 | `AGOTADO` | Lamb of God (más Oasis del catálogo base) |
 | `SUSPENDIDO` | WRC Rally de Argentina (más UCL Final del catálogo base) |
-| `FINALIZADO` | Motocross de las Naciones, Pantera (fechas pasadas, con entradas `USADA`) |
+| `FINALIZADO` | Motocross de las Naciones, Pantera (venta cerrada; fecha futura, sin entradas usadas) |
 | `BORRADOR` | Megadeth (completo, sin publicar), Metal Fest Argentina (incompleto, sin sectores) |
 
 También se ajustaron los cupos de Iron Maiden, Rammstein, Foo Fighters, Boca vs River y UFC (catálogo base).
 
 **Ventas y entradas** (`f0000000-…` y `aa000000-…`): 21 compras de 7 clientes con compras `APROBADA` con
 emisión `EMITIDA`/`PENDIENTE`/`FALLIDA`, una `RECHAZADA` (pago rechazado) y una reserva `EXPIRADA`; 22 entradas
-(`VENDIDA`, `USADA`, `DEVUELTA`, `A_REINTEGRAR`), 5 devoluciones (`PENDIENTE`, `APROBADA`, `RECHAZADA`,
-`EN_CURSO`), 5 validaciones de puerta (`VALIDA` y `YA_USADA`) y los asientos vendidos de los sectores numerados.
+(`VENDIDA`, `DEVUELTA`, `A_REINTEGRAR`), 5 devoluciones (`PENDIENTE`, `APROBADA`, `RECHAZADA`,
+`EN_CURSO`) y los asientos vendidos de los sectores numerados.
 
 **Notificaciones y Mongo:** 12 notificaciones (leídas, sin leer, `PENDIENTE` y `FALLIDA`), preferencias de los
 6 clientes nuevos y su historial de compras.

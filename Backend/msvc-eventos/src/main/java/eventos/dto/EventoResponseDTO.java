@@ -10,7 +10,7 @@ import lombok.Setter;
 
 /**
  * Catálogo / listado — alineado al shape liviano del front (toCatalogoDto).
- * destacado no existe en el schema MySQL → false; imagenUrl sale de evento.imagen_url (null si no hay).
+ * destacado sale de evento.destacado; imagenUrl sale de evento.imagen_url (null si no hay).
  */
 @Getter
 @Setter
@@ -38,7 +38,7 @@ public class EventoResponseDTO {
     @Schema(description = "Precio mínimo del evento", example = "25000.00")
     private BigDecimal precioDesde;
 
-    @Schema(description = "Destacado (false en E1)", example = "false")
+    @Schema(description = "Aparece en la sección Destacados de la home", example = "false")
     private boolean destacado;
 
     @Schema(description = "Estado", example = "PUBLICADO")

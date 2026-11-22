@@ -116,7 +116,7 @@ class EventoServiceImplTest {
                 eventoMapper, entradasClient, ventasClient, eventPublisher);
         when(eventoRepository.findByIdWithLugar(any())).thenReturn(Optional.empty());
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
+                anyBoolean(), any(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
         when(eventoRepository.findByIdOrganizadorOrderByFechaInicioDesc(any()))
                 .thenReturn(List.of());
@@ -154,7 +154,7 @@ class EventoServiceImplTest {
     void buscar_catalogoDefault_devuelvePagina() {
         Evento e = evento("PUBLICADO", ORG_ID);
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any()))
+                anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(e)));
         when(eventoMapper.toCatalogo(e, null)).thenReturn(dto(e));
 
@@ -168,28 +168,28 @@ class EventoServiceImplTest {
     void buscar_estadoTodos_ignoraEstado() {
         Evento e = evento("CANCELADO", ORG_ID);
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any()))
+                anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(e)));
         when(eventoMapper.toCatalogo(e, null)).thenReturn(dto(e));
 
         service.buscar(null, null, null, "TODOS", null, null, null, "fecha", 0, 20);
 
         verify(eventoRepository).buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any());
+                anyBoolean(), any(), any(), any(), any(), any());
     }
 
     @Test
     void buscar_pageNegativo_ySizeCero_usaSeguros() {
         Evento e = evento("PUBLICADO", ORG_ID);
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any()))
+                anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(e)));
         when(eventoMapper.toCatalogo(e, null)).thenReturn(dto(e));
 
         service.buscar(null, null, null, null, null, null, null, "fecha", -5, 0);
 
         verify(eventoRepository).buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(),
+                anyBoolean(), any(), any(), any(), any(),
                 any(org.springframework.data.domain.Pageable.class));
     }
 
@@ -198,7 +198,7 @@ class EventoServiceImplTest {
         Evento e1 = evento("PUBLICADO", ORG_ID);
         Evento e2 = evento("PUBLICADO", ORG_ID);
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any()))
+                anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(e1, e2)));
         EventoResponseDTO d1 = new EventoResponseDTO();
         d1.setPrecioDesde(BigDecimal.valueOf(100));
@@ -217,7 +217,7 @@ class EventoServiceImplTest {
     void buscar_conIncluirParticipantes_completaArtistas() {
         Evento e = evento("PUBLICADO", ORG_ID);
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any()))
+                anyBoolean(), any(), any(), any(), any(), any()))
                 .thenReturn(new PageImpl<>(List.of(e)));
         when(eventoMapper.toCatalogo(e, null)).thenReturn(dto(e));
         when(eventoParticipanteRepository.findArtistasByEventoIds(List.of(EVENTO_ID)))
@@ -383,6 +383,74 @@ class EventoServiceImplTest {
         evento.setImagenUrl("/img/eventos/b.webp");
         service.actualizar(EVENTO_ID, new EventoRequestDTO(), ORG_ID, "ORGANIZADOR");
         assertEquals("/img/eventos/b.webp", evento.getImagenUrl());
+    }
+
+    @Test
+    void crear_destacado_porDefectoFalse_yTrueSiSeIndica() {
+        when(lugarRepository.findById(LUGAR_ID)).thenReturn(Optional.of(lugar(LUGAR_ID, "Estadio", "CABA")));
+        org.mockito.ArgumentCaptor<Evento> captor = org.mockito.ArgumentCaptor.forClass(Evento.class);
+
+        EventoRequestDTO sin = new EventoRequestDTO();
+        sin.setNombre("Sin destacar");
+        sin.setEstado("BORRADOR");
+        sin.setIdLugar(LUGAR_ID);
+        service.crear(sin, ORG_ID);
+
+        EventoRequestDTO con = new EventoRequestDTO();
+        con.setNombre("Destacado");
+        con.setEstado("BORRADOR");
+        con.setIdLugar(LUGAR_ID);
+        con.setDestacado(true);
+        service.crear(con, ORG_ID);
+
+        verify(eventoRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+        org.junit.jupiter.api.Assertions.assertEquals(Boolean.FALSE, captor.getAllValues().get(0).getDestacado());
+        org.junit.jupiter.api.Assertions.assertEquals(Boolean.TRUE, captor.getAllValues().get(1).getDestacado());
+    }
+
+    @Test
+    void actualizar_destacado_cambiaYAusenteNoLoToca() {
+        Evento evento = evento("BORRADOR", ORG_ID);
+        evento.setLugar(lugar(LUGAR_ID, "Estadio", "CABA"));
+        when(eventoRepository.findByIdWithLugar(EVENTO_ID)).thenReturn(Optional.of(evento));
+        when(eventoRepository.save(any(Evento.class))).thenAnswer(i -> i.getArgument(0));
+
+        EventoRequestDTO req = new EventoRequestDTO();
+        req.setDestacado(true);
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+        org.junit.jupiter.api.Assertions.assertEquals(Boolean.TRUE, evento.getDestacado());
+
+        // ausente (null) no lo toca
+        service.actualizar(EVENTO_ID, new EventoRequestDTO(), ORG_ID, "ORGANIZADOR");
+        org.junit.jupiter.api.Assertions.assertEquals(Boolean.TRUE, evento.getDestacado());
+
+        req.setDestacado(false);
+        service.actualizar(EVENTO_ID, req, ORG_ID, "ORGANIZADOR");
+        org.junit.jupiter.api.Assertions.assertEquals(Boolean.FALSE, evento.getDestacado());
+    }
+
+    @Test
+    void buscar_destacado_seLoPasaAlRepositorio() {
+        when(eventoRepository.buscar(any(), any(), any(), any(),
+                anyBoolean(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.buscar(null, null, null, null, null, null, null, "fecha", 0, 20, false, Boolean.TRUE);
+
+        verify(eventoRepository).buscar(any(), any(), any(), any(),
+                anyBoolean(), any(), any(), any(), org.mockito.ArgumentMatchers.eq(Boolean.TRUE), any());
+    }
+
+    @Test
+    void buscar_sinFiltroDestacado_pasaNull() {
+        when(eventoRepository.buscar(any(), any(), any(), any(),
+                anyBoolean(), any(), any(), any(), any(), any()))
+                .thenReturn(new PageImpl<>(List.of()));
+
+        service.buscar(null, null, null, null, null, null, null, "fecha", 0, 20);
+
+        verify(eventoRepository).buscar(any(), any(), any(), any(),
+                anyBoolean(), any(), any(), any(), org.mockito.ArgumentMatchers.isNull(), any());
     }
 
     @Test

@@ -100,7 +100,7 @@ class EventoServiceImplExtraTest {
     @Test
     void buscar_ceroEventos_devuelvePaginaVacia() {
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
+                anyBoolean(), any(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         var res = service.buscar(null, null, null, null, null, null, null, "fecha", 0, 500);
@@ -113,7 +113,7 @@ class EventoServiceImplExtraTest {
     @Test
     void buscar_ordenRelevancia_noLanza() {
         when(eventoRepository.buscar(any(), any(), any(), any(),
-                anyBoolean(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
+                anyBoolean(), any(), any(), any(), any(), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of()));
 
         service.buscar(null, null, null, null, null, null, null, "relevancia", 0, 20);

@@ -110,7 +110,7 @@ INSERT INTO notificacion (id_notificacion, id_usuario, id_evento_origen, id_plan
    'Evento suspendido', 'El evento UEFA Champions League Final 2027 fue suspendido. Te avisaremos cuando se reprograme.',
    NULL, '2026-11-13 10:30:00.000', '2026-11-13 10:30:05.000', 'ENVIADA', 0, NULL, 'EventoSuspendido:PUSH:d0000000-0000-4000-8000-000000000002:seed-4', 'EventoSuspendido:d0000000-0000-4000-8000-000000000002:seed-4'),
   ('n0000000-0000-4000-8000-000000000105', 'b0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000017', 'n0000000-0000-4000-8000-000000000005', 'NuevoEventoArtistaFavorito', 'PUSH',
-   'Tu artista favorito se presenta', '¡Mastodon — Hushed and Grim Live en Buenos Aires! Un artista que seguís (Gojira) se presenta el 5 de diciembre.',
+   'Tu artista favorito se presenta', '¡Mastodon — Hushed and Grim Live en Buenos Aires! Un artista que seguís (Gojira) se presenta el 30 de enero.',
    NULL, '2026-10-28 12:05:00.000', '2026-10-28 12:05:05.000', 'ENVIADA', 0, NULL, 'NuevoEventoArtistaFavorito:PUSH:d0000000-0000-4000-8000-000000000017:seed-5', 'NuevoEventoArtistaFavorito:d0000000-0000-4000-8000-000000000017:seed-5'),
   ('n0000000-0000-4000-8000-000000000106', 'b0000000-0000-4000-8000-000000000001', 'd0000000-0000-4000-8000-000000000012', 'n0000000-0000-4000-8000-00000000000a', 'DevolucionAprobada', 'PUSH',
    'Devolución aprobada', 'Aprobamos la devolución de tu entrada para Boca Juniors vs River Plate — Superclásico. Reintegro: 140000 ARS.',

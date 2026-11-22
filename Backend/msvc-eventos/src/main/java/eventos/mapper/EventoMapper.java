@@ -29,7 +29,7 @@ public class EventoMapper {
         dto.setLugar(toLugarResumen(evento.getLugar()));
         dto.setImagenUrl(evento.getImagenUrl());
         dto.setPrecioDesde(precioDesde != null ? precioDesde : BigDecimal.ZERO);
-        dto.setDestacado(false); // sin columna en schema
+        dto.setDestacado(Boolean.TRUE.equals(evento.getDestacado()));
         dto.setEstado(evento.getEstado());
         dto.setIdOrganizador(evento.getIdOrganizador());
         dto.setEsAltaDemanda(Boolean.TRUE.equals(evento.getEsAltaDemanda()));
@@ -51,7 +51,7 @@ public class EventoMapper {
         dto.setFechaPublicacion(evento.getFechaPublicacion());
         dto.setImagenUrl(evento.getImagenUrl());
         dto.setPrecioDesde(precioDesde != null ? precioDesde : BigDecimal.ZERO);
-        dto.setDestacado(false);
+        dto.setDestacado(Boolean.TRUE.equals(evento.getDestacado()));
         dto.setEstado(evento.getEstado());
         dto.setIdOrganizador(evento.getIdOrganizador());
         dto.setEsAltaDemanda(Boolean.TRUE.equals(evento.getEsAltaDemanda()));

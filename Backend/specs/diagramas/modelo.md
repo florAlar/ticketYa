@@ -59,6 +59,7 @@ namespace msvc_eventos {
         +VARCHAR estado
         +DATETIME fecha_publicacion
         +BOOL es_alta_demanda
+        +BOOL destacado
         +VARCHAR imagen_url
     }
     class precio_sector {

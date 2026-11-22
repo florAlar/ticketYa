@@ -53,6 +53,10 @@ public class Evento {
     @Column(name = "es_alta_demanda", nullable = false)
     private Boolean esAltaDemanda;
 
+    /** Aparece en la sección «Destacados» de la home. */
+    @Column(name = "destacado", nullable = false)
+    private Boolean destacado = false;
+
     /** URL de la imagen de portada (absoluta http(s) o ruta relativa que sirve el front). NULL = portada generada. */
     @Column(name = "imagen_url", length = 500)
     private String imagenUrl;

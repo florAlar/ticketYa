@@ -57,7 +57,7 @@ El detalle completo está en [`endpoints.md`](endpoints.md). Swagger: `http://lo
 | --- | --- | --- | --- |
 | `lugar` | `id` | — | Dirección, ciudad, coordenadas opcionales |
 | `sector` | `id` | FK lógica a `lugar` | Numerado (`filas`, `asientos_por_fila`) o general |
-| `evento` | `id` | `id_lugar`, `id_organizador` lógicos | Estado, fechas, `es_alta_demanda`, `imagen_url` |
+| `evento` | `id` | `id_lugar`, `id_organizador` lógicos | Estado, fechas, `es_alta_demanda`, `destacado`, `imagen_url` |
 | `precio_sector` | `id` | UK evento/sector | Precio activo y cupo del evento en el sector |
 | `participante` | `id` | UK `nombre` | Artista, banda, equipo, etc. |
 | `evento_participante` | `(id_evento, id_participante)` | PK compuesta | Rol y orden |
@@ -95,7 +95,7 @@ cd Backend
 docker compose up -d --build ms-eventos
 
 cd msvc-eventos
-mvn test              # 203 unitarios
+mvn test              # 208 unitarios
 mvn -Pit verify       # +1 IT de contexto con MySQL real (Testcontainers)
 ```
 
@@ -108,6 +108,6 @@ mvn -Pit verify       # +1 IT de contexto con MySQL real (Testcontainers)
 | Tema | Estado | Nota |
 | --- | --- | --- |
 | Reintegro al cancelar | `parcial` | Feign a entradas best-effort; si entradas cae, el evento queda CANCELADO igual |
-| `destacado` | `pendiente` | Sin columna en el esquema: siempre `false` |
+| `destacado` | `hecho` | Columna `evento.destacado`; filtro `GET /eventos?destacado=true` para la sección «Destacados» de la home |
 | Alta demanda | `hecho` | Umbral 5000 y sincronización de fila con ventas |
 | Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |

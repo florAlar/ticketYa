@@ -36,6 +36,24 @@ public interface EventoService {
                 fechaDesde, fechaHasta, orden, page, size, false);
     }
 
+    /** Catálogo sin filtro por destacado. */
+    default PageResponseDTO<EventoResponseDTO> buscar(
+            String tipo,
+            String ciudad,
+            String organizador,
+            String participante,
+            String estado,
+            LocalDate fechaDesde,
+            LocalDate fechaHasta,
+            String orden,
+            int page,
+            int size,
+            boolean incluirParticipantes) {
+        return buscar(
+                tipo, ciudad, organizador, participante, estado,
+                fechaDesde, fechaHasta, orden, page, size, incluirParticipantes, null);
+    }
+
     /**
      * Catálogo paginado.
      *
@@ -52,7 +70,8 @@ public interface EventoService {
             String orden,
             int page,
             int size,
-            boolean incluirParticipantes);
+            boolean incluirParticipantes,
+            Boolean destacado);
 
     EventoDetalleResponseDTO obtenerPorId(String id);
 

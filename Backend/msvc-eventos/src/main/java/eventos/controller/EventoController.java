@@ -103,7 +103,9 @@ public class EventoController {
                 @Parameter(description = "Tamaño de página", example = "20")
                 @RequestParam(required = false, defaultValue = "20") int size,
                 @Parameter(description = "Completar artistas/participantes de cada evento", example = "false")
-                @RequestParam(required = false, defaultValue = "false") boolean incluirParticipantes) {
+                @RequestParam(required = false, defaultValue = "false") boolean incluirParticipantes,
+                @Parameter(description = "true = solo los destacados de la home; false = solo los no destacados; ausente = todos", example = "true")
+                @RequestParam(required = false) Boolean destacado) {
             return eventoService.buscar(
                     tipo,
                     ciudad,
@@ -115,7 +117,8 @@ public class EventoController {
                     orden,
                     page,
                     size,
-                    incluirParticipantes);
+                    incluirParticipantes,
+                    destacado);
         }
 
     @Operation(

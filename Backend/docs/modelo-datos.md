@@ -90,6 +90,7 @@ erDiagram
         CHAR36 id_lugar FK
         DATETIME fecha_publicacion
         TINYINT es_alta_demanda
+        TINYINT destacado
         VARCHAR imagen_url
     }
     PRECIO_SECTOR {
@@ -116,6 +117,8 @@ erDiagram
 ```
 
 Único: `(id_evento, id_sector)` en `precio_sector`.
+
+**Destacados de la home:** `evento.destacado` (`TINYINT(1) NOT NULL DEFAULT 0`) marca los eventos de la sección «Destacados». Tiene el índice `ix_evento_destacado (destacado, estado)` y el catálogo lo filtra con `GET /eventos?destacado=true|false`. La home muestra **todos** los destacados que todavía no pasaron (`fechaInicio` futura), ordenados por fecha; los eventos en borrador, suspendidos o cancelados no aparecen porque el catálogo público solo trae `PUBLICADO` y `AGOTADO`.
 
 **Asientos virtuales:** un sector numerado guarda `filas` y `asientos_por_fila` (capacidad = filas × asientos por fila); los asientos se calculan y no se persisten. Las tablas `asiento` y `precio_asiento` se eliminaron (SEAT-07): el precio se define solo por sector (`precio_sector`). Estados del evento: `BORRADOR`, `PUBLICADO`, `AGOTADO`, `SUSPENDIDO`, `CANCELADO`, `FINALIZADO`.
 

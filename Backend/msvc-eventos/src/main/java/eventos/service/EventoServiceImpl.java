@@ -160,7 +160,8 @@ public class EventoServiceImpl implements EventoService {
                 String orden,
                 int page,
                 int size,
-                boolean incluirParticipantes) {
+                boolean incluirParticipantes,
+                Boolean destacado) {
 
             int safePage = Math.max(page, 0);
             int safeSize = size <= 0 ? 20 : Math.min(size, 200);
@@ -186,6 +187,7 @@ public class EventoServiceImpl implements EventoService {
                                 desde,
                                 hasta,
                                 blankToNull(participante),
+                                destacado,
                                 pageable);
 
         List<Evento> eventos = result.getContent();
@@ -298,6 +300,7 @@ public class EventoServiceImpl implements EventoService {
             evento.setLugar(lugar);
             evento.setFechaPublicacion(null);
             evento.setEsAltaDemanda(Boolean.TRUE.equals(request.getEsAltaDemanda()));
+            evento.setDestacado(Boolean.TRUE.equals(request.getDestacado()));
             evento.setImagenUrl(normalizarImagenUrl(request.getImagenUrl()));
             eventoRepository.save(evento);
 
@@ -350,6 +353,9 @@ public class EventoServiceImpl implements EventoService {
         }
         if (request.getEsAltaDemanda() != null) {
             evento.setEsAltaDemanda(request.getEsAltaDemanda());
+        }
+        if (request.getDestacado() != null) {
+            evento.setDestacado(request.getDestacado());
         }
         if (request.getImagenUrl() != null) {
             // cadena vacía = quitar la imagen

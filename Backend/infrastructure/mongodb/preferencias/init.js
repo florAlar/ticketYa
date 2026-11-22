@@ -304,7 +304,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'DEPORTE',
       ciudad: 'Buenos Aires',
       artistas: ['Supercross'],
-      fechaEvento: ISODate('2026-11-22T20:00:00.000Z'),
+      fechaEvento: ISODate('2027-02-20T20:00:00.000Z'),
       fechaCompra: ISODate('2026-11-10T18:25:00.000Z'),
       monto: NumberDecimal('60000.00'),
       cantidadEntradas: 1
@@ -323,7 +323,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'RECITAL',
       ciudad: 'Buenos Aires',
       artistas: ['Sepultura'],
-      fechaEvento: ISODate('2026-11-24T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-01-23T21:00:00.000Z'),
       fechaCompra: ISODate('2026-11-12T11:10:00.000Z'),
       monto: NumberDecimal('260000.00'),
       cantidadEntradas: 2
@@ -342,7 +342,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'RECITAL',
       ciudad: 'Buenos Aires',
       artistas: ['Pantera'],
-      fechaEvento: ISODate('2026-11-08T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-01-09T21:00:00.000Z'),
       fechaCompra: ISODate('2026-10-05T16:45:00.000Z'),
       monto: NumberDecimal('120000.00'),
       cantidadEntradas: 1
@@ -361,7 +361,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'RECITAL',
       ciudad: 'Buenos Aires',
       artistas: ['Lamb of God'],
-      fechaEvento: ISODate('2026-12-12T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-02-06T21:00:00.000Z'),
       fechaCompra: ISODate('2026-10-20T09:20:00.000Z'),
       monto: NumberDecimal('180000.00'),
       cantidadEntradas: 1
@@ -456,7 +456,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'DEPORTE',
       ciudad: 'Santiago del Estero',
       artistas: ['Motocross de las Naciones'],
-      fechaEvento: ISODate('2026-10-18T13:00:00.000Z'),
+      fechaEvento: ISODate('2027-01-16T13:00:00.000Z'),
       fechaCompra: ISODate('2026-09-30T17:05:00.000Z'),
       monto: NumberDecimal('45000.00'),
       cantidadEntradas: 1
@@ -551,7 +551,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'RECITAL',
       ciudad: 'Buenos Aires',
       artistas: ['Mastodon','Gojira'],
-      fechaEvento: ISODate('2026-12-05T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-01-30T21:00:00.000Z'),
       fechaCompra: ISODate('2026-11-21T09:55:00.000Z'),
       monto: NumberDecimal('78000.00'),
       cantidadEntradas: 1
@@ -589,7 +589,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'RECITAL',
       ciudad: 'Buenos Aires',
       artistas: ['Pantera'],
-      fechaEvento: ISODate('2026-11-08T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-01-09T21:00:00.000Z'),
       fechaCompra: ISODate('2026-10-02T12:05:00.000Z'),
       monto: NumberDecimal('120000.00'),
       cantidadEntradas: 1
@@ -608,7 +608,7 @@ prefDb.interacciones_eventos.updateOne(
       categoria: 'RECITAL',
       ciudad: 'Buenos Aires',
       artistas: ['Pantera'],
-      fechaEvento: ISODate('2026-11-08T21:00:00.000Z'),
+      fechaEvento: ISODate('2027-01-09T21:00:00.000Z'),
       fechaCompra: ISODate('2026-10-02T12:10:00.000Z'),
       monto: NumberDecimal('210000.00'),
       cantidadEntradas: 1

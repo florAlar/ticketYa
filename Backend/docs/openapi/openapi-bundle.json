@@ -2828,6 +2828,16 @@
                   "default": 20
                 },
                 "example": 20
+              },
+              {
+                "name": "destacado",
+                "in": "query",
+                "description": "true = solo los destacados de la home; false = solo los no destacados; ausente = todos",
+                "required": false,
+                "schema": {
+                  "type": "boolean"
+                },
+                "example": true
               }
             ],
             "responses": {
@@ -3702,6 +3712,11 @@
                 "description": "Marca de alta demanda",
                 "example": false
               },
+              "destacado": {
+                "type": "boolean",
+                "description": "Mostrar el evento en la sección Destacados de la home. En POST ausente = false; en PUT ausente = no se toca",
+                "example": true
+              },
               "imagenUrl": {
                 "type": "string",
                 "description": "URL de la imagen de portada: http(s) absoluta o ruta relativa que empieza con '/' (máx. 500). En PUT, cadena vacía = quitar la imagen; ausente = no se toca",
@@ -3839,7 +3854,7 @@
               },
               "destacado": {
                 "type": "boolean",
-                "description": "Destacado (false en E1)",
+                "description": "Aparece en la sección Destacados de la home",
                 "example": false
               },
               "estado": {
@@ -4052,7 +4067,7 @@
               },
               "destacado": {
                 "type": "boolean",
-                "description": "Destacado (false en E1)",
+                "description": "Aparece en la sección Destacados de la home",
                 "example": false
               },
               "estado": {

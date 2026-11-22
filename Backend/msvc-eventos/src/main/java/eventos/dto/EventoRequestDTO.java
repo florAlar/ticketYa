@@ -39,6 +39,10 @@ public class EventoRequestDTO {
     @Schema(description = "Marca de alta demanda", example = "false")
     private Boolean esAltaDemanda;
 
+    @Schema(description = "Mostrar el evento en la sección Destacados de la home. "
+            + "En POST ausente = false; en PUT ausente = no se toca", example = "true")
+    private Boolean destacado;
+
     @Schema(description = "URL de la imagen de portada: http(s) absoluta o ruta relativa que empieza con '/' "
             + "(máx. 500). En PUT, cadena vacía = quitar la imagen; ausente = no se toca",
             example = "https://ejemplo.com/portada.jpg")
