@@ -55,7 +55,9 @@ cd Backend/docs/postman
 ## Convenciones
 
 - Un test unitario no debe requerir Docker ni red.
-- Los ITs usan Testcontainers y se saltan solos si Docker no está disponible
-  (`@Testcontainers(disabledWithoutDocker = true)`).
-- Los E2E hablan **solo** con el API Gateway y crean sus propios datos.
+- Los ITs usan Testcontainers y requieren Docker. Varias clases usan
+  `@Testcontainers(disabledWithoutDocker = true)` y se omiten si no está; las de concurrencia y de
+  contexto de aplicación pueden fallar si Docker no está disponible.
+- Los E2E hablan **solo** con el API Gateway; en general crean sus propios datos (F2 usa la
+  devolución seed pendiente).
 - Los datos de prueba viven en `Backend/infrastructure/` y solo se cargan en volúmenes nuevos.

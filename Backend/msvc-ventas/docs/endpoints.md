@@ -8,7 +8,7 @@ Paths públicos vía gateway: prefijo `/api`. Abajo paths **internos** (sin `/ap
 
 ---
 
-## Estado implementación E1 (2026-11-06)
+## Estado actual (E1 + E2, revisado 2026-11-22)
 
 | Endpoint | Estado | Notas |
 | --- | --- | --- |

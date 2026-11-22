@@ -7,6 +7,8 @@ Colección **Postman v2.1** con el environment `TicketYa local` para probar la A
 | `TicketYa-E1.postman_collection.json` | 216 requests en 15 carpetas, con tests en español, captura de IDs y auto-login |
 | `TicketYa-local.postman_environment.json` | Variables del entorno local (`baseUrl`, tokens, IDs seed y capturados, `internalToken`) |
 
+> El archivo conserva el nombre `TicketYa-E1` por compatibilidad; la colección cubre **E1 + E2**.
+
 **Corrida completa 2026-11-21:** **216 requests, 587 assertions, 0 fallos** por el proxy Nginx
 (`baseUrl=http://localhost:3000`), incluidas las carpetas **13 Fila virtual** y
 **14 Notificaciones**, que antes no tenían corrida Newman.

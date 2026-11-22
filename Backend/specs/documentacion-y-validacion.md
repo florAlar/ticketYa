@@ -845,6 +845,8 @@ Credenciales verificadas contra los seeds: `demo1234`, `org1234`, `admin1234`, `
 
 **Definición de terminado (DoD) de la línea:**
 
+> Checklist del plan original (2026-11-08); el estado vigente está en `backlog.md` §9 y `docs/README.md`.
+
 - [ ] OpenAPI vivo en los 4 msvc y bundle consolidado que lintéa sin errores.
 - [ ] 100 % de los casos §9.3 implementados y verdes.
 - [ ] Cobertura ≥ 90 % en el alcance ratificado (§9.2) en los 5 módulos.

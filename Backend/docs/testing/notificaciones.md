@@ -6,7 +6,7 @@ devolución aprobada.
 
 > Atajo: si querés empezar de cero con datos seed nuevos, desde `Backend/`:
 > `docker compose down -v && docker compose up -d --build`
-> (destructivo: borra los volúmenes). Si conservás volúmenes viejos, aplicá la migración del final.
+> (destructivo: borra los volúmenes). Si conservás volúmenes viejos, aplicá las migraciones del final.
 
 ---
 

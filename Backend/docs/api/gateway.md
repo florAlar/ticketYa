@@ -1,4 +1,4 @@
-# API Gateway — Ruteo, rutas públicas y RBAC (E1-GW)
+# API Gateway — Ruteo, rutas públicas y RBAC (E1-GW + E2-SEC-02)
 
 **API-05 · msvc `api-gateway` · puerto 8080**  
 Documenta el contrato de enrutamiento del gateway: tabla de rutas, paths públicos, matriz de autorización por rol y headers propagados hacia los microservicios.

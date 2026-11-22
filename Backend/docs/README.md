@@ -24,6 +24,7 @@ Backend/specs/
 | Trazabilidad y bitácora (correlation id, log por servicio) | listo | [`observabilidad.md`](./observabilidad.md) |
 | README de ejecución | listo | [`../../README.md`](../../README.md) y [`../README.md`](../README.md) |
 | Datos de prueba | listo | seeds en `Backend/infrastructure/` (ver `infrastructure/mysql/README.md`) |
+| Índice de pruebas | listo | [`testing/README.md`](./testing/README.md) |
 
 ## Contenido adicional (segunda entrega)
 

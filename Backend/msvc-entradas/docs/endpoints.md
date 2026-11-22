@@ -8,7 +8,7 @@ Paths internos (sin `/api`; GW StripPrefix=1).
 
 ---
 
-## Estado E1 (2026-11-06)
+## Estado actual (E1 + E2, revisado 2026-11-22)
 
 | Endpoint | Estado | Notas |
 | --- | --- | --- |
