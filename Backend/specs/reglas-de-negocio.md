@@ -39,7 +39,7 @@ Organizador, admin y personal de acceso **no** se auto-registran por la web abie
 | Listar usuarios / cambiar estado / asignar roles | ADMIN |
 | Validar ingreso con QR en puerta | PERSONAL_ACCESO (y ADMIN) — hecho (E2-ACC-01) |
 | Reportes de ventas, ocupación y recaudación del evento | ORGANIZADOR dueño (y ADMIN) — hecho (E2-REP-01) |
-| Fila virtual alta demanda | CLIENTE: ingresar/consultar posición y validar token (`POST .../fila/validacion`); ADMIN: fijar tanda (`POST .../fila/habilitacion`). El Sistema abre tandas automáticamente, pausa la fila si el evento se suspende y la reanuda al republicarlo. Implementado en FIL-01/FIL-02/FIL-03; `GET .../fila/estado` es público y `POST /reservas` exige `tokenFila` solo en alta demanda. |
+| Fila virtual alta demanda | CLIENTE: ingresar/consultar posición y validar token (`POST .../fila/validacion`); ADMIN: fijar tanda (`POST .../fila/habilitacion`). El Sistema abre tandas automáticamente, pausa la fila si el evento se suspende y la reanuda al republicarlo. Implementado en FIL-01…FIL-04; `GET .../fila/estado` es público y `POST /reservas` exige `tokenFila` solo en alta demanda. |
 | Preferencias y recomendaciones | CLIENTE — hecho (E2-PRE-01/02/03): `GET/PUT /preferencias/me`, `GET /recomendaciones/me`, historial y eventos similares. |
 | Notificaciones | CLIENTE — hecho (E2-NOT-01/02): bandeja `GET /notificaciones/me` + `PATCH .../leida`; disparos por compra, evento y devolución (PUSH + EMAIL). |
 
