@@ -329,6 +329,7 @@ en [`specs/README.md`](specs/README.md).
 | [`specs/consigna.md`](specs/consigna.md) | Enunciado del TP |
 | [`specs/backlog.md`](specs/backlog.md) | Tareas y estado E1/E2 |
 | [`specs/reglas-de-negocio.md`](specs/reglas-de-negocio.md) | Reglas y decisiones pendientes |
+| [`specs/politica-de-roles.md`](specs/politica-de-roles.md) | Roles y aprovisionamiento (X-ORG-02) |
 | [`specs/endpoints.md`](specs/endpoints.md) | Rutas y enrutado |
 | [`specs/microservicios.md`](specs/microservicios.md) | Mapa de servicios |
 | [`specs/comunicacion.md`](specs/comunicacion.md) | Cliente ↔ gateway ↔ msvc |

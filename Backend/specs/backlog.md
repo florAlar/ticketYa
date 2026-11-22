@@ -90,7 +90,7 @@ Estado actual: los 6 msvc tienen `docs/README.md` (contexto según plantilla), `
 | --- | --- | --- | --- | --- |
 | US-01 | Features + user stories de **todo el sistema** (E1+E2) con roles CLIENTE / ORGANIZADOR / ADMIN / PERSONAL_ACCESO | E1 | hecho | Artefacto de consigna §5.A. Se mantiene en el tablero Trello del equipo (enlazado en el README raíz). |
 | US-02 | Criterios de aceptación por historia del núcleo E1 | E1 | hecho | En el tablero Trello del equipo, junto a las historias. |
-| US-03 | Completar/actualizar CA de historias E2 y de las que cambien | E2 | pendiente | |
+| US-03 | Completar/actualizar CA de historias E2 y de las que cambien | E2 | hecho | 2026-11-21: CA de las historias E2 actualizados/completados en el tablero Trello del equipo; sin copia adicional en el repo. |
 
 ---
 
@@ -262,7 +262,7 @@ Fuera del alcance formal del TP. Solo si sobra tiempo o se quiere UX de producto
 | X-UI-05 | Toast cuentas demo seed en `/login` (reopen) | hecho | Siempre visible en login (no solo mock); seed gateway mismos pass; dismiss sessionStorage + CTA reopen. |
 | X-UI-06 | SPA: badge cupo (Agotado / últimos / &lt;50 / &lt;100) en listado + detalle | hecho | BE: batch `GET /eventos/disponibilidad?ids=` + DTO `disponibleTotal`/`nivelCupo`. FE: EventList 1 batch; cards + detalle; Comprar por sector si disponible≥1. |
 | X-ORG-01 | Extensión cuenta CLIENTE → ORGANIZADOR (solicitud + auth admin) | descartado | 2026-11-21: **descartado**; no se implementa. La consigna (PDF 2026) **no pide autoservicio**: define roles/JWT y que los organizadores publican eventos, pero no cómo se crea un organizador. El rol ORGANIZADOR lo asigna un ADMIN sobre una cuenta CLIENTE (`PUT /usuarios/{id}/roles`). La guía `/cuenta/organizador` queda como instructivo y se retiró el CTA/gate de solicitud. Diseño §7.3.1 como registro histórico. |
-| X-ORG-02 | Política de roles: cuenta base CLIENTE; privilegios los otorga ADMIN | pendiente | Doc/producto (no code). CLIENTE = register; ORG = **admin asigna el rol** (la extensión self-service X-ORG-01 quedó descartada); ADMIN/ACCESO = solo admin. Seeds demo siguen. Opcional: reflejar en US-01 cuando se escriba. |
+| X-ORG-02 | Política de roles: cuenta base CLIENTE; privilegios los otorga ADMIN | hecho | 2026-11-21: `specs/politica-de-roles.md` (roles, aprovisionamiento, matriz y deudas). CLIENTE self-service; ORGANIZADOR/ADMIN/PERSONAL_ACCESO los otorga un ADMIN; X-ORG-01 descartado; seeds demo se mantienen. |
 | X-ACC-01 | Asignar eventos a cada PERSONAL_ACCESO (solo puede validar los asignados) | descartado | Decisión 2026-11-11: no se modela (suma tabla de asignación, endpoints de alta/asignación, chequeo Feign en cada escaneo y pantalla de admin; la consigna no lo pide). Hoy cualquier PERSONAL_ACCESO valida cualquier evento; se documenta como simplificación. Si se retoma, el cambio se limita a un chequeo extra en la validación. |
 
 ### 7.3.1 Diseño acordado — extensión a organizador (X-ORG-01)
@@ -331,7 +331,7 @@ CLIENTE + mensaje; puede volver a pedir (política: cooldown o 1 activa)
 - Copy y ruta `/cuenta/organizador` (guía) = base UX (**X-UI-02** hecho).
 - `X-UI-01` perfil puede alojar el CTA de extensión.
 - Seeds `org@` siguen para demo sin pasar por solicitud.
-- Política roles base (**X-ORG-02**): CLIENTE self-service; resto lo otorga ADMIN (ORG vía este flujo).
+- Política roles base (**X-ORG-02**): CLIENTE self-service; ORGANIZADOR/ADMIN/PERSONAL_ACCESO los otorga un ADMIN (ORG no se autosolicita: X-ORG-01 descartado; ver `specs/politica-de-roles.md`).
 
 ---
 
@@ -390,9 +390,9 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 | Mongo init preferencias | INF-28 + docs Spring | — | — |
 | Redis conf ventas | INF-10 (redis.conf) + **E1-VEN-08 StockCache** + **E2-FILA-01** (fila, tandas y token: claves `fila:*`, configuración `ticketya.fila.*`) | — | — |
 | Auth / gateway | E1-GW-01/02/03, API-05 (+ruta cupos), E1-USU-01, E2-SEC-01, **E2-SEC-02** (cierre RBAC 2026-11-20), **E2-TST-02** (`AutorizacionPorRolMatrixTest`: 90 endpoints × 5 actores + `JwtGatewayIntegrationTest`) + sello `X-Internal-Token` en `/fila/**` | — | — |
-| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02 (Trello); ARQ-02…**06** (`consistencia-y-compensaciones.md`, `decisiones-tecnologicas.md`); **ARQ-01** (responsabilidades/APIs y comunicación síncrona/async cerradas); **API-01/02/03**, **INF-13**, **API-04** (notificaciones + fila en OpenAPI, bundle con 6 specs y diagramas alineados) | — | US-03 |
+| US / arquitectura negocio / OpenAPI vivo | comunicacion + microservicios; US-01/02/03 (Trello: CA E2 actualizados); ARQ-02…**06** (`consistencia-y-compensaciones.md`, `decisiones-tecnologicas.md`); **ARQ-01** (responsabilidades/APIs y comunicación síncrona/async cerradas); **API-01/02/03**, **INF-13**, **API-04** (notificaciones + fila en OpenAPI, bundle con 6 specs y diagramas alineados) | — | — |
 | Código de negocio (E1 + E2) | E1-EVE-02…**06** (+cupo Feign publicar + participantes); E1-VEN-02…08 + **02b cupos**; E1-ENT-02…05; **SEAT-01…06** (asientos virtuales en sectores numerados; Postman/OpenAPI e IT con MySQL real incluidos); **E2-FILA-01** (FIL-01…04: fila, tandas, token y gate), **E2-FILA-02** (popup de alta demanda al publicar, umbral 5000 y pausa/reanudación por estado); **E2-ACC-01** (control de acceso QR); **E2-REP-01** (reportes del organizador); **E2-NFR-01/02/03** (caché, resiliencia y correlation id + bitácora); **LUG-01/02/03/04** (lugares con coordenadas y geocodificación con patrón adaptador); **E2-PRE-01…03**; **E2-NOT-01/02** | — | — |
-| Extra producto | X-UI-01…06, X-QR-01/02 | — | X-ORG-02 |
+| Extra producto | X-UI-01…06, X-QR-01/02, **X-ORG-02** (política en `specs/politica-de-roles.md`) | — | — |
 | Testing / Postman / README | E1-TST-01/02, **E2-TST-01** (ITs de borde 37 OK + E2E F1–F5 5/5), **E2-TST-02**, **E2-TST-03** (matriz 25/50/100 + reintentos post-fix), **E2-DEP-01** (stack completo + front + Newman 216/587/0), INF-17, README raíz + Backend + FE; Postman 216 requests/15 carpetas (corrida 2026-11-21: 216 requests, 587 assertions, 0 fallos, incluidas 13 y 14); tests gateway **146**, ventas **221 + 22 IT**, usuarios 58 + 1 IT, eventos 203 + 1 IT, entradas **86 + 5 IT**, preferencias 39 + 2 IT (5 casos), notificaciones 42 + 6 IT; ITs con Testcontainers (`-Pit`: MySQL, Mongo, Redis, Rabbit) | — | — |
 
 > `X-ORG-01` (extensión self-service CLIENTE → ORGANIZADOR) quedó **descartado** (2026-11-21): el rol lo asigna un ADMIN. Se removió el CTA/gate de solicitud; la guía `/cuenta/organizador` se mantiene como instructivo.
@@ -432,4 +432,4 @@ Specs (DOC-MS / US / ARQ) en paralelo — varios msvc ya tienen `endpoints.md` *
 - Los 6 microservicios tienen OpenAPI (`springdoc` + `OpenApiConfig` + spec en `docs/openapi/`) y Testcontainers con perfil `-Pit`; no se usan bases embebidas.  
 - Tests unitarios: gateway **146**, usuarios **58 + 1 IT**, eventos **203 + 1 IT**, ventas **221 + 22 IT**, entradas **86 + 5 IT**, preferencias **39 + 2 IT (5 casos)**, notificaciones **42 + 6 IT**.  
 - Postman: **216 requests / 15 carpetas**; corrida completa 2026-11-21 por el proxy Nginx: **587 assertions, 0 fallos** (incluye 13 Fila virtual y 14 Notificaciones).  
-- Pendiente: resto de `E2-UI-01`, `US-03` y `X-ORG-02`.
+- Pendiente: resto de `E2-UI-01` y `E2-UI-04`.
