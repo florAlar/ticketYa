@@ -22,7 +22,7 @@ Se incorpora Nginx como servidor web para publicar el frontend de TicketYa y act
 
 ### 1. Preparación de infraestructura
 
-Dentro de `infrastructure/` se agrega una carpeta `nginx/` para almacenar su configuración:
+Dentro de `infrastructure/` está la configuración de Nginx:
 
 ```text
 infrastructure/
@@ -31,26 +31,27 @@ infrastructure/
 └── docker-compose.yml
 ```
 
-El archivo `nginx.conf` definirá:
+El archivo `nginx.conf` define:
 - La publicación de los archivos estáticos del frontend.
 - La redirección de las solicitudes `/api/` hacia el API Gateway.
-- El manejo de las rutas del frontend.
+- El fallback SPA para las rutas del frontend.
 
-Por el momento, se prepara la configuración sin necesidad de levantar el contenedor.
+La imagen del frontend usa una copia embebida (`Frontend/conf/nginx-default.conf`), alineada a mano con este archivo porque el build de Docker no puede montar rutas del Backend.
 
 ### 2. Incorporación del frontend
 
-En una etapa posterior se creará el proyecto React en una carpeta independiente:
+El frontend React vive en `Frontend/`:
 
 ```text
-frontend/
+Frontend/
 ├── src/
 ├── public/
+├── conf/nginx-default.conf
 ├── package.json
 └── Dockerfile
 ```
 
-El Dockerfile utilizará una construcción de múltiples etapas:
+El Dockerfile usa una construcción de múltiples etapas:
 
 1. **Build:** Node.js instala las dependencias y compila React, generando los archivos estáticos en `dist/`.
 2. **Producción:** Nginx sirve esos archivos mediante HTTP.
@@ -59,7 +60,7 @@ El Dockerfile utilizará una construcción de múltiples etapas:
 
 No es necesario ejecutar React y Nginx en dos contenedores independientes para producción. Ambos forman parte del mismo contenedor de frontend: React se compila previamente y Nginx publica el resultado.
 
-El contenedor se incorporará al `docker-compose.yml` general de infraestructura.
+El contenedor se incorpora al compose raíz (`Backend/docker-compose.yml`) como `ms-frontend` (`:3000` → `:80`).
 
 Flujo de comunicación:
 
@@ -88,6 +89,6 @@ Nginx se encargará de servir el frontend y redirigir las solicitudes de API. El
 | API Gateway | Enrutamiento de solicitudes hacia los microservicios. |
 | Docker Compose | Integración y ejecución de los contenedores. |
 
-**Decisión de arquitectura:** el frontend tendrá su propio proyecto y Dockerfile, mientras que Nginx tendrá su configuración dentro de `infrastructure/nginx/`. Su contenedor se incorporará al despliegue general cuando el frontend esté desarrollado.
+**Decisión de arquitectura:** el frontend es un proyecto propio con su Dockerfile; la configuración canónica de Nginx vive en `infrastructure/nginx/nginx.conf` y la imagen usa una copia embebida en `Frontend/conf/nginx-default.conf`. El contenedor `ms-frontend` se publica en el compose raíz.
 
 

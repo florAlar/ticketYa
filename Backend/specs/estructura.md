@@ -108,8 +108,8 @@ TicketYa/
 
 ## Cómo proceder (resumen)
 
-1. `infrastructure/` → scripts de init y conf de Nginx cuando haga falta el entorno.
+1. `infrastructure/` → scripts de init, conf de Redis/RabbitMQ y Nginx.
 2. Cada msvc → modelar en `docs/` (DDD), luego código por capas; levantar solo con su docker-compose.
 3. `APIGateway` → rutas hacia msvcs ya expuestos.
-4. `Frontend/` → UI; en Docker, multi-stage con Nginx usando `infrastructure/nginx/nginx.conf`.
+4. `Frontend/` → UI; en Docker, multi-stage con Nginx usando una copia embebida (`Frontend/conf/nginx-default.conf`) alineada con `infrastructure/nginx/nginx.conf`.
 5. `Backend/docker-compose.yml` → integración completa cuando los contratos entre capas cierren.

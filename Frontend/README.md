@@ -51,7 +51,7 @@ docker compose up -d --build
 ```
 src/
   api/           # facades + mock/* (LS) — misma forma que el gateway
-  auth/          # roles CLIENTE | ORGANIZADOR | ADMIN | ACCESO + helpers de demo
+  auth/          # roles CLIENTE | ORGANIZADOR | ADMIN | PERSONAL_ACCESO (alias legado ACCESO) + helpers de demo
   components/    # layout (Header/Footer), home (Hero, EventList/cards), auth, ui
   config/        # site.js (brand/footer), theme.js (tokens light/dark), featureGates
   context/       # Auth, Site, Theme
