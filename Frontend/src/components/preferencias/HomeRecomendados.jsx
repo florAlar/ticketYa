@@ -14,7 +14,14 @@ const HomeRecomendados = () => {
   const enabled = isAuthenticated && FEATURE.recomendaciones && Boolean(token)
 
   const { data: items = [], status } = useAsync(
-    (signal) => getRecomendacionesMe({ token, limit: 8, signal }),
+    // Igual que el resto de los carruseles de la home: nada que ya haya pasado
+    (signal) =>
+      getRecomendacionesMe({ token, limit: 8, signal }).then((lista) => {
+        const ahora = Date.now()
+        return (lista || []).filter(
+          (e) => !e?.fechaInicio || new Date(e.fechaInicio).getTime() >= ahora
+        )
+      }),
     [token],
     { enabled }
   )
@@ -31,19 +38,13 @@ const HomeRecomendados = () => {
     )
   }
 
-  // Igual que el resto de los carruseles de la home: nada que ya haya pasado
-  const ahora = Date.now()
-  const vigentes = items.filter(
-    (e) => !e?.fechaInicio || new Date(e.fechaInicio).getTime() >= ahora
-  )
-
-  if (status !== 'success' || vigentes.length === 0) return null
+  if (status !== 'success' || items.length === 0) return null
 
   return (
     <RecomendacionesBlock
       title="Recomendados para vos"
       subtitle="Según tus gustos y lo que compraron clientes parecidos."
-      items={vigentes}
+      items={items}
       linkToAll="/eventos"
     />
   )
