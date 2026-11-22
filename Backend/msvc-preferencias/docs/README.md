@@ -90,7 +90,7 @@ docker compose up -d --build ms-preferencias
 
 cd msvc-preferencias
 mvn test              # 39 unitarios
-mvn -Pit verify       # +2 IT (Mongo real + Rabbit/Mongo; requiere Docker)
+mvn -Pit verify       # +2 IT / 5 casos (Mongo real + Rabbit/Mongo; requiere Docker)
 ```
 
 - **Variables:** `SPRING_MONGODB_URI` / `SPRING_DATA_MONGODB_URI` (default `mongodb://ticketya:mongo_dev@localhost:27018/preferencias?authSource=admin`), `SPRING_RABBITMQ_*`, `TICKETYA_URI_EVENTOS`, `TICKETYA_URI_VENTAS`, `TICKETYA_RECS_*`.

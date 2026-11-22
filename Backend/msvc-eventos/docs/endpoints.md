@@ -11,7 +11,7 @@ Identidad write: headers gateway `X-User-Id` / `X-User-Role` (JWT).
 
 ---
 
-## Estado E1 (2026-11-07)
+## Estado actual (E1 + E2, revisado 2026-11-22)
 
 | Endpoint | Estado | Notas |
 | --- | --- | --- |
