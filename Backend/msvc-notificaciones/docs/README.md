@@ -108,4 +108,4 @@ mvn -Pit verify       # +6 IT con MySQL + Rabbit reales (Testcontainers)
 | Push real | `parcial` | `MockPushProvider`; sin Firebase |
 | Entrega email | `hecho` | SMTP/MailHog en Docker, mock en tests locales |
 | Alta administrativa | `hecho` | Queda `PENDIENTE`; no se agrupa con mensajes de eventos |
-| Aplicación de DOC-MS-00 | `parcial` | README completo; falta revisión final del equipo |
+| Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |

@@ -42,7 +42,7 @@ Reglas: el pago aprobado emite entradas vía Feign y publica `compra.confirmada`
 
 | Método | Path | Rol / auth | Uso |
 | --- | --- | --- | --- |
-| `GET` | `/eventos/{id}/disponibilidad`, `/eventos/disponibilidad?ids=` | JWT | Cupos y asientos |
+| `GET` | `/eventos/{id}/disponibilidad`, `/eventos/disponibilidad?ids=` | Público por el gateway | Cupos y asientos |
 | `POST` | `/eventos/{id}/cupos`, `/cupos/liberacion` | Interno/ADMIN | Apertura/liberación de stock |
 | `POST` | `/reservas` | JWT | Crear reserva (opcional `tokenFila`) |
 | `GET/POST` | `/reservas/{id}`, `.../confirmacion`, `.../cancelacion`, `.../renovacion` | Dueño | Ciclo de reserva |
@@ -59,7 +59,7 @@ El detalle de cuerpos, estados y errores está en [`endpoints.md`](endpoints.md)
 | `cupo_sector` | `id` | UK `(id_evento, id_sector)` | Cupo, disponible y vendido |
 | `reserva` | `id_reserva` | `id_cliente`, TTL | PENDIENTE/CONFIRMADA |
 | `detalle_reserva` | `id` | FK lógica a reserva/sector | Cantidad/precio/asientos |
-| `compra` | `id_compra` | `id_reserva`, estado | PENDIENTE_PAGO/APROBADA/RECHAZADA |
+| `compra` | `id_compra` | `id_reserva`, estado | PENDIENTE_PAGO/APROBADA/RECHAZADA; `emision_estado` PENDIENTE/EMITIDA/FALLIDA |
 | `pago` | `id_pago` | `id_compra`, estado | Mock aprobado/rechazado |
 | `asiento_reservado` | `id` | UK evento/sector/fila/número | RESERVADO/VENDIDO |
 
@@ -92,7 +92,7 @@ cd Backend
 docker compose up -d --build ms-ventas
 
 cd msvc-ventas
-mvn test              # 219 unitarios
+mvn test              # 221 unitarios
 mvn -Pit verify       # +22 IT (MySQL, Rabbit; requiere Docker)
 ```
 
@@ -105,6 +105,6 @@ mvn -Pit verify       # +22 IT (MySQL, Rabbit; requiere Docker)
 | Tema | Estado | Nota |
 | --- | --- | --- |
 | Fila virtual | `hecho` | Estado en Redis; sin tablas MySQL nuevas |
-| Corrida formal de carga | `pendiente` | E2-TST-03 (25/50/100 usuarios) |
+| Corrida formal de carga | `hecho` | E2-TST-03: matriz 25/50/100 normal y con fila; ver `docs/testing/carga.md` |
 | Consistencia distribuida | `parcial` | Sin 2PC: Feign fail-hard para cupos y best-effort para reintegros |
-| Aplicación de DOC-MS-00 | `parcial` | README completo; falta revisión final del equipo |
+| Aplicación de DOC-MS-00 | `hecho` | Revisión final 2026-11-21: encabezado, alcance, API, modelo, eventos, criterios y operación verificados contra el código. |

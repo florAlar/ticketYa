@@ -1,4 +1,4 @@
-# Bundle OpenAPI estático — TicketYa E1
+# Bundle OpenAPI estático — TicketYa (E1 + E2)
 
 Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.2.0** en cada microservicio, exportados estáticamente a `Backend/docs/openapi/`.
 
