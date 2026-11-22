@@ -8,6 +8,11 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3309/ventas}
     username: ${SPRING_DATASOURCE_USERNAME:ticketya}
     password: ${SPRING_DATASOURCE_PASSWORD:ticketya_dev}
+    hikari:
+      # 25-100 compradores concurrentes con Feign dentro de la transacción de reserva;
+      # el default de 10 agotaba el pool y devolvía 500 bajo carga.
+      maximum-pool-size: ${TICKETYA_DB_POOL:30}
+      minimum-idle: 5
   jpa:
     hibernate:
       ddl-auto: validate

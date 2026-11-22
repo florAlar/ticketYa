@@ -51,6 +51,7 @@ import ventas.entity.Reserva;
 import ventas.exception.BusinessConflictException;
 import ventas.exception.FilaException;
 import ventas.exception.ResourceNotFoundException;
+import ventas.exception.ServiceUnavailableException;
 import ventas.mapper.VentaMapper;
 import ventas.messaging.CompraConfirmadaEvent;
 import ventas.redis.StockCache;
@@ -822,7 +823,8 @@ public class VentaServiceImpl implements VentaService {
         } catch (FeignException.NotFound e) {
             throw new ResourceNotFoundException("Evento no encontrado: " + idEvento);
         } catch (FeignException e) {
-            throw new IllegalArgumentException("No se pudo consultar msvc-eventos: HTTP " + e.status());
+            // Dependencia caída/lenta: es reintentable (503), no un error de validación del cliente.
+            throw new ServiceUnavailableException("No se pudo consultar msvc-eventos: HTTP " + e.status());
         }
     }
 
