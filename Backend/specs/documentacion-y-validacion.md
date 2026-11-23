@@ -1,7 +1,7 @@
 # Documentación y Validación — Especificación de trabajo (E1)
 
-> **Versión:** 1.3 · **Fecha:** 2026-11-20 · **Alcance:** Entrega 1 (E1), con estado de E2 anotado
-> **Estado:** E1 ejecutada y cerrada. El documento se conserva como registro de la línea “Documentación y Validación”; §1 se actualizó al 2026-11-20 con el estado real de E2.
+> **Versión:** 1.7 · **Fecha:** 2026-11-22 · **Alcance:** Entrega 1 (E1), con el estado de E2 anotado
+> **Estado:** E1 ejecutada y cerrada. El documento se conserva como **registro histórico** de la línea “Documentación y Validación”; el estado vigente está en `backlog.md` y en `docs/`.
 > **Ruta definitiva:** `Backend/specs/documentacion-y-validacion.md`
 > **Artefactos de entrega:** `Backend/docs/`
 
@@ -66,7 +66,7 @@ más el gateway documentado como capa de ruteo/RBAC, más 6 endpoints smoke `GET
 - `msvc-preferencias` y `msvc-notificaciones`: **ya implementados** (E2-PRE-01…03 y E2-NOT-01/02), con OpenAPI y docs propias.
 - Endpoints E2 que estaban diseñados y hoy están implementados: fila virtual (E2-FILA-01/02),
   validaciones de acceso QR (E2-ACC-01), reportes (E2-REP-01) y recomendaciones (E2-PRE-02).
-  **Transferencia de entradas sigue sin API** (solo shell en el front; ver `reglas-de-negocio.md:271`).
+  **Transferencia de entradas sigue sin API** (solo shell en el front; ver `reglas-de-negocio.md` §9, decisión 15).
 - Diagramas de secuencia (compra OK / pago rechazado / reserva vencida): **hechos** en
   `specs/diagramas/diagramas-secuencia.md`.
 - Pruebas de integración entre microservicios, seguridad y carga (consigna E2 §F): seguridad **hecha**

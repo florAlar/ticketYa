@@ -1,5 +1,8 @@
 # Microservicios
 
+> **Estado:** `hecho` · **Fecha:** 2026-11-22 · **Alcance:** servicios, puertos, persistencia, APIs
+> públicas, límites y dependencias · **No incluye:** contrato detallado (ver `endpoints.md`).
+
 Cada contexto es un proyecto Spring Boot independiente (carpeta + `pom.xml` + `Dockerfile` +
 `docker-compose.yml`). No se comparten entidades JPA/documentos entre servicios; las referencias
 cruzadas son UUID sin FK física. El detalle de contratos vive en `specs/endpoints.md`,

@@ -1,5 +1,9 @@
 # Arquitectura del proyecto
 
+> **Estado:** `hecho` · **Fecha:** 2026-11-22 · **Alcance:** organización del monorepo, despliegue
+> Docker y estado de implementación · **No incluye:** contrato HTTP (ver `endpoints.md`) ni modelo de
+> datos (ver `bases-de-datos.md`).
+
 ## Organización general
 
 - Cada microservicio tiene su propio `pom.xml`, donde se definen sus dependencias y configuraciones de Maven.

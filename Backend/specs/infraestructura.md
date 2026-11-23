@@ -1,5 +1,9 @@
 # Estrategia Docker – TicketYa
 
+> **Estado:** `hecho` · **Fecha:** 2026-11-22 · **Alcance:** Dockerfiles, Compose individual y
+> general, puertos, volúmenes y red · **No incluye:** variables de entorno exhaustivas (ver
+> `.env.example`) ni el contrato HTTP (ver `endpoints.md`).
+
 Se utilizará una arquitectura Docker modular que permita desarrollar y ejecutar cada microservicio de manera independiente, pero también levantar el sistema completo para realizar pruebas de integración.
 
 ### 1. Dockerfile

@@ -1,115 +1,99 @@
 # Estructura del repositorio
 
-Árbol de carpetas de TicketYa (Frontend, Backend y docs transversales).
+> **Estado:** `hecho` · **Fecha:** 2026-11-22 · **Alcance:** mapa de carpetas, capas y dónde vive cada
+> artefacto · **No incluye:** detalle de despliegue (ver `infraestructura.md`) ni contrato HTTP
+> (ver `endpoints.md`).
+
+Árbol de carpetas de TicketYa (Frontend, Backend y documentación transversal).
 
 ```text
-TicketYa/
+ticketYa/
+├── AGENTS.md                          # guía para agentes de IA
+├── README.md                          # inicio rápido y mapa general
+├── start.sh                           # arranque opcional del stack (Linux/macOS)
+├── .env.example                       # variables de entorno de ejemplo
+├── .gitignore
 │
-├── Frontend/                          # UI React. Build estático; en prod lo sirve Nginx. Habla solo con el API Gateway (/api).
-│   ├── src/
-│   ├── public/
+├── Frontend/                          # SPA React + Vite. En Docker la sirve Nginx.
+│   ├── src/{api,auth,components,config,context,domain,hooks,lib,pages,providers,routes,styles}/
+│   ├── public/                        # estáticos e imágenes de eventos
+│   ├── conf/nginx-default.conf        # copia embebida para la imagen
+│   ├── docs/                          # endpoints-back.md, endpoints-front.md
+│   ├── .env / .env.example            # VITE_API_BASE_URL + VITE_USE_MOCK (versionado)
+│   ├── docker-compose.yml
+│   ├── Dockerfile                     # multi-stage: Node build → Nginx
 │   ├── package.json
-│   └── Dockerfile                     # Multi-stage: Node build → imagen Nginx con dist/
+│   └── vite.config.js
 │
 ├── Backend/
-│   ├── docker-compose.yml             # Compose general: include de Gateway + msvcs (stack completo).
+│   ├── docker-compose.yml             # stack completo vía include de los Compose individuales
+│   ├── README.md                      # detalle de ejecución del backend
+│   ├── scripts/                       # e2e.sh, status.sh, up-e2e.sh, seeds/backfill
+│   ├── e2e-tests/                     # REST Assured + Awaitility (perfil -Pe2e)
 │   │
-│   ├── APIGateway/                    # Entrada HTTP del backend. Enruta al msvc que corresponda; no tiene DB propia.
+│   ├── APIGateway/                    # entrada HTTP única; no tiene DB propia
 │   │   ├── src/
-│   │   ├── docs/                      # Decisiones DDD / diseño del gateway (vacío hasta documentar).
+│   │   ├── docs/endpoints.md          # rutas, roles y permisos del gateway
 │   │   ├── docker-compose.yml
 │   │   ├── Dockerfile
 │   │   └── pom.xml
 │   │
-│   │   # Microservicios: un bounded context cada uno. Implementar dominio → aplicación → infraestructura → API.
-│   │   # Dentro de cada msvc, docs/ es para modelado DDD de ese contexto (agregados, ubícuo, eventos).
-│   │   # Capas Java comunes (todos los msvc; NO el API Gateway):
-│   │   #   controller/  → adaptadores de entrada HTTP (no mete reglas de negocio).
-│   │   #   service/     → casos de uso / orquestación de dominio.
-│   │   #   repository/  → puertos de persistencia.
-│   │   #   entity|document/ → modelo persistido (entity=MySQL JPA; document=Mongo).
-│   │   #   dto/         → contratos de entrada/salida de la API.
-│   │   #   mapper/      → entity/document <-> DTO.
-│   │   #   clients/     → Feign clients hacia otros msvc (HTTP saliente).
-│   │   #   exception/   → excepciones y handlers del contexto.
-│   │   #   config/      → cableado Spring (beans, datasources).
-│   │   #   security/    → auth/autorización del msvc (si aplica).
-│   │   #   redis|queue/ → infra auxiliar del contexto (solo ventas hoy).
-│   │   # Orden de trabajo sugerido: docs DDD → entity/document + repository → mapper/service → controller → clients.
+│   ├── msvc-usuarios/                 # identidad y JWT (MySQL)
+│   ├── msvc-eventos/                  # eventos, lugares, sectores y participantes (MySQL + RabbitMQ)
+│   ├── msvc-ventas/                   # reservas, compras, pagos, reportes y fila (MySQL + Redis + RabbitMQ)
+│   ├── msvc-entradas/                 # emisión/QR, devoluciones y validación (MySQL + RabbitMQ)
+│   ├── msvc-preferencias/             # preferencias, historial y recomendaciones (MongoDB + RabbitMQ)
+│   ├── msvc-notificaciones/           # plantillas y entrega email/push (MySQL + RabbitMQ + MailHog)
+│   │   # Cada msvc: src/main/java/<contexto>/{controller,service,repository,entity|document,
+│   │   #   dto,mapper,clients,exception,config,security}/ · src/test/ ·
+│   │   #   docs/{README.md,endpoints.md} · docker-compose.yml · Dockerfile · pom.xml
 │   │
-│   ├── msvc-usuarios/                 # Identidad, registro, autenticación. MySQL.
-│   │   ├── src/main/java/usuarios/{controller,service,repository,entity,dto,mapper,clients,exception,security,config}/
-│   │   ├── src/main/resources/application.yml
-│   │   ├── src/test/
-│   │   ├── docs/
-│   │   ├── docker-compose.yml         # App + MySQL del contexto.
-│   │   ├── Dockerfile
-│   │   └── pom.xml
-│   │
-│   ├── msvc-eventos/                  # Catálogo y ciclo de vida de eventos. MySQL.
-│   │   ├── src/main/java/eventos/{controller,service,repository,entity,dto,mapper,clients,exception,config}/
-│   │   ├── src/main/resources/application.yml
-│   │   ├── docs/
+│   ├── infrastructure/                # esquemas, seeds y servicios compartidos
 │   │   ├── docker-compose.yml
-│   │   ├── Dockerfile
-│   │   └── pom.xml
+│   │   ├── mysql/{usuarios,eventos,ventas,entradas,notificaciones}/init.sql
+│   │   ├── mongodb/preferencias/init.js
+│   │   ├── redis/ventas/redis.conf
+│   │   ├── rabbitmq/docker-compose.yml
+│   │   ├── nginx/nginx.conf           # estáticos del Frontend + proxy /api → gateway
+│   │   └── readme.md
 │   │
-│   ├── msvc-ventas/                   # Compra, fila virtual, stock temporal. MySQL + Redis.
-│   │   ├── src/main/java/ventas/{controller,service,repository,entity,dto,mapper,clients,exception,redis,queue,security,config}/
-│   │   ├── src/main/resources/application.yml
-│   │   ├── docs/
-│   │   ├── docker-compose.yml
-│   │   ├── Dockerfile
-│   │   └── pom.xml
+│   ├── specs/                         # documentación de trabajo (fuente de verdad del equipo)
+│   │   ├── README.md                  # flujo Spec-Driven, convenciones y checklist
+│   │   ├── consigna.md                # alcance y entregables (no se modifica)
+│   │   ├── backlog.md                 # estado por ID/US
+│   │   ├── reglas-de-negocio.md
+│   │   ├── politica-de-roles.md
+│   │   ├── endpoints.md               # contrato HTTP de referencia
+│   │   ├── comunicacion.md            # gateway, Feign, RabbitMQ e idempotencia
+│   │   ├── arquitectura.md
+│   │   ├── microservicios.md
+│   │   ├── infraestructura.md
+│   │   ├── estructura.md
+│   │   ├── bases-de-datos.md          # motores e índices al modelo
+│   │   ├── plantilla-docs-msvc.md     # plantilla DOC-MS-00
+│   │   ├── fila-virtual.md, integracion-entre-msvc.md, carga-e2-tst-03.md, …
+│   │   └── diagramas/                 # modelo*.md + diagramas-secuencia.md
 │   │
-│   ├── msvc-entradas/                 # Emisión y estado de entradas. MySQL.
-│   │   ├── src/main/java/entradas/{controller,service,repository,entity,dto,mapper,clients,exception,config}/
-│   │   ├── src/main/resources/application.yml
-│   │   ├── docs/
-│   │   ├── docker-compose.yml
-│   │   ├── Dockerfile
-│   │   └── pom.xml
-│   │
-│   ├── msvc-preferencias/             # Preferencias de usuario (documentos). MongoDB.
-│   │   ├── src/main/java/preferencias/{controller,service,repository,document,dto,mapper,clients,exception,config}/
-│   │   ├── src/main/resources/application.yml
-│   │   ├── docs/
-│   │   ├── docker-compose.yml
-│   │   ├── Dockerfile
-│   │   └── pom.xml
-│   │
-│   ├── msvc-notificaciones/           # Plantillas e intentos de envío. MySQL.
-│   │   ├── src/main/java/notificaciones/{controller,service,repository,entity,dto,mapper,clients,exception}/
-│   │   ├── src/main/resources/application.yml
-│   │   ├── docs/
-│   │   ├── docker-compose.yml
-│   │   ├── Dockerfile
-│   │   └── pom.xml
-│   │
-│   ├── infrastructure/                # Inicializa bases y orquesta lo necesario para el despliegue de las apps.
-│   │   ├── docker-compose.yml         # Puede reutilizar el stack vía include de los Compose de cada app.
-│   │   ├── mysql/                     # init.sql por contexto (usuarios, eventos, ventas, entradas).
-│   │   ├── mongodb/                   # init de preferencias.
-│   │   ├── redis/                     # conf de Redis (ventas).
-│   │   └── nginx/                     # nginx.conf: estáticos del Frontend + proxy /api → API Gateway.
-│   │
-│   └── docs/                          # Documentación transversal del backend (no DDD de un solo msvc).
+│   └── docs/                          # documentación formal de entrega (no DDD de un solo msvc)
+│       ├── README.md
 │       ├── arquitectura.md
-│       ├── infraestructura.md
-│       ├── microservicios.md
-│       ├── bases-de-datos.md
-│       ├── comunicacion.md
-│       └── diagramas/
+│       ├── modelo-datos.md
+│       ├── observabilidad.md
+│       ├── consistencia-y-compensaciones.md
+│       ├── decisiones-tecnologicas.md
+│       ├── api/gateway.md
+│       ├── openapi/                   # 6 specs + bundle consolidado
+│       ├── postman/                   # colección + environment
+│       └── testing/                   # concurrencia, integración, notificaciones y carga
 │
-├── .env.example                       # Variables de entorno de ejemplo (sin secretos reales).
-├── .gitignore
-└── README.md
+└── (Frontend/dist y node_modules son generados y no se versionan)
 ```
 
 ## Cómo proceder (resumen)
 
-1. `infrastructure/` → scripts de init, conf de Redis/RabbitMQ y Nginx.
-2. Cada msvc → modelar en `docs/` (DDD), luego código por capas; levantar solo con su docker-compose.
-3. `APIGateway` → rutas hacia msvcs ya expuestos.
-4. `Frontend/` → UI; en Docker, multi-stage con Nginx usando una copia embebida (`Frontend/conf/nginx-default.conf`) alineada con `infrastructure/nginx/nginx.conf`.
-5. `Backend/docker-compose.yml` → integración completa cuando los contratos entre capas cierren.
+1. `specs/` → escribir/revisar la spec de la feature **antes** de tocar código (ver `README.md`).
+2. `infrastructure/` → scripts de init, configuración de Redis/RabbitMQ y Nginx.
+3. Cada msvc → modelar en `docs/` (DDD), luego código por capas; levantar solo con su `docker-compose.yml`.
+4. `APIGateway` → rutas hacia msvcs ya expuestos (`docs/endpoints.md` y `docs/api/gateway.md`).
+5. `Frontend/` → UI; en Docker, multi-stage con Nginx usando `conf/nginx-default.conf`.
+6. `Backend/docker-compose.yml` → integración completa cuando los contratos entre capas cierren.

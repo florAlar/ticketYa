@@ -1,5 +1,9 @@
 # Comunicación
 
+> **Estado:** `hecho` · **Fecha:** 2026-11-22 · **Alcance:** cliente → gateway, gateway → msvcs,
+> Feign, RabbitMQ, headers de correlación e idempotencia · **No incluye:** contrato detallado por
+> endpoint (ver `endpoints.md` y `docs/openapi/`).
+
 ## Cliente → backend
 
 - Protocolo HTTP + JSON.

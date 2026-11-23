@@ -1,6 +1,6 @@
 # Especificaciones de trabajo — flujo Spec-Driven
 
-> **Vigente desde 2026-11-21.** La consigna lo pide en `consigna.md` §7: escribir y revisar la
+> **Vigente desde 2026-11-22.** La consigna lo pide en `consigna.md` §7: escribir y revisar la
 > especificación **antes** de implementar, versionarla con el código y usarla como base de los
 > contratos OpenAPI y de los casos de prueba. Esta carpeta es la fuente de verdad del equipo.
 
@@ -40,7 +40,11 @@ La Parte A de una feature puede adelantarse si desbloquea un entregable obligato
 | Contrato HTTP | `endpoints.md` + `docs/openapi/` + `<msvc>/docs/endpoints.md` | Paths, roles, códigos, DTOs |
 | Comunicación | `comunicacion.md` | Gateway, Feign, Rabbit, idempotencia y fallos |
 | Mapa de servicios | `microservicios.md` | Responsabilidades, APIs y límites |
+| Mapa del repo | `estructura.md` | Árbol real de carpetas, capas y dónde vive cada artefacto |
+| Bases de datos | `bases-de-datos.md` + `diagramas/modelo*.md` + `../docs/modelo-datos.md` | Motores e índices al modelo de datos |
+| Diagramas | `diagramas/` | ER MySQL/Mongo y secuencias de compra/devolución |
 | Spec de feature | `fila-virtual.md`, `integracion-entre-msvc.md`, `carga-e2-tst-03.md`, … | Decisiones, diseño, CA y plan |
+| Registro histórico | `documentacion-y-validacion.md` | Línea E1 “Documentación y Validación” (cerrada; se conserva como registro) |
 | Contexto por servicio | `plantilla-docs-msvc.md` + `<msvc>/docs/README.md` | DOC-MS-00 |
 | Documentación de entrega | `../docs/` | Arquitectura, modelo, observabilidad, testing, OpenAPI, Postman |
 
