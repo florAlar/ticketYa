@@ -1,6 +1,36 @@
 # TicketYa
 
-Trabajo práctico: venta de entradas para eventos con **API Gateway +  microservicios Spring Boot** y una **SPA React**.
+<br />
+<div align="center">
+  <a href="https://github.com/florAlar/ticketYa">
+    <img src="https://raw.githubusercontent.com/florAlar/ticketYa/refs/heads/main/Frontend/public/logo.svg" alt="Logo" width="100" height="100">
+  </a>
+  <h3 align="center">🎟️ TicketYa</h3>
+  <p align="center">
+    TicketYa: Plataforma venta de entradas para eventos de alta demanda
+    <br />
+    <a href="https://github.com/florAlar/ticketYa/tree/main/Backend/docs"><strong> Ver Documentacion »</strong></a>
+    <br />
+    <br />
+   
+  </p>
+</div>
+<div align="center">
+
+![Spring](https://img.shields.io/badge/spring-%236DB33F.svg?style=for-the-badge&logo=spring&logoColor=white)
+![MySQL](https://img.shields.io/badge/mysql-%234479A1.svg?style=for-the-badge&logo=mysql&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-%234ea94b.svg?style=for-the-badge&logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+![RabbitMQ](https://img.shields.io/badge/Rabbitmq-%23FF6600.svg?style=for-the-badge&logo=rabbitmq&logoColor=white)
+![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+
+</div>
+
+
+
+## Arquitectura
 
 El navegador habla **únicamente con el API Gateway** (`:8080`), que valida el JWT, aplica autorización por rol y enruta al microservicio correspondiente. Cada microservicio tiene su propia base de datos.
 
@@ -130,6 +160,7 @@ chmod +x start.sh
 
 #Si el usuario no esta en el grupo Docker
 sudo ./start.sh
+sudo ./start.sh --rebuild
 ```
 
 > Si `./start.sh` responde `Permiso denegado`, ejecutá `chmod +x start.sh`.
