@@ -59,8 +59,8 @@ códigos) está en `specs/endpoints.md`, `docs/openapi/` y en el `endpoints.md` 
   fila), Postman 229 requests/625 assertions/0 fallos y corrida limpia del dominio completo
   (`E2-DEP-01`).
 - **Pendiente funcional:** transferencia de entradas (sin API); el alta de organizador es manual por
-  ADMIN (`X-ORG-01` quedó descartado). No hay otras brechas de negocio; quedan ajustes opcionales de
-  UI (`E2-UI-01`/`E2-UI-04`).
+  ADMIN (`X-ORG-01` quedó descartado). No hay otras brechas de negocio; los ajustes opcionales de
+  UI (`E2-UI-01`/`E2-UI-04`) quedaron cerrados (2026-11-22).
 
 ## 5. Documentación y Compose
 
