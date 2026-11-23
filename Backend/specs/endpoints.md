@@ -1,4 +1,8 @@
-# TicketYa — interfaz de servicio.
+# TicketYa — interfaz de servicio (contrato HTTP)
+
+> **Estado:** `hecho` · **Fecha:** 2026-11-22 · **Alcance:** métodos, rutas, parámetros, roles y
+> códigos por recurso · **No incluye:** DTOs completos (ver `docs/openapi/`) ni la matriz RBAC del
+> gateway (ver `docs/api/gateway.md`).
 
 ## Convenciones generales de la API
 

@@ -6,7 +6,7 @@
 | **Fecha** | 2026-11-19 |
 | **Destino en el repo** | `Backend/specs/fila-virtual.md` (commit `0a`) |
 | **Servicio principal** | `msvc-ventas` (+ un ajuste en `APIGateway`) |
-| **Backlog** | E2-FILA-01 (`specs/backlog.md:221`) y E2-TST-03 (`:242`) |
+| **Backlog** | E2-FILA-01 y E2-TST-03 (`specs/backlog.md`) |
 | **Convención** | **[V]** verificado en el análisis del repo · **[I]** inferido · **[NV]** no verificado |
 
 > Las referencias `archivo:línea` salen de los análisis previos del repo. **Revalidarlas antes de mergear**, porque cambian con cada commit. Todas las rutas son relativas a `ticketYa/`.
@@ -22,11 +22,11 @@ Para los eventos de alta demanda, los clientes ingresan a una cola que:
 3. **habilita la compra por tandas** y
 4. **condiciona la creación de la reserva** a haber sido habilitado.
 
-El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garantías anti doble venta, que siguen en MySQL (`SELECT … FOR UPDATE` sobre `cupo_sector` y `uk_asiento_evento_sector_fila_numero`, `infrastructure/mysql/ventas/init.sql:71,85`).
+El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garantías anti doble venta, que siguen en MySQL (`SELECT … FOR UPDATE` sobre `cupo_sector` y `uk_asiento_evento_sector_fila_numero`, `infrastructure/mysql/ventas/init.sql`).
 
 **Incluye**
 
-- Los 5 endpoints diseñados en `specs/endpoints.md:206-212`.
+- Los 5 endpoints diseñados en `specs/endpoints.md`.
 - Almacenamiento íntegramente en Redis.
 - Apertura automática de tandas, con override manual de ADMIN.
 - Gate en `crearReserva` para eventos con `esAltaDemanda = true`.
@@ -36,7 +36,7 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 
 **No incluye**
 
-- Tablas MySQL de fila ni mensajería (RabbitMQ). `VentaQueueProducer` y `VentaQueueConsumer` siguen vacíos (`:1-4`).
+- Tablas MySQL de fila ni mensajería (RabbitMQ). `VentaQueueProducer` y `VentaQueueConsumer` siguen vacíos.
 - Expiración de posiciones por inactividad.
 - Devolución del turno cuando la reserva vence o el pago se rechaza (ver D6).
 - Notificaciones push fuera de la pestaña: el front refresca la posición por polling cada 5 s.
@@ -49,34 +49,34 @@ Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs
 
 | Entrada | Backlog / doc | Código real | Resultado |
 |---|---|---|---|
-| `E2-FILA-01` | `specs/backlog.md:221` pendiente, "simplificable con justificación" | Sin controller, service ni DTO de fila en ventas. El gateway **sí** rutea (`APIGateway/src/main/resources/application.yml:50-55`) | **[V]** coincide |
-| `API-04` | `backlog.md:117` parcial, "falta fila y notificaciones" | Sin `/fila` en `docs/openapi/*.json` | **[V]** coincide |
-| `DOC-MS-VEN` | `backlog.md:65` parcial | `msvc-ventas/docs/endpoints.md` sin sección `/fila` | **[V]** coincide |
-| `MOD-06` | `backlog.md:83` "falta cuando entren fila, notificaciones y recomendaciones" | Notificaciones y recomendaciones **ya están** en `specs/diagramas/modelo.md:176,208` y `modelo-por-microservicio.md:240-282` | **[V]** NO coincide: solo falta la fila |
-| Contrato | `specs/endpoints.md:206-212` | No implementado | **[V]** coincide como diseño |
-| Docs de estado | `docs/api/gateway.md:18,39` y `docs/openapi/README.md:120` dicen "no implementada" | Sin implementación | **[V]** coincide |
-| Comunicación / BD | `specs/comunicacion.md:140`, `specs/bases-de-datos.md:13` | Redis disponible (`RedisConfig.java:12-15`), sin tabla de fila en `init.sql:8-85` | **[V]** coincide |
-| Reglas de negocio | `specs/reglas-de-negocio.md:42` "pendiente E2"; decisión 16 abierta en `:265` | Sin implementación | **[V]** coincide |
-| `E2-TST-03` | `backlog.md:242` pendiente; la consigna lo exige (`consigna.md:73,159-163,171`) | Sin informe ni `.jmx` versionado | **[V]** entregable en cero *(hoy **hecho**: `docs/testing/carga.md`)* |
+| `E2-FILA-01` | `specs/backlog.md` pendiente, "simplificable con justificación" | Sin controller, service ni DTO de fila en ventas. El gateway **sí** rutea (`APIGateway/src/main/resources/application.yml`) | **[V]** coincide |
+| `API-04` | `backlog.md` parcial, "falta fila y notificaciones" | Sin `/fila` en `docs/openapi/*.json` | **[V]** coincide |
+| `DOC-MS-VEN` | `backlog.md` parcial | `msvc-ventas/docs/endpoints.md` sin sección `/fila` | **[V]** coincide |
+| `MOD-06` | `backlog.md` "falta cuando entren fila, notificaciones y recomendaciones" | Notificaciones y recomendaciones **ya están** en `specs/diagramas/modelo.md` y `modelo-por-microservicio.md` | **[V]** NO coincide: solo falta la fila |
+| Contrato | `specs/endpoints.md` | No implementado | **[V]** coincide como diseño |
+| Docs de estado | `docs/api/gateway.md` y `docs/openapi/README.md` dicen "no implementada" | Sin implementación | **[V]** coincide |
+| Comunicación / BD | `specs/comunicacion.md`, `specs/bases-de-datos.md` | Redis disponible (`RedisConfig.java`), sin tabla de fila en `init.sql` | **[V]** coincide |
+| Reglas de negocio | `specs/reglas-de-negocio.md` "pendiente E2"; decisión 16 abierta en `reglas-de-negocio.md` §9 | Sin implementación | **[V]** coincide |
+| `E2-TST-03` | `backlog.md` pendiente; la consigna lo exige (`consigna.md`) | Sin informe ni `.jmx` versionado | **[V]** entregable en cero *(hoy **hecho**: `docs/testing/carga.md`)* |
 
-**Estado de las inconsistencias detectadas (actualizado 2026-11-20):** ya resueltas — `docs/openapi/README.md` documenta fila y reportes; `specs/microservicios.md` y `specs/arquitectura.md` reflejan el estado implementado; `specs/documentacion-y-validacion.md` y `specs/reglas-de-negocio.md` ya no marcan fila, preferencias ni notificaciones como pendientes. Queda como registro histórico el resumen de `backlog.md:377-390,419`, que conserva filas anteriores a E2-PRE/E2-NOT; los READMEs ya reflejan los gates activos.
+**Estado de las inconsistencias detectadas (actualizado 2026-11-20):** ya resueltas — `docs/openapi/README.md` documenta fila y reportes; `specs/microservicios.md` y `specs/arquitectura.md` reflejan el estado implementado; `specs/documentacion-y-validacion.md` y `specs/reglas-de-negocio.md` ya no marcan fila, preferencias ni notificaciones como pendientes. Queda como registro histórico el resumen de `backlog.md`, que conserva filas anteriores a E2-PRE/E2-NOT; los READMEs ya reflejan los gates activos.
 
 ## 3. Decisiones de diseño
 
 Marcar cada casilla cuando el equipo esté de acuerdo.
 
-- [x] **D1. Redis-only.** Fila, posiciones, tanda y token viven en Redis (`StringRedisTemplate`, `RedisConfig.java:12-15`). Sin tablas MySQL nuevas ni RabbitMQ. Justificación formal en `consigna.md:148`.
-- [x] **D2. Gate solo si `esAltaDemanda = true`.** Protege el flujo E1 y los 216 requests de Postman. El flag existe en `Evento.java:53-54` y `EventoMapper.java:35`, pero no llega a ventas: se agrega a `EventosClient.EventoDetalleFeignDTO` (`:23-30`).
-- [x] **D3. Fail-closed en toda la fila, incluido el gate.** Si Redis falla: **503** en `ingreso`, `posicion`, `estado`, `validacion`, `habilitacion` y en `POST /reservas` **de eventos de alta demanda**. Los eventos normales no se ven afectados, porque no consultan Redis para la fila. *Motivo:* la fila es control de acceso. Su propósito es evitar que todos golpeen el lock de MySQL; con Redis caído, el fail-open produciría exactamente eso. La integridad de la venta la garantiza MySQL en ambos casos, así que lo que se decide es la equidad. Es además más simple de implementar y de testear (sin bitácora especial). Se diverge a propósito de `StockCache` (`:28-73`), que es fail-open porque es un caché.
+- [x] **D1. Redis-only.** Fila, posiciones, tanda y token viven en Redis (`StringRedisTemplate`, `RedisConfig.java`). Sin tablas MySQL nuevas ni RabbitMQ. Justificación formal en `consigna.md`.
+- [x] **D2. Gate solo si `esAltaDemanda = true`.** Protege el flujo E1 y los 229 requests de Postman. El flag existe en `Evento.java` y `EventoMapper.java`, pero no llega a ventas: se agrega a `EventosClient.EventoDetalleFeignDTO`.
+- [x] **D3. Fail-closed en toda la fila, incluido el gate.** Si Redis falla: **503** en `ingreso`, `posicion`, `estado`, `validacion`, `habilitacion` y en `POST /reservas` **de eventos de alta demanda**. Los eventos normales no se ven afectados, porque no consultan Redis para la fila. *Motivo:* la fila es control de acceso. Su propósito es evitar que todos golpeen el lock de MySQL; con Redis caído, el fail-open produciría exactamente eso. La integridad de la venta la garantiza MySQL en ambos casos, así que lo que se decide es la equidad. Es además más simple de implementar y de testear (sin bitácora especial). Se diverge a propósito de `StockCache`, que es fail-open porque es un caché.
 - [x] **D4. Apertura de tandas automática, con override de ADMIN.**
   - Un job programado avanza la tanda en +N posiciones cada X segundos, topeado por el cupo disponible (sección 7).
   - `POST /fila/habilitacion` (solo ADMIN) fija la tanda a mano y funciona siempre, con o sin job.
-  - Es compatible con el contrato: `specs/endpoints.md:212` indica "ADMIN/Sistema" como quien habilita **[V, según el análisis previo]**.
-  - La decisión 16 de `reglas-de-negocio.md:265` queda cerrada con esto.
+  - Es compatible con el contrato: `specs/endpoints.md` indica "ADMIN/Sistema" como quien habilita **[V, según el análisis previo]**.
+  - La decisión 16 de `reglas-de-negocio.md` queda cerrada con esto.
 - [x] **D5. Token de un solo uso, consumido de forma atómica al inicio del gate y restaurado si la transacción no confirma.** Evita el doble uso concurrente y no quema el turno si la reserva falla (sección 6).
 - [x] **D6. Un turno por cliente y evento.** Al consumir el token, el cliente queda en el SET `usados`. No puede volver a ingresar ni pedir otro token para ese evento. *Consecuencia:* si la reserva vence o el pago se rechaza, el turno **no se devuelve**. Es una simplificación explícita. La extensión posible (liberar el turno en `rechazarVenta` y `expireOne`) queda fuera de alcance.
 - [x] **D7. TTL único.** Todas las claves de la fila de un evento (`zset`, `seq`, `tanda`, `usados`) comparten el mismo TTL, renovado por toda escritura y sembrado en el primer ingreso. La única excepción es el token, que tiene un TTL propio, más corto.
-- [x] **D8. Cache del flag del evento.** `ingreso`, `posicion`, `estado`, `validacion` y el job consultan `msvc-eventos` (estado PUBLICADO y `esAltaDemanda`) a través de una caché en memoria de pocos segundos, para no acoplar el polling de la fila a la disponibilidad de eventos. No cachea stock ni cupos: la regla de no cachear disponibilidad (`backlog.md:236`) se mantiene.
+- [x] **D8. Cache del flag del evento.** `ingreso`, `posicion`, `estado`, `validacion` y el job consultan `msvc-eventos` (estado PUBLICADO y `esAltaDemanda`) a través de una caché en memoria de pocos segundos, para no acoplar el polling de la fila a la disponibilidad de eventos. No cachea stock ni cupos: la regla de no cachear disponibilidad (`backlog.md`) se mantiene.
 - [x] **D9. UI de fila implementada (2026-11-20).** El SPA suma `/eventos/:id/fila` (estado público, turno con polling, validación y panel ADMIN de habilitación) y el checkout exige/envía `tokenFila` en `POST /reservas`. La decisión original de priorizar el backend no cambia el contrato: la UI consume los mismos 5 endpoints y las reglas siguen en Redis.
 - [x] **D10. "Posición" es el número de turno, inmutable.** Es el orden de llegada asignado con un contador atómico y no cambia aunque otros compren. Quien está habilitado cumple `posicion ≤ tanda`. Para mostrar cuánto falta, las respuestas incluyen `delante = max(0, posicion − tanda)`: cantidad de posiciones que faltan habilitar para que sea su turno.
 - [x] **D11. Pausa/reanudación por estado del evento (2026-11-20).** Al salir de `PUBLICADO` (suspender/cancelar/agotar/finalizar) o al entrar (publicar/republicar), `msvc-eventos` llama vía Feign a `POST /internas/fila/{id}/invalidacion` para descartar de inmediato la caché de D8. La fila queda inactiva porque todas las operaciones y el job exigen `PUBLICADO && esAltaDemanda`; no se borran las claves Redis (los turnos y tokens sobreviven con su TTL). Si ventas no responde, la caché converge por su TTL (10 s). La sincronización es best-effort y nunca revierte la publicación.
@@ -193,9 +193,9 @@ Al restaurar se usa `SET` sin `NX`: mientras el cliente estuvo en `usados`, `val
 
 ## 5. Contrato de los 5 endpoints
 
-Rutas por el gateway (`application.yml:50-55` ya rutea `/api/eventos/*/fila/**` a `ms-ventas:8083`). En ventas: `@RequestMapping("/eventos/{idEvento}/fila")`. La identidad llega en `X-User-Id`, que el gateway inyecta desde el JWT.
+Rutas por el gateway (`application.yml` ya rutea `/api/eventos/*/fila/**` a `ms-ventas:8083`). En ventas: `@RequestMapping("/eventos/{idEvento}/fila")`. La identidad llega en `X-User-Id`, que el gateway inyecta desde el JWT.
 
-> **[I]** `specs/endpoints.md:206-212` solo da la firma de una línea por endpoint. El formato de body y response de abajo se define acá y se versiona en OpenAPI en FIL-04. **Validar** nombres de campos contra ese archivo.
+> **[I]** `specs/endpoints.md` solo da la firma de una línea por endpoint. El formato de body y response de abajo se define acá y se versiona en OpenAPI en FIL-04. **Validar** nombres de campos contra ese archivo.
 
 | Método y ruta | Rol | Descripción |
 |---|---|---|
@@ -275,17 +275,17 @@ public ReservaCreateRequestDTO(String idEvento, List<Item> items) {
 
 ## 6. Gate en `crearReserva`
 
-Archivo: `msvc-ventas/src/main/java/ventas/service/VentaServiceImpl.java:292-368`. Orden de pasos:
+Archivo: `msvc-ventas/src/main/java/ventas/service/VentaServiceImpl.java`. Orden de pasos:
 
-1. **Idempotencia** (`:295-300`): un reintento con la misma `Idempotency-Key` devuelve la reserva existente **sin pedir token**.
-2. **Evento**: consulta a `EventosClient` (`:302-308`), validación de PUBLICADO (`:303-305`) y lectura de `esAltaDemanda`.
+1. **Idempotencia**: un reintento con la misma `Idempotency-Key` devuelve la reserva existente **sin pedir token**.
+2. **Evento**: consulta a `EventosClient`, validación de PUBLICADO y lectura de `esAltaDemanda`.
 3. **Si `esAltaDemanda = true`:**
    1. Sin `tokenFila` o vacío → **409** `FILA_TOKEN_REQUERIDO`.
    2. `consumirToken` (atómico). Devuelve 0 → **409** `FILA_TOKEN_INVALIDO` (inexistente, vencido, ya usado o de otro cliente). Error de Redis → **503** `FILA_NO_DISPONIBLE` (D3).
    3. Si se consumió, registrar de inmediato una `TransactionSynchronization`:
       - `afterCompletion(status)`: si `status != STATUS_COMMITTED`, ejecutar `restaurarToken` (el turno vuelve a quedar disponible).
       - `afterCommit`: registrar en bitácora `FILA_TOKEN_CONSUMIDO` con el `idReserva`.
-4. Flujo actual sin cambios: límite por cliente (`:312`), `lockCupo` (`:335`), descuento de cupo, asientos y hold en Redis.
+4. Flujo actual sin cambios: límite por cliente, `lockCupo`, descuento de cupo, asientos y hold en Redis.
 
 Todo el paso 3 va **antes de `lockCupo`**: sin token no se descuenta cupo ni se toman locks de MySQL.
 
@@ -299,7 +299,7 @@ Garantías:
 
 ## 7. Apertura automática de tandas
 
-Componente: `FilaTandaScheduler` en ventas, `@Scheduled(fixedDelayString = "${ticketya.fila.auto.intervalo-ms}")`. El patrón de jobs ya existe (`ReservaExpirationJob`, `EmisionPendienteJob`, `@EnableScheduling` en `VentasApplication.java:10`).
+Componente: `FilaTandaScheduler` en ventas, `@Scheduled(fixedDelayString = "${ticketya.fila.auto.intervalo-ms}")`. El patrón de jobs ya existe (`ReservaExpirationJob`, `EmisionPendienteJob`, `@EnableScheduling` en `VentasApplication.java`).
 
 En cada tick, si `ticketya.fila.auto.enabled = true`:
 
@@ -334,7 +334,7 @@ Propiedades:
 
 ## 9. Configuración (`application.yml`)
 
-Se agrega junto al bloque existente de ventas (`application.yml:37-46`). **Usar el prefijo real de ese bloque**; se asume `ticketya.fila.*` (punto abierto 7).
+Se agrega junto al bloque existente de ventas (`application.yml`). **Usar el prefijo real de ese bloque**; se asume `ticketya.fila.*` (punto abierto 7).
 
 ```yaml
 ticketya:
@@ -350,7 +350,7 @@ ticketya:
       lock-ms: ${TICKETYA_FILA_AUTO_LOCK_MS:8000}
 ```
 
-El TTL de la reserva es de 10 min (`application.yml:38`) y el del token se alinea con él.
+El TTL de la reserva es de 10 min (`application.yml`) y el del token se alinea con él.
 
 ## 10. Errores de negocio
 
@@ -369,7 +369,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 ## 11. Observabilidad
 
-`Bitacora.registrar` con correlation id (`E2-NFR-03`, `backlog.md:238`) en: `FILA_INGRESO`, `FILA_HABILITACION` (modo `AUTO` o `MANUAL`, valor anterior y nuevo), `FILA_TOKEN_EMITIDO`, `FILA_TOKEN_CONSUMIDO` (con `idReserva`, en `afterCommit`), `FILA_TOKEN_RESTAURADO` y `FILA_GATE_RECHAZO`. Los logs de acceso del gateway (`trace.http`) ya cubren método, ruta, código y tiempo.
+`Bitacora.registrar` con correlation id (`E2-NFR-03`, `backlog.md`) en: `FILA_INGRESO`, `FILA_HABILITACION` (modo `AUTO` o `MANUAL`, valor anterior y nuevo), `FILA_TOKEN_EMITIDO`, `FILA_TOKEN_CONSUMIDO` (con `idReserva`, en `afterCommit`), `FILA_TOKEN_RESTAURADO` y `FILA_GATE_RECHAZO`. Los logs de acceso del gateway (`trace.http`) ya cubren método, ruta, código y tiempo.
 
 ## 12. Plan de entrega: US, criterios y pasos
 
@@ -388,7 +388,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 | Archivo | Cuándo se toca |
 |---|---|
-| `specs/backlog.md` | `0a` (`:83`) · TST/A (`:242` parcial) · FIL-01 (`:221` en curso) · TST/B (`:242` hecho) · FIL-04 (cierre: `:221`, `:117`, `:65`, `:83`, `:388`) |
+| `specs/backlog.md` | `0a` (MOD-06) · TST/A (E2-TST-03 parcial) · FIL-01 (E2-FILA-01 en curso) · TST/B (E2-TST-03 hecho) · FIL-04 (cierre: E2-FILA-01, API-04, DOC-MS-VEN, MOD-06, resumen) |
 | `specs/endpoints.md` y `msvc-ventas/docs/endpoints.md` | Cada US marca los endpoints que implementa (una sola vez cada uno) |
 | `docs/api/gateway.md` | Solo FIL-04 |
 | `specs/reglas-de-negocio.md` | FIL-02 (cierra la decisión 16) |
@@ -398,17 +398,17 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 **Criterios de aceptación**
 
 - **CA-0a.1** Este documento queda en `Backend/specs/fila-virtual.md`, validado por el equipo (sección 3 completa).
-- **CA-0a.2** `specs/backlog.md:83` (MOD-06) pasa a: `Falta sólo la fila (FIL-01…FIL-04); notificaciones y recomendaciones ya documentadas en los diagramas.`
+- **CA-0a.2** `specs/backlog.md` (MOD-06) pasa a: `Falta sólo la fila (FIL-01…FIL-04); notificaciones y recomendaciones ya documentadas en los diagramas.`
 - **CA-0a.3** Se cierran los puntos abiertos 1–7 y 11 de la sección 16; los puntos 8–10 quedaron **[V]** en la corrida de carga del 2026-11-21 (§16).
 - **CA-0a.4** Cero cambios de código.
 
-**Pasos:** `git status --short` vacío → crear `specs/fila-virtual.md` → corregir `backlog.md:83` → `git diff --check` → commit.
+**Pasos:** `git status --short` vacío → crear `specs/fila-virtual.md` → corregir `backlog.md` → `git diff --check` → commit.
 
 **Commit:** `docs(fila): base de specs y corrección MOD-06 (0a)`
 
 ### BLOQUE `TST-CARGA-01 / Parte A` — Compra normal
 
-> Se hace **antes** de la fila: no depende de ninguna `FIL-*` y asegura cuanto antes el entregable que exige la consigna (`consigna.md:171`). Los pasos detallados están en la sección 15.
+> Se hace **antes** de la fila: no depende de ninguna `FIL-*` y asegura cuanto antes el entregable que exige la consigna (`consigna.md`). Los pasos detallados están en la sección 15.
 
 **Criterios de aceptación**
 
@@ -416,7 +416,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 - **CA-A.2** Parámetros configurables: usuarios concurrentes (p. ej. 25 / 50 / 100), ramp-up y duración. Duración **menor a 10 min** para que no entren expiraciones de reserva (TTL de 10 min).
 - **CA-A.3** Evento **no** de alta demanda, con **sector general** y cupo suficiente para no agotarlo.
 - **CA-A.4** Informe `docs/testing/carga.md` con entorno, usuarios concurrentes, ramp-up, duración, p50 / p95 / p99, RPS, errores agrupados por código HTTP y la verificación de integridad.
-- **CA-A.5** `backlog.md:242` pasa a `parcial`: "escenario normal hecho; falta escenario con fila".
+- **CA-A.5** `backlog.md` pasa a `parcial`: "escenario normal hecho; falta escenario con fila".
 
 **Commit:** `test(carga): escenario compra normal + informe mínimo (E2-TST-03)`
 
@@ -439,21 +439,21 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 **Pasos y archivos** (`msvc-ventas/src/main/java/ventas/…`)
 
-1. `application.yml` (`:37-46`): bloque de la sección 9.
+1. `application.yml` : bloque de la sección 9.
 2. `redis/FilaRedisStore.java`: claves y scripts `ingresar` y lecturas de la sección 4, con el envoltorio `DataAccessException` → `503` en **todos** los métodos.
-3. `clients/EventosClient.java` (`:23-30`): `private Boolean esAltaDemanda;` en `EventoDetalleFeignDTO` (Lombok ya está), más el componente de caché del flag (TTL `evento-cache-ttl-seconds`).
-4. `service/FilaService.java` y `FilaServiceImpl.java`: `ingresar` (consulta el flag; PUBLICADO es el valor `"PUBLICADO"`, `EventoServiceImpl.java:76`), `posicion` y `estado`.
+3. `clients/EventosClient.java` : `private Boolean esAltaDemanda;` en `EventoDetalleFeignDTO` (Lombok ya está), más el componente de caché del flag (TTL `evento-cache-ttl-seconds`).
+4. `service/FilaService.java` y `FilaServiceImpl.java`: `ingresar` (consulta el flag; PUBLICADO es el valor `"PUBLICADO"`, `EventoServiceImpl.java`), `posicion` y `estado`.
 5. `controller/FilaController.java` (`@RequestMapping("/eventos/{idEvento}/fila")`) con `@PostMapping("/ingreso")`, `@GetMapping("/posicion")` y `@GetMapping("/estado")`; DTOs `FilaIngresoResponseDTO`, `FilaPosicionResponseDTO` y `FilaEstadoResponseDTO`.
 6. Gateway: regla pública de `GET /api/eventos/*/fila/estado`.
 
 **Tests**
 
 - Unitarios de `FilaServiceImpl` con el store mockeado.
-- `FilaControllerTest` con MockMvc standalone (patrón `EntradaControllerValidacionTest.java:39`).
+- `FilaControllerTest` con MockMvc standalone (patrón `EntradaControllerValidacionTest.java`).
 - **IT `FilaRedisStoreIT` con Redis en Testcontainers** (sección 14).
 - `JwtGatewayIntegrationTest`: la ruta pública de `estado`.
 
-**Docs:** `msvc-ventas/docs/endpoints.md` (sección "Fila virtual"), `specs/endpoints.md:208,209,211` marcados como implementados, `backlog.md:221` → "en curso (FIL-02…FIL-04 pendientes)".
+**Docs:** `msvc-ventas/docs/endpoints.md` (sección "Fila virtual"), `specs/endpoints.md` marcados como implementados, `backlog.md` → "en curso (FIL-02…FIL-04 pendientes)".
 
 **Commit:** `feat(fila): ingreso, posición y estado con Redis (FIL-01)`
 
@@ -480,9 +480,9 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 3. `FilaTandaScheduler` (sección 7).
 4. `FilaHabilitacionRequestDTO` con `@Min(1) Integer hastaPosicion`; `@PostMapping("/habilitacion")` leyendo `X-User-Role` y rechazando con 403 si no es ADMIN.
 
-**Tests:** servicio; controller con los cuatro roles; unitario del cálculo del job; IT de `habilitar` concurrente y del lock con dos "instancias"; `JwtGatewayIntegrationTest` con ADMIN 200 y ORGANIZADOR 403 (patrón `:168`).
+**Tests:** servicio; controller con los cuatro roles; unitario del cálculo del job; IT de `habilitar` concurrente y del lock con dos "instancias"; `JwtGatewayIntegrationTest` con ADMIN 200 y ORGANIZADOR 403 (patrón de test del gateway).
 
-**Docs:** `specs/reglas-de-negocio.md:42,265`, `specs/endpoints.md:212` y `msvc-ventas/docs/endpoints.md`.
+**Docs:** `specs/reglas-de-negocio.md`, `specs/endpoints.md` y `msvc-ventas/docs/endpoints.md`.
 
 **Commit:** `feat(fila): apertura automática de tandas y override ADMIN (FIL-02)`
 
@@ -506,7 +506,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 - **CA-3.7** Si la reserva falla y la transacción hace rollback (límite por cliente, unique key de asientos, excepción), el token **se restaura** y el cliente puede reintentar.
 - **CA-3.8** Tras una reserva confirmada, el cliente queda en `usados`: no puede ingresar ni validar de nuevo en ese evento.
 - **CA-3.9** Redis caído en un evento de alta demanda → **503** y no se descuenta cupo. Un evento normal con Redis caído funciona igual (D3).
-- **CA-3.10** Evento normal: comportamiento idéntico al actual. **La suite completa de ventas y los 216 requests de Postman siguen pasando.**
+- **CA-3.10** Evento normal: comportamiento idéntico al actual. **La suite completa de ventas y los 229 requests de Postman siguen pasando.**
 - **CA-3.11** Un reintento con la misma `Idempotency-Key` no exige token.
 
 **Pasos y archivos**
@@ -514,11 +514,11 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 1. `FilaRedisStore`: scripts `validar`, `consumirToken` y `restaurarToken`.
 2. `FilaValidacionResponseDTO`, `@PostMapping("/validacion")` y `FilaService.validarToken`.
 3. `dto/ReservaCreateRequestDTO.java`: tercer componente `tokenFila` y constructor de 2 argumentos (sección 5.5).
-4. `VentaServiceImpl.java:292-368`: gate de la sección 6, inyectando `FilaService`. Cuidar los tests que instancian el constructor (`VentaServiceImplTest`, `ReservaAsientoConcurrenciaTest`).
+4. `VentaServiceImpl.java`: gate de la sección 6, inyectando `FilaService`. Cuidar los tests que instancian el constructor (`VentaServiceImplTest`, `ReservaAsientoConcurrenciaTest`).
 
 **Tests:** `FilaServiceTest` (vigente, vencido, fuera de tanda, usado); casos nuevos en `VentaServiceImplTest` (alta demanda con y sin token, token inválido, Redis caído, evento normal). Para el rollback, inicializar `TransactionSynchronizationManager.initSynchronization()` y disparar `afterCompletion(STATUS_ROLLED_BACK)` a mano. IT de consumo concurrente. **Suite completa de `msvc-ventas`.**
 
-**Docs:** `specs/endpoints.md:210`, `specs/comunicacion.md:140`, sección nueva en `specs/diagramas/diagramas-secuencia.md` (ingreso → tandas → validación → reserva, con la rama de rollback) y `msvc-ventas/docs/endpoints.md`.
+**Docs:** `specs/endpoints.md`, `specs/comunicacion.md`, sección nueva en `specs/diagramas/diagramas-secuencia.md` (ingreso → tandas → validación → reserva, con la rama de rollback) y `msvc-ventas/docs/endpoints.md`.
 
 **Commit:** `feat(fila): token temporal y gate por alta demanda (FIL-03)`
 
@@ -534,7 +534,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 - **CA-B.4** Los clientes con posición fuera de tanda hacen poll hasta obtener token o hasta un timeout configurable. El timeout se cuenta como error, no como éxito.
 - **CA-B.5** Métricas separadas: latencia de `ingreso`, tiempo en fila (de `ingreso` a token), `validacion`, `crearReserva`, RPS y errores (`409` fuera de tanda, `503`, timeouts), con la comparación de overhead contra la Parte A.
 - **CA-B.6** Misma verificación de no doble venta que la Parte A, más las comprobaciones de Redis de la sección 15.
-- **CA-B.7** `backlog.md:242` pasa a `hecho`.
+- **CA-B.7** `backlog.md` pasa a `hecho`.
 
 **Commit:** `test(carga): escenario con fila, tandas automática y manual (E2-TST-03)`
 
@@ -542,18 +542,18 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 **Criterios de aceptación**
 
-- **CA-4.1** OpenAPI regenerado (`docs/openapi/msvc-ventas.json` y `openapi-bundle.json`) con los 5 endpoints, ejemplos, códigos de error y `bearerAuth`. `docs/openapi/README.md:16,120` corregidos (la parte `/fila`).
+- **CA-4.1** OpenAPI regenerado (`docs/openapi/msvc-ventas.json` y `openapi-bundle.json`) con los 5 endpoints, ejemplos, códigos de error y `bearerAuth`. `docs/openapi/README.md` corregidos (la parte `/fila`).
 - **CA-4.2** Colección Postman: carpeta nueva "Fila virtual" con los 5 requests. El de `habilitacion` usa JWT de ADMIN y body `{"hastaPosicion": N}` (`docs/postman/README.md`).
-- **CA-4.3** `docs/api/gateway.md:18,39` pasan a "implementada", con el RBAC (`:74-92`) y la ruta pública de `estado`.
-- **CA-4.4** `specs/diagramas/modelo*.md`, `docs/modelo-datos.md` y `specs/bases-de-datos.md:13`: nota de que la fila vive en Redis y **no** entra al ER de MySQL, con la justificación de D1.
-- **CA-4.5** `specs/backlog.md`: `:221` hecho, `:117` "falta sólo notificaciones", `:65` DOC-MS-VEN, `:83` MOD-06 cerrado, `:388` resumen. `reglas-de-negocio.md:42` actualizado.
+- **CA-4.3** `docs/api/gateway.md` pasan a "implementada", con el RBAC y la ruta pública de `estado`.
+- **CA-4.4** `specs/diagramas/modelo*.md`, `docs/modelo-datos.md` y `specs/bases-de-datos.md`: nota de que la fila vive en Redis y **no** entra al ER de MySQL, con la justificación de D1.
+- **CA-4.5** `specs/backlog.md`: E2-FILA-01 hecho, API-04 “falta sólo notificaciones”, DOC-MS-VEN, MOD-06 cerrado y resumen. `reglas-de-negocio.md` actualizado.
 - **CA-4.6** Checklist final (sección 17) sin coincidencias en el grep de "no implementada" fuera de la tabla histórica de §2.
 
 **Commit:** `docs(fila): cierre de contrato y backlog (FIL-04)`
 
 ## 13. Simplificaciones, riesgos y limitaciones
 
-**Simplificaciones justificadas** (consigna `:148` permite simplificar justificando)
+**Simplificaciones justificadas** (`consigna.md` permite simplificar justificando)
 
 | Recorte | Motivo | Consecuencia |
 |---|---|---|
@@ -600,8 +600,8 @@ Mockito sobre `ZSetOperations` o `ValueOperations` verifica llamadas, no el Lua.
 
 **Reglas de la carga**
 
-- Reservar por **`POST /api/reservas`**, la ruta que expone el gateway (verificar en `docs/api/gateway.md:12-37`).
-- **No enviar `X-User-Id`** desde JMeter: el gateway lo inyecta desde el JWT y descarta el que mande el cliente (`JwtAuthenticationFilter.java:37-40,74-76`).
+- Reservar por **`POST /api/reservas`**, la ruta que expone el gateway (verificar en `docs/api/gateway.md`).
+- **No enviar `X-User-Id`** desde JMeter: el gateway lo inyecta desde el JWT y descarta el que mande el cliente (`JwtAuthenticationFilter.java`).
 - Usar un **pool de usuarios** (CSV), por el límite de 6 entradas por cliente y evento.
 - Usar un **sector general (no numerado)**: en uno numerado, 50 hilos chocan por los mismos asientos.
 - Ejecutar los comandos de MySQL contra el servicio `db-mysql-ventas` y los de Redis contra `db-redis-ventas` (nombres según `docker compose ps`).
@@ -615,7 +615,7 @@ Antes de cada corrida, para partir de un seed conocido: `cd Backend && docker co
 
 **T-A.2 Datos y baseline.**
 
-1. Elegir un evento PUBLICADO con `esAltaDemanda = false` y un **sector general** con cupo suficiente. Evitar los seeds agotados (`init.sql:114-115`).
+1. Elegir un evento PUBLICADO con `esAltaDemanda = false` y un **sector general** con cupo suficiente. Evitar los seeds agotados (`init.sql`).
 2. Calcular el cupo necesario: `usuarios × reservas por usuario × entradas por reserva`.
 3. Guardar el snapshot inicial en `docs/testing/carga.md` (tabla "Antes"):
 
@@ -662,9 +662,9 @@ No versionar `.jtl` ni `report-*` (agregarlos a `.gitignore` en este commit). S�
 
 - `capacidad_total = cantidad_disponible + cantidad_reservada + cantidad_vendida` en ambos snapshots.
 - Ningún contador negativo.
-- `Δ(cantidad_reservada + cantidad_vendida)` coincide con las operaciones exitosas que informa JMeter (la duración menor a 10 min evita expiraciones, `backlog.md:236`).
-- **Sector general:** cruzar el contador contra `detalle_reserva` y compras en estado `APROBADA` (`VentaServiceImpl.java:74`, `ReporteServiceImpl.java:38`).
-- **Sector numerado (solo si se prueba uno):** la consulta de duplicados debe devolver 0 filas, con respaldo en `uk_asiento_evento_sector_fila_numero` (`init.sql:85`):
+- `Δ(cantidad_reservada + cantidad_vendida)` coincide con las operaciones exitosas que informa JMeter (la duración menor a 10 min evita expiraciones, `backlog.md`).
+- **Sector general:** cruzar el contador contra `detalle_reserva` y compras en estado `APROBADA` (`VentaServiceImpl.java`, `ReporteServiceImpl.java`).
+- **Sector numerado (solo si se prueba uno):** la consulta de duplicados debe devolver 0 filas, con respaldo en `uk_asiento_evento_sector_fila_numero` (`init.sql`):
 
 ```sql
 SELECT id_sector, fila, numero, COUNT(*) AS veces
@@ -678,7 +678,7 @@ HAVING COUNT(*) > 1;
 
 Estos chequeos complementan al IT existente (`docs/testing/concurrencia.md`, `AsientoReservadoConcurrenciaIT`); no lo reemplazan.
 
-**T-A.8 Informe y backlog.** `docs/testing/carga.md` con las secciones `Entorno`, `Parámetros`, `Resultados (normal)`, `Verificación de integridad` y `Conclusión`. Aclarar como limitación que la carga y los 17 contenedores corren en la misma máquina. `backlog.md:242` → parcial. `git diff --check` y commit.
+**T-A.8 Informe y backlog.** `docs/testing/carga.md` con las secciones `Entorno`, `Parámetros`, `Resultados (normal)`, `Verificación de integridad` y `Conclusión`. Aclarar como limitación que la carga y los 17 contenedores corren en la misma máquina. `backlog.md` → parcial. `git diff --check` y commit.
 
 ### Parte B — Escenario con fila
 
@@ -717,7 +717,7 @@ docker compose exec -T db-redis-ventas redis-cli GET fila:<idEvento>:tanda      
 docker compose exec -T db-redis-ventas redis-cli INFO stats | grep evicted_keys # = 0
 ```
 
-Agregar la sección `Resultados (con fila)` a `docs/testing/carga.md`, `backlog.md:242` → `hecho` y commit.
+Agregar la sección `Resultados (con fila)` a `docs/testing/carga.md`, `backlog.md` → `hecho` y commit.
 
 ## 16. Puntos abiertos para el equipo
 
@@ -729,7 +729,7 @@ Agregar la sección `Resultados (con fila)` a `docs/testing/carga.md`, `backlog.
 4. **TTL del token:** **10 minutos**, igual que la reserva.
 5. **Turno único (D6):** alcanza. No se libera el turno cuando la reserva vence o el pago se rechaza; la liberación queda fuera de alcance.
 6. **El ADMIN puede fijar `hastaPosicion` mayor al total.** El job automático nunca supera el total.
-7. **Prefijo de configuración real:** `ticketya.fila.*`. El bloque existente de ventas es `ticketya.ventas.*` (`application.yml:37-46`).
+7. **Prefijo de configuración real:** `ticketya.fila.*`. El bloque existente de ventas es `ticketya.ventas.*` (`application.yml`).
 11. **US de Trello:** `0a` versiona esta especificación de todos modos; no bloquea.
 
 **Verificados en la corrida de carga (2026-11-21):**
@@ -756,12 +756,12 @@ git diff --check && git status --short
 
 | Commit | US | Código | Tests | Docs que se tocan |
 |---|---|---|---|---|
-| 1 | `0a` | — | — | `specs/fila-virtual.md`, `backlog.md:83` |
-| 2 | `FIL-01` | store Redis (Lua), service, controller, ingreso/posición/estado público, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, `FilaControllerTest`, gateway | `endpoints.md` (ingreso/posición/estado), docs de ventas, `backlog.md:221` (en curso) |
-| 3 | `FIL-02` | `habilitar`, `FilaTandaScheduler`, lock de instancia y RBAC ADMIN | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md:42,265`, `endpoints.md:212` |
-| 4 | `FIL-03` | `validar`, consumir/restaurar token y gate fail-closed en `POST /reservas` | `FilaServiceTest`, `VentaServiceImplTest`, IT de consumo, suite completa | `endpoints.md:210`, `comunicacion.md:140`, diagrama de secuencia §9 |
-| 5 | `FIL-04` | — (docs only): cierre de contrato y checklist final | `mvn test` de ventas y gateway | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md:42` |
-| 6 | `TST-CARGA-01/A` | — | JMeter compra normal + SQL + `evicted_keys` | `docs/testing/carga*`, `.gitignore`, `backlog.md:242` (parcial) |
+| 1 | `0a` | — | — | `specs/fila-virtual.md`, `backlog.md` |
+| 2 | `FIL-01` | store Redis (Lua), service, controller, ingreso/posición/estado público, caché del flag, regla pública del gateway | unitarios, `FilaRedisStoreIT`, `FilaControllerTest`, gateway | `endpoints.md` (ingreso/posición/estado), docs de ventas, `backlog.md` (en curso) |
+| 3 | `FIL-02` | `habilitar`, `FilaTandaScheduler`, lock de instancia y RBAC ADMIN | servicio, IT concurrente y de lock, `JwtGatewayIntegrationTest` | `reglas-de-negocio.md`, `endpoints.md` |
+| 4 | `FIL-03` | `validar`, consumir/restaurar token y gate fail-closed en `POST /reservas` | `FilaServiceTest`, `VentaServiceImplTest`, IT de consumo, suite completa | `endpoints.md`, `comunicacion.md`, diagrama de secuencia §9 |
+| 5 | `FIL-04` | — (docs only): cierre de contrato y checklist final | `mvn test` de ventas y gateway | OpenAPI, Postman, `gateway.md`, modelos, `backlog.md`, `reglas-de-negocio.md` |
+| 6 | `TST-CARGA-01/A` | — | JMeter compra normal + SQL + `evicted_keys` | `docs/testing/carga*`, `.gitignore`, `backlog.md` (parcial) |
 | 7 | `TST-CARGA-01/B` | — | JMX con fila (B1 auto, B2 admin) + verificaciones SQL/Redis; matriz 25/50/100 ejecutada | `docs/testing/carga*` (hecho, incluye post-fix) |
 
 ## 19. No verificado y supuestos
@@ -780,10 +780,10 @@ git diff --check && git status --short
 
 ## 20. Referencias
 
-- Consigna: `specs/consigna.md:38,63,73,94-96,148,159-163,171,182`
-- Backlog: `specs/backlog.md:65,83,117,221,236,238,242,388`
-- Contrato y docs: `specs/endpoints.md:206-212` · `specs/comunicacion.md:140` · `specs/bases-de-datos.md:13` · `specs/reglas-de-negocio.md:42,265` · `docs/api/gateway.md:12-39,74-92` · `docs/openapi/README.md:16,120`
-- Gateway: `APIGateway/src/main/resources/application.yml:50-55` · `JwtAuthenticationFilter.java:37-40,74-76,234-237,273-275`
-- Ventas: `VentaServiceImpl.java:292-368` · `VentasApplication.java:10` · `StockCache.java:19-73` · `RedisConfig.java:12-15` · `EventosClient.java:18-30` · `VentaController.java:183-191` · `ReporteController.java:53`
-- Eventos: `Evento.java:53-54` · `EventoMapper.java:35,57` · `EventoServiceImpl.java:76`
-- BD: `infrastructure/mysql/ventas/init.sql:8-119`
+- Consigna: `specs/consigna.md`
+- Backlog: `specs/backlog.md`
+- Contrato y docs: `specs/endpoints.md` · `specs/comunicacion.md` · `specs/bases-de-datos.md` · `specs/reglas-de-negocio.md` · `docs/api/gateway.md` · `docs/openapi/README.md`
+- Gateway: `APIGateway/src/main/resources/application.yml` · `JwtAuthenticationFilter.java`
+- Ventas: `VentaServiceImpl.java` · `VentasApplication.java` · `StockCache.java` · `RedisConfig.java` · `EventosClient.java` · `VentaController.java` · `ReporteController.java`
+- Eventos: `Evento.java` · `EventoMapper.java` · `EventoServiceImpl.java`
+- BD: `infrastructure/mysql/ventas/init.sql`
