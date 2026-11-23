@@ -2,16 +2,25 @@
 
 > **Estado:** ejecutada y cerrada (2026-11-21) · **Fecha:** 2026-11-21 · **Alcance:** flujo de
 > compra (reserva → compra → pago → emisión) por el gateway, con y sin fila virtual · **No incluye:**
-> carga de UI, multinstancia ni red real.
+> carga de UI, multi-instancia ni red real.
 
-**Resultado:** la matriz A/B 25/50/100 se ejecutó. B cerró con 0 errores en los tres puntos (45,3 RPS
-a 100 usuarios). Los dos defectos detectados en A (emisión duplicada y timeout de Feign→400) se
-corrigieron; los reintentos A25/A50/B25 dieron 0 errores y sin duplicados. Detalle, tablas y
-hallazgos en [`docs/testing/carga.md`](../docs/testing/carga.md#resultados-normal).
+**Resultado:** la matriz A/B 25/50/100 se ejecutó y cerró el 2026-11-21.
 
-Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** (ejecutada y cerrada el 2026-11-21). La guía operativa y los resultados viven en
-[`docs/testing/carga.md`](../docs/testing/carga.md); los planes JMeter y los scripts en
-[`docs/testing/carga/`](../docs/testing/carga/).
+| Punto | Resultado |
+| --- | --- |
+| A (compra normal) | 25/0, 49/1 y 100/0 transacciones OK/KO; p95 4,4 / 8,7 / 3,1 s. El KO de A50 fue un timeout de Feign→400, corregido a 503. |
+| B (fila) | 0 errores en 25/50/100; hasta **45,3 RPS** a 100 usuarios (p95 global 1,7 s). |
+| Integridad | Invariante de cupo OK y `evicted_keys = 0`; 1 emisión duplicada en A25 detectada y corregida. |
+| Reintentos post-fix | A25, A50 y B25 con 0 errores y 0 duplicados. |
+
+**Desvíos registrados:** el primer intento de B25 se descartó por 500 (cold start del pool Hikari;
+ver [`Hallazgos`](../docs/testing/carga.md#hallazgos)) y A50 registró 405×1 sin explicar además del
+400×2.
+
+Este documento conserva el **plan de ejecución** y el **registro** de la corrida formal. Las tablas
+completas, hallazgos y reintentos están en
+[`docs/testing/carga.md`](../docs/testing/carga.md#resultados-normal); los planes JMeter y los
+scripts, en [`docs/testing/carga/`](../docs/testing/carga/).
 
 ## 1. Objetivo y criterios de aceptación
 
@@ -27,6 +36,11 @@ Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** (ejecutada y 
 - Completar las tablas de `docs/testing/carga.md` y pasar `E2-TST-03` a `hecho` en el backlog con
   fecha, comandos y evidencia.
 
+> **Desvío de la corrida original:** A50 registró 400×2 (timeout de Feign, corregido a 503) y 405×1
+> (sin explicar en el registro), con 49 OK / 1 KO. Los reintentos A25/A50/B25 no repitieron errores.
+> El primer B25 también se descartó por 500 de cold start (pool Hikari); ver
+> [`Hallazgos`](../docs/testing/carga.md#hallazgos).
+
 ## 2. Estado actual (qué ya está listo)
 
 - **Planes JMeter corregidos** (2026-11-20): usan `/api/reservas` (no `/api/ventas/reservas`), **no**
@@ -41,7 +55,8 @@ Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** (ejecutada y 
   (`TICKETYA_FILA_AUTO_*`) y caché del flag de alta demanda.
 - **Humo:** corrida de 5 usuarios con 0 % de error (2026-11-20), que valida el andamiaje.
 
-> El review de la fila adjunto describe una versión anterior del diseño: el Lua ya devuelve
+> El review de la fila ([`fila-virtual.md`](fila-virtual.md)) describe una versión anterior del
+> diseño: el Lua ya devuelve
 > `tonumber(pos)`, el token se consume de forma atómica y se restaura si la transacción no commitea,
 > el gate es fail-closed y las tandas son automáticas. Lo que sigue vigente es monitorear
 > **eviction** de Redis (`maxmemory 256mb`, `volatile-lru`) y la coherencia de TTL.
@@ -55,10 +70,13 @@ Plan de ejecución de la corrida formal **25 / 50 / 100 usuarios** (ejecutada y 
 
 ### 3.1 Datos de prueba (seeds)
 
-| Escenario | Evento | Sector | Capacidad inicial | Alta demanda |
+| Escenario | Evento | Sector | Capacidad total | Alta demanda |
 | --- | --- | --- | --- | --- |
 | A (normal) | `d0000000-0000-4000-8000-000000000006` (Foo Fighters) | `c0000000-0000-4000-8000-000000000015` (General Admission) | 65 000 | no |
-| B (fila) | `d0000000-0000-4000-8000-000000000001` (Metallica) | `c0000000-0000-4000-8000-000000000011` (Campo) | 59 999 | sí |
+| B (fila) | `d0000000-0000-4000-8000-000000000001` (Metallica) | `c0000000-0000-4000-8000-000000000011` (Campo) | 60 000 | sí |
+
+B arranca con **1 entrada ya vendida** en el seed: capacidad total 60 000 y disponible inicial
+59 999 (`infrastructure/mysql/ventas/init.sql`).
 
 Cada usuario compra **1 entrada** (`-Jcantidad=1`) en **1 iteración**: 100 usuarios consumen 100
 unidades, muy por debajo del cupo y del límite de 6 por cliente/evento.
@@ -74,7 +92,18 @@ docker compose up -d --build
 ```
 
 Recomendado: un reset **antes de A** y otro **antes de B**, para que los deltas de cupo de cada
-familia arranquen de un estado conocido. Después de cada reset hay que regenerar el CSV.
+familia arranquen de un estado conocido. Si se ejecuta JMeter a mano (sin `jmeter.sh`), regenerar el
+CSV después de cada reset; el script lo hace solo en cada corrida.
+
+### 3.3 Entorno de la corrida
+
+| Item | Valor |
+| --- | --- |
+| Gateway / servicios | `http://localhost:8080` + los 17 contenedores del compose raíz, bases `healthy` |
+| JMeter | 5.6.3, modo no GUI (`-n`) |
+| Carga | JMeter y contenedores en la misma máquina: las latencias incluyen contención de CPU/RAM |
+| Hardware | No registrado en la corrida (mejora de trazabilidad pendiente) |
+| Código bajo prueba | `main` al 2026-11-21, con los fixes de ese día; sin SHA puntual registrado |
 
 ## 4. Matriz de corridas
 
@@ -116,8 +145,8 @@ Repetir con `50` y `100`. El script regenera el CSV en cada corrida.
 ### 5.2 Preparar el escenario B (fila)
 
 La fila abre tandas automáticamente cada `intervalo-ms` con `tamanio` usuarios. Para 100 usuarios,
-con el default (25 cada 10 s) se necesitan 4 tandas (~40 s) y el poll del plan es de 60 s: funciona,
-pero queda ajustado. Recomendado **abrir todos los turnos en la primera tanda**:
+con el default (25 cada 10 s) se necesitan 4 tandas (~40 s) y el poll por defecto equivale a 60 s
+(30 × 2 s): funciona, pero queda ajustado. Recomendado **abrir todos los turnos en la primera tanda**:
 
 ```bash
 # recrear ventas con tandas de 100 cada 5 s (solo para la corrida)
@@ -172,14 +201,24 @@ SELECT id_evento, id_sector, capacidad_total, cantidad_disponible,
 FROM cupo_sector
 WHERE id_evento = :idEvento AND id_sector = :idSector;
 
--- compras y pagos
-SELECT estado, COUNT(*) FROM compra WHERE id_evento = :idEvento GROUP BY estado;
-SELECT COUNT(*) FROM pago p JOIN compra c ON c.id_compra = p.id_compra
-WHERE c.id_evento = :idEvento AND p.estado = 'APROBADO';
+-- compras por evento (compra no tiene id_evento: se llega por reserva)
+SELECT c.estado, COUNT(*) FROM compra c
+JOIN reserva r ON r.id_reserva = c.id_reserva
+WHERE r.id_evento = :idEvento GROUP BY c.estado;
+
+-- pagos aprobados por evento
+SELECT COUNT(*) FROM pago p
+JOIN compra c ON c.id_compra = p.id_compra
+JOIN reserva r ON r.id_reserva = c.id_reserva
+WHERE r.id_evento = :idEvento AND p.estado = 'APROBADO';
+
+-- entradas emitidas (DB `entradas`, contenedor db-mysql-entradas)
+SELECT COUNT(*) FROM entrada WHERE id_evento = :idEvento;
 
 -- asientos duplicados (solo si se prueba un sector numerado)
-SELECT id_sector, fila, numero, COUNT(*) FROM asiento_reservado
-GROUP BY id_sector, fila, numero HAVING COUNT(*) > 1;
+SELECT id_evento, id_sector, fila, numero, COUNT(*) FROM asiento_reservado
+WHERE id_evento = :idEvento
+GROUP BY id_evento, id_sector, fila, numero HAVING COUNT(*) > 1;
 ```
 
 Comprobaciones:
@@ -187,7 +226,8 @@ Comprobaciones:
 - `dif = 0`, ningún contador negativo.
 - `Δ vendidas = usuarios × cantidad` (1 por usuario).
 - `compras APROBADAS = usuarios`, `pagos APROBADOS = usuarios`.
-- Entradas emitidas por evento = usuarios (contar en `msvc-entradas`; la emisión es asincrónica).
+- Entradas emitidas por evento = usuarios (DB `entradas`, contenedor `db-mysql-entradas`; la emisión
+  es asincrónica).
 - Sin asientos duplicados.
 
 ### 6.3 Redis
@@ -196,7 +236,7 @@ Comprobaciones:
 docker exec db-redis-ventas redis-cli INFO stats | grep evicted_keys   # debe ser 0
 docker exec db-redis-ventas redis-cli ZCARD fila:<idEvento>
 docker exec db-redis-ventas redis-cli SCARD fila:<idEvento>:usados
-docker exec db-redis-ventas redis-cli GET fila:<idEvento>:tanda
+docker exec db-redis-ventas redis-cli GET fila:<idEvento>:tanda   # última posición habilitada
 ```
 
 - `evicted_keys = 0` (si no, la fila o el stock pueden desalojarse).
@@ -209,11 +249,12 @@ docker exec db-redis-ventas redis-cli GET fila:<idEvento>:tanda
 
 ## 7. Evidencia y documentación
 
-- `docs/testing/carga/corrida-<ID>.jtl` y `report-<ID>/` (el `.gitignore` ignora `*.jtl` y
-  `report-*/`; **no** commitear los reportes).
-- Tablas de `docs/testing/carga.md` completas (métricas, errores, integridad, conclusión).
+- `docs/testing/carga/corrida-<ID>.jtl` y `report-<ID>/` quedan locales: el `.gitignore` ignora
+  `Backend/docs/testing/carga/*.jtl` y `report-*/`; **no** commitear los reportes.
+- Tablas de `docs/testing/carga.md` completas (métricas, errores, integridad, conclusión). Esa es la
+  evidencia versionada.
 - `specs/backlog.md`: `E2-TST-03` → `hecho` con fecha, matriz y resultado.
-- Resumen en el PR: comandos, hardware, limitación “carga y contenedores en la misma máquina”.
+- Resumen en el PR: comandos y limitación “carga y contenedores en la misma máquina”.
 
 ## 8. Riesgos y mitigaciones
 
@@ -225,14 +266,15 @@ docker exec db-redis-ventas redis-cli GET fila:<idEvento>:tanda
 | La tanda no llega dentro del poll | Subir `TICKETYA_FILA_AUTO_TAMANIO`/bajar el intervalo o usar B2 con `adminPaso` |
 | 409 por límite de 6 entradas/cliente | 1 iteración por usuario; no reutilizar el mismo usuario en varias corridas |
 | Eviction de Redis | Monitorear `evicted_keys`; si ocurre, subir `maxmemory` y repetir |
-| Primer request lento (JIT/pools) | Warm-up descartado + ramp-up |
+| Primer request lento / cold start | Warm-up descartado + ramp-up; el pool Hikari arranca en 30 (`TICKETYA_DB_POOL`) y `CannotCreateTransactionException` responde 503, no 500 |
 
 ## 9. Estimación
 
 - Reset + arranque: 5–10 min por familia.
 - Corridas A: 3 × ~2 min. Corridas B: 3 × ~4 min.
 - Análisis y carga de tablas: 20–30 min.
-- **Total: ~1 h** en un entorno sano; prever una segunda sesión si hay reinicios.
+- **Total: ~1 h** en un entorno sano; prever una segunda sesión si hay reinicios. *(Estimación previa;
+  la corrida real se ejecutó el 2026-11-21.)*
 
 ## 10. Fuera de alcance
 
@@ -250,5 +292,6 @@ docker exec db-redis-ventas redis-cli GET fila:<idEvento>:tanda
 - [x] B25, B50 y B100 ejecutados con JTL y reporte guardados.
 - [x] Tablas de `docs/testing/carga.md` completas.
 - [x] Integridad SQL/Redis verificada en cada punto (invariante OK; sin duplicados tras el fix).
+- [x] Cold start de ventas documentado y mitigado (pool Hikari 30 + 503).
 - [x] `E2-TST-03` actualizado a `hecho` en el backlog.
-- [x] Evidencia enlazada en el PR.
+- [x] Resultados y hallazgos reflejados en `docs/testing/carga.md` y en esta spec.
