@@ -18,7 +18,7 @@ Backend/specs/
 | Modelo de datos (ER por servicio, relaciones y solapes) | listo | [`modelo-datos.md`](./modelo-datos.md) |
 | Diseño de API (endpoints + ejemplos) | listo | [`../specs/endpoints.md`](../specs/endpoints.md) y `<msvc>/docs/endpoints.md` |
 | OpenAPI / Swagger | listo | [`openapi/`](./openapi/) |
-| Colección Postman | listo | [`postman/`](./postman/) (229 requests en 15 carpetas; corrida completa 2026-11-21 por el proxy Nginx: 229 requests, 625 assertions, 0 fallos, incluidas las carpetas 13 y 14) |
+| Colección Postman | listo | [`postman/`](./postman/) (229 requests en 15 carpetas; corrida completa 2026-11-22 por el proxy Nginx: 229 requests, 625 assertions, 0 fallos, incluidas las carpetas 13 y 14) |
 | Informe de concurrencia | listo | [`testing/concurrencia.md`](./testing/concurrencia.md) |
 | Prueba de carga del flujo de compra (`E2-TST-03`) | listo | [`testing/carga.md`](./testing/carga.md) — matriz 25/50/100 normal y con fila; reintentos post-fix sin errores |
 | Trazabilidad y bitácora (correlation id, log por servicio) | listo | [`observabilidad.md`](./observabilidad.md) |
@@ -35,7 +35,7 @@ Backend/specs/
 | Enrutado, rutas públicas y matriz RBAC del Gateway (`E2-SEC-02`) | listo | [`api/gateway.md`](./api/gateway.md) |
 | OpenAPI `msvc-notificaciones` (`API-04`) | listo | [`openapi/msvc-notificaciones.json`](./openapi/msvc-notificaciones.json) |
 | Verificación de notificaciones | listo | [`testing/notificaciones.md`](./testing/notificaciones.md) |
-| Integración entre microservicios (`E2-TST-01`) | hecho | [`testing/integracion-msvc.md`](./testing/integracion-msvc.md) — Niveles 1 y 2 implementados; corrida limpia 2026-11-21: E2E 5/5 e ITs 37 OK |
+| Integración entre microservicios (`E2-TST-01`) | hecho | [`testing/integracion-msvc.md`](./testing/integracion-msvc.md) — Niveles 1 y 2 implementados; corrida limpia 2026-11-21: E2E 5/5 e ITs 38 OK |
 | Contexto por microservicio (`DOC-MS-00`) | hecho | [ver tabla](#contexto-por-microservicio) — revisión final 2026-11-21 (README + endpoints + OpenAPI) — plantilla: [`../specs/plantilla-docs-msvc.md`](../specs/plantilla-docs-msvc.md) |
 
 ## Contexto por microservicio

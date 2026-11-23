@@ -26,10 +26,8 @@ Contratos OpenAPI (3.1.0) generados por **springdoc-openapi-starter-webmvc-ui 3.
 >
 > **Actualizado 2026-11-20:** `msvc-eventos.json` y `openapi-bundle.json` corrigen `POST /lugares`: decía “Requiere ORGANIZADOR o ADMIN” y en realidad es **solo ADMIN** (lo revalida `LugarController` y lo fija `specs/endpoints.md`).
 >
-> **Actualizado 2026-11-20:** `msvc-eventos.json` y `openapi-bundle.json` corrigen `POST /lugares`: decía “Requiere ORGANIZADOR o ADMIN” y en realidad es **solo ADMIN** (lo revalida `LugarController` y lo fija `specs/endpoints.md`).
->
 > **Actualizado 2026-11-11 (PAR-01):** `msvc-eventos.json` suma `DELETE /participantes/{id}` (solo ADMIN; 409 si participa en eventos); `PUT /participantes/{id}` pasa a solo ADMIN y `POST` exige `tipo` válido (409 si el nombre ya existe). `openapi-bundle.json` regenerado.
-
+>
 > **Actualizado 2026-11-11 (LUG-04):** `msvc-eventos.json`: `EventoRequest` ya no acepta `lugarNombre/lugarCiudad/lugarDireccion` (el evento referencia un `idLugar`); los `sectores[]` son del lugar (`id` obligatorio, `precio`, `capacidadTotal` = cupo del evento); alta y edición de lugares y sectores son solo ADMIN.
 >
 > **Actualizado 2026-11-16 (E2-PRE):** nuevo `msvc-preferencias.json` con preferencias, artistas, historial, recomendaciones propias/similares y backfill interno (`X-Internal-Token`). `openapi-bundle.json` regenerado con 5 specs.
@@ -65,14 +63,14 @@ curl -s http://localhost:8086/v3/api-docs -o docs/openapi/msvc-notificaciones.js
 
 # 3. Reconstruir el bundle consolidado
 python3 - <<'PY'
-import json, glob, os
+import json, glob, os, datetime
 d='docs/openapi'
 specs={}
 for f in sorted(glob.glob(d+'/msvc-*.json')):
     name=os.path.basename(f).replace('.json','')
     specs[name]=json.load(open(f))
 bundle={
-    "generatedAt":"2026-11-21",
+    "generatedAt":datetime.date.today().isoformat(),
     "generator":"springdoc-openapi-starter-webmvc-ui 3.2.0",
     "openapi":"3.1.0",
     "microservices":{k:{"paths":len(v.get('paths',{})),"operations":sum(len(p) for p in v.get('paths',{}).values()),"schemas":len(v.get('components',{}).get('schemas',{}))} for k,v in specs.items()},

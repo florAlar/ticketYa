@@ -42,6 +42,8 @@ OUT="$CSV" BASE="http://localhost:8080" \
 ```
  
 El segundo argumento es un número base para que los emails no se repiten entre corridas.
+
+El CSV es un artefacto generado: **no se versiona** (`.gitignore` excluye `usuarios.csv`).
  
 ### 2. Elegir plan, evento y sector
  
