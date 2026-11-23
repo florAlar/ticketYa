@@ -112,3 +112,16 @@ Una feature está terminada cuando:
   código.
 - Si no hay tiempo para una spec completa, se registra al menos: problema, CA, contrato y tareas en
   `backlog.md` + una spec corta; nunca se implementa a ciegas.
+
+## 9. Sobre el directorio `openspec/` (eliminado)
+
+El repositorio tuvo un `openspec/` en la raíz con cuatro specs en Given/When/Then generadas al inicio
+(2026-11-09). **Se eliminó el 2026-11-22 porque no tiene sentido mantenerlo:** duplicaba las
+especificaciones y quedó desactualizado desde 2026-11-10 (por ejemplo, seguía describiendo la venta
+solo por cupo de sector, sin asientos virtuales), así que cada cambio obligaba a sincronizar dos
+fuentes en lugar de una.
+
+La fuente de verdad es esta carpeta (`Backend/specs/`). Los criterios de aceptación se siguen
+redactando como dado/cuando/entonces (§4) y la consigna se cumple igual: specs versionadas junto al
+código y base de los contratos OpenAPI y de los tests. No hace falta reinstalar OpenSpec ni recrear
+ese directorio.
