@@ -29,6 +29,30 @@
 </div>
 
 
+## Contenido
+- [Stack](#stack)
+- [Arquitectura](#arquitectura)
+- [Funcionalidad principal](#funcionalidad-principal)
+- [Inicio rápido (Docker)](#inicio-rápido-docker)
+- [Inicio rápido opcional con start.sh](#inicio-rápido-opcional-con-startsh)
+- [Servicios y puertos](#servicios-y-puertos)
+- [Usuarios demo](#usuarios-demo)
+- [Autenticación](#autenticación)
+- [Frontend en desarrollo local](#frontend-en-desarrollo-local)
+- [Tests](#tests)
+- [Documentación](#documentación)
+- [Troubleshooting](#troubleshooting)
+---
+## Stack
+
+| Capa | Tecnología |
+| --- | --- |
+| Backend | Java 17, Spring Boot 4, Spring Cloud Gateway MVC, Spring Data JPA, OpenFeign, Spring AMQP |
+| Frontend | React 19, Vite 7, React Router 7, CSS propio |
+| Datos | MySQL 8.4 (una instancia por servicio), MongoDB 7, Redis 7 |
+| Mensajería | RabbitMQ 3.13 (`eventos.exchange`) |
+| Emails de prueba | MailHog (SMTP `1025`, bandeja web `8025`) |
+| Infra | Docker + Docker Compose v2 |
 
 ## Arquitectura
 
@@ -54,29 +78,8 @@ ticketYa/
 └── README.md
 ```
 
-## Stack
 
-| Capa | Tecnología |
-| --- | --- |
-| Backend | Java 17, Spring Boot 4, Spring Cloud Gateway MVC, Spring Data JPA, OpenFeign, Spring AMQP |
-| Frontend | React 19, Vite 7, React Router 7, CSS propio |
-| Datos | MySQL 8.4 (una instancia por servicio), MongoDB 7, Redis 7 |
-| Mensajería | RabbitMQ 3.13 (`eventos.exchange`) |
-| Emails de prueba | MailHog (SMTP `1025`, bandeja web `8025`) |
-| Infra | Docker + Docker Compose v2 |
 
-## Contenido
-
-- [Funcionalidad principal](#funcionalidad-principal)
-- [Inicio rápido (Docker)](#inicio-rápido-docker)
-- [Inicio rápido opcional con start.sh](#inicio-rápido-opcional-con-startsh)
-- [Servicios y puertos](#servicios-y-puertos)
-- [Usuarios demo](#usuarios-demo)
-- [Autenticación](#autenticación)
-- [Frontend en desarrollo local](#frontend-en-desarrollo-local)
-- [Tests](#tests)
-- [Documentación](#documentación)
-- [Troubleshooting](#troubleshooting)
 
 ## Funcionalidad principal
 
