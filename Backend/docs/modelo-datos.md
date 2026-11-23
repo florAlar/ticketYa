@@ -1,4 +1,4 @@
-# Modelo de datos — Entrega 1
+# Modelo de datos — Entregas 1 y 2
 
 Fuente: `Backend/infrastructure/mysql/*/init.sql` (esquema real) y `specs/diagramas/modelo.md` (ER global de trabajo).
 **Una base de datos relacional por microservicio.** No hay FK físicas entre bases: las referencias entre servicios son **lógicas** (columna `CHAR(36)` con el UUID del recurso del otro servicio).
@@ -235,7 +235,7 @@ erDiagram
     }
 ```
 
-`VALIDACION_ACCESO` existe en el esquema pero se usa recién en la Entrega 2. Estados de entrada: `VENDIDA`, `USADA`, `DEVUELTA`, `A_REINTEGRAR`.
+`VALIDACION_ACCESO` se incorporó en la Entrega 2 y registra cada intento de validación de QR (aceptado o rechazado). Estados de entrada: `VENDIDA`, `USADA`, `DEVUELTA`, `A_REINTEGRAR`.
 
 `EMISION_COMPRA` es el claim idempotente de emisión: una fila por compra, insertada en la misma transacción que las entradas. Si ventas reintenta la emisión (timeout de Feign) o el job y el post-pago se cruzan, solo la transacción que obtiene el claim crea las entradas; el resto recibe 503 y reintenta. Un rollback libera el claim.
 

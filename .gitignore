@@ -10,5 +10,6 @@ dist/
 # Salidas de JMeter (E2-TST-03): se versiona el .jmx, no los resultados
 Backend/docs/testing/carga/*.jtl
 Backend/docs/testing/carga/report-*/
+Backend/docs/testing/carga/usuarios.csv
 Backend/docs/testing/carga/report/
 jmeter.log

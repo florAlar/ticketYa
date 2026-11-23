@@ -58,7 +58,7 @@ códigos) está en `specs/endpoints.md`, `docs/openapi/` y en el `endpoints.md` 
 - **E2 implementado:** fila virtual (Redis), control de acceso QR, preferencias/recomendaciones/
   historial (MongoDB), notificaciones (PUSH mock + EMAIL SMTP), reportes del organizador, JWT + RBAC,
   caché/resiliencia, correlation id + bitácora y geocodificación.
-- **Verificado 2026-11-21:** E2E F1–F5 5/5, 37 ITs de borde, matriz de carga 25/50/100 (normal y
+- **Verificado 2026-11-21:** E2E F1–F5 5/5, 38 ITs de borde, matriz de carga 25/50/100 (normal y
   fila), Postman 229 requests/625 assertions/0 fallos y corrida limpia del dominio completo
   (`E2-DEP-01`).
 - **Pendiente funcional:** transferencia de entradas (sin API); el alta de organizador es manual por

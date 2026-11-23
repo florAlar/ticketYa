@@ -81,7 +81,7 @@ Todas se consumen vía gateway con prefijo `/api`. Listado completo, parámetros
 |---|---|
 | usuarios | `POST /auth/login`, `POST /auth/register`, `GET/PATCH /usuarios/me`, `GET /usuarios`, `PATCH /usuarios/{id}/estado`, `PUT /usuarios/{id}/roles` |
 | eventos | `GET/POST /eventos`, `GET/PUT/DELETE /eventos/{id}`, `POST /eventos/{id}/publicacion`, `PATCH /eventos/{id}/estado`, `PATCH /eventos/{id}/fecha`, `PUT /eventos/{id}/sectores/{sectorId}/precio`, `/eventos/{id}/participantes`, `/lugares/**`, `/sectores/**`, `/participantes/**`, `/organizadores/me/eventos` |
-| ventas | `GET /eventos/{id}/disponibilidad`, `GET /eventos/disponibilidad?ids=`, `POST /reservas`, `/reservas/{id}/{confirmacion\|renovacion\|cancelacion}`, `POST /compras`, `POST /compras/{id}/pagos`, `POST /pagos/{id}/reintentos`, `GET /reportes/eventos/{id}[/ventas\|sectores\|ocupacion\|recaudacion]` |
+| ventas | `GET /eventos/{id}/disponibilidad`, `GET /eventos/disponibilidad?ids=`, `GET /eventos/{id}/fila/**`, `POST /reservas`, `/reservas/{id}/{confirmacion\|renovacion\|cancelacion}`, `POST /compras`, `POST /compras/{id}/pagos`, `POST /pagos/{id}/reintentos`, `GET /reportes/eventos/{id}[/ventas\|sectores\|ocupacion\|recaudacion]` |
 | entradas | `GET /entradas`, `GET /entradas/{id}`, `GET /entradas/{id}/qr`, `POST /entradas/{id}/devoluciones`, `GET /devoluciones`, `POST /devoluciones/{id}/{aprobacion\|rechazo}`, `POST /eventos/{id}/validaciones`, `GET /eventos/{id}/validaciones` |
 | preferencias | `GET/PUT /preferencias/me`, `PUT /preferencias/me/artistas`, `GET/PUT /preferencias/me/notificaciones`, `GET /recomendaciones/me`, `GET /eventos/{id}/recomendaciones`, `GET /clientes/{id}/historial` |
 | notificaciones | `GET /notificaciones/me`, `GET /notificaciones/me/{id}`, `PATCH /notificaciones/me/{id}/leida`, `POST /notificaciones` (ADMIN), `GET /notificaciones/{id}/estado` (ADMIN) |
@@ -98,6 +98,7 @@ Solapes de `/eventos/**`: el gateway enruta `/eventos/{id}/disponibilidad`, `/ev
 | Origen → Destino | Cuándo | Para qué |
 |---|---|---|
 | eventos → ventas | Al publicar un evento | `POST /eventos/{id}/cupos`: abre el stock por sector (idempotente; si falla, no se publica) |
+| eventos → ventas | Al publicar, suspender, cancelar o cambiar `esAltaDemanda` | `POST /internas/fila/{idEvento}/invalidacion`: descarta la caché del estado/flag para pausar o reanudar la fila (D11) |
 | ventas → eventos | Al crear una reserva | `GET /eventos/{id}`: obtener el precio unitario del sector |
 | entradas → eventos | Al listar/consultar entradas | `GET /eventos/{id}`: enriquecer la entrada con nombre, lugar y estado del evento (best-effort: si falla, esos campos quedan `null`) |
 | ventas → entradas | Tras un pago aprobado | `POST /entradas/emision`: crear entradas con QR (idempotente por compra, con reintentos y job) |
