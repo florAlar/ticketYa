@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Estado** | Decisiones D1–D11 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-03 en backend y FIL-04 de cierre documental (2026-11-19), más la pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
+| **Estado** | **`hecho`** (2026-11-22). Decisiones D1–D11 y puntos abiertos 1–7 y 11 aprobados el 2026-11-19. **Implementado:** FIL-01…FIL-03 en backend y FIL-04 de cierre documental (2026-11-19), más la pantalla de fila en el SPA (2026-11-20). La §2 conserva el estado de partida como registro histórico. `E2-TST-03` **hecho**: matriz 25/50/100 (normal y con fila) y reintentos post-fix; resultados en `docs/testing/carga.md`. |
 | **Fecha** | 2026-11-19 (actualizado 2026-11-22) |
 | **Destino en el repo** | `Backend/specs/fila-virtual.md` (commit `0a`) |
 | **Servicio principal** | `msvc-ventas` (+ un ajuste en `APIGateway`) |
@@ -41,25 +41,25 @@ El objetivo es controlar la avalancha sobre `POST /reservas` sin tocar las garan
 - Devolución del turno cuando la reserva vence o el pago se rechaza (ver D6).
 - Notificaciones push fuera de la pestaña: el front refresca la posición por polling cada 5 s.
 
-## 2. Estado de partida (chequeo único backlog ↔ código)
+## 2. Estado de partida y estado actual
 
 Esta auditoría **no se repite**. Desde acá, cada US actualiza sus propios docs.
 
 > **Registro histórico (2026-11-19).** La tabla refleja el estado previo a la implementación. Hoy `E2-FILA-01` (FIL-01…FIL-04), `API-04` (fila en OpenAPI), `DOC-MS-VEN` (sección `/fila`), el contrato de `specs/endpoints.md` y las reglas de `specs/reglas-de-negocio.md` están actualizados. `E2-TST-03` también quedó **hecho** con la matriz 25/50/100 y los reintentos post-fix.
 >
-> **Estado actual (2026-11-22):** los “parcial”, “pendiente” y “en curso” que aparecen en esta tabla son del **snapshot del 2026-11-19**; no describen el estado vigente. La fila está implementada y `E2-FILA-01`/`E2-FILA-02` figuran como `hecho` en el backlog.
+> **Estado actual (2026-11-22):** la columna **“Estado actual”** es la vigente. Los “parcial”, “pendiente” y “en curso” de la columna de partida son del **snapshot del 2026-11-19** y no describen el estado de hoy. `E2-FILA-02` también está **`hecho`**.
 
-| Entrada | Backlog / doc | Código real | Resultado |
+| Entrada | Estado de partida (2026-11-19) | Estado actual (2026-11-22) | Evidencia actual |
 |---|---|---|---|
-| `E2-FILA-01` | `specs/backlog.md` pendiente, "simplificable con justificación" | Sin controller, service ni DTO de fila en ventas. El gateway **sí** rutea (`APIGateway/src/main/resources/application.yml`) | **[V]** coincide |
-| `API-04` | `backlog.md` parcial, "falta fila y notificaciones" | Sin `/fila` en `docs/openapi/*.json` | **[V]** coincide |
-| `DOC-MS-VEN` | `backlog.md` parcial | `msvc-ventas/docs/endpoints.md` sin sección `/fila` | **[V]** coincide |
-| `MOD-06` | `backlog.md` "falta cuando entren fila, notificaciones y recomendaciones" | Notificaciones y recomendaciones **ya están** en `specs/diagramas/modelo.md` y `modelo-por-microservicio.md` | **[V]** NO coincide: solo falta la fila |
-| Contrato | `specs/endpoints.md` | No implementado | **[V]** coincide como diseño |
-| Docs de estado | `docs/api/gateway.md` y `docs/openapi/README.md` dicen "no implementada" | Sin implementación | **[V]** coincide |
-| Comunicación / BD | `specs/comunicacion.md`, `specs/bases-de-datos.md` | Redis disponible (`RedisConfig.java`), sin tabla de fila en `init.sql` | **[V]** coincide |
-| Reglas de negocio | `specs/reglas-de-negocio.md` "pendiente E2"; decisión 16 abierta en `reglas-de-negocio.md` §9 | Sin implementación | **[V]** coincide |
-| `E2-TST-03` | `backlog.md` pendiente; la consigna lo exige (`consigna.md`) | Sin informe ni `.jmx` versionado | **[V]** entregable en cero *(hoy **hecho**: `docs/testing/carga.md`)* |
+| `E2-FILA-01` | Pendiente, "simplificable con justificación"; sin controller, service ni DTO de fila en ventas (el gateway ya ruteaba) | **`hecho`** | `FilaController`, `FilaService`, `FilaRedisStore`, `FilaTandaScheduler` y tests FIL-01…FIL-04 |
+| `API-04` | Parcial, "falta fila y notificaciones"; sin `/fila` en `docs/openapi/*.json` | **`hecho`** | Los 5 endpoints `/fila` en `docs/openapi/msvc-ventas.json` y en el bundle |
+| `DOC-MS-VEN` | Parcial; `msvc-ventas/docs/endpoints.md` sin sección `/fila` | **`hecho`** | Sección “Fila virtual” en `msvc-ventas/docs/endpoints.md` |
+| `MOD-06` | Faltaba documentar la fila (notificaciones y recomendaciones ya estaban) | **`hecho`** | `diagramas/modelo*.md` y `docs/modelo-datos.md` con la fila Redis-only |
+| Contrato | Diseño no implementado | **`hecho`** | Los 5 endpoints públicos + `/internas/fila/{id}/invalidacion` |
+| Docs de estado | `docs/api/gateway.md` y `docs/openapi/README.md` decían "no implementada" | **`hecho`** | Ambos documentos marcados como implementados |
+| Comunicación / BD | Redis disponible, sin tabla de fila en `init.sql` | **`hecho`** | Redis-only documentado en `comunicacion.md` y `bases-de-datos.md` §3 |
+| Reglas de negocio | "Pendiente E2"; decisión 16 abierta en `reglas-de-negocio.md` §9 | **`hecho`** | Decisión 16 cerrada en `reglas-de-negocio.md` §4/§9 |
+| `E2-TST-03` | Pendiente; sin informe ni `.jmx` versionado | **`hecho`** | Matriz 25/50/100 + reintentos en `docs/testing/carga.md` |
 
 **Estado de las inconsistencias detectadas (actualizado 2026-11-20):** ya resueltas — `docs/openapi/README.md` documenta fila y reportes; `specs/microservicios.md` y `specs/arquitectura.md` reflejan el estado implementado; `specs/documentacion-y-validacion.md` y `specs/reglas-de-negocio.md` ya no marcan fila, preferencias ni notificaciones como pendientes. Queda como registro histórico el resumen de `backlog.md`, que conserva filas anteriores a E2-PRE/E2-NOT; los READMEs ya reflejan los gates activos.
 
@@ -375,7 +375,7 @@ Todo error de Redis (`DataAccessException`) se envuelve en `503 FILA_NO_DISPONIB
 
 `Bitacora.registrar` con correlation id (`E2-NFR-03`, `backlog.md`) en: `FILA_INGRESO`, `FILA_HABILITACION` (modo `AUTO` o `MANUAL`, valor anterior y nuevo), `FILA_TOKEN_EMITIDO`, `FILA_TOKEN_CONSUMIDO` (con `idReserva`, en `afterCommit`), `FILA_TOKEN_RESTAURADO` y `FILA_GATE_RECHAZO`. Los logs de acceso del gateway (`trace.http`) ya cubren método, ruta, código y tiempo.
 
-## 12. Plan de entrega: US, criterios y pasos
+## 12. Plan de entrega (registro histórico): US, criterios y pasos
 
 > **Registro histórico del plan (2026-11-19).** Los estados “parcial” y “en curso” que aparecen en
 > esta sección describen el avance **planificado** en ese momento; hoy `FIL-01`…`FIL-04` y
